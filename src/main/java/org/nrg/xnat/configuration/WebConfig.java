@@ -9,8 +9,10 @@
 
 package org.nrg.xnat.configuration;
 
+import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.QIDOResponse;
 import org.nrg.xapi.rest.dicomweb.Dicom2XmlMessageConverter;
+import org.nrg.xapi.rest.dicomweb.MultipartDicomFileMessageConverter;
 import org.nrg.xapi.rest.dicomweb.MultipartDicomMessageConverter;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
@@ -92,8 +94,8 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(resourceHttpMessageConverter());
         converters.add(xftBeanHttpMessageConverter());
         converters.add(xftObjectHttpMessageConverter());
-        converters.add(dicomMessageConverter());
         converters.add(multipartDicomMessageConverter( converters));
+        converters.add(multipartDicomFileMessageConverter( ));
         converters.add(zipFileHttpMessageConverter());
     }
 
@@ -150,8 +152,13 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public MultipartDicomMessageConverter multipartDicomMessageConverter(List<HttpMessageConverter<?>> converters) {
+    public HttpMessageConverter<?> multipartDicomMessageConverter(List<HttpMessageConverter<?>> converters) {
         return new MultipartDicomMessageConverter( converters);
+    }
+
+    @Bean
+    public HttpMessageConverter<?> multipartDicomFileMessageConverter() {
+        return new MultipartDicomFileMessageConverter( );
     }
 
     @Bean
