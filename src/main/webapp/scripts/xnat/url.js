@@ -25,18 +25,16 @@ var XNAT = getObject(XNAT||{});
     }
 }(function(){
 
-    var url, xhr,
+    var app, url, xhr,
         root = this,
         undefined;
 
+    XNAT.app = app = getObject(XNAT.app||{});
     XNAT.url = url = getObject(XNAT.url||{});
     XNAT.xhr = xhr = getObject(XNAT.xhr||{});
 
     // urlencode query string params by default
     url.encode = xhr.encode = firstDefined(url.encode||undefined, xhr.encode||undefined, true);
-
-    // site context without trailing a slash
-    url.context = url.siteContext = (window.serverRoot + '/').replace(/\/*$/, '') || '/';
 
     // don't cache AJAX requests
     xhr.cache = firstDefined(xhr.cache||undefined, false);
@@ -64,12 +62,22 @@ var XNAT = getObject(XNAT||{});
         return ('/' + newUrl).replace(/\/+/g, '/');
     }
 
+    XNAT.SITE_ROOT = firstDefined(window.serverRoot, XNAT.serverRoot, XNAT.SITE_ROOT, app.siteRoot, '');
+    app.siteRoot   = XNAT.SITE_ROOT;
+    url.siteRoot   = XNAT.SITE_ROOT;
+
     // make sure the serverRoot string (and only ONE serverRoot string)
     // is at the beginning of a url
     function rootUrl(url){
-        return fixRoot((window.serverRoot || XNAT.serverRoot || ''), url || '')
+        return fixRoot(XNAT.SITE_ROOT, url || '')
     }
     url.rootUrl = rootUrl;
+
+    // Tomcat site context ('/' is 'ROOT')
+    XNAT.SITE_CONTEXT = XNAT.SITE_ROOT ? trimSlashes(XNAT.SITE_ROOT) : 'ROOT';
+    app.siteContext   = XNAT.SITE_CONTEXT;
+    url.siteContext   = XNAT.SITE_CONTEXT;
+    url.context       = XNAT.SITE_CONTEXT;
 
     url.getProtocol = function(URL){
         var docUrl = URL || document.URL;
@@ -86,7 +94,7 @@ var XNAT = getObject(XNAT||{});
             return window.location.hostname;
         }
         if (document.domain) {
-            return document.domain
+            return document.domain;
         }
     };
 
@@ -418,7 +426,7 @@ var XNAT = getObject(XNAT||{});
     });
 
 
-    url.reloadHash = function(key, value, delim){
+    url.reloadHash = function(key, value, delim, callback){
         var newHash = XNAT.url.updateHashPart('', key, value, delim);
         //window.location.replace(newHash);
         //window.location.reload();
@@ -545,6 +553,25 @@ var XNAT = getObject(XNAT||{});
 
     }
     url.buildUrl = url.setup = urlSetup;
+
+
+    // replace parseable URL parts while preserving 'special' prefix
+    url.parse = function( URL ){
+        if (!URL) return '';
+        var urlTemp = URL;
+        // preserve 'special' syntax prefixes
+        var parts = URL.split(/^(\$*[*?~]?\s*[:=]*\s*)/);
+        // if there's only one part, there's no prefix
+        if (parts.length === 1) {
+            urlTemp = strReplace(URL);
+        }
+        else {
+            urlTemp = strReplace(parts[2])
+        }
+        return (parts[1] || '') + rootUrl(urlTemp);
+    };
+    url.replace = url.parse;
+
 
     // build url path from object, array, or argument sequence
     // ({ projects: 'foo', subject: 'bar' })
