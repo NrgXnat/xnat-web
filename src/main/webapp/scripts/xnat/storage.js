@@ -30,7 +30,7 @@ var XNAT = getObject(XNAT);
 
     // append non-root site context if applicable
     function dataStoreName(name){
-        var siteRoot = XNAT.url.rootUrl().replace(/^\//, '');
+        var siteRoot = XNAT.url.rootUrl().replace(/^\/*|\/*$/g, '');
         name = name || USERNAME;
         return (siteRoot && siteRoot !== '/') ? (name + '@' + siteRoot) : name;
     }
@@ -38,6 +38,14 @@ var XNAT = getObject(XNAT);
     // set the root property name to use for browsers' localStorage
     storage.setName = function(name){
         return (storage.dataStore = dataStoreName(name));
+    };
+
+    function dataStoreNameEnc(name){
+        return XNAT.util.sub64.encode(dataStoreName(name)).encoded;
+    }
+
+    storage.setNameEnc = function(name){
+        return (storage.dataStore = dataStoreNameEnc(name));
     };
 
     function getDescendantProp(obj, desc) {
