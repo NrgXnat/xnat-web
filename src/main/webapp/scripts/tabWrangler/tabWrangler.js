@@ -47,7 +47,7 @@ function renderAddTabSelect(_$wrapper,_val){
 
     if ($select_add_tab.length){
 
-        _$wrapper.find('.flipper_box').css('width','310px');
+        // _$wrapper.find('.flipper_box').css('width','310px');
 
         if (!_$wrapper.find('.flippers .selector').length){
             _$wrapper.find('.flippers').prepend('' +
@@ -63,7 +63,7 @@ function renderAddTabSelect(_$wrapper,_val){
 
         // need to figure out how to disable <select> if there's no more data types to load into tabs
         if (_$wrapper.find('.flippers .selector select option').length === 0){
-            _$wrapper.find('.flippers .selector select').prop('disabled',true).attr('disabled','disabled').addClass('disabled');
+            _$wrapper.find('.flippers .selector select').disabled(true);
         }
 
     }
@@ -76,39 +76,39 @@ function renderFlippers(_$wrapper){
     var $tabs = $tabs_ul.find('li').not('.phantom');
     var $select_add_tab = _$wrapper.find('.select_add_tab');
     if ($tabs.length > 1 || $select_add_tab.length){
-        var has_flippers = !!_$wrapper.find('.flipper_box').length;
-        var $flipper_box ;
-        var $content_wrapper = _$wrapper.find('.yui-content');
-        if (has_flippers === false){
-            $content_wrapper.after('<div class="flipper_box"></div>');
-            $flipper_box = $content_wrapper.next('div.flipper_box');
+        var $flipper_box = _$wrapper.find('.flipper_box');
+        if (!$flipper_box.length){
+            $flipper_box = $('<div class="flipper_box"/>');
             $flipper_box.html('' +
                 '<span class="flippers">' +
-                '<a href="##" class="flipper first"><b>&laquo;</b></a>' +
-                '<a href="##" class="flipper left"><b>&lsaquo;</b> prev </a>' +
-                '<a href="##" class="flipper right">next <b>&rsaquo;</b></a>' +
-                '<a href="##" class="flipper last"><b>&raquo;</b></a>' +
+                '<a href="#!" class="flipper flipper-first"><b>&laquo;</b></a>' +
+                '<a href="#!" class="flipper flipper-left"><b>&lsaquo;</b> prev </a>' +
+                '<a href="#!" class="flipper flipper-right">next <b>&rsaquo;</b></a>' +
+                '<a href="#!" class="flipper flipper-last"><b>&raquo;</b></a>' +
                 '</span>' +
                 '');
+            _$wrapper.find('.yui-content').after($flipper_box);
         }
-        // disable the left flippers if we're on the first tab
-        if ($tabs_ul.find('li').first().attr('title') === 'active'){
-            $('.flipper.first,.flipper.left').addClass('disabled');
+
+        // first disable ALL flippers
+        _$wrapper.find('.flippers > a').disabled(true);
+
+        // then enable ONLY the ones we need
+        //
+        // enable only the right flippers if we're on the first tab
+        if ($tabs_ul.find('li').first().attr('title') !== 'active'){
+            _$wrapper.find('.flipper-first, .flipper-left').disabled(false);
         }
-        else {
-            $('.flipper.first,.flipper.left').removeClass('disabled');
+        //
+        // enable only the left flippers if we're on the last tab
+        if ($tabs_ul.find('li').not('.phantom').last().attr('title') !== 'active'){
+            _$wrapper.find('.flipper-last, .flipper-right').disabled(false);
         }
-        // disable the right flippers if we're on the last tab
-        if ($tabs_ul.find('li').not('.phantom').last().attr('title') === 'active'){
-            $('.flipper.last,.flipper.right').addClass('disabled');
-        }
-        else {
-            $('.flipper.last,.flipper.right').removeClass('disabled');
-        }
+
     }
     // disable all flippers if there are NO tabs
     if (!$tabs.length){
-        $('.flipper').addClass('disabled');
+        $tabs_ul.find('.flipper').disabled(true);
     }
     renderAddTabSelect(_$wrapper,'');
 }
@@ -153,12 +153,10 @@ function moveToTab(_$wrapper,_$tab,_n,_x){
     // how much visible space do we have to show the tabs? (need to ensure they are viewable inside this space)
     var width_limit = parseInt(content_width - flipper_box_width);
 
-    var move_x ;
+    var move_x = 0;
+
     if (parseInt(all_tabs_width) > parseInt(width_limit)){
         move_x = _x || parseInt(content_width - all_tabs_width - flipper_box_width);
-    }
-    else {
-        move_x = 0;
     }
 
     _$wrapper.find('ul.yui-nav').animate({
@@ -178,7 +176,7 @@ function wrangleTabs(_wrapper,_force){  // initialize the wrangler
     var $tabs_ul = $(tabs_ul);
 
     if (!$tabs_ul.parent('div.wrangler').length){
-        $tabs_ul.wrap('<div class="wrangler" style="width:100%;overflow:hidden;border-bottom:5px solid #1A75BB"></div>');
+        $tabs_ul.wrap('<div class="wrangler" style="width:100%;overflow:hidden;border-left:1px solid #aaa;border-bottom:5px solid #1A75BB"></div>');
     }
 
     $tabs_wrapper.addClass('wrangled');
@@ -318,7 +316,7 @@ $(function(){
             $flipper = $(this),
             $flippers = $flipper.closest('.flippers'),
             $this_navset = $flippers.closest('.yui-navset'),
-            $this_tab_ul = $this_navset.find('ul.yui-nav'),
+            $this_tab_ul = $this_navset.find('ul.yui-nav').css('margin-left', '-1px'),
             $these_tabs = $this_tab_ul.find('li:not(.phantom)'),
             $active_tab = $this_tab_ul.find('li[title="active"]') || $this_tab_ul.find('li.selected'), // check title="active" first
             $prev_tab = $active_tab.prev('li'),
@@ -350,21 +348,21 @@ $(function(){
         });
 
         // click 'left' flipper
-        if ($flipper.hasClass('left')){
+        if ($flipper.hasClass('flipper-left')){
             $prev_tab.trigger('click');
         }
         // click 'right' flipper
-        if ($flipper.hasClass('right')){
+        if ($flipper.hasClass('flipper-right')){
             $next_tab.trigger('click');
         }
 
         // click 'first' flipper
-        if ($flipper.hasClass('first')){
+        if ($flipper.hasClass('flipper-first')){
             $first_tab.trigger('click');
         }
 
         // click 'last' flipper
-        if ($flipper.hasClass('last')){
+        if ($flipper.hasClass('flipper-last')){
             $last_tab.trigger('click');
         }
     });
