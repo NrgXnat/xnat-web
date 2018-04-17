@@ -406,8 +406,8 @@ var XNAT = getObject(XNAT);
     // get user data and return AJAX promise object
     function getUserData(username){
         var _url = XNAT.url.restUrl('/xapi/users/profile/' + username);
-        delete XNAT.data['/xapi/users/profile/' + username];
-        delete XNAT.data['/xapi/users/' + username];
+        // delete XNAT.data['/xapi/users/profile/' + username];
+        // delete XNAT.data['/xapi/users/' + username];
         return XNAT.xhr.get(_url)
     }
 
@@ -942,9 +942,9 @@ var XNAT = getObject(XNAT);
             onClose: function(){
                 // always update the whole table when adding a user.
                 // usersGroups.spawnTabs();
-                renderUsersTable();
+                // renderUsersTable();
                 // if (updated) {
-                //     updateUsersTable(true);
+                    updateUsersTable(true);
                 // }
             }
         })
