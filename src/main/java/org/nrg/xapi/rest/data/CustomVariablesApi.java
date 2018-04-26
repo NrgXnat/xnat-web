@@ -385,11 +385,18 @@ public class CustomVariablesApi extends AbstractXapiRestController {
         }
         if(Roles.isSiteAdmin(user) || _setService.getUserEditableSet(user, setName)!=null){
             CustomVariableSet set = _setService.getSet(setName);
-            CustomVariable variableToDelete = _variableService.getVariableFromSet(set.getId(),variableName);
-            _variableService.delete(variableToDelete);
-
+            List<CustomVariable> varsToDelete = new ArrayList<>();
             List<CustomVariable> vars = set.getVariables();
-            vars.remove(variableToDelete);
+            for(CustomVariable var : vars){
+                if(StringUtils.equalsIgnoreCase(variableName, var.getName())){
+                    varsToDelete.add(var);
+                }
+            }
+            for(CustomVariable variableToDelete: varsToDelete){
+                _variableService.delete(variableToDelete);
+                vars.remove(variableToDelete);
+            }
+
             set.setVariables(vars);
             _setService.update(set);
             return new ResponseEntity<>(true, HttpStatus.OK);
@@ -411,14 +418,26 @@ public class CustomVariablesApi extends AbstractXapiRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         else if(Roles.isSiteAdmin(user)){
-            return new ResponseEntity<CustomVariable>(_variableService.getVariableFromSet(set.getId(), variableName), HttpStatus.OK);
+            for(CustomVariable var : set.getVariables()){
+                if(StringUtils.equalsIgnoreCase(variableName, var.getName())){
+                    return new ResponseEntity<CustomVariable>(var, HttpStatus.OK);
+                }
+            }
         }
         else if(!set.isProjectSpecific() || _permissionsService.getUserReadableProjects(user).contains(set.getOwningProjectId())) {
-                return new ResponseEntity<CustomVariable>(_variableService.getVariableFromSet(set.getId(), variableName), HttpStatus.OK);
+            CustomVariableSet viewableSet = _setService.getUserViewableSet(user,setName);
+            if(viewableSet!=null){
+                for(CustomVariable var : set.getVariables()){
+                    if(StringUtils.equalsIgnoreCase(variableName, var.getName())){
+                        return new ResponseEntity<CustomVariable>(var, HttpStatus.OK);
+                    }
+                }
+            }
         }
         else{
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
     @ApiOperation(value = "Creates a new custom variable from the submitted attributes.", notes = "Returns the newly created custom variable with the submitted attributes.", response = CustomVariable.class)
@@ -476,10 +495,18 @@ public class CustomVariablesApi extends AbstractXapiRestController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         if(Permissions.canEditProject(user, set.getOwningProjectId())) {
-            CustomVariable existingVariable = _variableService.getVariableFromSet(set.getId(),variableName);
-            String varName =modelVariable.getName();
+            CustomVariable existingVariable = null;
+            for(CustomVariable var : set.getVariables()){
+                if(StringUtils.equalsIgnoreCase(variableName, var.getName())){
+                    existingVariable = var;
+                }
+            }
+            if(existingVariable==null){
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+            }
 
-            if(_setService.doesVariableNameExistForTypeAndSetsProjects(varName, set.getDatatype(), set)){
+            String varName =modelVariable.getName();
+            if(!StringUtils.equalsIgnoreCase(variableName,varName) && _setService.doesVariableNameExistForTypeAndSetsProjects(varName, set.getDatatype(), set)){
                 return new ResponseEntity<>(HttpStatus.CONFLICT);
             }
 
