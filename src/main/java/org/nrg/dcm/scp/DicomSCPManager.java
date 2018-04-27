@@ -295,6 +295,12 @@ public class DicomSCPManager extends EventTriggeringAbstractPreferenceBean imple
         }}, DICOM_SCP_INSTANCE_ROW_MAPPER);
     }
 
+    public DicomSCPInstance getDicomSCPInstance(final String aeTitle) {
+        return _template.queryForObject(GET_INSTANCE_BY_AE_TITLE_AND_PORT, new HashMap<String, Object>() {{
+            put("aeTitle", aeTitle);
+        }}, DICOM_SCP_INSTANCE_ROW_MAPPER);
+    }
+
     public DicomSCPInstance getDicomSCPInstance(final String aeTitle, final int port) {
         return _template.queryForObject(GET_INSTANCE_BY_AE_TITLE_AND_PORT,
                                         new MapSqlParameterSource("aeTitle", aeTitle).addValue("port", port),
@@ -307,7 +313,7 @@ public class DicomSCPManager extends EventTriggeringAbstractPreferenceBean imple
                                DICOM_SCP_INSTANCE_ROW_MAPPER);
     }
 
-    public void enableDicomSCPInstance(final int id) throws DicomNetworkException, UnknownDicomHelperInstanceException {
+    public void enableDicomSCPInstance(final int id) throws DicomNetworkException, UnknownDicomHelperInstanceException, DICOMReceiverWithDuplicateTitleAndPortException {
         enableDicomSCPInstances(id);
     }
 
