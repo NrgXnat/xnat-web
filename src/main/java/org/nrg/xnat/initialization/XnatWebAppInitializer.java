@@ -24,6 +24,7 @@ import org.nrg.xdat.servlet.XDATServlet;
 import org.nrg.xnat.restlet.servlet.XNATRestletServlet;
 import org.nrg.xnat.security.XnatSessionEventPublisher;
 import org.nrg.xnat.servlet.ArchiveServlet;
+import org.nrg.xnat.servlet.DoiServlet;
 import org.nrg.xnat.servlet.Log4JServlet;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
 
@@ -73,6 +74,7 @@ public class XnatWebAppInitializer extends AbstractAnnotationConfigDispatcherSer
         addServlet(AxisServlet.class, 5, "/servlet/AxisServlet", "*.jws", "/services/*");
         addServlet(AdminServlet.class, 6, "/servlet/AdminServlet");
         addServlet(ArchiveServlet.class, 7, "/archive/*");
+        addServlet(DoiServlet.class, 8, "/doi/*");
     }
 
     @Override

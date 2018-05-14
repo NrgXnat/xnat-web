@@ -529,7 +529,7 @@ userLoginsSessionControls:
             name: dataPaths
             delim: ","
             label: Data Paths
-            placeholder: /xapi/**, /data/**, /REST/**, /fs/**
+            placeholder: /doi/**, /xapi/**, /data/**, /REST/**, /fs/**
             description: >
               Ant patterns that define URL patterns that represent data paths (e.g. REST API calls). XNAT uses these
               paths in conjunction with the interactive agent IDs above to determine the response to certain calls. For

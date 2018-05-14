@@ -349,6 +349,10 @@ public class XNATApplication extends Application {
 
         attachURI(router, "/workflows", WorkflowResource.class);
         attachURI(router, "/workflows/{WORKFLOW_ID}", WorkflowResource.class);
+
+        attachArchiveURI(router, "/doi/projects/{PROJECT_ID}", DoiProjectResource.class);
+        attachArchiveURI(router, "/doi/projects/{PROJECT_ID}/subjects/{SUBJECT_ID}", DoiSubjectResource.class);
+        attachArchiveURI(router, "/doi/projects/{PROJECT_ID}/experiments/{EXPT_ID}", DoiExperimentResource.class);
     }
 
     /**
