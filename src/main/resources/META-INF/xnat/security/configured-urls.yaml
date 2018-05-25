@@ -46,6 +46,7 @@ openUrls:
   - /xapi/siteConfig/buildInfo
   - /xapi/siteConfig/siteWideAlert
   - /data/doi/
+  - /doi/
   - /app/template/DOI_report_xnat_projectData.vm
   - /app/template/DOI_report_xnat_subjectData.vm
   - /app/template/DOI_report_xnat_mrSessionData.vm

@@ -1,6 +1,13 @@
-aaa
-bbb
-ccc
-ddd
-<br/>Project: $project
-<br/>Session: $session
+<h1>MR Session DOI</h1>
+
+<br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>
+<br/>Id: $!om.getId()
+<br/>Label: $!om.getLabel()
+<br/>Project: $!om.getProject()
+<br/>Protocol: $!om.getProtocol()
+<br/>XSI Type: $!om.getXSIType()
+#if($canReadAsGuest)
+<br/>More Information: <a href="$!server/data/projects/$!project/subjects/$!om.getSubjectId()/experiments/$!om.getId()">View Session</a>
+#else
+<br/>More Information (login required): <a href="$!server/data/projects/$!project/subjects/$!om.getSubjectId()/experiments/$!om.getId()">View Session</a>
+#end

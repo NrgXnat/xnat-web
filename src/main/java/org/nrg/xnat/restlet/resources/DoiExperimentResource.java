@@ -51,7 +51,7 @@ import java.util.Hashtable;
 public class DoiExperimentResource extends SecureResource {
     public DoiExperimentResource(Context context, Request request, Response response) {
         super(context, request, response);
-
+        doi = (String) getParameter(request, "doi");
         _experimentId = (String) getParameter(request, "EXPT_ID");
         if (StringUtils.isNotBlank(_experimentId)) {
             getVariants().add(new Variant(MediaType.TEXT_XML));
@@ -65,6 +65,7 @@ public class DoiExperimentResource extends SecureResource {
             _project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
             _existing = XnatExperimentdata.GetExptByProjectIdentifier(projectId, _experimentId, user, false);
         }
+        fieldMapping.put("doi", doi);
     }
 
     @Override
@@ -221,4 +222,5 @@ public class DoiExperimentResource extends SecureResource {
     private XnatProjectdata    _project    = null;
     private XnatExperimentdata _experiment = null;
     private XnatExperimentdata _existing   = null;
+    private final String doi;
 }

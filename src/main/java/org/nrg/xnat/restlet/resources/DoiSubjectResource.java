@@ -54,10 +54,11 @@ public class DoiSubjectResource extends SecureResource {
     protected String subID;
     protected XnatSubjectdata sub = null;
     protected XnatSubjectdata existing = null;
+    private final String doi;
 
     public DoiSubjectResource(Context context, Request request, Response response) {
         super(context, request, response);
-
+        doi = (String) getParameter(request, "doi");
         final UserI  user = Users.getAdminUser();
         final String pID  = (String) getParameter(request, "PROJECT_ID");
         if (pID != null) {
@@ -81,6 +82,7 @@ public class DoiSubjectResource extends SecureResource {
         this.getVariants().add(new Variant(MediaType.TEXT_XML));
 
         this.fieldMapping.putAll(XMLPathShortcuts.getInstance().getShortcuts(XMLPathShortcuts.SUBJECT_DATA, false));
+        fieldMapping.put("doi", doi);
     }
 
     @Override

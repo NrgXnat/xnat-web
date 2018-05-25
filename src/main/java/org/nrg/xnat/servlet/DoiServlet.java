@@ -63,13 +63,13 @@ public class DoiServlet extends HttpServlet {
                 final Doi doiObject = service.get(longDoi);
                 switch (doiObject.getXsiType()){
                     case "xnat:projectData":
-                        response.sendRedirect("/data/doi/projects/"+doiObject.getObjectId());
+                        response.sendRedirect("/data/doi/projects/"+doiObject.getObjectId()+"?doi="+doi);
                         break;
                     case "xnat:subjectData":
-                        response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/subjects/"+doiObject.getObjectId());
+                        response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/subjects/"+doiObject.getObjectId()+"?doi="+doi);
                         break;
                     case "xnat:mrSessionData":
-                        response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/experiments/"+doiObject.getObjectId());
+                        response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/experiments/"+doiObject.getObjectId()+"?doi="+doi);
                         break;
                     default:
                         throw new IllegalArgumentException("Invalid DOI type");

@@ -1,7 +1,12 @@
-aaa
-bbb
-ccc
-ddd
-<br/>Project: $project
-<br/>Study Count: $project.getSubjectCount()
-<br/>Subject: $subject
+<h1>Subject DOI</h1>
+
+<br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>
+<br/>Id: $!om.getId()
+<br/>Label: $!om.getLabel()
+<br/>Project: $!om.getProject()
+<br/>Assessor Count: $!om.getSubjectAssessorCount()
+#if($canReadAsGuest)
+<br/>Additional Information: <a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a>
+#else
+<br/>Additional Information (login required): <a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a>
+#end

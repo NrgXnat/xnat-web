@@ -59,6 +59,7 @@ import static org.restlet.data.Status.*;
 public class DoiProjectResource extends SecureResource {
     private XnatProjectdata project = null;
     private final String projectId;
+    private final String doi;
 
     public DoiProjectResource(Context context, Request request, Response response) {
         super(context, request, response);
@@ -67,7 +68,7 @@ public class DoiProjectResource extends SecureResource {
         // if (!validateCleanUrl(request, response)) {
         //     throw new ResourceException(response.getStatus());
         // }
-
+        doi = (String) getParameter(request, "doi");
         projectId = (String) getParameter(request, "PROJECT_ID");
         if (projectId != null) {
             project = XnatProjectdata.getProjectByIDorAlias(projectId, Users.getAdminUser(), false);
@@ -79,6 +80,7 @@ public class DoiProjectResource extends SecureResource {
         }
 
         fieldMapping.putAll(XMLPathShortcuts.getInstance().getShortcuts(XMLPathShortcuts.PROJECT_DATA, false));
+        fieldMapping.put("doi", doi);
     }
 
     @Override
@@ -94,24 +96,8 @@ public class DoiProjectResource extends SecureResource {
     @Override
     public Representation represent(Variant variant) {
         if (project != null) {
-            FilteredResourceHandlerI handler = null;
             try {
-                final List<FilteredResourceHandlerI> handlers = getHandlers("org.nrg.xnat.restlet.projectResource.extensions", _defaultHandlers);
-                for (final FilteredResourceHandlerI filter : handlers) {
-                    if (filter.canHandle(this)) {
-                        handler = filter;
-                    }
-                }
-            } catch (InstantiationException | IllegalAccessException e1) {
-                log.error("", e1);
-            }
-
-            try {
-                if (handler != null) {
-                    return handler.handle(this, variant);
-                } else {
-                    return null;
-                }
+                return handleDoi(this, variant);
             } catch (Exception e) {
                 log.error("", e);
                 getResponse().setStatus(SERVER_ERROR_INTERNAL);
@@ -127,58 +113,41 @@ public class DoiProjectResource extends SecureResource {
         return project == null ? projectId : project.getId();
     }
 
-    public final static List<FilteredResourceHandlerI> _defaultHandlers = Lists.newArrayList();
-
-    static {
-        _defaultHandlers.add(new DefaultProjectHandler());
-    }
-
-    public static class DefaultProjectHandler implements FilteredResourceHandlerI {
-
-        @Override
-        public boolean canHandle(SecureResource resource) {
-            return true;
-        }
-
-        @Override
-        public Representation handle(SecureResource resource, Variant variant) {
-            MediaType mt = resource.overrideVariant(variant);
-            DoiProjectResource projResource = (DoiProjectResource) resource;
-            if (resource.filepath != null && !resource.filepath.equals("")) {
-                if (resource.filepath.equals("quarantine_code")) {
-                    try {
-                        return new StringRepresentation(projResource.project.getArcSpecification().getQuarantineCode().toString(), mt);
-                    } catch (Throwable e) {
-                        log.error("", e);
-                        projResource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
-                        return null;
-                    }
-                } else if (resource.filepath.startsWith("prearchive_code")) {
-                    try {
-                        return new StringRepresentation(projResource.project.getArcSpecification().getPrearchiveCode().toString(), mt);
-                    } catch (Throwable e) {
-                        log.error("", e);
-                        projResource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
-                        return null;
-                    }
-                } else if (resource.filepath.startsWith("current_arc")) {
-                    try {
-                        return new StringRepresentation(projResource.project.getArcSpecification().getCurrentArc(), mt);
-                    } catch (Throwable e) {
-                        log.error("", e);
-                        resource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
-                        return null;
-                    }
-                } else {
-                    resource.getResponse().setStatus(CLIENT_ERROR_BAD_REQUEST);
+    private Representation handleDoi(SecureResource resource, Variant variant) {
+        MediaType mt = resource.overrideVariant(variant);
+        DoiProjectResource projResource = (DoiProjectResource) resource;
+        if (resource.filepath != null && !resource.filepath.equals("")) {
+            if (resource.filepath.equals("quarantine_code")) {
+                try {
+                    return new StringRepresentation(projResource.project.getArcSpecification().getQuarantineCode().toString(), mt);
+                } catch (Throwable e) {
+                    log.error("", e);
+                    projResource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
+                    return null;
+                }
+            } else if (resource.filepath.startsWith("prearchive_code")) {
+                try {
+                    return new StringRepresentation(projResource.project.getArcSpecification().getPrearchiveCode().toString(), mt);
+                } catch (Throwable e) {
+                    log.error("", e);
+                    projResource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
+                    return null;
+                }
+            } else if (resource.filepath.startsWith("current_arc")) {
+                try {
+                    return new StringRepresentation(projResource.project.getArcSpecification().getCurrentArc(), mt);
+                } catch (Throwable e) {
+                    log.error("", e);
+                    resource.getResponse().setStatus(SERVER_ERROR_INTERNAL, e.getMessage());
                     return null;
                 }
             } else {
-                return projResource.representItem(projResource.project.getItem(), mt);
+                resource.getResponse().setStatus(CLIENT_ERROR_BAD_REQUEST);
+                return null;
             }
+        } else {
+            return projResource.representItem(projResource.project.getItem(), mt);
         }
-
-
     }
 
     @Override

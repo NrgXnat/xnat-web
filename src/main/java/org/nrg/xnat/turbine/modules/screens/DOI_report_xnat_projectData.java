@@ -10,14 +10,21 @@
 package org.nrg.xnat.turbine.modules.screens;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
+import org.apache.log4j.Logger;
+import org.apache.turbine.modules.screens.VelocityScreen;
 import org.apache.turbine.util.RunData;
 import org.apache.velocity.context.Context;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.exceptions.IllegalAccessException;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.turbine.modules.screens.SecureReport;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.db.ItemAccessHistory;
 import org.nrg.xft.db.PoolDBUtils;
 import org.nrg.xft.exception.DBPoolException;
@@ -25,6 +32,8 @@ import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.services.system.DoiService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 
 import java.sql.SQLException;
@@ -35,48 +44,73 @@ import static org.nrg.xdat.XDAT.getUserDetails;
  * @author XDAT
  */
 @Slf4j
-public class DOI_report_xnat_projectData extends SecureReport {
-    public void finalProcessing(RunData data, Context context) {
-        final XnatProjectdata project = (XnatProjectdata) om;
-
-        final UserI user = getUserDetails();
-        assert user != null;
+public class DOI_report_xnat_projectData extends VelocityScreen {
+    static Logger logger = Logger.getLogger(DOI_report_xnat_projectData.class);
+    public void doBuildTemplate(RunData data, Context context) {
 
         try {
-            if (Permissions.canRead(user, "xnat:subjectData/project", project.getId())) {
-                ItemAccessHistory.LogAccess(user, item, "report");
+            if (data.getParameters().containsKey("project")) {
+                context.put("project", TurbineUtils.escapeParam(((String) TurbineUtils.GetPassedParameter("project", data))));
+            }
+            context.put("server", TurbineUtils.GetFullServerPath());
+
+            ItemI item = TurbineUtils.getDataItem(data);
+
+            if (item== null)
+            {
+                //System.out.println("No data item passed... looking for item passed by variables");
+                try {
+                    item = TurbineUtils.GetItemBySearch(data,preLoad());
+                } catch (java.lang.IllegalAccessException e1) {
+                    logger.error("", e1);
+                    data.setMessage(e1.getMessage());
+                    return;
+                } catch (Exception e1) {
+                    logger.error("", e1);
+                    data.setMessage(e1.getMessage());
+                    data.setScreenTemplate("Error.vm");
+                    return;
+                }
+            }
+            if (data.getParameters().containsKey("doi")) {
+                boolean doiFound = false;
+                String doi = "";
+                try {
+                    doi = TurbineUtils.escapeParam(((String) TurbineUtils.GetPassedParameter("doi", data)));
+                    DoiService service = XDAT.getContextService().getBean(DoiService.class);
+                    Doi doiObject = service.get(Long.parseLong(doi));
+                    if(doiObject!=null){
+                        if(StringUtils.equalsIgnoreCase(doiObject.getObjectId(),item.getStringProperty("id"))) {
+                            doiFound = true;
+                        }
+                    }
+                    context.put("doi", doi);
+                }
+                catch(Exception e){
+                }
+                if(!doiFound){
+                    throw new NotFoundException(doi);
+                }
             }
 
-            if (ProjectAccessRequest.CREATED_PAR_TABLE) {
-                context.put("par_count", PoolDBUtils.ReturnStatisticQuery("SELECT COUNT(par_id)::int4 AS count FROM xs_par_table WHERE proj_id='" + project.getId() + "'", "count", user.getDBName(), user.getLogin()));
-            }
+            context.put("item", item.getItem());
 
-            if (TurbineUtils.GetPassedParameter("topTab", data) != null) {
-                context.put("topTab", TurbineUtils.GetPassedParameter("topTab", data));
-            }
+            ItemI om = BaseElement.GetGeneratedItem(item);
+            context.put("om", om);
+            context.put("canReadAsGuest",Permissions.canRead(Users.getGuest(),item));
 
-            if (TurbineUtils.GetPassedParameter("bottomTab", data) != null) {
-                context.put("bottomTab", TurbineUtils.GetPassedParameter("bottomTab", data));
-            }
-
-            context.put("showImportEventHandlers", XDAT.getBoolSiteConfigurationProperty("showImportEventHandlers", false));
-
-            setDefaultTabs("xnat_projectData_summary_details", "xnat_projectData_summary_management", "xnat_projectData_summary_manage", "xnat_projectData_summary_pipeline", "xnat_projectData_summary_history");
-            cacheTabs(context, "xnat_projectData/tabs");
-        } catch (XFTInitException e) {
-            log.error("An error occurred initializing XFT", e);
-        } catch (ElementNotFoundException e) {
-            log.error("Did not find the requested element on the item", e);
-        } catch (FieldNotFoundException e) {
-            log.error("Field not found {}: {}", e.FIELD, e.MESSAGE, e);
-        } catch (DBPoolException e) {
-            log.error("An error occurred querying with PoolDBUtils", e);
-        } catch (SQLException e) {
-            log.error("An SQL exception occurred", e);
-        } catch (IllegalAccessException e) {
-            log.error("An attempt to access an illegal field or method occurred", e);
         } catch (Exception e) {
-            log.error("An unknown exception occurred", e);
+            logger.error("",e);
         }
+    }
+
+
+    /**
+     * Return null to use the defualt settings (which are configured in xdat:element_security).  Otherwise, true will force a pre-load of the item.
+     * @return
+     */
+    public Boolean preLoad()
+    {
+        return Boolean.FALSE;
     }
 }

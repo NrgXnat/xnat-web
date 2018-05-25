@@ -9,63 +9,92 @@
 
 package org.nrg.xnat.turbine.modules.screens;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
+import org.apache.turbine.modules.screens.VelocityScreen;
 import org.apache.turbine.util.RunData;
 import org.apache.velocity.context.Context;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatExperimentdataShareI;
 import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.turbine.modules.screens.SecureReport;
 
 import java.util.List;
 import org.nrg.xdat.om.XnatImagesessiondata;
+import org.nrg.xdat.turbine.utils.TurbineUtils;
+import org.nrg.xft.ItemI;
+import org.nrg.xft.security.UserI;
+import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.services.system.DoiService;
 
 
 /**
  * @author Tim
  *
  */
-public class DOI_report_xnat_mrSessionData extends SecureReport {
+public class DOI_report_xnat_mrSessionData extends VelocityScreen {
 	static Logger logger = Logger.getLogger(DOI_report_xnat_mrSessionData.class);
 
-    /* (non-Javadoc)
-     * @see org.nrg.xdat.turbine.modules.screens.SecureReport#finalProcessing(org.apache.turbine.util.RunData, org.apache.velocity.context.Context)
-     */
-    public void finalProcessing(RunData data, Context context) {
+    public void doBuildTemplate(RunData data, Context context) {
         try {
-            XnatImagesessiondata session = new XnatImagesessiondata(item);
-            context.put("session",session);
-            
-            
-            context.put("workflows",session.getWorkflows());
+            if (data.getParameters().containsKey("project")) {
+                context.put("project", TurbineUtils.escapeParam(((String) TurbineUtils.GetPassedParameter("project", data))));
+            }
+            context.put("server", TurbineUtils.GetFullServerPath());
+            ItemI item = TurbineUtils.getDataItem(data);
 
-            if(context.get("project")==null){
-                String proj = session.getProject();
-                if(!Permissions.canReadProject(XDAT.getUserDetails(),proj)){
-                    // If user cannot read that project, look through the projects that session is shared into. If user
-                    // can view the data in one of those projects they should view this session from that project's context.
-                    List<XnatExperimentdataShareI> list = session.getSharing_share();
-                    for(XnatExperimentdataShareI exptShare: list){
-                        if(Permissions.canReadProject(XDAT.getUserDetails(),exptShare.getProject())){
-                            proj=exptShare.getProject();
-                            break;
+            if (item== null)
+            {
+                //System.out.println("No data item passed... looking for item passed by variables");
+                try {
+                    item = TurbineUtils.GetItemBySearch(data,preLoad());
+                } catch (IllegalAccessException e1) {
+                    logger.error("", e1);
+                    data.setMessage(e1.getMessage());
+                    return;
+                } catch (Exception e1) {
+                    logger.error("", e1);
+                    data.setMessage(e1.getMessage());
+                    data.setScreenTemplate("Error.vm");
+                    return;
+                }
+            }
+            if (data.getParameters().containsKey("doi")) {
+                boolean doiFound = false;
+                String doi = "";
+                try {
+                    doi = TurbineUtils.escapeParam(((String) TurbineUtils.GetPassedParameter("doi", data)));
+                    DoiService service = XDAT.getContextService().getBean(DoiService.class);
+                    Doi doiObject = service.get(Long.parseLong(doi));
+                    if(doiObject!=null){
+                        if(StringUtils.equalsIgnoreCase(doiObject.getObjectId(),item.getStringProperty("id"))) {
+                            doiFound = true;
                         }
                     }
+                    context.put("doi", doi);
                 }
-            	context.put("project", proj);
+                catch(Exception e){
+                }
+                if(!doiFound){
+                    throw new NotFoundException(doi);
+                }
             }
-            
-            for(XnatImagescandataI scan:session.getSortedScans()){
-            	((XnatImagescandata)scan).setImageSessionData(session);
-            }
+            context.put("item", item.getItem());
+
+            ItemI om = BaseElement.GetGeneratedItem(item);
+            context.put("om", om);
+            context.put("canReadAsGuest",Permissions.canRead(Users.getGuest(),item));
         } catch (Exception e) {
             logger.error("",e);
         }
     }
 
-    
+
     /**
      * Return null to use the defualt settings (which are configured in xdat:element_security).  Otherwise, true will force a pre-load of the item.
      * @return
