@@ -210,7 +210,7 @@ public class DoiExperimentResource extends SecureResource {
     public Representation representItem(XFTItem item, MediaType mt) {
 //        if (mt.equals(MediaType.TEXT_HTML)) {
         try {
-            return new ItemHTMLRepresentation(item, MediaType.TEXT_HTML, getRequest(), Users.getAdminUser(), "DOI_report_xnat_mrSessionData.vm", new Hashtable<String, Object>());
+            return new ItemHTMLRepresentation(item, MediaType.TEXT_HTML, getRequest(), Users.getAdminUser(), "DOI_report_xnat_experimentData.vm", new Hashtable<String, Object>());
         } catch (Exception e) {
             getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
             return null;

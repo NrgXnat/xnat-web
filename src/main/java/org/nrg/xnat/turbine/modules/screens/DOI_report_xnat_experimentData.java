@@ -1,5 +1,5 @@
 /*
- * web: org.nrg.xnat.turbine.modules.screens.XDATScreen_report_xnat_mrSessionData
+ * web: org.nrg.xnat.turbine.modules.screens.XDATScreen_report_xnat_experimentData
  * XNAT http://www.xnat.org
  * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
@@ -22,13 +22,10 @@ import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
-import org.nrg.xdat.turbine.modules.screens.SecureReport;
 
-import java.util.List;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
-import org.nrg.xft.security.UserI;
 import org.nrg.xnat.entities.Doi;
 import org.nrg.xnat.services.system.DoiService;
 
@@ -37,8 +34,8 @@ import org.nrg.xnat.services.system.DoiService;
  * @author Tim
  *
  */
-public class DOI_report_xnat_mrSessionData extends VelocityScreen {
-	static Logger logger = Logger.getLogger(DOI_report_xnat_mrSessionData.class);
+public class DOI_report_xnat_experimentData extends VelocityScreen {
+	static Logger logger = Logger.getLogger(DOI_report_xnat_experimentData.class);
 
     public void doBuildTemplate(RunData data, Context context) {
         try {

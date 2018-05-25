@@ -1,3 +1,6 @@
+#set ($template = $data.getTemplateInfo())
+$!template.setLayoutTemplate("Login.vm")
+
 <h1>Subject DOI</h1>
 
 <br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>

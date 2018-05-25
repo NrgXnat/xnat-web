@@ -1,0 +1,16 @@
+#set ($template = $data.getTemplateInfo())
+$!template.setLayoutTemplate("Login.vm")
+
+<h1>Experiment DOI</h1>
+
+<br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>
+<br/>Id: $!om.getId()
+<br/>Label: $!om.getLabel()
+<br/>Project: $!om.getProject()
+<br/>Protocol: $!om.getProtocol()
+<br/>XSI Type: $!om.getXSIType()
+#if($canReadAsGuest)
+<br/>More Information: <a href="$!server/data/projects/$!project/experiments/$!om.getId()">View Experiment</a>
+#else
+<br/>More Information (login required): <a href="$!server/data/projects/$!project/experiments/$!om.getId()">View Experiment</a>
+#end

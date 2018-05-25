@@ -49,7 +49,7 @@ openUrls:
   - /doi/
   - /app/template/DOI_report_xnat_projectData.vm
   - /app/template/DOI_report_xnat_subjectData.vm
-  - /app/template/DOI_report_xnat_mrSessionData.vm
+  - /app/template/DOI_report_xnat_experimentData.vm
 
 adminUrls:
   - /app/template/AdminSummary.vm

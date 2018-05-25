@@ -68,11 +68,9 @@ public class DoiServlet extends HttpServlet {
                     case "xnat:subjectData":
                         response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/subjects/"+doiObject.getObjectId()+"?doi="+doi);
                         break;
-                    case "xnat:mrSessionData":
+                    default:
                         response.sendRedirect("/data/doi/projects/"+doiObject.getProjectId()+"/experiments/"+doiObject.getObjectId()+"?doi="+doi);
                         break;
-                    default:
-                        throw new IllegalArgumentException("Invalid DOI type");
                 }
             } catch (NotFoundException e) {
                 e.printStackTrace();
