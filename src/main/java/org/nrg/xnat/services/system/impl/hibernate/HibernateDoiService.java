@@ -13,16 +13,22 @@
 package org.nrg.xnat.services.system.impl.hibernate;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
+import org.nrg.xft.security.UserI;
 import org.nrg.xnat.daos.DoiDAO;
 import org.nrg.xnat.entities.Doi;
 import org.nrg.xnat.services.system.DoiService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * {@inheritDoc}
  */
 @Service
 public class HibernateDoiService extends AbstractHibernateEntityService<Doi, DoiDAO> implements DoiService {
-
+    @Override
+    public List<Doi> getDois() {
+        return getDao().getAllDois();
+    }
 }

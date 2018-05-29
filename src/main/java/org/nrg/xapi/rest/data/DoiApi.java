@@ -53,7 +53,7 @@ public class DoiApi extends AbstractXapiRestController {
     @XapiRequestMapping(produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<List<Doi>> getDois() {
-        return new ResponseEntity<>(_service.getAll(), HttpStatus.OK);
+        return new ResponseEntity<>(_service.getDois(), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Gets the requested DOI.", notes = "Returns the DOI object for a given DOI.", response = Doi.class)

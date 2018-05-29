@@ -10,7 +10,7 @@ $!template.setLayoutTemplate("Login.vm")
 <br/>Protocol: $!om.getProtocol()
 <br/>XSI Type: $!om.getXSIType()
 #if($canReadAsGuest)
-<br/>More Information: <a href="$!server/data/projects/$!project/experiments/$!om.getId()">View Experiment</a>
+<br/>More Information: <a href="$!server/data/projects/$!project/experiments/$!om.getId()?format=html">View Experiment</a>
 #else
-<br/>More Information (login required): <a href="$!server/data/projects/$!project/experiments/$!om.getId()">View Experiment</a>
+<br/>More Information (login required): <a href="$!server/data/projects/$!project/experiments/$!om.getId()?format=html">View Experiment</a>
 #end

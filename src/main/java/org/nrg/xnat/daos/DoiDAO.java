@@ -18,8 +18,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.List;
 
+@Transactional
 @Repository
 public class DoiDAO extends AbstractHibernateDAO<Doi> {
 
+    @Transactional
+    public List<Doi> getAllDois() {
+        return findAll();
+    }
 }
