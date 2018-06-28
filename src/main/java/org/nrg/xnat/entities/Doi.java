@@ -37,6 +37,26 @@ public class Doi extends AbstractHibernateEntity {
     /** The ID of the XNAT data object. */
     private String objectId;
 
+    private String doi;
+
+    private String description;
+
+    private String keywords;
+
+    private String contactName;
+
+    private String contactEmail;
+
+    private String dataAvailability;
+
+    private String dataUseTerms;
+
+    private String relatedPublications;
+
+    private String links;
+
+    private String notes;
+
     /** The data type of the data object this DOI maps to. */
     private String xsiType;
 
@@ -58,6 +78,87 @@ public class Doi extends AbstractHibernateEntity {
 
     public void setObjectId(String objectId) {
         this.objectId = objectId;
+    }
+
+
+    public String getDoi() {
+        return doi;
+    }
+
+    public void setDoi(String doi) {
+        this.doi = doi;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getKeywords() {
+        return keywords;
+    }
+
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+
+    public String getContactName() {
+        return contactName;
+    }
+
+    public void setContactName(String contactName) {
+        this.contactName = contactName;
+    }
+
+    public String getContactEmail() {
+        return contactEmail;
+    }
+
+    public void setContactEmail(String contactEmail) {
+        this.contactEmail = contactEmail;
+    }
+
+    public String getDataAvailability() {
+        return dataAvailability;
+    }
+
+    public void setDataAvailability(String dataAvailability) {
+        this.dataAvailability = dataAvailability;
+    }
+
+    public String getDataUseTerms() {
+        return dataUseTerms;
+    }
+
+    public void setDataUseTerms(String dataUseTerms) {
+        this.dataUseTerms = dataUseTerms;
+    }
+
+    public String getRelatedPublications() {
+        return relatedPublications;
+    }
+
+    public void setRelatedPublications(String relatedPublications) {
+        this.relatedPublications = relatedPublications;
+    }
+
+    public String getLinks() {
+        return links;
+    }
+
+    public void setLinks(String links) {
+        this.links = links;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public void setNotes(String notes) {
+        this.notes = notes;
     }
 
     public String getXsiType() {

@@ -2,28 +2,48 @@
 $!template.setLayoutTemplate("Login.vm")
 
 <h1>Project DOI</h1>
-
-<br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>
-<br/>Id: $!om.getId()
-<br/>Name: $!om.getName()
-<br/>Description: $!om.getDescription()
-<br/>Keywords: $!om.getKeywords()
-<br/>Subject Count: $!om.getSubjectCount()
-<br/>Experiment Counts:
-#set($exptCounts = $om.getExperimentCountByXSIType())
+<br/>
+<h2>DOI Details:</h2>
+<table>
+    <tr><td><b>DOI</b></td><td><a href="$!doiObject.getDoi()">$!doiObject.getDoi()</a></td></tr>
+    <tr><td><b>Permalink</b></td><td><a href="$!server/doi/$!doiId">$!server/doi/$!doiId</a></td></tr>
+    <tr><td><b>Description</b></td><td>$!doiObject.getDescription()</td></tr>
+    <tr><td><b>Contact Name</b></td><td>$!doiObject.getContactName()</td></tr>
+    <tr><td><b>Contact Email</b></td><td><a href="mailto:$!doiObject.getContactEmail()">$!doiObject.getContactEmail()</a></td></tr>
+    <tr><td><b>Data Availability</b></td><td>$!doiObject.getDataAvailability()</td></tr>
+    <tr><td><b>Data Use</b></td><td><a href="$!doiObject.getDataUseTerms()">$!doiObject.getDataUseTerms()</a></td></tr>
+    <tr><td><b>Keywords</b></td><td>$!doiObject.getKeywords()</td></tr>
+##    <tr><td><b>Publications</b></td><td>$!doiObject.getRelatedPublications()</td></tr>
+##    <tr><td><b>Links</b></td><td>$!doiObject.getLinks()</td></tr>
+    <tr><td><b>Publications</b></td><td>#set($separator="")#foreach($pub in $pubArray)$separator<a href="$pub">$pub</a>#set($separator=", ")#end</td></tr>
+    <tr><td><b>Links</b></td><td>#set($separator="")#foreach($link in $linkArray)$separator<a href="$link">$link</a>#set($separator=", ")#end</td></tr>
+    <tr><td><b>Notes</b></td><td>$!doiObject.getNotes()</td></tr>
+</table>
+<br/>
+<h2>Project Details:</h2>
+<table>
+<tr><td><b>Id</b></td><td>$!om.getId()</td></tr>
+<tr><td><b>Name</b></td><td>$!om.getName()</td></tr>
+<tr><td><b>Description</b></td><td>$!om.getDescription()</td></tr>
+<tr><td><b>Keywords</b></td><td>$!om.getKeywords()</td></tr>
+<tr><td><b>Subject Count</b></td><td>$!om.getSubjectCount()</td></tr>
+    <tr><td><b>Experiment Counts</b></td><td></td></tr>
+#set($exptCounts = $om.getExperimentCountByXSIType())</td></tr>
     #foreach($key in $exptCounts.keySet())
-    <br/> $key : $exptCounts.get($key)
+    <tr><td><b>$key</b></td><td>$exptCounts.get($key)</td></tr>
     #end
-<br/>Investigators:
+<tr><td><b>Investigators</b></td><td>
 #set($principal = $om.getPi())
 #if($principal)
     $!principal.getTitle() $!principal.getFirstname() $!principal.getLastname() (PI)
 #end
+</td></tr>
 #foreach($investigator in $om.getInvestigators_investigator())
-<br/> $!investigator.getTitle() $!investigator.getFirstname() $!investigator.getLastname()
+    <tr><td></td><td>$!investigator.getTitle() $!investigator.getFirstname() $!investigator.getLastname()</td></tr>
 #end
 #if($canReadAsGuest)
-<br/>Additional Information: <a href="$!server/data/projects/$!om.getId()">View Project</a>
+    <tr><td><b>Additional Information</b></td><td><a href="$!server/data/projects/$!om.getId()">View Project</a></td></tr>
 #else
-<br/>Additional Information (login required): <a href="$!server/data/projects/$!om.getId()">View Project</a>
+    <tr><td><b>Additional Information (login required)</b></td><td><a href="$!server/data/projects/$!om.getId()">View Project</a></td></tr>
 #end
+</table>

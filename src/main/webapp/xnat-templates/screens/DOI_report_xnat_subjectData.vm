@@ -2,14 +2,34 @@
 $!template.setLayoutTemplate("Login.vm")
 
 <h1>Subject DOI</h1>
-
-<br/>Permalink: <a href="$!server/doi/$!doi">$!server/doi/$!doi</a>
-<br/>Id: $!om.getId()
-<br/>Label: $!om.getLabel()
-<br/>Project: $!om.getProject()
-<br/>Assessor Count: $!om.getSubjectAssessorCount()
+<br/>
+<h2>DOI Details:</h2>
+<table>
+    <tr><td><b>DOI</b></td><td><a href="$!doiObject.getDoi()">$!doiObject.getDoi()</a></td></tr>
+    <tr><td><b>Permalink</b></td><td><a href="$!server/doi/$!doiId">$!server/doi/$!doiId</a></td></tr>
+    <tr><td><b>Description</b></td><td>$!doiObject.getDescription()</td></tr>
+    <tr><td><b>Contact Name</b></td><td>$!doiObject.getContactName()</td></tr>
+    <tr><td><b>Contact Email</b></td><td><a href="mailto:$!doiObject.getContactEmail()">$!doiObject.getContactEmail()</a></td></tr>
+    <tr><td><b>Data Availability</b></td><td>$!doiObject.getDataAvailability()</td></tr>
+    <tr><td><b>Data Use</b></td><td><a href="$!doiObject.getDataUseTerms()">$!doiObject.getDataUseTerms()</a></td></tr>
+    <tr><td><b>Keywords</b></td><td>$!doiObject.getKeywords()</td></tr>
+##    <tr><td><b>Publications</b></td><td>$!doiObject.getRelatedPublications()</td></tr>
+##    <tr><td><b>Links</b></td><td>$!doiObject.getLinks()</td></tr>
+    <tr><td><b>Publications</b></td><td>#set($separator="")#foreach($pub in $pubArray)$separator<a href="$pub">$pub</a>#set($separator=", ")#end</td></tr>
+    <tr><td><b>Links</b></td><td>#set($separator="")#foreach($link in $linkArray)$separator<a href="$link">$link</a>#set($separator=", ")#end</td></tr>
+    <tr><td><b>Notes</b></td><td>$!doiObject.getNotes()</td></tr>
+</table>
+<br/>
+<h2>Subject Details:</h2>
+<table>
+<tr><td><b>Permalink</b></td><td><a href="$!server/doi/$!doiId">$!server/doi/$!doiId</a></td></tr>
+<tr><td><b>Id</b></td><td>$!om.getId()</td></tr>
+<tr><td><b>Label</b></td><td>$!om.getLabel()</td></tr>
+<tr><td><b>Project</b></td><td>$!om.getProject()</td></tr>
+<tr><td><b>Assessor Count</b></td><td>$!om.getSubjectAssessorCount()</td></tr>
 #if($canReadAsGuest)
-<br/>Additional Information: <a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a>
+<tr><td><b>Additional Information</b></td><td><a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a></td></tr>
 #else
-<br/>Additional Information (login required): <a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a>
+<tr><td><b>Additional Information (login required)</b></td><td><a href="$!server/data/projects/$!project/subjects/$!om.getId()">View Subject</a></td></tr>
 #end
+</table>

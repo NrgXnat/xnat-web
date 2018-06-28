@@ -105,11 +105,51 @@ public class DoiApi extends AbstractXapiRestController {
             isDirty = true;
         }
         if (StringUtils.isNotBlank(doiObject.getObjectId()) && !StringUtils.equals(doiObject.getObjectId(), existing.getObjectId())) {
-            existing.setProjectId(doiObject.getObjectId());
+            existing.setObjectId(doiObject.getObjectId());
             isDirty = true;
         }
         if (StringUtils.isNotBlank(doiObject.getXsiType()) && !StringUtils.equals(doiObject.getXsiType(), existing.getXsiType())) {
-            existing.setProjectId(doiObject.getXsiType());
+            existing.setXsiType(doiObject.getXsiType());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getDoi()) && !StringUtils.equals(doiObject.getDoi(), existing.getDoi())) {
+            existing.setDoi(doiObject.getDoi());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getDescription()) && !StringUtils.equals(doiObject.getDescription(), existing.getDescription())) {
+            existing.setDescription(doiObject.getDescription());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getKeywords()) && !StringUtils.equals(doiObject.getKeywords(), existing.getKeywords())) {
+            existing.setKeywords(doiObject.getKeywords());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getContactName()) && !StringUtils.equals(doiObject.getContactName(), existing.getContactName())) {
+            existing.setContactName(doiObject.getContactName());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getContactEmail()) && !StringUtils.equals(doiObject.getContactEmail(), existing.getContactEmail())) {
+            existing.setContactEmail(doiObject.getContactEmail());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getDataAvailability()) && !StringUtils.equals(doiObject.getDataAvailability(), existing.getDataAvailability())) {
+            existing.setDataAvailability(doiObject.getDataAvailability());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getDataUseTerms()) && !StringUtils.equals(doiObject.getDataUseTerms(), existing.getDataUseTerms())) {
+            existing.setDataUseTerms(doiObject.getDataUseTerms());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getRelatedPublications()) && !StringUtils.equals(doiObject.getRelatedPublications(), existing.getRelatedPublications())) {
+            existing.setRelatedPublications(doiObject.getRelatedPublications());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getLinks()) && !StringUtils.equals(doiObject.getLinks(), existing.getLinks())) {
+            existing.setLinks(doiObject.getLinks());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiObject.getNotes()) && !StringUtils.equals(doiObject.getNotes(), existing.getNotes())) {
+            existing.setNotes(doiObject.getNotes());
             isDirty = true;
         }
         if (isDirty) {

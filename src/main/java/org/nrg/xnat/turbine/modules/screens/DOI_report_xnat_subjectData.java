@@ -27,8 +27,6 @@ import org.nrg.xft.ItemI;
 import org.nrg.xnat.entities.Doi;
 import org.nrg.xnat.services.system.DoiService;
 
-import java.util.List;
-
 /**
  * @author Tim
  *
@@ -73,8 +71,15 @@ public class DOI_report_xnat_subjectData extends VelocityScreen {
                         if(StringUtils.equalsIgnoreCase(doiObject.getObjectId(),item.getStringProperty("id"))) {
                             doiFound = true;
                         }
+                        context.put("doiObject", doiObject);
+                        String pubs = doiObject.getRelatedPublications();
+                        String links = doiObject.getLinks();
+                        String[] pubArray = pubs.split(" , ");
+                        String[] linkArray = links.split(" , ");
+                        context.put("pubArray", pubArray);
+                        context.put("linkArray", linkArray);
                     }
-                    context.put("doi", doi);
+                    context.put("doiId", doi);
                 }
                 catch(Exception e){
                 }
