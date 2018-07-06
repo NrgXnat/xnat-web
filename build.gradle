@@ -12,6 +12,7 @@ import com.github.zhurlik.SwaggerTask
 import io.swagger.models.Contact
 import io.swagger.models.Info
 import io.swagger.models.License
+import org.gradle.internal.jvm.Jvm
 
 buildscript {
     ext {
@@ -19,11 +20,10 @@ buildscript {
     }
     repositories {
         mavenLocal()
+        mavenCentral()
         maven {
             url "https://plugins.gradle.org/m2/"
         }
-        mavenCentral()
-        jcenter()
         maven {
             url "https://nrgxnat.jfrog.io/nrgxnat/libs-release"
             name "XNAT Release Repository"
@@ -34,7 +34,6 @@ buildscript {
         }
     }
     dependencies {
-        gradleApi()
         classpath "com.bmuschko:gradle-cargo-plugin:2.3"
         classpath "com.bmuschko:gradle-tomcat-plugin:2.4.2"
         classpath "com.github.kongchen:swagger-maven-plugin:3.1.5"
@@ -149,6 +148,7 @@ configurations {
         exclude group: "commons-betwixt"
         exclude group: "commons-dbcp"
         exclude group: "commons-email"
+        exclude group: "commons-logging"
         exclude group: "commons-messenger"
         exclude group: "commons-pool"
         exclude group: "edu.ucar", module: "netcdf"
@@ -172,6 +172,7 @@ configurations {
         exclude group: "jms", module: "jms"
         exclude group: "jndi"
         exclude group: "jython"
+        exclude group: "log4j", module: "log4j"
         exclude group: "mockobjects"
         exclude group: "mysql"
         exclude group: "net.sf.saxon", module: "Saxon-B"
@@ -187,6 +188,7 @@ configurations {
         exclude group: "org.nrg.xdat", module: "beans"
         exclude group: "org.nrg.xnat", module: "web"
         exclude group: "org.python"
+        exclude group: "org.slf4j", module: "slf4j-log4j12"
         exclude group: "quartz"
         exclude group: "resources", module: "resources"
         exclude group: "servletapi"
@@ -334,16 +336,21 @@ dependencies {
     implementation "org.apache.xmlbeans:xmlbeans-xpath"
     implementation "org.apache.xbean:xbean-spring"
     implementation "net.java.dev.msv:xsdlib"
+    implementation "javax.servlet:jstl"
+    implementation "com.google.code.gson:gson"
+    implementation "com.google.guava:guava"
 
     implementation "org.postgresql:postgresql"
 
     implementation "org.slf4j:slf4j-api"
-    implementation "org.slf4j:slf4j-log4j12"
     implementation "org.slf4j:jul-to-slf4j"
-    implementation "log4j:log4j"
-    implementation "javax.servlet:jstl"
-    implementation "com.google.code.gson:gson"
-    implementation "com.google.guava:guava"
+    implementation "org.slf4j:jcl-over-slf4j:1.7.25"
+    implementation "org.slf4j:log4j-over-slf4j:1.7.25"
+    implementation "ch.qos.logback:logback-classic:1.2.3"
+    implementation "ch.qos.logback:logback-core:1.2.3"
+    implementation "net.logstash.logback:logstash-logback-encoder:5.1"
+    implementation "org.apache.logging.log4j:log4j-api:2.11.0"
+    implementation "org.apache.logging.log4j:log4j-to-slf4j:2.11.0"
 
     compileOnly "com.google.code.findbugs:jsr305"
 
