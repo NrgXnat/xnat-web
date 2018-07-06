@@ -1,0 +1,10 @@
+{
+  "query": {
+    "regexp": {
+      "logger_name": {
+        "value": "${pattern}"
+      }
+    }
+  }
+}
+
