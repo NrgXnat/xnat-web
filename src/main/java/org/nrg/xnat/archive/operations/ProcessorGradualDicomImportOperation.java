@@ -92,8 +92,10 @@ public class ProcessorGradualDicomImportOperation extends AbstractDicomImportOpe
         dicom = dicomInputStream.readDicomObject();
 
         try{
-        String script = DefaultAnonUtils.getService().getStudyScript(dicom.getString(Tag.StudyInstanceUID));
-        getMizer().anonymize(dicom, "", "", "", script);
+            String script = DefaultAnonUtils.getService().getStudyScript(dicom.getString(Tag.StudyInstanceUID));
+            if(StringUtils.isNotBlank(script)) {
+                getMizer().anonymize(dicom, "", "", "", script);
+            }
         } catch (Throwable e) {
             log.debug("Dicom anonymization failed: " + dicom, e);
             throw new ServerException(Status.SERVER_ERROR_INTERNAL,e);
