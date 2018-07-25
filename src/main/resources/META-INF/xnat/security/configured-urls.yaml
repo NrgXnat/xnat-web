@@ -39,11 +39,13 @@ openUrls:
   - /images/
   - /login
   - /page/
-  - /pages/
+  - /pages/view/
   - /scripts/
   - /style/
   - /themes/
   - /xapi/siteConfig/buildInfo
+  - /xapi/siteConfig/siteLogoPath
+  - /xapi/siteConfig/siteUrl
   - /xapi/siteConfig/siteWideAlert
   - /data/doi/
   - /doi/

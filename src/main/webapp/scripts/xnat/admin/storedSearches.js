@@ -62,9 +62,8 @@ var XNAT = getObject(XNAT);
     }
 
     var rootUrl = XNAT.url.rootUrl;
+    var restUrl = XNAT.url.restUrl;
     var csrfUrl = XNAT.url.csrfUrl;
-
-    var x2js = new X2JS();
 
     /* ====================== *
      * Site Admin UI Controls *
@@ -80,7 +79,7 @@ var XNAT = getObject(XNAT);
         getObject(XNAT.admin.storedSearches || {});
 
     function getStoredSearchListUrl(){
-        return rootUrl('/data/search/saved?format=json');
+        return restUrl('/data/search/saved', ['all=true', 'format=json']);
     }
     function getStoredSearchUrl(id){
         if (!id) {
@@ -117,11 +116,11 @@ var XNAT = getObject(XNAT);
         return XNAT.xhr.get({
             url: getStoredSearchUrl(id),
             success: function(data){
+                callback.apply(this, arguments);
                 return data;
-                callback.apply(this,arguments);
             },
             fail: function(e){
-                errorHandler(e,'Could not retrieve stored search XML');
+                console.error(e);
             }
         })
     };
@@ -130,97 +129,164 @@ var XNAT = getObject(XNAT);
      * Stored Search Display Table *
      * --------------------------- */
 
-    storedSearches.ssTable = function(){
-        // initialize the table;
-        var ssTable = XNAT.table({
-            addClass: 'xnat-table compact',
-            style: {
-                'width': '100%',
-                'margin-top': '15px',
-                'margin-bottom': '15px'
-            }
-        });
+    var ssTable = function(searches){
 
-        // add table header row
-        ssTable.tr()
-            .th({ addClass: 'left' }, '<b>ID</b>')
-            .th('<b>Label</b>')
-            .th('<b>Description</b>')
-            .th('<b>Root Data Type</b>')
-            .th('<b>Users</b>')
-            .th('<b>Actions</b>');
+        // sort search list
+        searches = searches.sort(function(a,b){ return a['id'].toLowerCase().localeCompare(b['id'].toLowerCase()) });
 
-        function parseSearch(xml){
-            var searchXml = (xml.documentElement) ? xml.documentElement : x2js.parseXmlString(xml);
-            return x2js.xml2json(searchXml);
-        }
+        function parseUsers(userList){
+            // user list is returned as a string formatted as "{username,username}" or "{NULL}" if no users have been defined in the stored search.
+            // parse this list and return either an array or a FALSE state
+            if (userList.length < 2) return false;
 
-        function showUserCount(userObj){
-            if (isArray(userObj)) {
-                return userObj.length
+            userList = userList.substr(1,userList.length-2).split(",");
+            if (userList.length && userList[0] !== "NULL") {
+                return userList;
             }
             else {
-                return (userObj.login.toString().length > 0) ? '1' : '0'
+                return false;
             }
         }
-        function editLink(id,content){
-            content = content || id; 
+        function userCount(userList){
+            var users = parseUsers(userList), numToDisplay;
+            if (users) {
+                numToDisplay = users.length;
+            }
+            else {
+                numToDisplay = "0";
+            }
+
+            return spawn('!',[
+                // HACK: force numeric sorting by generating hidden values with leading zeros
+                spawn('i.hidden.sorting',zeroPad(numToDisplay,6,'0')),
+                spawn('span',numToDisplay)
+            ]);
+        }
+
+        function editLink(id, content){
+            content = content || id;
             return spawn('a',{
                 href: rootUrl('/app/action/DisplayItemAction/search_value/'+id+'/search_element/xdat:stored_search/search_field/xdat:stored_search.ID/popup/true'),
                 className: 'popup'
             }, content);
         }
-        function viewLink(id,content){
-            content = content || id;
-            return spawn('a',{
-                href: rootUrl('/app/template/Search.vm/node/ss.'+id)
-            }, content);
-        }
-
-        storedSearches.getStoredSearches().done(function(data){
-            var searches = data.ResultSet.Result;
-            if (searches.length) {
-                searches.sort(function(a,b){ return (a.id > b.id) ? 1 : -1 })
-                searches.forEach(function(search){
-
-                    storedSearches.getStoredSearch(search.id).done(function(searchData){
-                        var searchJson = parseSearch(searchData);
-
-                        ssTable.tr({ data: { id: search.id }})
-                            .td({ addClass: 'primary-link' }, [ editLink(search.id) ])
-                            .td(escapeHtml( search['brief_description'] ))
-                            .td(escapeHtml( search.description ))
-                            .td(escapeHtml( search['root_element_name'] ))
-                            .td({ addClass: 'right' },[ showUserCount(searchJson['allowed_user']) ])
-                            .td({ addClass: 'center nowrap' },[
-                                editLink(search.id, [ spawn('button.btn2.btn-sm','Edit') ]),
-                                spacer(10),
-                                viewLink(search.id, [ spawn('button.btn2.btn-sm','View') ])
-                            ]);
-                    });
-
-                });
+        function viewLink(id,userList){
+            var users = parseUsers(userList), buttonStyle = ".btn2.btn-sm.ss-view-button", buttonProp = {};
+            var url = '#!';
+            if (users && users.indexOf(window.username) >= 0) {
+                url = rootUrl('/app/template/Search.vm/node/ss.'+id);
             }
             else {
-                ssTable.tr()
-                    .td({colSpan: 5}, 'No stored searches to display');
+                buttonStyle += '.disabled';
+                buttonProp = {
+                    disabled: true,
+                    title: 'To view this stored search, you will need to grant yourself access in the "Allowed User" definition of the search.'
+                };
             }
-        });
+            return spawn('a',{
+                href: url,
+            }, [ spawn('button'+buttonStyle,buttonProp,'View') ]);
+        }
 
-        storedSearches.$table = $(ssTable.table);
-
-        return ssTable.table;
+        return {
+            kind: 'table.dataTable',
+            name: 'adminSSlist',
+            id: 'adminSSlist',
+            data: searches,
+            table: { },
+            before: {
+                filterCss: {
+                    tag: 'style|type=text/css',
+                    content: '\n' +
+                        'td[class*="break-word-"] { max-width: 150px; word-wrap: break-word; } \n' +
+                        'td.align-top { vertical-align: top } \n'
+                }
+            },
+            trs: function(tr, data){
+                tr.id = "tr-" + data.id;
+                addDataAttrs(tr, { filter: '0', data: data.id })
+            },
+            sortable: 'id, brief_description, description, root_element_name, USERS',
+            items: {
+                id: {
+                    label: 'ID',
+                    filter: false,
+                    td: { className: 'id break-word-id align-top' },
+                    apply: function(){
+                        return spawn('b', [editLink(this.id, this.id)])
+                    }
+                },
+                brief_description: {
+                    label: 'Label',
+                    filter: true,
+                    td: { className: 'brief_description break-word-label align-top' },
+                    apply: function(){
+                        return escapeHtml(this['brief_description'])
+                    }
+                },
+                description: {
+                    label: 'Description',
+                    filter: true,
+                    td: { className: 'description break-word-desc align-top' },
+                    apply: function(){
+                        return escapeHtml(this['description'])
+                    }
+                },
+                root_element_name: {
+                    label: 'Root Data Type',
+                    className: 'root_element_name align-top',
+                    filter: true
+                },
+                USERS: {
+                    label: 'Users',
+                    filter: false,
+                    className: 'USERS right allowed-users align-top',
+                    apply: function(){
+                        return userCount(this['users'])
+                    }
+                },
+                ACTIONS: {
+                    label: 'Actions',
+                    className: 'ACTIONS center nowrap',
+                    apply: function(){
+                        return spawn('!', [
+                            editLink(this.id, [spawn('button.btn2.btn-sm', 'Edit')]),
+                            spacer(10),
+                            viewLink(this.id, this['users'])
+                        ])
+                    }
+                }
+            }
+        }
     };
 
     $(document).on('click','a.popup', function(event){
         event.preventDefault();
         XNAT.dialog.iframe(this.href, 'Edit Stored Search', 900, 600, { onClose: function(){ XNAT.admin.storedSearches.refresh() }});
     });
-    
+
     storedSearches.init = storedSearches.refresh = function(container){
+        var _ssTable;
         container = $(container || '#stored-searches-container');
 
-        container.empty().append(storedSearches.ssTable());
+        storedSearches.getStoredSearches().done(function(data){
+            var searches = data.ResultSet.Result;
+            if (searches.length) {
+
+                _ssTable = XNAT.spawner.spawn({
+                    historyTable: ssTable(searches)
+                });
+                _ssTable.done(function(){
+                    container.empty();
+                    this.render(container);
+                });
+
+            }
+            else {
+                return spawn('p', 'No stored searches to display');
+            }
+        });
+
     };
 
     return XNAT.admin.storedSearches = XNAT.storedSearches = storedSearches;

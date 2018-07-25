@@ -32,7 +32,7 @@ var XNAT = getObject(XNAT);
     function dataStoreName(name){
         var siteRoot = XNAT.url.rootUrl().replace(/^\/*|\/*$/g, '');
         name = name || USERNAME;
-        return (siteRoot && siteRoot !== '/') ? (name + '@' + siteRoot) : name;
+        return (siteRoot && siteRoot !== '/') ? (siteRoot + '+' + name) : name;
     }
 
     // set the root property name to use for browsers' localStorage
@@ -68,20 +68,23 @@ var XNAT = getObject(XNAT);
             part = arr.shift();
             obj = obj.hasOwnProperty(part) ? obj[part] : {};
         }
-        return obj;
+        // return undefined if object is empty (no stored value)
+        return isEmptyObject(obj) ? undef : obj;
     }
 
     function setDescendantProp(obj, desc, value) {
         var arr = desc.split('.');
-        var part;
+        var tmp, prop;
         while (arr.length > 1) {
-            part = arr.shift();
-            obj = obj[part] === undef ? {} : obj[part];
+            tmp = arr.shift();
+            if (obj[tmp] === undef) { obj[tmp] = {} }
+            obj = obj[tmp];
         }
+        prop = arr[0];
         // set [value] to '@DELETE' or '{DELETE}' to delete the item
         if (/^([@{]DELETE[}]*)$/i.test(value)) {
             try {
-                delete obj[arr[0]];
+                delete obj[prop];
             }
             catch (e) {
                 console.error(e);
@@ -89,7 +92,7 @@ var XNAT = getObject(XNAT);
             return null;
         }
         else {
-            return obj[arr[0]] = value;
+            return (obj[prop] = value);
         }
     }
 
@@ -149,12 +152,28 @@ var XNAT = getObject(XNAT);
 
 
     /**
+     * Get the whole 'data' object
+     * @returns {*}
+     */
+    BrowserStorage.fn.getData = function(){
+        this.getAll();
+        return !isEmpty(this.data) ? this.data : undef;
+    };
+
+
+    /**
      * Get the value of a specific property
      * @param {String} objPath - string representing path to object property
      * @returns {*}
      */
     BrowserStorage.fn.getValue = function(objPath){
-        return getDescendantProp(this.getAll(), objPath);
+        // tolerate root-level properties
+        if (this.data.hasOwnProperty(objPath)) {
+            return this.data[objPath];
+        }
+        else {
+            return getDescendantProp(this.getAll(), objPath);
+        }
     };
 
 
@@ -166,7 +185,22 @@ var XNAT = getObject(XNAT);
      * @example xnatStorage.setValue('foo.bar.baz', 'abc-xyz')
      */
     BrowserStorage.fn.setValue = function(objPath, newValue){
-        setDescendantProp(this.getAll(), objPath, newValue);
+        // calling #getAll() sets the value of #data from the localStorage datastore
+        this.getAll();
+        // are we deleting a property entirely?
+        var doDelete = /@DELETE/i.test(newValue);
+        // tolerate root-level properties
+        if (objPath.indexOf('.') === -1) {
+            if (doDelete) {
+                delete this.data[objPath];
+            }
+            else {
+                this.data[objPath] = newValue;
+            }
+        }
+        else {
+            setDescendantProp(this.data, objPath, newValue);
+        }
         localStorage.setItem(this.dataStore, JSON.stringify(this.data));
         return this;
     };
@@ -183,6 +217,7 @@ var XNAT = getObject(XNAT);
         }, this);
         return this;
     };
+    BrowserStorage.fn.remove = BrowserStorage.fn['delete'];
 
 
     /**
@@ -227,6 +262,9 @@ var XNAT = getObject(XNAT);
     // initialize a default 'userData' data store
     // XNAT.storage.userData.setValue('foo', 'bar');
     storage.userData = storage.init(storage.setNameEnc());
+
+    // initialize a 'site' data store for site-level storage
+    storage.siteData = storage.init('siteData');
 
     return XNAT.storage = storage;
 

@@ -78,7 +78,7 @@ var XNAT = getObject(XNAT);
             $frag = $(frag),
             template$, template$$, tmplId,
             callbacks = [],
-            configObj = getObject(obj),
+            config = getObject(obj),
             undef;
 
         try {
@@ -93,14 +93,36 @@ var XNAT = getObject(XNAT);
         spawner.counter++;
 
         // tolerate malformed element config (not using a top-level 'parent' property)
-        // must have one of these properties:
+        // element config CANNOT be named any of the following:
+        var reserved = ['kind', 'tag', 'html', 'before', 'after', 'template', 'page', 'type'];
+        var renamed = false;
+
+        // this should fix both malformed element config objects and configs using 'reserved' names
         if (obj.kind || obj.tag || obj.html || obj.before || obj.after || obj.template || obj.page || obj.type) {
-            configObj[randomID('spawnerE', false)] = obj;
+            // tolerate elements named with 'reserved' names
+            forEachCheck(reserved, function(name){
+                if (renamed) return false;
+                if (config.hasOwnProperty(name)) {
+                    // save element name to the 'name' property if not defined in the config
+                    config[name].name = config[name].name || name;
+                    config[randomID('spawnerE', false)] = config[name];
+                    delete config[name];
+                    renamed = true;
+                }
+            });
+            // config[randomID('spawnerE', false)] = obj;
         }
 
-        forOwn(configObj, function(item, prop){
+        forOwn(config, function(item, prop){
 
-            var show, hide, kind, element, method, spawnedElement, $spawnedElement, _spwnd;
+            // prevent infinite recursion here
+            if (config === prop) {
+                console.warn('Malformed Spawner element:');
+                console.warn(prop);
+                return;
+            }
+
+            var show, hide, kind, content, element, method, spawnedElement, $spawnedElement, _spwnd;
 
             // accept 'kind' or 'type' property name
             // but 'kind' will take priority
@@ -243,7 +265,13 @@ var XNAT = getObject(XNAT);
 
                     // pass 'content' (not contentS) property to add
                     // stuff directly to spawned element
-                    prop.content = prop.content || prop.children || '';
+                    prop.content = prop.content || prop.children || prop.element.content || '';
+
+                    prop.tag = prop.tag || prop.element.tag || 'span';
+
+                    // prevent duplicate elements
+                    delete prop.element.tag;
+                    delete prop.element.content;
 
                     try {
                         // if setting up Spawner elements in JS, allow a
@@ -252,7 +280,7 @@ var XNAT = getObject(XNAT);
                             spawnedElement = prop.element;
                         }
                         else {
-                            spawnedElement = spawn(prop.tag || prop.element.tag || 'span', prop.element, prop.content);
+                            spawnedElement = spawn(prop.tag, prop.element, [].concat(prop.content));
                         }
 
                         // convert relative URIs for href, src, and action attributes
@@ -349,7 +377,7 @@ var XNAT = getObject(XNAT);
                         $spawnedElement = $(spawnedElement.target || spawnedElement.inner);
                     }
                     else {
-                        $spawnedElement = $(spawnedElement.element || spawnedElement.get());
+                        $spawnedElement = isFunction(spawnedElement.get) ? $(spawnedElement.get()) : $(spawnedElement.element);
                     }
 
                     // if a string, number, or boolean is passed as 'contents'
@@ -415,9 +443,14 @@ var XNAT = getObject(XNAT);
 
         spawneri.children = frag.children;
 
-        spawneri.get = function(){
+        spawneri.get = function(callback){
+            // allow transform callback when calling .get()
+            if (isFunction(callback)) {
+                callback.call(spawneri, frag, $frag)
+            }
             return frag;
         };
+        spawneri.getSpawned = spawneri.get;
 
         spawneri.get$ = function(){
             return $frag;
@@ -436,17 +469,15 @@ var XNAT = getObject(XNAT);
             return spawneri;
         };
 
-        spawneri.render = function(container, wait, callback){
+        spawneri.render = function(container, callback){
 
             console.log('spawneri.render');
 
-            var $container = $$(container).hide();
+            var $container = $$(container).hide().append(frag);
 
-            wait = firstDefined(wait, 100);
+            window.setTimeout(function(){
 
-            $container.append(frag).fadeIn(wait);
-
-            setTimeout(function(){
+                $container.fadeIn(100);
 
                 // fire collected callbacks
                 callbacks.forEach(function(fn){
@@ -462,7 +493,7 @@ var XNAT = getObject(XNAT);
                     callback.call(spawneri, obj);
                 }
 
-            }, wait * 2);
+            }, 1);
 
             // $container.fadeIn(wait, function(){
             //     console.log('append ' + (appendCount+=1));
@@ -575,13 +606,13 @@ var XNAT = getObject(XNAT);
                 spawneri = spawneri || spawner.spawn(data);
                 if (xhr.status === 200) {
                     if (isFunction(success)) {
-                        success.call(resolve, data, txtStatus, xhr)
+                        success.call(spawneri, data, txtStatus, xhr)
                     }
                 }
                 else {
                     // try something else if element isn't present
                     if (isFunction(failure)) {
-                        failure.call(resolve, data, txtStatus, xhr)
+                        failure.call(spawneri, data, txtStatus, xhr)
                     }
                 }
             });
@@ -601,7 +632,7 @@ var XNAT = getObject(XNAT);
                 spawneri = spawneri || spawner.spawn(data);
                 if (xhr.status !== 200) {
                     if (isFunction(callback)) {
-                        callback.apply(resolve, arguments)
+                        callback.apply(spawneri, arguments)
                     }
                 }
             });

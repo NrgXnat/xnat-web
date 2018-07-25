@@ -176,12 +176,9 @@ function cleanupClasses(el){
     return el.className;
 }
 
-
 function hasClassName(el, className){
-    if (useClassList && el.classList) {
-        return el.classList.contains(className);
-    }
-    return (el.className||'').split(/\s+/).indexOf(className.trim()) > -1;
+    var elClasses = (el.className||'').split(/\s+/); // existing classes
+    return elClasses.indexOf(className.trim()) > -1;
 }
 
 
@@ -219,33 +216,23 @@ function hasAllClasses(el, classes){
     return matches === len;
 }
 
-
 // add new element class without destroying existing class
-function addClassName(el, newClasses){
-    var hasClassList = useClassList && el.classList;
-    var elClasses    = (el.className||'').split(/\s+/);
-    // make sure 'newClasses' is an array
-    newClasses = [].concat(newClasses||[]).join(' ').split(/\s+/);
+function addClassName(el, newClass){
+    var classes = (el.className||'').split(/\s+/); // existing classes
+    var newClasses = [].concat(newClass||[]).join(' ').split(/\s+/);
+    // don't add duplicate classes
     newClasses.forEach(function(cls){
         if (!cls) return;
-        if (hasClassList) {
-            el.classList.add(cls);
-        }
-        else {
-            // don't add duplicate classes
-            if (!hasClassName(el, cls)){
-                elClasses.push(cls);
-            }
+        if (!hasClassName(el, cls)) {
+            classes.push(cls);
         }
     });
-    // create new className string
-    var className = elClasses.join(' ').trim();
-    if (!hasClassList){
-        // set the new className and return the string
-        el.className = className;
+    classes = classes.join(' ').trim();
+    // set the className and return the string
+    if (classes) {
+        el.className = classes;
     }
-    return className;
-
+    return classes;
 }
 
 
@@ -777,7 +764,8 @@ function sortTableToo($tbody, col, reverse){
     var _tbody = $tbody[0];
     var startTime = Date.now();
     var endTime = 0;
-    var trs = $tbody.find('> tr').detach().toArray().sort(function(a, b){
+    // rows don't need to be detached before sorting
+    var trs = $(_tbody.rows).toArray().sort(function(a, b){
         var aValue, bValue;
         if (col === -1) {
             aValue = getDataAttrValue(a, 'index');
@@ -820,7 +808,7 @@ function sortTableToo($tbody, col, reverse){
             endTime = (Date.now() - startTime);
             console.log(endTime);
 
-        }, 100);
+        }, 1);
 
     }
 }
@@ -835,7 +823,7 @@ jQuery.fn.tableSort = function(){
         $tbody = $table.closest('.table-group-container').find('table.table-data > tbody');
     }
     else {
-        $tbody = $table.find('tbody');
+        $tbody = $table.find('> tbody');
     }
     var tbody = $tbody[0];
     var trs = toArray(tbody.rows).map(function(tr, i){
@@ -857,8 +845,8 @@ jQuery.fn.tableSort = function(){
           .each(function(){
 
               var $this = $(this);
-              $this.find('i').remove();
-              $this.append('<i>&nbsp;</i>');
+              $this.find('i.arrows').remove();
+              $this.append('<i class="arrows">&nbsp;</i>');
 
               $this.on('click.sort', function(){
 
@@ -879,7 +867,8 @@ jQuery.fn.tableSort = function(){
                       }
                   }
 
-                  $table.find('th.sort').removeClass('asc desc');
+                  // only modify cells in the same row
+                  $th.closest('tr').find('th.sort').removeClass('asc desc');
 
                   if (!sortClass) {
                       // sortTable(tbody, -1, sortOrder);
@@ -907,7 +896,7 @@ $(function(){
         $table.tableSort();
     });
     // even if it's not available on DOM ready
-    $('body').on('click', 'table:not(.sort-ready) th.sort', function(){
+    $(document).on('click', 'table:not(.sort-ready) th.sort', function(){
         var $th = $(this),
             $table = $th.closest('table');
         // exit if table is already sort-ready
@@ -923,6 +912,7 @@ $(function(){
 // sort an array of objects ('objects')
 // by a specific property ('prop')
 function sortObjects( objects, prop ){
+    if (!Array.isArray(objects)) return [];
     return objects.sort( function ( _a, _b ) {
         var a = _a[prop].toUpperCase();
         var b = _b[prop].toUpperCase();
@@ -1129,6 +1119,7 @@ function menuInit(select, opts, width){
             placeholder_text_multiple: 'Select...',
             search_contains: true
         };
+    if (!$select.length) return;
     if (width) { defaults.width = (width + 'px').replace(/(px)*$/,'px') }
     $select.each(function(){
         var $this = $(this),
@@ -1150,8 +1141,9 @@ function menuInit(select, opts, width){
 }
 
 function menuUpdate(select){
-    if (!select) return false;
-    return $$(select||'select.xnat-menu').trigger('chosen:updated');
+    var $select = $$(select||'select.xnat-menu');
+    if (!$select.length) return;
+    return $select.trigger('chosen:updated');
 }
 
 

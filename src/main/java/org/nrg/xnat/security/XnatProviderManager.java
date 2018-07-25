@@ -14,7 +14,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.velocity.VelocityContext;
@@ -23,47 +22,38 @@ import org.nrg.xdat.entities.AliasToken;
 import org.nrg.xdat.entities.UserAuthI;
 import org.nrg.xdat.entities.XdatUserAuth;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
-import org.nrg.xdat.security.XDATUser;
-import org.nrg.xdat.security.helpers.Roles;
-import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.XdatUserAuthService;
 import org.nrg.xdat.turbine.utils.AdminUtils;
-import org.nrg.xdat.turbine.utils.TurbineUtils;
-import org.nrg.xft.security.UserI;
 import org.nrg.xnat.security.exceptions.NewAutoAccountNotAutoEnabledException;
 import org.nrg.xnat.security.provider.XnatAuthenticationProvider;
-import org.nrg.xnat.security.provider.XnatMulticonfigAuthenticationProvider;
-import org.nrg.xnat.security.tokens.XnatAuthenticationToken;
 import org.nrg.xnat.security.tokens.XnatDatabaseUsernamePasswordAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.support.MessageSourceAccessor;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.SpringSecurityMessageSource;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static org.nrg.framework.orm.DatabaseHelper.convertPGIntervalToSeconds;
+import static org.nrg.xdat.security.helpers.Users.AUTHORITIES_ANONYMOUS;
 
 @SuppressWarnings("SqlResolve")
 @Service
 @Slf4j
 public class XnatProviderManager extends ProviderManager {
     @Autowired
-    public XnatProviderManager(final SiteConfigPreferences preferences, final XdatUserAuthService userAuthService, final List<AuthenticationProvider> providers) {
+    public XnatProviderManager(final SiteConfigPreferences preferences, final AuthenticationEventPublisher eventPublisher, final XdatUserAuthService userAuthService, final List<AuthenticationProvider> providers) {
         super(providers);
 
         _preferences = preferences;
         _userAuthService = userAuthService;
-        _eventPublisher = new AuthenticationAttemptEventPublisher(this, userAuthService, preferences);
+        _eventPublisher = eventPublisher;
 
-        _xnatAuthenticationProviders.putAll(Maps.uniqueIndex(Iterables.filter(providers, XnatAuthenticationProvider.class), new Function<XnatAuthenticationProvider, String>() {
+        _xnatAuthenticationProviders.putAll(Maps.uniqueIndex(Iterables.filter(getProviders(), XnatAuthenticationProvider.class), new Function<XnatAuthenticationProvider, String>() {
             @Nullable
             @Override
             public String apply(@Nullable final XnatAuthenticationProvider provider) {
@@ -151,39 +141,6 @@ public class XnatProviderManager extends ProviderManager {
         throw cause;
     }
 
-    public XdatUserAuth getUserByAuth(final Authentication authentication) {
-        if (authentication == null) {
-            return null;
-        }
-
-        final Object principal = authentication.getPrincipal();
-        final String username = principal == null
-                                ? authentication.getName()
-                                : principal instanceof String
-                                  ? (String) principal
-                                  : ((UserI) principal).getUsername();
-
-        if (StringUtils.isBlank(username)) {
-            throw new RuntimeException("An error occurred trying to get user from authentication: no principal or user name was found.");
-        }
-
-        final String method;
-        final String provider;
-        if (authentication instanceof XnatAuthenticationToken) {
-            provider = ((XnatAuthenticationToken) authentication).getProviderId();
-            method = _xnatAuthenticationProviders.get(provider).getAuthMethod();
-        } else {
-            provider = "";
-            method = XdatUserAuthService.LOCALDB;
-        }
-
-        try {
-            return _userAuthService.getUserByNameAndAuth(username, method, provider);
-        } catch (DataException exception) {
-            throw new RuntimeException("An error occurred trying to validate the given information. Please check your username and password. If this problem persists, please contact your system administrator.");
-        }
-    }
-
     public UsernamePasswordAuthenticationToken buildUPTokenForAuthMethod(final String authMethod, final String username, final String password) {
         return buildUPToken(findAuthenticationProviderByAuthMethod(authMethod), username, password);
     }
@@ -225,8 +182,23 @@ public class XnatProviderManager extends ProviderManager {
         }
     }
 
+    public XnatAuthenticationProvider getProvider(final String authMethod, final String providerId) {
+        // First check that we have the provider ID.
+        if (_xnatAuthenticationProviders.containsKey(providerId)) {
+            // Now get the provider...
+            final XnatAuthenticationProvider provider = _xnatAuthenticationProviders.get(providerId);
+            // And check that it also matches the auth method. If so...
+            if (StringUtils.equalsIgnoreCase(authMethod, provider.getAuthMethod())) {
+                // Return it.
+                return provider;
+            }
+        }
+        // If it wasn't both of those things, return null.
+        return null;
+    }
+
     public Map<String, XnatAuthenticationProvider> getVisibleEnabledProviders() {
-        final Map<String, XnatAuthenticationProvider> visibleEnabledProviders = new HashMap<>();
+        final Map<String, XnatAuthenticationProvider> visibleEnabledProviders = new LinkedHashMap<>();
         for (final String providerId : _preferences.getEnabledProviders()) {
             if (!_xnatAuthenticationProviders.containsKey(providerId)) {
                 log.warn("The provider ID {} is enabled, but there is no configured definition for that ID", providerId);
@@ -289,15 +261,7 @@ public class XnatProviderManager extends ProviderManager {
     private XnatAuthenticationProvider findAuthenticationProvider(final XnatAuthenticationProviderMatcher matcher) {
         final List<AuthenticationProvider> providers = getProviders();
         for (final AuthenticationProvider provider : providers) {
-            if (XnatMulticonfigAuthenticationProvider.class.isAssignableFrom(provider.getClass())) {
-                final XnatMulticonfigAuthenticationProvider multiconfigAuthenticationProvider = (XnatMulticonfigAuthenticationProvider) provider;
-                for (final String providerId : multiconfigAuthenticationProvider.getProviderIds()) {
-                    final XnatAuthenticationProvider xnatAuthenticationProvider = multiconfigAuthenticationProvider.getProvider(providerId);
-                    if (matcher.matches(xnatAuthenticationProvider)) {
-                        return xnatAuthenticationProvider;
-                    }
-                }
-            } else if (XnatAuthenticationProvider.class.isAssignableFrom(provider.getClass())) {
+            if (XnatAuthenticationProvider.class.isAssignableFrom(provider.getClass())) {
                 final XnatAuthenticationProvider xnatAuthenticationProvider = (XnatAuthenticationProvider) provider;
                 if (matcher.matches(xnatAuthenticationProvider)) {
                     return xnatAuthenticationProvider;
@@ -320,122 +284,10 @@ public class XnatProviderManager extends ProviderManager {
                : new XnatDatabaseUsernamePasswordAuthenticationToken(username, password);
     }
 
-    private static final class AuthenticationAttemptEventPublisher implements AuthenticationEventPublisher {
-        private AuthenticationAttemptEventPublisher(final XnatProviderManager manager, final XdatUserAuthService userAuthService, final SiteConfigPreferences siteConfigPreferences) {
-            _failedAttemptsManager = new FailedAttemptsManager(manager, userAuthService, siteConfigPreferences);
-            _lastSuccessfulLoginManager = new LastSuccessfulLoginManager(manager, userAuthService);
-        }
-
-        public void publishAuthenticationFailure(AuthenticationException exception, Authentication authentication) {
-            //increment failed login attempt
-            _failedAttemptsManager.addFailedLoginAttempt(authentication);
-        }
-
-        public void publishAuthenticationSuccess(Authentication authentication) {
-            _failedAttemptsManager.clearCount(authentication);
-            _lastSuccessfulLoginManager.updateLastSuccessfulLogin(authentication);
-        }
-
-        private final FailedAttemptsManager      _failedAttemptsManager;
-        private final LastSuccessfulLoginManager _lastSuccessfulLoginManager;
-    }
-
-    private static final class LastSuccessfulLoginManager {
-        LastSuccessfulLoginManager(final XnatProviderManager manager, final XdatUserAuthService userAuthService) {
-            _manager = manager;
-            _userAuthService = userAuthService;
-        }
-
-        private void updateLastSuccessfulLogin(final Authentication authentication) {
-            final XdatUserAuth userAuth = _manager.getUserByAuth(authentication);
-            if (userAuth != null) {
-                log.info("Updating last successful login date for user {}", userAuth.getXdatUsername());
-                final Date now = Calendar.getInstance(TimeZone.getDefault()).getTime();
-                userAuth.setLastSuccessfulLogin(now);
-                userAuth.setLastLoginAttempt(now);
-                _userAuthService.update(userAuth);
-            }
-        }
-
-        private final XnatProviderManager _manager;
-        private final XdatUserAuthService _userAuthService;
-    }
-
-    private static final class FailedAttemptsManager {
-        FailedAttemptsManager(final XnatProviderManager manager, final XdatUserAuthService userAuthService, final SiteConfigPreferences preferences) {
-            _manager = manager;
-            _userAuthService = userAuthService;
-            _preferences = preferences;
-        }
-
-        /**
-         * Clears the failed login account for the user specified in the submitted authentication object.
-         *
-         * @param authentication The authentication object containing the user principal.
-         */
-        public void clearCount(final Authentication authentication) {
-            if (_preferences.getMaxFailedLogins() > 0) {
-                final XdatUserAuth userAuth = _manager.getUserByAuth(authentication);
-                if (userAuth != null) {
-                    log.info("Clearing the failed login count for the user {}", userAuth.getXdatUsername());
-                    userAuth.setFailedLoginAttempts(0);
-                    userAuth.setLockoutTime(null);
-                    _userAuthService.update(userAuth);
-                }
-            }
-        }
-
-        /**
-         * Increments failed login count for the user specified in the submitted authentication object.
-         *
-         * @param authentication The authentication that failed.
-         */
-        private synchronized void addFailedLoginAttempt(final Authentication authentication) {
-            final XdatUserAuth userAuth = _manager.getUserByAuth(authentication);
-            if (userAuth != null && !userAuth.getXdatUsername().equals("guest")) {
-                if (_preferences.getMaxFailedLogins() > 0) {
-                    userAuth.setFailedLoginAttempts(userAuth.getFailedLoginAttempts() + 1);
-                    log.info("Incremented the failed login count for the user {}, now set at {}", userAuth.getXdatUsername(), userAuth.getFailedLoginAttempts());
-                    final Date now = new Date();
-                    userAuth.setLastLoginAttempt(now);
-                    if (userAuth.getFailedLoginAttempts() == _preferences.getMaxFailedLogins()) {
-                        userAuth.setLockoutTime(now);
-                    }
-                    _userAuthService.update(userAuth);
-                }
-
-                if (StringUtils.isNotEmpty(userAuth.getXdatUsername())) {
-                    final Integer uid = Users.getUserId(userAuth.getXdatUsername());
-                    if (uid != null) {
-                        try {
-                            if (userAuth.getFailedLoginAttempts().equals(_preferences.getMaxFailedLogins())) {
-                                final String expiration = TurbineUtils.getDateTimeFormatter().format(DateUtils.addMilliseconds(GregorianCalendar.getInstance().getTime(), 1000 * (int) convertPGIntervalToSeconds(_preferences.getMaxFailedLoginsLockoutDuration())));
-                                log.info("Locked out {} user account until {}", userAuth.getXdatUsername(), expiration);
-                                if (Roles.isSiteAdmin(new XDATUser(userAuth.getXdatUsername()))) {
-                                    AdminUtils.emailAllAdmins(userAuth.getXdatUsername() + " account temporarily disabled. This is an admin account.", "User " + userAuth.getXdatUsername() + " has been temporarily disabled due to excessive failed login attempts. The user's account will be automatically enabled at " + expiration + ".");
-                                } else {
-                                    AdminUtils.sendAdminEmail(userAuth.getXdatUsername() + " account temporarily disabled.", "User " + userAuth.getXdatUsername() + " has been temporarily disabled due to excessive failed login attempts. The user's account will be automatically enabled at " + expiration + ".");
-                                }
-                            }
-                        } catch (Exception e) {
-                            //ignore
-                        }
-                    }
-                }
-            }
-        }
-
-        private final XnatProviderManager   _manager;
-        private final XdatUserAuthService   _userAuthService;
-        private final SiteConfigPreferences _preferences;
-    }
-
     private interface XnatAuthenticationProviderMatcher {
         boolean matches(XnatAuthenticationProvider provider);
     }
 
-    private static final GrantedAuthority                               AUTHORITY_ANONYMOUS         = new SimpleGrantedAuthority("ROLE_ANONYMOUS");
-    private static final Collection<? extends GrantedAuthority>         AUTHORITIES_ANONYMOUS       = Collections.singletonList(AUTHORITY_ANONYMOUS);
     private static final String                                         ANONYMOUS_AUTH_PROVIDER_KEY = "xnat-anonymous-provider-key";
     private static final Map<String, String>                            CACHED_AUTH_METHODS         = new ConcurrentHashMap<>(); // This will prevent 20,000 curl scripts from hitting the db every time
     private static final List<Class<? extends AuthenticationException>> RANKED_AUTH_EXCEPTIONS      = Arrays.asList(BadCredentialsException.class,

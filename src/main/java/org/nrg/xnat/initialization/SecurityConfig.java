@@ -16,12 +16,12 @@ import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.AliasTokenService;
 import org.nrg.xdat.services.XdatUserAuthService;
-import org.nrg.xft.security.UserI;
 import org.nrg.xnat.security.*;
 import org.nrg.xnat.security.alias.AliasTokenAuthenticationProvider;
 import org.nrg.xnat.security.provider.AuthenticationProviderConfigurationLocator;
 import org.nrg.xnat.security.provider.XnatAuthenticationProvider;
 import org.nrg.xnat.security.provider.XnatDatabaseAuthenticationProvider;
+import org.nrg.xnat.security.provider.XnatMulticonfigAuthenticationProvider;
 import org.nrg.xnat.security.userdetailsservices.XnatDatabaseUserDetailsService;
 import org.nrg.xnat.services.XnatAppInfo;
 import org.nrg.xnat.services.validation.DateValidation;
@@ -38,6 +38,7 @@ import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.vote.AuthenticatedVoter;
 import org.springframework.security.access.vote.RoleVoter;
 import org.springframework.security.access.vote.UnanimousBased;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.ReflectionSaltSource;
@@ -59,6 +60,7 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.RememberMeAuthenticationFilter;
 import org.springframework.security.web.authentication.session.CompositeSessionAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.ConcurrentSessionControlAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.RegisterSessionAuthenticationStrategy;
 import org.springframework.security.web.authentication.session.SessionFixationProtectionStrategy;
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
@@ -93,10 +95,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     public void setAuthenticationProviders(final List<AuthenticationProvider> providers) {
-        if (!containsDbAuthProvider(providers)) {
+        final List<AuthenticationProvider> expanded = expand(providers);
+        if (!containsDbAuthProvider(expanded)) {
             _providers.add(xnatDatabaseAuthenticationProvider());
         }
-        _providers.addAll(providers);
+        _providers.addAll(expanded);
     }
 
     @Autowired(required = false)
@@ -106,7 +109,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Bean
     public XnatProviderManager customAuthenticationManager() {
-        return new XnatProviderManager(_preferences, _userAuthService, _providers);
+        return new XnatProviderManager(_preferences, eventPublisher(), _userAuthService, _providers);
+    }
+
+    @Bean
+    public AuthenticationEventPublisher eventPublisher() {
+        return new XnatAuthenticationEventPublisher(_userAuthService, _preferences, _providers);
     }
 
     @Bean
@@ -153,8 +161,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Bean
     @Primary
     public CompositeSessionAuthenticationStrategy sessionAuthenticationStrategy() {
-        return new CompositeSessionAuthenticationStrategy(Arrays.asList(new SessionFixationProtectionStrategy(),
-                                                                        new RegisterSessionAuthenticationStrategy(sessionRegistry())));
+        final SessionRegistry                                sessionRegistry                                = sessionRegistry();
+        final SessionFixationProtectionStrategy              sessionFixationProtectionStrategy              = new SessionFixationProtectionStrategy();
+        final RegisterSessionAuthenticationStrategy          registerSessionAuthenticationStrategy          = new RegisterSessionAuthenticationStrategy(sessionRegistry);
+        final ConcurrentSessionControlAuthenticationStrategy concurrentSessionControlAuthenticationStrategy = new ConcurrentSessionControlAuthenticationStrategy(sessionRegistry);
+        concurrentSessionControlAuthenticationStrategy.setMaximumSessions(_preferences.getConcurrentMaxSessions());
+        concurrentSessionControlAuthenticationStrategy.setExceptionIfMaximumExceeded(true);
+        return new CompositeSessionAuthenticationStrategy(Arrays.asList(sessionFixationProtectionStrategy, registerSessionAuthenticationStrategy, concurrentSessionControlAuthenticationStrategy));
     }
 
     @Bean
@@ -258,14 +271,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         final InteractiveAgentDetector     detector                 = interactiveAgentDetector();
         final XnatAuthenticationEntryPoint authenticationEntryPoint = loginUrlAuthenticationEntryPoint(_preferences, detector);
 
-        http.apply(new XnatBasicAuthConfigurer<HttpSecurity>(authenticationEntryPoint));
+        http.apply(new XnatBasicAuthConfigurer<HttpSecurity>(authenticationEntryPoint, eventPublisher()));
 
         http.sessionManagement()
             .sessionAuthenticationStrategy(sessionAuthenticationStrategy())
             .maximumSessions(_preferences.getConcurrentMaxSessions())
+            .maxSessionsPreventsLogin(true)
             .sessionRegistry(sessionRegistry())
-            .expiredSessionStrategy(new SimpleRedirectSessionInformationExpiredStrategy("/app/template/Login.vm", redirectStrategy(_preferences, detector)))
-            .maxSessionsPreventsLogin(true);
+            .expiredSessionStrategy(new SimpleRedirectSessionInformationExpiredStrategy("/app/template/Login.vm", redirectStrategy(_preferences, detector)));
 
         http.headers().frameOptions().sameOrigin()
             .cacheControl().disable()
@@ -274,7 +287,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
         http.exceptionHandling().authenticationEntryPoint(authenticationEntryPoint).and()
             .csrf().disable()
-            .anonymous().key(UserI.ANONYMOUS_AUTH_PROVIDER_KEY);
+            .anonymous().key(Users.ANONYMOUS_AUTH_PROVIDER_KEY);
 
         http.logout().invalidateHttpSession(true).logoutSuccessHandler(logoutSuccessHandler()).logoutUrl("/app/action/LogoutUser");
 
@@ -305,6 +318,19 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             }
         }
         return false;
+    }
+
+    private static List<AuthenticationProvider> expand(final List<AuthenticationProvider> providers) {
+        final List<AuthenticationProvider> expanded = new ArrayList<>();
+        for (final AuthenticationProvider provider : providers) {
+            if (XnatMulticonfigAuthenticationProvider.class.isAssignableFrom(provider.getClass())) {
+                expanded.add(provider);
+                expanded.addAll(((XnatMulticonfigAuthenticationProvider) provider).getProviders());
+            } else {
+                expanded.add(provider);
+            }
+        }
+        return expanded;
     }
 
     private final SiteConfigPreferences      _preferences;

@@ -17,6 +17,7 @@ var XNAT = getObject(XNAT);
 }(function(){
 
     var undef, dataTypeAccess;
+    var tmp = {};
     var displayItems = [];
     var displayName = 'browseable';
     var SITE_ROOT = XNAT.url.rootUrl();
@@ -29,6 +30,14 @@ var XNAT = getObject(XNAT);
         getObject(XNAT.app.dataTypeAccess || {});
 
     dataTypeAccess.isReady = false;
+
+    // Regex list of pages which should NOT load data types
+    dataTypeAccess.skipPages = /Login|Register|VerifyEmail|ForgotLogin|RegisterUser|UpdateUser|ModifyPassword|Verification/;
+
+    dataTypeAccess.loadDataTypes = window.loadDataTypes =
+        window.loadDataTypes ||
+        // (window.isLoginPage !== undef ?  !window.isLoginPage : false) ||  // login page test seems unreliable
+        !dataTypeAccess.skipPages.test(window.location.href);
 
     // save the url with the site context prepended using XNAT.url.rootUrl()
     dataTypeAccess.url = XNAT.url.rootUrl('/xapi/access/displays');
@@ -63,7 +72,7 @@ var XNAT = getObject(XNAT);
     var userData = XNAT.storage.userData;
 
     // retrieve the *stored* value for last modified for comparison
-    var modifiedValue = userData.getValue('accessDisplaysModified');
+    var modifiedValue = userData.data['accessDisplaysModified'];
 
     // if there's no currently stored 'modified' value...
     // ...or if the stored value is different than the current value...
@@ -72,9 +81,35 @@ var XNAT = getObject(XNAT);
         modifiedValue = dataTypeAccess.modified;
         dataTypeAccess.needsUpdate = true;
     }
+    //
 
     // always save the 'modified' value in the browser's localStorage
     userData.setValue('accessDisplaysModified', modifiedValue);
+
+    // save a list of timestamps with page urls for cache updates
+    if (window.jsdebug) {
+
+        var modifiedValuesList = (userData.getValue('accessDisplaysModifiedList') || []).slice(0, 8).concat(modifiedValue);
+        userData.setValue('accessDisplaysModifiedList', modifiedValuesList);
+
+        // retrieve existing history if available in the browser's local storage
+        tmp.oldmod = userData.getValue('accessDisplaysModifiedHistory') || {};
+        tmp.newmod = {};
+        // get only the last 8 'old' values
+        Object.keys(tmp.oldmod).sort().reverse().slice(0, 8).forEach(function(key, i){
+            tmp.newmod[key] = tmp.oldmod[key];
+        });
+        // add this one
+        tmp.newmod[modifiedValue + ''] = (new Date(Date.now())).toLocaleString() + ' >> ' + XNAT.sub64.dlxEnc(window.location.pathname || window.location.href).encoded;
+        userData.setValue('accessDisplaysModifiedHistory', tmp.newmod);
+        tmp = {};
+    }
+    else {
+        // userData.remove([
+        //     'accessDisplaysModifiedList',
+        //     'accessDisplaysModifiedHistory'
+        // ]);
+    }
 
     // force an update by adding ?updateAccess=true to the URL query string
     dataTypeAccess.needsUpdate = /true|all/i.test(getQueryStringValue('updateAccess')) || dataTypeAccess.needsUpdate;
@@ -90,7 +125,7 @@ var XNAT = getObject(XNAT);
     ];
 
     // save the display type list to the user data store
-    userData.setValue('accessDisplaysList', dataTypeAccess.displays);
+    userData.setValue('accessDisplayTypes', dataTypeAccess.displays);
 
     // save existing values or an empty object to 'accessDisplays'
     userData.setValue('accessDisplays', userData.data.accessDisplays || {});
@@ -100,25 +135,97 @@ var XNAT = getObject(XNAT);
         width: 300,
         // title: 'Please wait...',
         header: false,
+        footer: false,
+        mask: false,
         padding: 0,
         top: '80px',
-        footer: false,
-        content: '<div class="message waiting md">&nbsp; Loading data type cache...</div>'
+        content: '<div class="message waiting md">&nbsp; Refreshing data type cache...</div>'
     });
-    // ...and open it (maybe)
-    window.setTimeout(function(){
-        cacheLoadingMessage.open();
-    }, 300);
 
     dataTypeAccess.reqCount = 0;
 
     var getFreshData = dataTypeAccess.needsUpdate || false;
 
+    if (getFreshData && window.loadDataTypes) {
+        window.setTimeout(function(){
+            cacheLoadingMessage.open();
+        }, 1);
+    }
+
+    // make sure there aren't duplicate data type elements
+    function collectDataTypes(datatypes){
+        var elements = [];
+        var elementNames = [];
+        var elementMap = {};
+        forEach(datatypes, function(element){
+            // map to old names for compatibility
+            var elementName =
+                element.elementName =
+                    element.element_name =
+                        element.elementName;
+            elementMap[elementName] = element;
+            // only add unique elements
+            if (elementNames.indexOf(element.elementName) === -1) {
+                element.plural =
+                    element.plural ||
+                    element.singular ||
+                    element.properName ||
+                    elementName.split(':')[1] ||
+                    elementName;
+                element.isExperiment = element.experiment;
+                element.isSubjectAssessor = element.subjectAssessor;
+                element.isImageAssessor = element.imageAssessor;
+                element.isImageSession = element.imageSession;
+                element.isImageScan = element.imageScan;
+                // element.lbg = '#f0f0f0';
+                // element.dbg = '#505050';
+                elementNames.push(element.elementName);
+                elements.push(element);
+            }
+        });
+        elements.getByName = function(name){
+            return elementMap[name];
+        };
+        return {
+            elements: elements,
+            sortedElements: sortObjects(elements, 'plural'),
+            elementNames: elementNames,
+            elementMap: elementMap
+        }
+    }
+
+    function updateDataTypeCache(collected, paths){
+        delete collected.elements.getByName;
+        delete collected.sortedElements.getByName;
+        forEach([].concat(paths), function(pathInfo, i){
+            var storageKey = pathInfo[0];
+            var dataKey = pathInfo[1];
+            userData.setValue(storageKey, collected[dataKey])
+        });
+        return collected;
+    }
+
     // force reloading of display elements
     dataTypeAccess.getElements = function(type, opts){
-        var accessTypeKey = 'accessDisplays.' + type;
-        getFreshData = getFreshData || userData.getValue(accessTypeKey) === undef;
-        var getElementDisplays = function(){};
+
+        // return existing function if it already exists
+        if (isFunction(dataTypeAccess.getElements[type])) {
+            console.log("exists: datatTypeAccess.getElements['" + type + "']");
+            return dataTypeAccess.getElements[type];
+        }
+
+        // localStorage property names
+        var accessDisplaysKey = 'accessDisplays.' + type;
+        var accessDisplaysMapKey = 'accessDisplaysMap.' + type;
+
+        // refresh if timestamp has changed or if data object doesn't exist yet
+        getFreshData = getFreshData || userData.getValue(accessDisplaysKey) === undef;
+
+        function getElementDisplays(){}
+
+        getElementDisplays.done = function(){};
+        getElementDisplays.fail = function(){};
+
         if (getFreshData) {
             getElementDisplays = XNAT.xhr.get(extend({
                 url: dataTypeAccessUrl(type),
@@ -129,26 +236,11 @@ var XNAT = getObject(XNAT);
                 //     cacheLoadingMessage.open();
                 // },
                 success: function(datatypes){
-                    var elements = [];
-                    forEach(datatypes, function(element){
-                        // map to old names for compatibility
-                        element.element_name = element.elementName;
-                        element.plural =
-                            element.plural ||
-                            element.singular ||
-                            element.properName ||
-                            element.elementName.split(':')[1] ||
-                            element.elementName;
-                        element.isExperiment = element.experiment;
-                        element.isSubjectAssessor = element.subjectAssessor;
-                        element.isImageAssessor = element.imageAssessor;
-                        element.isImageSession = element.imageSession;
-                        element.isImageScan = element.imageScan;
-                        // element.lbg = '#f0f0f0';
-                        // element.dbg = '#505050';
-                        elements.push(element);
-                    });
-                    userData.setValue(accessTypeKey, sortObjects(elements, 'plural'));
+                    var collected = collectDataTypes(datatypes);
+                    updateDataTypeCache(collected, [
+                        [accessDisplaysKey, 'sortedElements'],
+                        [accessDisplaysMapKey, 'elementMap']
+                    ]);
                 },
                 failure: function(){
                     console.warn(arguments);
@@ -159,32 +251,67 @@ var XNAT = getObject(XNAT);
             }, opts));
         }
         return {
-            ready: function(success, failure){
-                if (getFreshData) {
-                    getElementDisplays.done(success);
-                    getElementDisplays.fail(failure);
-                }
-                else {
-                    dataTypeAccess.reqCount++;
-                    try {
-                        if (isFunction(success)) {
-                            success(userData.getValue(accessTypeKey));
+            ready: function(doneFn, failFn){
+
+                //
+                // return existing function if it already exists
+                // if (dataTypeAccess.getElements[type] && dataTypeAccess.getElements[type].ready) {
+                //     console.log("exists: datatTypeAccess.getElements['" + type + "'].ready");
+                //     return dataTypeAccess.getElements[type].ready;
+                // }
+
+                dataTypeAccess.reqCount++;
+
+                try {
+
+                    var dataTypeListCache = userData.getValue(accessDisplaysKey);
+
+                    // go ahead and execute `doneFn` if there's data in the browser's localStorage
+                    if (dataTypeListCache) {
+                        try {
+                            if (isFunction(doneFn)) {
+                                doneFn.call(this, collectDataTypes(dataTypeListCache));
+                            }
+                        }
+                        catch(e) {
+                            if (isFunction(failFn)) {
+                                failFn.call(this, e);
+                            }
+                            console.warn(e)
                         }
                     }
-                    catch(e) {
-                        if (isFunction(failure)) {
-                            failure(e);
+
+                    // we'll run `doneFn` *AGAIN* if we need to get fresh data
+                    if (getFreshData) {
+                        if (isFunction(doneFn)) {
+                            getElementDisplays.done(function(datatypes){
+                                var collected = collectDataTypes(datatypes);
+                                updateDataTypeCache(collected, [
+                                    [accessDisplaysKey, 'sortedElements'],
+                                    [accessDisplaysMapKey, 'elementMap']
+                                ]);
+                                doneFn.call(this, collected);
+                            });
                         }
-                        console.warn(e)
+                        if (isFunction(failFn)) {
+                            getElementDisplays.fail(function(){
+                                failFn.apply(this, arguments);
+                            });
+                        }
                     }
+
                 }
+                catch(e) {
+                    console.warn(e);
+                }
+
                 return this;
             }
         }
     };
 
     // only load data types on non-login-type pages
-    if (!window.isLoginPage) {
+    if (!window.isLoginPage && window.loadDataTypes) {
         // this will be called for each item in the 'displays' array
         forEach(dataTypeAccess.displays, function(type, i){
             dataTypeAccess.getElements[type] = dataTypeAccess.getElements[type] || dataTypeAccess.getElements(type).ready(function(){
@@ -195,17 +322,23 @@ var XNAT = getObject(XNAT);
                         10,
                         function(){
                             console.log('refresh: ' + getFreshData);
-                            return !getFreshData || dataTypeAccess.reqCount === dataTypeAccess.displays.length;
+                            return !getFreshData || dataTypeAccess.reqCount >= (dataTypeAccess.displays.length + 1);
                         },
                         function(){
                             console.log('ALL LOADED');
                             if (getFreshData) {
                                 window.setTimeout(function(){
-                                    window.location.reload(true);
-                                }, 500);
+                                    cacheLoadingMessage.dialog$.fadeOut(50, function(){
+                                        cacheLoadingMessage.destroy()
+                                    });
+                                    // window.location.reload(true);
+                                }, 10);
                             }
                             else {
-                                cacheLoadingMessage.destroy();
+                                // make sure the loading dialog closes
+                                window.setTimeout(function(){
+                                    cacheLoadingMessage.destroy()
+                                }, 10);
                             }
                         }
                     );

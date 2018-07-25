@@ -9,6 +9,8 @@
 
 package org.nrg.xnat.security.provider;
 
+import org.nrg.xdat.preferences.SiteConfigPreferences;
+
 import java.util.List;
 
 /**
@@ -25,6 +27,14 @@ public interface XnatMulticonfigAuthenticationProvider extends XnatAuthenticatio
      * @return The provider IDs for the XNAT authentication provider.
      */
     List<String> getProviderIds();
+
+    /**
+     * Gets the providers for the XNAT authentication provider. If only one provider is configured, then a list is returned
+     * with just that single provider.
+     *
+     * @return The provider IDs for the XNAT authentication provider.
+     */
+    List<XnatAuthenticationProvider> getProviders();
 
     /**
      * Gets the {@link XnatAuthenticationProvider authentication provider instance} with the indicated provider ID.
@@ -65,22 +75,14 @@ public interface XnatMulticonfigAuthenticationProvider extends XnatAuthenticatio
     void setVisible(final String providerId, final boolean visible);
 
     /**
-     * Indicates the order precedence associated with this provider. This is used to determine the order in which the providers
-     * show up in the login drop-down list and the order in which they are checked when a login is attempted.
-     *
-     * @param providerId The provider to be retrieved.
-     *
-     * @return The order for the specified provider.
+     * @deprecated Ordering of authentication providers is set through the {@link SiteConfigPreferences#setEnabledProviders(List)} property.
      */
+    @Deprecated
     int getOrder(final String providerId);
 
     /**
-     * Sets the order precedence associated with this provider. This is used to determine the order in which the providers
-     * show up in the login drop-down list and the order in which they are checked when a login is attempted. Note that, if multiple
-     * provider configurations are defined for this instance, this method has no effect. You should call {@link #setOrder(int)} in that case.
-     *
-     * @param providerId The provider to be set.
-     * @param order      The order to set for this provider.
+     * @deprecated Ordering of authentication providers is set through the {@link SiteConfigPreferences#setEnabledProviders(List)} property.
      */
+    @Deprecated
     void setOrder(final String providerId, final int order);
 }

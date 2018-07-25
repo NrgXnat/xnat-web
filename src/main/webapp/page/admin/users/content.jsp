@@ -65,15 +65,13 @@
                         <c:if test="${not empty activeUsers}">
                         XNAT.xapi.users.active =
                             XNAT.data['/xapi/users/active'] =
-                                XNAT.data['${SITE_ROOT}/xapi/users/active'] =
-                                    XNAT.data.activeUsers = ${activeUsers};
+                                XNAT.data.activeUsers = ${activeUsers};
                         </c:if>
 
                         <c:if test="${not empty userProfiles}">
                         XNAT.xapi.users.profiles =
                             XNAT.data['/xapi/users/profiles'] =
-                                XNAT.data['${SITE_ROOT}/xapi/users/profiles'] =
-                                    XNAT.data.userProfiles = ${userProfiles};
+                                XNAT.data.userProfiles = ${userProfiles};
                         </c:if>
 
                         <c:if test="${not empty siteConfig}">
