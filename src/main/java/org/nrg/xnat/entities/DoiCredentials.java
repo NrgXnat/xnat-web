@@ -40,6 +40,8 @@ public class DoiCredentials extends AbstractHibernateEntity {
 
     private String issuerSite;
 
+    private String issuerDoiFormat;
+
     public static long getSerialVersionUID() {
         return serialVersionUID;
     }
@@ -91,6 +93,14 @@ public class DoiCredentials extends AbstractHibernateEntity {
 
     public void setIssuerSite(String issuerSite) {
         this.issuerSite = issuerSite;
+    }
+
+    public String getIssuerDoiFormat() {
+        return issuerDoiFormat;
+    }
+
+    public void setIssuerDoiFormat(String issuerDoiFormat) {
+        this.issuerDoiFormat = issuerDoiFormat;
     }
 
     /**

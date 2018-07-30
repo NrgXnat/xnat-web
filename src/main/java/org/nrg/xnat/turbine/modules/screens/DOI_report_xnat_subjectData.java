@@ -72,8 +72,8 @@ public class DOI_report_xnat_subjectData extends VelocityScreen {
                             doiFound = true;
                         }
                         context.put("doiObject", doiObject);
-                        String pubs = doiObject.getRelatedPublications();
-                        String links = doiObject.getLinks();
+                        String pubs = "Publication 1, Publication 2";
+                        String links = "http://cnda.wustl.edu";
                         String[] pubArray = pubs.split(" , ");
                         String[] linkArray = links.split(" , ");
                         context.put("pubArray", pubArray);

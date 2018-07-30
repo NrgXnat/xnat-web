@@ -37,28 +37,17 @@ public class Doi extends AbstractHibernateEntity {
     /** The ID of the XNAT data object. */
     private String objectId;
 
-    private String doi;
-
-    private String description;
-
-    private String keywords;
-
-    private String contactName;
-
-    private String contactEmail;
-
-    private String dataAvailability;
-
-    private String dataUseTerms;
-
-    private String relatedPublications;
-
-    private String links;
-
-    private String notes;
+    /** The DOI in URL form. */
+    private String doiUrl;
 
     /** The data type of the data object this DOI maps to. */
     private String xsiType;
+
+    /** The ID of the DOI Credentials object used to create the DOI. */
+    private Long issuerId;
+
+    /** The username of the XNAT user who created the DOI. */
+    private String xnatUsername;
 
     public long getId() {
         return id;
@@ -80,93 +69,36 @@ public class Doi extends AbstractHibernateEntity {
         this.objectId = objectId;
     }
 
-
-    public String getDoi() {
-        return doi;
-    }
-
-    public void setDoi(String doi) {
-        this.doi = doi;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getKeywords() {
-        return keywords;
-    }
-
-    public void setKeywords(String keywords) {
-        this.keywords = keywords;
-    }
-
-    public String getContactName() {
-        return contactName;
-    }
-
-    public void setContactName(String contactName) {
-        this.contactName = contactName;
-    }
-
-    public String getContactEmail() {
-        return contactEmail;
-    }
-
-    public void setContactEmail(String contactEmail) {
-        this.contactEmail = contactEmail;
-    }
-
-    public String getDataAvailability() {
-        return dataAvailability;
-    }
-
-    public void setDataAvailability(String dataAvailability) {
-        this.dataAvailability = dataAvailability;
-    }
-
-    public String getDataUseTerms() {
-        return dataUseTerms;
-    }
-
-    public void setDataUseTerms(String dataUseTerms) {
-        this.dataUseTerms = dataUseTerms;
-    }
-
-    public String getRelatedPublications() {
-        return relatedPublications;
-    }
-
-    public void setRelatedPublications(String relatedPublications) {
-        this.relatedPublications = relatedPublications;
-    }
-
-    public String getLinks() {
-        return links;
-    }
-
-    public void setLinks(String links) {
-        this.links = links;
-    }
-
-    public String getNotes() {
-        return notes;
-    }
-
-    public void setNotes(String notes) {
-        this.notes = notes;
-    }
-
     public String getXsiType() {
         return xsiType;
     }
 
     public void setXsiType(String xsiType) {
         this.xsiType = xsiType;
+    }
+
+    public String getDoiUrl() {
+        return doiUrl;
+    }
+
+    public void setDoiUrl(String doiUrl) {
+        this.doiUrl = doiUrl;
+    }
+
+    public Long getIssuerId() {
+        return issuerId;
+    }
+
+    public void setIssuerId(Long issuerId) {
+        this.issuerId = issuerId;
+    }
+
+    public String getXnatUsername() {
+        return xnatUsername;
+    }
+
+    public void setXnatUsername(String xnatUsername) {
+        this.xnatUsername = xnatUsername;
     }
 
     /**

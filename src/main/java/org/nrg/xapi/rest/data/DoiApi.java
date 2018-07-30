@@ -69,10 +69,10 @@ public class DoiApi extends AbstractXapiRestController {
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested DOI object."),
                    @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "identifier/{doi}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @XapiRequestMapping(value = "identifier/{id}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<Doi> getDoi(@PathVariable("doi") final long doi) throws NotFoundException {
-        final Doi doiObject = _service.get(doi);
+    public ResponseEntity<Doi> getDoi(@PathVariable("id") final long id) throws NotFoundException {
+        final Doi doiObject = _service.get(id);
         if (doiObject == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
@@ -87,6 +87,7 @@ public class DoiApi extends AbstractXapiRestController {
     @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<Doi> createDoi(@RequestBody final Doi doi) throws Exception {
+        doi.setXnatUsername(getSessionUser().getUsername());
         Doi created = _service.create(doi);
         return new ResponseEntity<>(created, HttpStatus.OK);
     }
@@ -97,16 +98,20 @@ public class DoiApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Insufficient privileges to edit the requested DOI."),
                    @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "identifier/{doi}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT)
+    @XapiRequestMapping(value = "identifier/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT)
     @ResponseBody
-    public ResponseEntity<Doi> updateDoi(@PathVariable("doi") final int doi, @RequestBody final Doi doiObject) throws Exception {
+    public ResponseEntity<Doi> updateDoi(@PathVariable("id") final int id, @RequestBody final Doi doiObject) throws Exception {
         final UserI user = getSessionUser();
 
         final Doi existing = _service.get(doiObject.getId());
         if (existing == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-
+        if(!Roles.isSiteAdmin(user) && existing!=null && StringUtils.isNotBlank(existing.getXnatUsername())){
+            if(!StringUtils.equals(existing.getXnatUsername(),user.getUsername()) || !StringUtils.equals(doiObject.getXnatUsername(),user.getUsername())){
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+        }
         boolean isDirty = false;
         // Only update fields that are actually included in the submitted data and differ from the original source.
         if (StringUtils.isNotBlank(doiObject.getProjectId()) && !StringUtils.equals(doiObject.getProjectId(), existing.getProjectId())) {
@@ -121,44 +126,16 @@ public class DoiApi extends AbstractXapiRestController {
             existing.setXsiType(doiObject.getXsiType());
             isDirty = true;
         }
-        if (StringUtils.isNotBlank(doiObject.getDoi()) && !StringUtils.equals(doiObject.getDoi(), existing.getDoi())) {
-            existing.setDoi(doiObject.getDoi());
+        if (StringUtils.isNotBlank(doiObject.getDoiUrl()) && !StringUtils.equals(doiObject.getDoiUrl(), existing.getDoiUrl())) {
+            existing.setDoiUrl(doiObject.getDoiUrl());
             isDirty = true;
         }
-        if (StringUtils.isNotBlank(doiObject.getDescription()) && !StringUtils.equals(doiObject.getDescription(), existing.getDescription())) {
-            existing.setDescription(doiObject.getDescription());
+        if (doiObject.getIssuerId()!=existing.getIssuerId()) {
+            existing.setIssuerId(doiObject.getIssuerId());
             isDirty = true;
         }
-        if (StringUtils.isNotBlank(doiObject.getKeywords()) && !StringUtils.equals(doiObject.getKeywords(), existing.getKeywords())) {
-            existing.setKeywords(doiObject.getKeywords());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getContactName()) && !StringUtils.equals(doiObject.getContactName(), existing.getContactName())) {
-            existing.setContactName(doiObject.getContactName());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getContactEmail()) && !StringUtils.equals(doiObject.getContactEmail(), existing.getContactEmail())) {
-            existing.setContactEmail(doiObject.getContactEmail());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getDataAvailability()) && !StringUtils.equals(doiObject.getDataAvailability(), existing.getDataAvailability())) {
-            existing.setDataAvailability(doiObject.getDataAvailability());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getDataUseTerms()) && !StringUtils.equals(doiObject.getDataUseTerms(), existing.getDataUseTerms())) {
-            existing.setDataUseTerms(doiObject.getDataUseTerms());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getRelatedPublications()) && !StringUtils.equals(doiObject.getRelatedPublications(), existing.getRelatedPublications())) {
-            existing.setRelatedPublications(doiObject.getRelatedPublications());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getLinks()) && !StringUtils.equals(doiObject.getLinks(), existing.getLinks())) {
-            existing.setLinks(doiObject.getLinks());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getNotes()) && !StringUtils.equals(doiObject.getNotes(), existing.getNotes())) {
-            existing.setNotes(doiObject.getNotes());
+        if (StringUtils.isNotBlank(doiObject.getXnatUsername()) && !StringUtils.equals(doiObject.getXnatUsername(), existing.getXnatUsername())) {
+            existing.setXnatUsername(doiObject.getXnatUsername());
             isDirty = true;
         }
         if (isDirty) {
@@ -173,12 +150,12 @@ public class DoiApi extends AbstractXapiRestController {
             @ApiResponse(code = 403, message = "The user doesn't have permission to delete DOI."),
             @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
             @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "identifier/{doi}", produces = APPLICATION_JSON_VALUE, method = DELETE)
+    @XapiRequestMapping(value = "identifier/{id}", produces = APPLICATION_JSON_VALUE, method = DELETE)
     @ResponseBody
-    public ResponseEntity<Boolean> deleteDoi(@PathVariable("doi") final int doi) throws org.nrg.xapi.exceptions.NotFoundException, InsufficientPrivilegesException, XftItemException, NotFoundException {
+    public ResponseEntity<Boolean> deleteDoi(@PathVariable("id") final int id) throws org.nrg.xapi.exceptions.NotFoundException, InsufficientPrivilegesException, XftItemException, NotFoundException {
         final UserI user = getSessionUser();
 
-        _service.deleteDoi(doi, user);
+        _service.deleteDoi(id, user);
         return ResponseEntity.ok(true);
     }
 
@@ -215,10 +192,11 @@ public class DoiApi extends AbstractXapiRestController {
         return new ResponseEntity<>(doiCredentialsObject, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Creates a new DOI credentials object from the submitted attributes.", notes = "Returns the newly created DOI credentials with the submitted attributes.", response = DoiCredentials.class)
+    @ApiOperation(value = "Creates a new DOI credentials object from the submitted attributes.", notes = "Returns the newly created DOI credentials with the submitted attributes. Currently only DataCite format credentials are supported.", response = DoiCredentials.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created DOI credentials."),
             @ApiResponse(code = 403, message = "Insufficient privileges to create the submitted DOI credentials."),
             @ApiResponse(code = 404, message = "The requested DOI credentials weren't found."),
+            @ApiResponse(code = 422, message = "Cannot currently process non DataCite credentials. The issuerDoiFormat must be DataCite."),
             @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "credentials", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     @ResponseBody
@@ -230,12 +208,15 @@ public class DoiApi extends AbstractXapiRestController {
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
         }
+        if(!StringUtils.equalsIgnoreCase(credentials.getIssuerDoiFormat(),"DataCite")){
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+        }
         credentials.setXnatUsername(sessionUsername);
         DoiCredentials created = _credentialsService.create(credentials);
         return new ResponseEntity<>(created, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Updates the requested DOI credentials from the submitted attributes.", notes = "Returns the updated DOI credentials.", response = DoiCredentials.class)
+    @ApiOperation(value = "Updates the requested DOI credentials from the submitted attributes.", notes = "Returns the updated DOI credentials. Currently only DataCite format credentials are supported.", response = DoiCredentials.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated DOI credentials."),
             @ApiResponse(code = 304, message = "The requested DOI is the same as the submitted DOI credentials."),
             @ApiResponse(code = 403, message = "Insufficient privileges to edit the requested DOI credentials."),
@@ -252,6 +233,10 @@ public class DoiApi extends AbstractXapiRestController {
             if(!StringUtils.equals(existing.getXnatUsername(),user.getUsername()) || !StringUtils.equals(doiCredentialsObject.getXnatUsername(),user.getUsername())){
                 return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
             }
+        }
+
+        if(!StringUtils.equalsIgnoreCase(doiCredentialsObject.getIssuerDoiFormat(),"DataCite")){
+            return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
         }
 
         if (existing == null) {
@@ -278,6 +263,10 @@ public class DoiApi extends AbstractXapiRestController {
         }
         if (StringUtils.isNotBlank(doiCredentialsObject.getIssuerSite()) && !StringUtils.equals(doiCredentialsObject.getIssuerSite(), existing.getIssuerSite())) {
             existing.setIssuerSite(doiCredentialsObject.getIssuerSite());
+            isDirty = true;
+        }
+        if (StringUtils.isNotBlank(doiCredentialsObject.getIssuerDoiFormat()) && !StringUtils.equals(doiCredentialsObject.getIssuerDoiFormat(), existing.getIssuerDoiFormat())) {
+            existing.setIssuerDoiFormat(doiCredentialsObject.getIssuerDoiFormat());
             isDirty = true;
         }
         if (isDirty) {
