@@ -26,6 +26,7 @@ import org.nrg.framework.datacache.SerializerRegistry;
 import org.nrg.framework.exceptions.NrgServiceException;
 import org.nrg.framework.services.ContextService;
 import org.nrg.framework.services.SerializerService;
+import org.nrg.xams.xchange.config.XChangeServicesConfig;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xnat.configuration.ApplicationConfig;
 import org.nrg.xnat.preferences.PluginOpenUrlsPreference;
@@ -62,7 +63,7 @@ import java.util.Properties;
  * for standard XNAT components should be added in the {@link ApplicationConfig application configuration class}.
  */
 @Configuration
-@Import({PropertiesConfig.class, DatabaseConfig.class, SecurityConfig.class, ApplicationConfig.class, NodeConfig.class})
+@Import({PropertiesConfig.class, DatabaseConfig.class, SecurityConfig.class, ApplicationConfig.class, NodeConfig.class, XChangeServicesConfig.class})
 @Slf4j
 public class RootConfig {
     @Autowired
