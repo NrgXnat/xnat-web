@@ -18,8 +18,11 @@ import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.daos.DoiCredentialsDAO;
 import org.nrg.xnat.daos.DoiDAO;
 import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.entities.DoiCredentials;
+import org.nrg.xnat.services.system.DoiCredentialsService;
 import org.nrg.xnat.services.system.DoiService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,19 +33,26 @@ import java.util.List;
  * {@inheritDoc}
  */
 @Service
-public class HibernateDoiService extends AbstractHibernateEntityService<Doi, DoiDAO> implements DoiService {
+public class HibernateDoiCredentialsService extends AbstractHibernateEntityService<DoiCredentials, DoiCredentialsDAO> implements DoiCredentialsService {
     @Override
-    public List<Doi> getDois() {
-        return getDao().getAllDois();
+    public List<DoiCredentials> getDoiCredentials() {
+        return getDao().getAllDoiCredentials();
     }
 
     @Override
-    public void deleteDoi(int doiId,UserI user) throws NotFoundException, InsufficientPrivilegesException {
-        Doi doi = get(doiId);
-        if (!Roles.isSiteAdmin(user)) {
+    public List<DoiCredentials> getDoiCredentialsForUsername(String xnatUsername) {
+        return getDao().getDoiCredentialsForUsername(xnatUsername);
+    }
+
+    @Transactional
+    @Override
+    public void deleteCredentials(int credentialsId, UserI user) throws NotFoundException, InsufficientPrivilegesException {
+        DoiCredentials credentials = get(credentialsId);
+        if (!Roles.isSiteAdmin(user) && !StringUtils.equals(credentials.getXnatUsername(),user.getUsername())) {
             throw new InsufficientPrivilegesException(user.getUsername());
         }
-        getDao().delete(doi);
+        getDao().delete(credentials);
         return;
     }
+
 }

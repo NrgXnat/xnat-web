@@ -13,14 +13,12 @@ import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.framework.orm.hibernate.BaseHibernateService;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.entities.DoiCredentials;
 
 import java.util.List;
 
-/**
- * Provides information about the current host.
- */
-public interface DoiService extends BaseHibernateService<Doi> {
-    List<Doi> getDois();
-    void deleteDoi(int doi,UserI user) throws NotFoundException, InsufficientPrivilegesException;
+public interface DoiCredentialsService extends BaseHibernateService<DoiCredentials> {
+    List<DoiCredentials> getDoiCredentials();
+    List<DoiCredentials> getDoiCredentialsForUsername(String xnatUsername);
+    void deleteCredentials(int credentialsId, UserI user) throws NotFoundException, InsufficientPrivilegesException;
 }
