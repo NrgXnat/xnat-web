@@ -22,6 +22,7 @@ import org.json.JSONObject;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.dcm.Dcm2Jpg;
+import org.nrg.xams.xchange.services.storage.XChangeStorageService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.bean.CatEntryBean;
@@ -1254,4 +1255,20 @@ public class FileList extends XNATCatalogTemplate {
         setResponseHeader("Cache-Control", "must-revalidate");
         return representFile(f, mt);
     }
+
+    private static XChangeStorageService getStorageService() {
+        if (_storageService == null) {
+            synchronized (MUTEX) {
+                _storageService = XDAT.getContextService().getBeanSafely(XChangeStorageService.class);
+                if (_storageService == null) {
+                    log.error("Tried to retrieve an XChangeStorageService implementation but couldn't find anything.");
+                }
+            }
+        }
+        return _storageService;
+    }
+
+    private static final Object MUTEX = new Object();
+
+    private static XChangeStorageService _storageService;
 }
