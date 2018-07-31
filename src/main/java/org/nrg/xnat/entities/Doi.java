@@ -12,6 +12,7 @@ package org.nrg.xnat.entities;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
+import org.nrg.xnat.helpers.uri.archive.DoiCreationHelper;
 
 import javax.persistence.*;
 
@@ -37,8 +38,8 @@ public class Doi extends AbstractHibernateEntity {
     /** The ID of the XNAT data object. */
     private String objectId;
 
-    /** The DOI in URL form. */
-    private String doiUrl;
+    /** The DOI identifier. */
+    private String doi;
 
     /** The data type of the data object this DOI maps to. */
     private String xsiType;
@@ -77,12 +78,12 @@ public class Doi extends AbstractHibernateEntity {
         this.xsiType = xsiType;
     }
 
-    public String getDoiUrl() {
-        return doiUrl;
+    public String getDoi() {
+        return doi;
     }
 
-    public void setDoiUrl(String doiUrl) {
-        this.doiUrl = doiUrl;
+    public void setDoi(String doi) {
+        this.doi = doi;
     }
 
     public Long getIssuerId() {
@@ -101,12 +102,17 @@ public class Doi extends AbstractHibernateEntity {
         this.xnatUsername = xnatUsername;
     }
 
-    /**
-     * Instantiates a new host info.
-     */
     public Doi() {
     	super();
     }
 
-
+    public Doi(DoiCreationHelper helper) {
+        super();
+        this.projectId = helper.getProjectId();
+        this.objectId = helper.getObjectId();
+        this.doi = helper.getDoi();
+        this.xsiType = helper.getXsiType();
+        this.issuerId = helper.getIssuerId();
+        this.xnatUsername = helper.getXnatUsername();
+    }
 }

@@ -15,6 +15,19 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.message.BasicNameValuePair;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -30,6 +43,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.entities.Doi;
 import org.nrg.xnat.entities.DoiCredentials;
+import org.nrg.xnat.helpers.uri.archive.DoiCreationHelper;
 import org.nrg.xnat.services.system.DoiCredentialsService;
 import org.nrg.xnat.services.system.DoiService;
 import org.slf4j.Logger;
@@ -40,6 +54,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -86,10 +101,41 @@ public class DoiApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<Doi> createDoi(@RequestBody final Doi doi) throws Exception {
+    public ResponseEntity<Doi> createDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
+        String issuerPassword = doiCreationHelper.getIssuerPassword();
+        String xml = doiCreationHelper.getMetadataXml();
+        Doi doi = new Doi(doiCreationHelper);
         doi.setXnatUsername(getSessionUser().getUsername());
         Doi created = _service.create(doi);
-        return new ResponseEntity<>(created, HttpStatus.OK);
+
+        //Create actual DOI
+        DoiCredentials doiCredentials = _credentialsService.get(doi.getIssuerId());
+        String metadataUrl = doiCredentials.getIssuerSite()+"/metadata";
+        String doiString = doi.getDoi();
+        String doiCreationUrl = doiCredentials.getIssuerSite()+"/doi/"+doiString;
+
+        HttpPost post = new HttpPost(metadataUrl);
+        CredentialsProvider credsProvider = new BasicCredentialsProvider();
+        UsernamePasswordCredentials creds = new UsernamePasswordCredentials(doiCredentials.getIssuerLogin(), issuerPassword);
+        credsProvider.setCredentials(new AuthScope(AuthScope.ANY_HOST, AuthScope.ANY_PORT), creds);
+        post.addHeader("Content-Type","application/xml");
+        post.setEntity(new StringEntity(xml));
+        CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
+        // send the post request
+        HttpResponse response = client.execute(post);
+        if(response.getStatusLine().getStatusCode()==201) {
+            HttpPut put = new HttpPut(doiCreationUrl);
+            put.addHeader("Content-Type", "application/xml");
+            put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + created.getId()));
+            CloseableHttpClient client2 = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
+            // send the put request
+            HttpResponse response2 = client2.execute(put);
+            if(response2.getStatusLine().getStatusCode()==201) {
+                return new ResponseEntity<>(created, HttpStatus.OK);
+            }
+        }
+
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @ApiOperation(value = "Updates the requested DOI from the submitted attributes.", notes = "Returns the updated DOI.", response = Doi.class)
@@ -126,8 +172,8 @@ public class DoiApi extends AbstractXapiRestController {
             existing.setXsiType(doiObject.getXsiType());
             isDirty = true;
         }
-        if (StringUtils.isNotBlank(doiObject.getDoiUrl()) && !StringUtils.equals(doiObject.getDoiUrl(), existing.getDoiUrl())) {
-            existing.setDoiUrl(doiObject.getDoiUrl());
+        if (StringUtils.isNotBlank(doiObject.getDoi()) && !StringUtils.equals(doiObject.getDoi(), existing.getDoi())) {
+            existing.setDoi(doiObject.getDoi());
             isDirty = true;
         }
         if (doiObject.getIssuerId()!=existing.getIssuerId()) {
