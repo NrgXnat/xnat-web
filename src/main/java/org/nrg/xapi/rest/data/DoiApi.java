@@ -94,24 +94,74 @@ public class DoiApi extends AbstractXapiRestController {
         return new ResponseEntity<>(doiObject, HttpStatus.OK);
     }
 
-    @ApiOperation(value = "Creates a new DOI object from the submitted attributes.", notes = "Returns the newly created DOI with the submitted attributes.", response = Doi.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created DOI."),
-                   @ApiResponse(code = 403, message = "Insufficient privileges to create the submitted DOI."),
+    @ApiOperation(value = "Creates a new DOI object from the submitted attributes (or updates an existing one).", notes = "Returns the DOI with the submitted attributes.", response = Doi.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the DOI."),
+                   @ApiResponse(code = 403, message = "Insufficient privileges to create or edit the submitted DOI."),
                    @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<Doi> createDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
+    public ResponseEntity<Doi> createOrUpdateDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
+        UserI user = getSessionUser();
+
+        Doi newDoi = new Doi(doiCreationHelper);
+        Doi doiObject = null;
         String issuerPassword = doiCreationHelper.getIssuerPassword();
         String xml = doiCreationHelper.getMetadataXml();
-        Doi doi = new Doi(doiCreationHelper);
-        doi.setXnatUsername(getSessionUser().getUsername());
-        Doi created = _service.create(doi);
+        List<Doi> existingDois = _service.getDoisForObjectAndProject(doiCreationHelper.getObjectId(), doiCreationHelper.getProjectId());
 
-        //Create actual DOI
-        DoiCredentials doiCredentials = _credentialsService.get(doi.getIssuerId());
+        //Create or update internal XNAT representation of DOI
+        if(existingDois.size()>0){
+            //There is already a DOI for this object and project. Update it as needed (if the user has permissions to).
+            doiObject = existingDois.get(0);
+            if(Roles.isSiteAdmin(user) || StringUtils.equals(user.getUsername(),doiObject.getXnatUsername())){
+                //User has permission to update the DOI
+                boolean isDirty = false;
+                // Only update fields that are actually included in the submitted data and differ from the original source.
+
+                //Once a DOI has been created, the project, object, and xsiType should not be changed.
+//                if (StringUtils.isNotBlank(newDoi.getProjectId()) && !StringUtils.equals(newDoi.getProjectId(), doiObject.getProjectId())) {
+//                    doiObject.setProjectId(newDoi.getProjectId());
+//                    isDirty = true;
+//                }
+//                if (StringUtils.isNotBlank(newDoi.getObjectId()) && !StringUtils.equals(newDoi.getObjectId(), doiObject.getObjectId())) {
+//                    doiObject.setObjectId(newDoi.getObjectId());
+//                    isDirty = true;
+//                }
+//                if (StringUtils.isNotBlank(newDoi.getXsiType()) && !StringUtils.equals(newDoi.getXsiType(), doiObject.getXsiType())) {
+//                    doiObject.setXsiType(newDoi.getXsiType());
+//                    isDirty = true;
+//                }
+                if (StringUtils.isNotBlank(newDoi.getDoi()) && !StringUtils.equals(newDoi.getDoi(), doiObject.getDoi())) {
+                    doiObject.setDoi(newDoi.getDoi());
+                    isDirty = true;
+                }
+                if (newDoi.getIssuerId()!=doiObject.getIssuerId()) {
+                    doiObject.setIssuerId(newDoi.getIssuerId());
+                    isDirty = true;
+                }
+                if (StringUtils.isNotBlank(newDoi.getXnatUsername()) && !StringUtils.equals(newDoi.getXnatUsername(), doiObject.getXnatUsername())) {
+                    doiObject.setXnatUsername(newDoi.getXnatUsername());
+                    isDirty = true;
+                }
+                if (isDirty) {
+                    _service.update(doiObject);
+                }
+            }
+            else{
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
+
+        }
+        else{
+            newDoi.setXnatUsername(getSessionUser().getUsername());
+            doiObject = _service.create(newDoi);
+        }
+
+        //Create or update actual DOI
+        DoiCredentials doiCredentials = _credentialsService.get(doiObject.getIssuerId());
         String metadataUrl = doiCredentials.getIssuerSite()+"/metadata";
-        String doiString = doi.getDoi();
+        String doiString = doiObject.getDoi();
         String doiCreationUrl = doiCredentials.getIssuerSite()+"/doi/"+doiString;
 
         HttpPost post = new HttpPost(metadataUrl);
@@ -126,69 +176,16 @@ public class DoiApi extends AbstractXapiRestController {
         if(response.getStatusLine().getStatusCode()==201) {
             HttpPut put = new HttpPut(doiCreationUrl);
             put.addHeader("Content-Type", "application/xml");
-            put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + created.getId()));
+            put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + doiObject.getId()));
             CloseableHttpClient client2 = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
             // send the put request
             HttpResponse response2 = client2.execute(put);
             if(response2.getStatusLine().getStatusCode()==201) {
-                return new ResponseEntity<>(created, HttpStatus.OK);
+                return new ResponseEntity<>(doiObject, HttpStatus.OK);
             }
         }
 
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-
-    @ApiOperation(value = "Updates the requested DOI from the submitted attributes.", notes = "Returns the updated DOI.", response = Doi.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated DOI."),
-                   @ApiResponse(code = 304, message = "The requested DOI is the same as the submitted DOI."),
-                   @ApiResponse(code = 403, message = "Insufficient privileges to edit the requested DOI."),
-                   @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
-                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "identifier/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT)
-    @ResponseBody
-    public ResponseEntity<Doi> updateDoi(@PathVariable("id") final int id, @RequestBody final Doi doiObject) throws Exception {
-        final UserI user = getSessionUser();
-
-        final Doi existing = _service.get(doiObject.getId());
-        if (existing == null) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        if(!Roles.isSiteAdmin(user) && existing!=null && StringUtils.isNotBlank(existing.getXnatUsername())){
-            if(!StringUtils.equals(existing.getXnatUsername(),user.getUsername()) || !StringUtils.equals(doiObject.getXnatUsername(),user.getUsername())){
-                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-            }
-        }
-        boolean isDirty = false;
-        // Only update fields that are actually included in the submitted data and differ from the original source.
-        if (StringUtils.isNotBlank(doiObject.getProjectId()) && !StringUtils.equals(doiObject.getProjectId(), existing.getProjectId())) {
-            existing.setProjectId(doiObject.getProjectId());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getObjectId()) && !StringUtils.equals(doiObject.getObjectId(), existing.getObjectId())) {
-            existing.setObjectId(doiObject.getObjectId());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getXsiType()) && !StringUtils.equals(doiObject.getXsiType(), existing.getXsiType())) {
-            existing.setXsiType(doiObject.getXsiType());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getDoi()) && !StringUtils.equals(doiObject.getDoi(), existing.getDoi())) {
-            existing.setDoi(doiObject.getDoi());
-            isDirty = true;
-        }
-        if (doiObject.getIssuerId()!=existing.getIssuerId()) {
-            existing.setIssuerId(doiObject.getIssuerId());
-            isDirty = true;
-        }
-        if (StringUtils.isNotBlank(doiObject.getXnatUsername()) && !StringUtils.equals(doiObject.getXnatUsername(), existing.getXnatUsername())) {
-            existing.setXnatUsername(doiObject.getXnatUsername());
-            isDirty = true;
-        }
-        if (isDirty) {
-            _service.update(existing);
-            return new ResponseEntity<>(existing, HttpStatus.OK);
-        }
-        return new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
     }
 
     @ApiOperation(value = "Deletes the requested DOI.", notes = "Returns true if the requested DOI was successfully deleted. Returns false otherwise.", response = Boolean.class)

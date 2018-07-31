@@ -22,5 +22,6 @@ import java.util.List;
  */
 public interface DoiService extends BaseHibernateService<Doi> {
     List<Doi> getDois();
+    List<Doi> getDoisForObjectAndProject(String objectId, String projectId);
     void deleteDoi(int doi,UserI user) throws NotFoundException, InsufficientPrivilegesException;
 }

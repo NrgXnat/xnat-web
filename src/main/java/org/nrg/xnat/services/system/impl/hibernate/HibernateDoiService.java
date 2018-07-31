@@ -36,6 +36,11 @@ public class HibernateDoiService extends AbstractHibernateEntityService<Doi, Doi
         return getDao().getAllDois();
     }
 
+    @Override
+    public List<Doi> getDoisForObjectAndProject(String objectId, String projectId){
+        return getDao().getAllDoisForObjectAndProject(objectId, projectId);
+    }
+
     @Transactional
     @Override
     public void deleteDoi(int doiId,UserI user) throws NotFoundException, InsufficientPrivilegesException {

@@ -27,4 +27,12 @@ public class DoiDAO extends AbstractHibernateDAO<Doi> {
     public List<Doi> getAllDois() {
         return findAll();
     }
+
+    @Transactional
+    public List<Doi> getAllDoisForObjectAndProject(String objectId, String projectId) {
+        final Criteria criteria = getSession().createCriteria(getParameterizedType());
+        criteria.add(Restrictions.eq("objectId", objectId));
+        criteria.add(Restrictions.eq("projectId", projectId));
+        return criteria.list();
+    }
 }
