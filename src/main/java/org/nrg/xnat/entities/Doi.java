@@ -50,6 +50,10 @@ public class Doi extends AbstractHibernateEntity {
     /** The username of the XNAT user who created the DOI. */
     private String xnatUsername;
 
+    /** The xml with the metadata for the DOI. */
+    @Column(columnDefinition="text")
+    private String metadataXml;
+
     public long getId() {
         return id;
     }
@@ -102,6 +106,14 @@ public class Doi extends AbstractHibernateEntity {
         this.xnatUsername = xnatUsername;
     }
 
+    public String getMetadataXml() {
+        return metadataXml;
+    }
+
+    public void setMetadataXml(String metadataXml) {
+        this.metadataXml = metadataXml;
+    }
+
     public Doi() {
     	super();
     }
@@ -114,5 +126,6 @@ public class Doi extends AbstractHibernateEntity {
         this.xsiType = helper.getXsiType();
         this.issuerId = helper.getIssuerId();
         this.xnatUsername = helper.getXnatUsername();
+        this.metadataXml = helper.getMetadataXml();
     }
 }

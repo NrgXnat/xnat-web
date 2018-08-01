@@ -102,6 +102,7 @@ public class DoiApi extends AbstractXapiRestController {
     @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<Doi> createOrUpdateDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
+        boolean updatingExisting = false;
         UserI user = getSessionUser();
 
         Doi newDoi = new Doi(doiCreationHelper);
@@ -116,9 +117,7 @@ public class DoiApi extends AbstractXapiRestController {
             doiObject = existingDois.get(0);
             if(Roles.isSiteAdmin(user) || StringUtils.equals(user.getUsername(),doiObject.getXnatUsername())){
                 //User has permission to update the DOI
-                boolean isDirty = false;
-                // Only update fields that are actually included in the submitted data and differ from the original source.
-
+                //Only update fields that are actually included in the submitted data and differ from the original source.
                 //Once a DOI has been created, the project, object, and xsiType should not be changed.
 //                if (StringUtils.isNotBlank(newDoi.getProjectId()) && !StringUtils.equals(newDoi.getProjectId(), doiObject.getProjectId())) {
 //                    doiObject.setProjectId(newDoi.getProjectId());
@@ -134,18 +133,23 @@ public class DoiApi extends AbstractXapiRestController {
 //                }
                 if (StringUtils.isNotBlank(newDoi.getDoi()) && !StringUtils.equals(newDoi.getDoi(), doiObject.getDoi())) {
                     doiObject.setDoi(newDoi.getDoi());
-                    isDirty = true;
+                    updatingExisting = true;
                 }
                 if (newDoi.getIssuerId()!=doiObject.getIssuerId()) {
                     doiObject.setIssuerId(newDoi.getIssuerId());
-                    isDirty = true;
+                    updatingExisting = true;
                 }
                 if (StringUtils.isNotBlank(newDoi.getXnatUsername()) && !StringUtils.equals(newDoi.getXnatUsername(), doiObject.getXnatUsername())) {
                     doiObject.setXnatUsername(newDoi.getXnatUsername());
-                    isDirty = true;
+                    updatingExisting = true;
                 }
-                if (isDirty) {
+                if (StringUtils.isNotBlank(newDoi.getMetadataXml()) && !StringUtils.equals(newDoi.getMetadataXml(), doiObject.getMetadataXml())) {
+                    doiObject.setMetadataXml(newDoi.getMetadataXml());
+                    updatingExisting = true;
+                }
+                if (updatingExisting) {
                     _service.update(doiObject);
+
                 }
             }
             else{
@@ -174,14 +178,20 @@ public class DoiApi extends AbstractXapiRestController {
         // send the post request
         HttpResponse response = client.execute(post);
         if(response.getStatusLine().getStatusCode()==201) {
-            HttpPut put = new HttpPut(doiCreationUrl);
-            put.addHeader("Content-Type", "application/xml");
-            put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + doiObject.getId()));
-            CloseableHttpClient client2 = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
-            // send the put request
-            HttpResponse response2 = client2.execute(put);
-            if(response2.getStatusLine().getStatusCode()==201) {
+            if(updatingExisting){
+                //The DOI is already pointing at the XNAT URL for this data, so we only needed to update the metadata.
                 return new ResponseEntity<>(doiObject, HttpStatus.OK);
+            }
+            else {
+                HttpPut put = new HttpPut(doiCreationUrl);
+                put.addHeader("Content-Type", "application/xml");
+                put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + doiObject.getId()));
+                CloseableHttpClient client2 = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
+                // send the put request
+                HttpResponse response2 = client2.execute(put);
+                if (response2.getStatusLine().getStatusCode() == 201) {
+                    return new ResponseEntity<>(doiObject, HttpStatus.OK);
+                }
             }
         }
 
