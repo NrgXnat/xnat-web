@@ -1,7 +1,7 @@
 #set ($template = $data.getTemplateInfo())
 $!template.setLayoutTemplate("Login.vm")
 
-<h1>Project DOI</h1>
+<h1>Project DOI $externalXml</h1>
 <br/>
 <h2>DOI Details:</h2>
 <table>

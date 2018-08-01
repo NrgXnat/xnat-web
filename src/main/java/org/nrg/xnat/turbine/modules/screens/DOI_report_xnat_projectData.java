@@ -10,7 +10,15 @@
 package org.nrg.xnat.turbine.modules.screens;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.log4j.Logger;
 import org.apache.turbine.modules.screens.VelocityScreen;
 import org.apache.turbine.util.RunData;
@@ -33,8 +41,12 @@ import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.entities.DoiCredentials;
+import org.nrg.xnat.services.system.DoiCredentialsService;
 import org.nrg.xnat.services.system.DoiService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.sql.SQLException;
 
@@ -80,9 +92,38 @@ public class DOI_report_xnat_projectData extends VelocityScreen {
                     DoiService service = XDAT.getContextService().getBean(DoiService.class);
                     Doi doiObject = service.get(Long.parseLong(doi));
                     if(doiObject!=null){
-                        if(StringUtils.equalsIgnoreCase(doiObject.getObjectId(),item.getStringProperty("id"))) {
-                            doiFound = true;
+                        if(!StringUtils.equalsIgnoreCase(doiObject.getObjectId(),item.getStringProperty("id"))) {
+                            throw new NotFoundException(doi);
                         }
+
+                        try {
+                            String doiString = doiObject.getDoi();
+                            if(!StringUtils.startsWith(doiString,"10.5072/")) {
+                                //DOI is not from the test account
+
+                                String doiCreationUrl = "https://doi.org/"+doiString;
+                                HttpGet get = new HttpGet(doiCreationUrl);
+                                get.addHeader("Accept", "application/vnd.datacite.datacite+xml; q=0.5");
+                                CloseableHttpClient client = HttpClientBuilder.create().build();
+                                try {
+                                    // send the get request
+                                    CloseableHttpResponse response = client.execute(get);
+                                    try {
+                                        if (response.getStatusLine().getStatusCode() == 200) {
+                                            context.put("externalXml", IOUtils.toString(response.getEntity().getContent(), "UTF-8"));
+                                        }
+                                    } finally {
+                                        response.close();
+                                    }
+                                } finally {
+                                    client.close();
+                                }
+                            }
+                        }
+                        catch(Exception e){
+                            log.error("Failed to get DOI metadata.",e);
+                        }
+
                         context.put("doiObject", doiObject);
                         String pubs = "Publication 1, Publication 2";
                         String links = "http://cnda.wustl.edu";
@@ -94,9 +135,6 @@ public class DOI_report_xnat_projectData extends VelocityScreen {
                     context.put("doiId", doi);
                 }
                 catch(Exception e){
-                }
-                if(!doiFound){
-                    throw new NotFoundException(doi);
                 }
             }
 
