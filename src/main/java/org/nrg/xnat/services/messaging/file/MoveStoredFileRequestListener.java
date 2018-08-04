@@ -13,6 +13,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xams.xchange.services.storage.XChangeStorageService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.event.XftItemEventI;
@@ -36,12 +37,14 @@ import static lombok.AccessLevel.PRIVATE;
 @Slf4j
 public class MoveStoredFileRequestListener {
     @Autowired
-    public void setUserProjectCache(final UserProjectCache cache) {
+    public MoveStoredFileRequestListener(final XChangeStorageService storageService, final UserProjectCache cache) {
+        _storageService = storageService;
         _cache = cache;
     }
+
     @SuppressWarnings("unused")
     public void onRequest(final MoveStoredFileRequest request) {
-        boolean success = true;
+        boolean            success    = true;
         final List<String> duplicates = new ArrayList<>();
 
         final PersistentWorkflowI wrk = WorkflowUtils.getUniqueWorkflow(request.getUser(), request.getWorkflowId());
@@ -60,7 +63,7 @@ public class MoveStoredFileRequestListener {
             success = false;
         }
 
-        if (success)
+        if (success) {
             try {
                 final String projectId = request.getProject();
                 if (StringUtils.isNotBlank(projectId)) {
@@ -72,11 +75,13 @@ public class MoveStoredFileRequestListener {
                 log.error("Could not mark workflow " + wrk.getWorkflowId() + " complete.", e);
                 success = false;
             }
+        }
 
-        if (success && request.isDelete())
+        if (success && request.isDelete()) {
             for (FileWriterWrapperI file : request.getWriters()) {
                 file.delete();
             }
+        }
 
         if (request.getNotifyList().length > 0) {
             final StringBuilder message = new StringBuilder();
@@ -92,8 +97,7 @@ public class MoveStoredFileRequestListener {
                     }
                     message.append("</ul></p>");
                 }
-            }
-            else {
+            } else {
                 subject = "Upload by reference error";
                 message.append("<p>The upload by reference requested by ").append(request.getUser().getUsername()).append(" has encountered an error.</p>").append("<p>Please contact your IT staff or the application logs for more information.</p>");
             }
@@ -106,5 +110,6 @@ public class MoveStoredFileRequestListener {
         }
     }
 
-    private UserProjectCache _cache;
+    private final XChangeStorageService _storageService;
+    private final UserProjectCache      _cache;
 }
