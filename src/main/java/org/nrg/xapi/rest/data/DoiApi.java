@@ -14,6 +14,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -21,6 +22,8 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
@@ -62,6 +65,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 @Api(description = "XNAT Data Investigators API")
 @XapiRestController
+@Slf4j
 @RequestMapping(value = "/doi")
 public class DoiApi extends AbstractXapiRestController {
     @Autowired
@@ -175,7 +179,7 @@ public class DoiApi extends AbstractXapiRestController {
         post.addHeader("Content-Type","application/xml");
         post.setEntity(new StringEntity(xml));
         CloseableHttpClient client = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
-        // send the post request
+        // send the post request for the metadata
         HttpResponse response = client.execute(post);
         if(response.getStatusLine().getStatusCode()==201) {
             if(updatingExisting){
@@ -341,6 +345,50 @@ public class DoiApi extends AbstractXapiRestController {
 
         _credentialsService.deleteCredentials(credentialsId, user);
         return ResponseEntity.ok(true);
+    }
+
+    @ApiOperation(value = "Gets the metadata for the requested DOI.", notes = "Returns the metadata for a given DOI.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested DOI metadata."),
+            @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
+            @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "metadata/{id}", produces = MediaType.TEXT_XML_VALUE, method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<String> getDoiMetadata(@PathVariable("id") final long id) throws NotFoundException {
+        final Doi doiObject = _service.get(id);
+        if (doiObject == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        String doiMetadata = doiObject.getMetadataXml();
+        try {
+            String doiString = doiObject.getDoi();
+            if(!StringUtils.startsWith(doiString,"10.5072/")) {
+                //DOI is not from the test account
+
+                String doiCreationUrl = "https://doi.org/"+doiString;
+                HttpGet get = new HttpGet(doiCreationUrl);
+                get.addHeader("Accept", "application/vnd.datacite.datacite+xml; q=0.5");
+                CloseableHttpClient client = HttpClientBuilder.create().build();
+                try {
+                    // send the get request
+                    CloseableHttpResponse response = client.execute(get);
+                    try {
+                        if (response.getStatusLine().getStatusCode() == 200) {
+                            doiMetadata = IOUtils.toString(response.getEntity().getContent(), "UTF-8");
+                        }
+                    } finally {
+                        response.close();
+                    }
+                } finally {
+                    client.close();
+                }
+            }
+        }
+        catch(Exception e){
+            log.error("Failed to get DOI metadata.",e);
+        }
+
+        return new ResponseEntity<>(doiMetadata, HttpStatus.OK);
     }
 
     private final DoiService _service;
