@@ -59,6 +59,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
@@ -389,6 +390,58 @@ public class DoiApi extends AbstractXapiRestController {
         }
 
         return new ResponseEntity<>(doiMetadata, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Gets a random String that could be used for creating a DOI.", notes = "Returns a new random text String.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns a new random String."),
+            @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "random", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<String> getRandomIdentifier() throws NotFoundException {
+        String possibleCharacters = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+        Random rand = new Random();
+        String resultingIdentifier = "";
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+="-";
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+        resultingIdentifier+=possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+
+        return new ResponseEntity<>(resultingIdentifier, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Gets a random String that could be used for creating a DOI.", notes = "Returns a new random DOI that has not yet been used on this XNAT with this prefix. You should not include a slash in your prefix.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns a new random String."),
+            @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "random/{prefix}", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<String> getRandomIdentifier(@PathVariable("prefix") final String prefix) throws NotFoundException {
+        String possibleCharacters = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"; //Douglas Crockford's Base32
+        Random rand = new Random();
+        boolean hasFoundUnusedDoi = false;
+        String resultingIdentifier = "";
+        while (!hasFoundUnusedDoi) {
+            resultingIdentifier = prefix;
+            resultingIdentifier += "/";
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += "-";
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            resultingIdentifier += possibleCharacters.charAt(rand.nextInt(possibleCharacters.length()));
+            List<Doi> existingDoisWithThatDoiString = _service.getDoisForDoiString(resultingIdentifier);
+            if(existingDoisWithThatDoiString==null || existingDoisWithThatDoiString.size()==0){
+                hasFoundUnusedDoi = true;
+            }
+        }
+        return new ResponseEntity<>(resultingIdentifier, HttpStatus.OK);
     }
 
     private final DoiService _service;
