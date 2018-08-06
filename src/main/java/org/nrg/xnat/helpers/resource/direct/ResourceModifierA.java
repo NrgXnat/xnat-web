@@ -19,21 +19,22 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.base.BaseXnatExperimentdata.UnknownPrimaryProjectException;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.DateUtils;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.exceptions.InvalidArchiveStructure;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.utils.CatalogUtils;
 
-import java.io.File;
 import java.io.Serializable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
  * @author timo
  */
 public abstract class ResourceModifierA implements Serializable {
-    private static final long serialVersionUID = 42L;
     final boolean overwrite;
     final UserI user;
     final EventMetaI ci;
@@ -160,37 +161,30 @@ public abstract class ResourceModifierA implements Serializable {
         return resource;
     }
 
+    @SuppressWarnings("WeakerAccess")
     protected static String getDefaultUID() {
-        java.text.SimpleDateFormat formatter = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss");
-        return formatter.format(Calendar.getInstance().getTime());
+        return DateUtils.format(Calendar.getInstance().getTime(), "yyyyMMdd_HHmmss");
     }
 
     protected abstract String buildDestinationPath() throws InvalidArchiveStructure, UnknownPrimaryProjectException;
 
-    protected abstract XnatAbstractresourceI getResourceById(final Integer i, final String type);
+    protected abstract XnatAbstractresourceI getResourceById(final Integer resourceId, final String type);
 
-    protected abstract XnatAbstractresourceI getResourceByLabel(final String lbl, final String type);
+    protected abstract XnatAbstractresourceI getResourceByLabel(final String resourceLabel, final String type);
 
-    private boolean createCatalog(XnatResourcecatalog resource, XnatResourceInfo info) throws Exception {
+    private void createCatalog(final XnatResourcecatalog resource, final XnatResourceInfo info) throws Exception {
         CatalogUtils.configureEntry(resource, info, user);
 
-        final String dest_path = this.buildDestinationPath();
+        final CatCatalogBean cat = new CatCatalogBean();
+        cat.setId(StringUtils.defaultIfBlank(resource.getLabel(), getDefaultUID()));
 
-        CatCatalogBean cat = new CatCatalogBean();
-        if (resource.getLabel() != null) {
-            cat.setId(resource.getLabel());
-        } else {
-            cat.setId(getDefaultUID());
-        }
+        final Path parent = Paths.get(buildDestinationPath(), cat.getId());
+        parent.toFile().mkdirs();
+        final Path target = parent.resolve(cat.getId() + "_catalog.xml");
 
-        File saveTo = new File(new File(dest_path, cat.getId()), cat.getId() + "_catalog.xml");
-        saveTo.getParentFile().mkdirs();
-
-        CatalogUtils.writeCatalogToFile(cat, saveTo);
-
-        resource.setUri(saveTo.getAbsolutePath());
-
-        return true;
+        CatalogUtils.writeCatalogToFile(cat, target.toFile());
+        resource.setUri(target.toAbsolutePath().toString());
     }
-}
 
+
+}

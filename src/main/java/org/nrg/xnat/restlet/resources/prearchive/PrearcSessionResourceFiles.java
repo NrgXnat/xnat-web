@@ -7,12 +7,9 @@
  * Released under the Simplified BSD.
  */
 
-/**
- * 
- */
 package org.nrg.xnat.restlet.resources.prearchive;
 
-import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ActionException;
 import org.nrg.dcm.Dcm2Jpg;
@@ -37,92 +34,86 @@ import org.restlet.resource.Variant;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
 
 /**
  * @author tolsen01
- *
  */
+@Slf4j
 public class PrearcSessionResourceFiles extends PrearcScanResourceList {
-	private static final String RESOURCE_ID = "RESOURCE_ID";
-	private final String resource_id;
-	
-	public PrearcSessionResourceFiles(Context context, Request request,
-			Response response) {
-		super(context, request, response);
-		resource_id = (String)SecureResource.getParameter(request,RESOURCE_ID);
-	}
+    public PrearcSessionResourceFiles(final Context context, final Request request, final Response response) {
+        super(context, request, response);
+        resourceId = (String) SecureResource.getParameter(request, RESOURCE_ID);
+    }
 
+    @Override
+    public Representation represent(final Variant variant) {
+        final MediaType mediaType = overrideVariant(variant);
 
-	
-	final static ArrayList<String> columns=Lists.newArrayList("Name","Size","URI");
+        final PrearcInfo info;
+        try {
+            info = retrieveSessionBean();
+        } catch (ActionException e) {
+            setResponseStatus(e);
+            return null;
+        }
 
+        final XnatImagescandataI scan = MergeUtils.getMatchingScanById(getScanId(), info.session.getScans_scan());
 
-	@Override
-	public Representation getRepresentation(Variant variant) {
-		final MediaType mt=overrideVariant(variant);
-				
-		final PrearcInfo info;
-		try {
-			info = retrieveSessionBean();
-		} catch (ActionException e) {
-			setResponseStatus(e);
-			return null;
-		}
-		
-		final XnatImagescandataI scan=MergeUtils.getMatchingScanById(scan_id,(List<XnatImagescandataI>)info.session.getScans_scan());
-		
-		if(scan==null){
-			this.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-			return null;
-		}
-		
-		final XnatResourcecatalogI res=(XnatResourcecatalogI)MergeUtils.getMatchingResourceByLabel(resource_id, scan.getFile());
-		
-		if(res==null){
-			this.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
-			return null;
-		}
-		
-		final String rootPath=CatalogUtils.getCatalogFile(info.session.getPrearchivepath(), ((XnatResourcecatalogI)res)).getParentFile().getAbsolutePath();
-		
-		final CatCatalogI catalog=CatalogUtils.getCleanCatalog(info.session.getPrearchivepath(), res, false);
-		
-		if(StringUtils.isNotEmpty(filepath)){
-			final CatEntryI entry=CatalogUtils.getEntryByURI(catalog, filepath);
-			File f= CatalogUtils.getFile(entry, rootPath);
-			
-            if (mt.equals(MediaType.IMAGE_JPEG) && StringUtils.equals(resource_id, "DICOM") && Dcm2Jpg.isDicom(f)) {
+        if (scan == null) {
+            getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+            return null;
+        }
+
+        final XnatResourcecatalogI resourceCatalog = (XnatResourcecatalogI) MergeUtils.getMatchingResourceByLabel(resourceId, scan.getFile());
+
+        if (resourceCatalog == null) {
+            getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+            return null;
+        }
+
+        final String rootPath = CatalogUtils.getCatalogFile(info.session.getPrearchivepath(), resourceCatalog).getParentFile().getAbsolutePath();
+
+        final CatCatalogI catalog = CatalogUtils.getCleanCatalog(info.session.getPrearchivepath(), resourceCatalog, false);
+
+        if (StringUtils.isNotEmpty(filepath)) {
+            final CatEntryI entry = CatalogUtils.getEntryByURI(catalog, filepath);
+            if (entry == null) {
+                getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Unable to access the file at: " + filepath);
+                return new StringRepresentation("");
+            }
+
+            final File file = CatalogUtils.getFile(entry, rootPath);
+            if (mediaType.equals(MediaType.IMAGE_JPEG) && StringUtils.equals(resourceId, "DICOM") && Dcm2Jpg.isDicom(file)) {
                 try {
-                    return new InputRepresentation(new ByteArrayInputStream(Dcm2Jpg.convert(f)), mt);
+                    return new InputRepresentation(new ByteArrayInputStream(Dcm2Jpg.convert(file)), mediaType);
                 } catch (IOException e) {
+                    log.error("Unable to convert the entry at {} from the catalog at {}", filepath, rootPath);
                     getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Unable to convert this file to jpeg : " + e.getMessage());
                     return new StringRepresentation("");
                 }
             }
-            
-			return representFile(f,mt);
-		}else{
-			boolean prettyPrint=this.isQueryVariableTrue("prettyPrint");
-			
-			final XFTTable table=new XFTTable();
-	        table.initTable(columns);
-	        for (final CatEntryI entry: CatalogUtils.getEntriesByFilter(catalog,null)) {
-	        	File f=CatalogUtils.getFile(entry, rootPath);
-	        	Object[] oarray = new Object[] { f.getName(), (prettyPrint)?CatalogUtils.formatSize(f.length()):f.length(), constructURI(entry.getUri())};
-	        	table.insertRow(oarray);
-	        }
-	        
-	        return representTable(table, mt, new Hashtable<String,Object>());
-		}
-        
-	}
-			
-    private String constructURI(String resource) {
-    	String requestPart = this.getHttpServletRequest().getServletPath() + this.getHttpServletRequest().getPathInfo();
-    	return requestPart + "/" + resource;
-    	
+
+            return representFile(file, mediaType);
+        } else {
+            final boolean  prettyPrint = isQueryVariableTrue("prettyPrint");
+            final XFTTable table       = new XFTTable();
+            table.initTable(columns);
+            CatalogUtils.getEntriesByFilter(catalog, null).forEach(entry -> {
+                final File file = CatalogUtils.getFile(entry, rootPath);
+                table.insertRow(new Object[]{file.getName(), (prettyPrint) ? CatalogUtils.formatSize(file.length()) : file.length(), constructURI(entry.getUri())});
+            });
+
+            return representTable(table, mediaType, new Hashtable<>());
+        }
+
     }
+
+    private String constructURI(String resource) {
+        return getHttpServletRequest().getServletPath() + getHttpServletRequest().getPathInfo() + "/" + resource;
+    }
+
+    private static final String   RESOURCE_ID = "RESOURCE_ID";
+    private static final String[] columns     = new String[]{"Name", "Size", "URI"};
+    private final        String   resourceId;
 }

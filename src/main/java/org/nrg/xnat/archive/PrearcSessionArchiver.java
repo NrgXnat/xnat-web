@@ -779,7 +779,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
             String scan_id = newScan.getId();
             int count = 1;
             boolean needsMove = false;
-            //make sure there aren't any matches by ID.  if there aren't needsMove stays false.  And, it identifies a good scan_id to use in the process.
+            //make sure there aren't any matches by ID.  if there aren't needsMove stays false.  And, it identifies a good _scanId to use in the process.
             while (MergeUtils.getMatchingScanById(scan_id, existing.getScans_scan()) != null) {
                 scan_id = newScan.getId() + "-" + modalityCode + count++;
                 needsMove = true;

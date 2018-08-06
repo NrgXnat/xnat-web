@@ -79,14 +79,14 @@ public class DirectReconResourceImpl extends ResourceModifierA {
 	 * @see org.nrg.xnat.helpers.resource.direct.ResourceModifierA#getResourceById(java.lang.Integer)
 	 */
 	@Override
-	public XnatAbstractresourceI getResourceById(Integer i, final String type) {
+	public XnatAbstractresourceI getResourceById(Integer resourceId, final String type) {
 		for(XnatAbstractresourceI res: this.recon.getIn_file()){
-			if(res.getXnatAbstractresourceId().equals(i)){
+			if(res.getXnatAbstractresourceId().equals(resourceId)){
 				return res;
 			}
 		}
 		for(XnatAbstractresourceI res: this.recon.getOut_file()){
-			if(res.getXnatAbstractresourceId().equals(i)){
+			if(res.getXnatAbstractresourceId().equals(resourceId)){
 				return res;
 			}
 		}
@@ -98,14 +98,14 @@ public class DirectReconResourceImpl extends ResourceModifierA {
 	 * @see org.nrg.xnat.helpers.resource.direct.ResourceModifierA#getResourceByLabel(java.lang.String)
 	 */
 	@Override
-	public XnatAbstractresourceI getResourceByLabel(String lbl, final String type) {
+	public XnatAbstractresourceI getResourceByLabel(String resourceLabel, final String type) {
 		for(XnatAbstractresourceI res: this.recon.getIn_file()){
-			if(StringUtils.isNotEmpty(res.getLabel()) && res.getLabel().equals(lbl)){
+			if(StringUtils.isNotEmpty(res.getLabel()) && res.getLabel().equals(resourceLabel)){
 				return res;
 			}
 		}
 		for(XnatAbstractresourceI res: this.recon.getOut_file()){
-			if(StringUtils.isNotEmpty(res.getLabel()) && res.getLabel().equals(lbl)){
+			if(StringUtils.isNotEmpty(res.getLabel()) && res.getLabel().equals(resourceLabel)){
 				return res;
 			}
 		}
