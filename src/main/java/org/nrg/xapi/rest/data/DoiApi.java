@@ -114,7 +114,7 @@ public class DoiApi extends AbstractXapiRestController {
         Doi doiObject = null;
         String issuerPassword = doiCreationHelper.getIssuerPassword();
         String xml = doiCreationHelper.getMetadataXml();
-        List<Doi> existingDois = _service.getDoisForObjectAndProject(doiCreationHelper.getObjectId(), doiCreationHelper.getProjectId());
+        List<Doi> existingDois = _service.getDoisForObjectAndProjectAndType(doiCreationHelper.getObjectId(), doiCreationHelper.getProjectId(), doiCreationHelper.getXsiType());
 
         //Create or update internal XNAT representation of DOI
         if(existingDois.size()>0){

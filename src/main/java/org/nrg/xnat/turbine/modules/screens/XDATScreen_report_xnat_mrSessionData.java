@@ -65,7 +65,7 @@ public class XDATScreen_report_xnat_mrSessionData extends SecureReport {
 
             try {
                 DoiService service = XDAT.getContextService().getBean(DoiService.class);
-                List<Doi> existingDois = service.getDoisForObjectAndProject(mr.getId(), proj);
+                List<Doi> existingDois = service.getDoisForObjectAndProjectAndType(mr.getId(), proj,"xnat:mrSessionData");
                 if (existingDois.size() > 0) {
                     context.put("doi", existingDois.get(0).getDoi());
                 }

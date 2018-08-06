@@ -45,7 +45,7 @@ public class XDATScreen_report_xnat_projectData extends SecureReport {
         try {
             String projectId = ((XnatProjectdata) om).getId();
             DoiService service = XDAT.getContextService().getBean(DoiService.class);
-            List<Doi> existingDois = service.getDoisForObjectAndProject(projectId, projectId);
+            List<Doi> existingDois = service.getDoisForObjectAndProjectAndType(projectId, projectId,"xnat:projectData");
             if (existingDois.size() > 0) {
                 context.put("doi", existingDois.get(0).getDoi());
             }

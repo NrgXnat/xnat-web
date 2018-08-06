@@ -22,7 +22,7 @@ import java.util.List;
  */
 public interface DoiService extends BaseHibernateService<Doi> {
     List<Doi> getDois();
-    List<Doi> getDoisForObjectAndProject(String objectId, String projectId);
+    List<Doi> getDoisForObjectAndProjectAndType(String objectId, String projectId, String xsiType);
     List<Doi> getDoisForDoiString(String doiString);
     void deleteDoi(int doi,UserI user) throws NotFoundException, InsufficientPrivilegesException;
 }

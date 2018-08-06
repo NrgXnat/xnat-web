@@ -37,8 +37,8 @@ public class HibernateDoiService extends AbstractHibernateEntityService<Doi, Doi
     }
 
     @Override
-    public List<Doi> getDoisForObjectAndProject(String objectId, String projectId){
-        return getDao().getAllDoisForObjectAndProject(objectId, projectId);
+    public List<Doi> getDoisForObjectAndProjectAndType(String objectId, String projectId, String xsiType){
+        return getDao().getAllDoisForObjectAndProjectAndType(objectId, projectId, xsiType);
     }
 
     @Override
