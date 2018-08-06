@@ -25,9 +25,12 @@ import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.entities.Doi;
+import org.nrg.xnat.services.system.DoiService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import static org.nrg.xdat.XDAT.getUserDetails;
 
@@ -38,6 +41,18 @@ import static org.nrg.xdat.XDAT.getUserDetails;
 public class XDATScreen_report_xnat_projectData extends SecureReport {
     public void finalProcessing(RunData data, Context context) {
         final XnatProjectdata project = (XnatProjectdata) om;
+
+        try {
+            String projectId = ((XnatProjectdata) om).getId();
+            DoiService service = XDAT.getContextService().getBean(DoiService.class);
+            List<Doi> existingDois = service.getDoisForObjectAndProject(projectId, projectId);
+            if (existingDois.size() > 0) {
+                context.put("doi", existingDois.get(0).getDoi());
+            }
+        }
+        catch(Exception e){
+            log.error("Error getting DOI for project",e);
+        }
 
         final UserI user = getUserDetails();
         assert user != null;

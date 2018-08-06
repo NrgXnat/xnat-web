@@ -34,3 +34,9 @@
 								<td>#escapeHTML("$!item.getProperty('visit_id')")</td>
 							</tr>
 							#end
+							#if($doi)
+							<tr>
+								#formLabel("DOI")
+								<td><a href="https://doi.org/$doi">https://doi.org/$doi</a></td>
+							</tr>
+							#end

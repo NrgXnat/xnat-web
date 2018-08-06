@@ -10,5 +10,11 @@
 </tr>
 #parse($turbineUtils.getTemplateName("_core_demographics","xnat:subjectData",$project))
 #parse($turbineUtils.getTemplateName("_addtl_demographics","xnat:subjectData",$project))
+#if($doi)
+<tr>
+    #formLabel("DOI")
+    <td><a href="https://doi.org/$doi">https://doi.org/$doi</a></td>
+</tr>
+#end
 
 <!-- end /xnat-templates/screens/xnat_subjectData/xnat_subjectData_keyFields.vm -->
