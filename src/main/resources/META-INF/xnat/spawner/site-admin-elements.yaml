@@ -407,6 +407,23 @@ generalSecuritySettings:
             element:
                 data:
                     message: Please do not include bounding "/" characters in your regex pattern.
+        doiCreators:
+            kind: panel.select.single
+            name: doiCreators
+            label: Who can create DOIs
+            description: "This controls whether users will be able to create Digital Object Identifiers using XNAT to permanently identify their XNAT data."
+            options:
+                message:
+                    label: Nobody
+                    value: Nobody
+                alert:
+                    label: Project Owners and Admins
+                    value: Project Owners and Admins
+                error:
+                    label: Admins
+                    value: Admins
+            element:
+                title: Select Who Can Create DOIs
 
 userLoginsSessionControls:
     kind: panel.form
@@ -677,37 +694,6 @@ securityServices:
             name: roleRepositoryService
             label: Role Repository Default
             size: 50
-
-doiSettings:
-    kind: panel.form
-    name: doiSettings
-    label: DOI Settings
-    url: /xapi/siteConfig
-    method: POST
-    contentType: json
-    contents:
-        doiCreators:
-            kind: panel.element
-            label: Who can create DOIs
-            description: "This controls whether users will be able to create Digital Object Identifiers using XNAT to permanently identify their XNAT data."
-            contents:
-                doiCreatorsMenu:
-                    kind: select.menu
-                    name: doiCreators
-                    options:
-                        any: Nobody
-                        http: Project Owners and Admins
-                        https: Admins
-        doiUrl:
-            kind: panel.input.text
-            name: doiUrl
-            label: DOI Url
-            validation: url onblur
-            description: >
-                The address you want to be used for your site when creating DOIs. If your site can be accessed at multiple URLs, there may be a particular one that you want DOIs to point to. This is particularly useful if your site url
-                functional address (i.e. if the user pasted this address in their web browser, they should
-                come to the site). localhost only works if the web browser is located on the same machine.
-                You are required to guarantee that this address is functional for reaching the site.
 
 emailServerSettings:
     kind: panel.form
@@ -1483,7 +1469,6 @@ root:
                 ${passwords}
                 ${csrf}
                 ${securityServices}
-                ${doiSettings}
         emailServer:
             kind: tab
             name: emailServer

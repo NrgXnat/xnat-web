@@ -37,6 +37,8 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
+import org.nrg.xdat.security.XDATUser;
+import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -121,9 +123,12 @@ public class DoiApi extends AbstractXapiRestController {
     @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT)
     @ResponseBody
     public ResponseEntity<Doi> createOrUpdateDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
-        boolean updatingExisting = false;
         UserI user = getSessionUser();
+        if(!canCreateDois(user)){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
+        boolean updatingExisting = false;
         Doi newDoi = new Doi(doiCreationHelper);
         Doi doiObject = null;
         String issuerPassword = doiCreationHelper.getIssuerPassword();
@@ -226,7 +231,9 @@ public class DoiApi extends AbstractXapiRestController {
     @ResponseBody
     public ResponseEntity<Boolean> deleteDoi(@PathVariable("id") final int id) throws org.nrg.xapi.exceptions.NotFoundException, InsufficientPrivilegesException, XftItemException, NotFoundException {
         final UserI user = getSessionUser();
-
+        if(!canCreateDois(user)){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
         _service.deleteDoi(id, user);
         return ResponseEntity.ok(true);
     }
@@ -280,6 +287,10 @@ public class DoiApi extends AbstractXapiRestController {
     @ResponseBody
     public ResponseEntity<DoiCredentials> createCredentials(@RequestBody final DoiCredentials credentials) throws Exception {
         final UserI user = getSessionUser();
+        if(!canCreateDois(user)){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
         String sessionUsername = user.getUsername();
         if(!Roles.isSiteAdmin(user) && credentials!=null && StringUtils.isNotBlank(credentials.getXnatUsername())){
             if(!StringUtils.equals(credentials.getXnatUsername(),sessionUsername)){
@@ -304,6 +315,9 @@ public class DoiApi extends AbstractXapiRestController {
     @ResponseBody
     public ResponseEntity<DoiCredentials> updateCredentials(@PathVariable("credentialsId") final int credentialsId, @RequestBody final DoiCredentials doiCredentialsObject) throws Exception {
         final UserI user = getSessionUser();
+        if(!canCreateDois(user)){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
 
         final DoiCredentials existing = _credentialsService.get(doiCredentialsObject.getId());
 
@@ -363,7 +377,9 @@ public class DoiApi extends AbstractXapiRestController {
     @ResponseBody
     public ResponseEntity<Boolean> deleteCredentials(@PathVariable("credentialsId") final int credentialsId) throws org.nrg.xapi.exceptions.NotFoundException, InsufficientPrivilegesException, XftItemException, NotFoundException {
         final UserI user = getSessionUser();
-
+        if(!canCreateDois(user)){
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
         _credentialsService.deleteCredentials(credentialsId, user);
         return ResponseEntity.ok(true);
     }
@@ -462,6 +478,24 @@ public class DoiApi extends AbstractXapiRestController {
             }
         }
         return new ResponseEntity<>(resultingIdentifier, HttpStatus.OK);
+    }
+
+    private boolean canCreateDois(UserI user){
+        String doiCreators = _preferences.getDoiCreators();
+        if(StringUtils.equals(doiCreators,"Admins")){
+            if(!Roles.isSiteAdmin(user)){
+                return false;
+            }
+        }
+        else if(StringUtils.equals(doiCreators,"Project Owners and Admins")){
+            if(!Roles.isSiteAdmin(user) && Permissions.getOwnedProjects(user).size()<=0){
+                return false;
+            }
+        }
+        else{
+            return false;
+        }
+        return true;
     }
 
     private final SiteConfigPreferences _preferences;
