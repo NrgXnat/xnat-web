@@ -36,6 +36,7 @@ import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -71,8 +72,9 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 @RequestMapping(value = "/doi")
 public class DoiApi extends AbstractXapiRestController {
     @Autowired
-    public DoiApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final DoiService service, final DoiCredentialsService credentialsService) {
+    public DoiApi(final SiteConfigPreferences preferences, final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final DoiService service, final DoiCredentialsService credentialsService) {
         super(userManagementService, roleHolder);
+        _preferences = preferences;
         _service = service;
         _credentialsService = credentialsService;
     }
@@ -116,7 +118,7 @@ public class DoiApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Insufficient privileges to create or edit the submitted DOI."),
                    @ApiResponse(code = 404, message = "The requested DOI wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST)
+    @XapiRequestMapping(value = "identifier", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT)
     @ResponseBody
     public ResponseEntity<Doi> createOrUpdateDoi(@RequestBody final DoiCreationHelper doiCreationHelper) throws Exception {
         boolean updatingExisting = false;
@@ -202,7 +204,7 @@ public class DoiApi extends AbstractXapiRestController {
             else {
                 HttpPut put = new HttpPut(doiCreationUrl);
                 put.addHeader("Content-Type", "application/xml");
-                put.setEntity(new StringEntity("doi=" + doiString + "\nurl=http://xnat-dev11.nrg.mir:8081/doi/" + doiObject.getId()));
+                put.setEntity(new StringEntity("doi=" + doiString + "\nurl="+_preferences.getSiteUrl()+"/doi/" + doiObject.getId()));
                 CloseableHttpClient client2 = HttpClientBuilder.create().setDefaultCredentialsProvider(credsProvider).build();
                 // send the put request
                 HttpResponse response2 = client2.execute(put);
@@ -462,6 +464,7 @@ public class DoiApi extends AbstractXapiRestController {
         return new ResponseEntity<>(resultingIdentifier, HttpStatus.OK);
     }
 
+    private final SiteConfigPreferences _preferences;
     private final DoiService _service;
     private final DoiCredentialsService _credentialsService;
 }
