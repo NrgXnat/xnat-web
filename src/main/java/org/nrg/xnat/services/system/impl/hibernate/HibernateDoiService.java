@@ -37,6 +37,11 @@ public class HibernateDoiService extends AbstractHibernateEntityService<Doi, Doi
     }
 
     @Override
+    public List<Doi> getDoisForUsername(String xnatUsername){
+        return getDao().getDoisForUser(xnatUsername);
+    }
+
+    @Override
     public List<Doi> getDoisForObjectAndProjectAndType(String objectId, String projectId, String xsiType){
         return getDao().getAllDoisForObjectAndProjectAndType(objectId, projectId, xsiType);
     }

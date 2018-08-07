@@ -61,6 +61,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
@@ -76,13 +77,24 @@ public class DoiApi extends AbstractXapiRestController {
         _credentialsService = credentialsService;
     }
 
-    @ApiOperation(value = "Get list of DOIs.", notes = "The DOIs function returns a list of all DOIs configured in the XNAT system.", response = Doi.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of all DOIs.", notes = "The DOIs function returns a list of all DOIs configured in the XNAT system.", response = Doi.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured DOIs."),
+                   @ApiResponse(code = 403, message = "Insufficient privileges to get DOIs for all users."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "identifier", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @XapiRequestMapping(value = "identifiers/all", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
     @ResponseBody
-    public ResponseEntity<List<Doi>> getDois() {
+    public ResponseEntity<List<Doi>> getAllDois() {
         return new ResponseEntity<>(_service.getDois(), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get list of your DOIs.", notes = "The DOIs function returns a list of all your DOIs configured in the XNAT system.", response = Doi.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of your currently configured DOIs."),
+            @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = "identifiers", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<List<Doi>> getYourDois() {
+        final UserI user = getSessionUser();
+        return new ResponseEntity<>(_service.getDoisForUsername(user.getUsername()), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Gets the requested DOI.", notes = "Returns the DOI object for a given DOI.", response = Doi.class)
@@ -217,19 +229,25 @@ public class DoiApi extends AbstractXapiRestController {
         return ResponseEntity.ok(true);
     }
 
-    @ApiOperation(value = "Get list of DOI credentials.", notes = "The DOI credentials function returns a list of all DOI credentials configured in the XNAT system.", response = DoiCredentials.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of all DOI credentials.", notes = "The DOI credentials function returns a list of all DOI credentials configured in the XNAT system.", response = DoiCredentials.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured DOI credentials."),
+            @ApiResponse(code = 403, message = "Insufficient privileges to get DOI credentials for all users."),
             @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "credentials", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @XapiRequestMapping(value = "credentialslist/all", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
     @ResponseBody
-    public ResponseEntity<List<DoiCredentials>> getDoiCredentialsList() {
+    public ResponseEntity<List<DoiCredentials>> getAllDoiCredentials() {
         final UserI user = getSessionUser();
-        if(Roles.isSiteAdmin(user)){
-            return new ResponseEntity<>(_credentialsService.getDoiCredentials(), HttpStatus.OK);
-        }
-        else {
-            return new ResponseEntity<>(_credentialsService.getDoiCredentialsForUsername(user.getUsername()), HttpStatus.OK);
-        }
+        return new ResponseEntity<>(_credentialsService.getDoiCredentials(), HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get list of your DOI credentials.", notes = "The DOI credentials function returns a list of all your DOI credentials configured in the XNAT system.", response = DoiCredentials.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of your currently configured DOI credentials."),
+            @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = "credentialslist", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<List<DoiCredentials>> getYourDoiCredentials() {
+        final UserI user = getSessionUser();
+        return new ResponseEntity<>(_credentialsService.getDoiCredentialsForUsername(user.getUsername()), HttpStatus.OK);
     }
 
     @ApiOperation(value = "Gets the requested DOI credentials.", notes = "Returns the DOI credentials object for a given DOI.", response = DoiCredentials.class)

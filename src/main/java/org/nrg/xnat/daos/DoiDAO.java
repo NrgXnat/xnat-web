@@ -29,6 +29,13 @@ public class DoiDAO extends AbstractHibernateDAO<Doi> {
     }
 
     @Transactional
+    public List<Doi> getDoisForUser(String xnatUsername) {
+        final Criteria criteria = getSession().createCriteria(getParameterizedType());
+        criteria.add(Restrictions.eq("xnatUsername", xnatUsername));
+        return criteria.list();
+    }
+
+    @Transactional
     public List<Doi> getAllDoisForObjectAndProjectAndType(String objectId, String projectId, String xsiType) {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
         criteria.add(Restrictions.eq("objectId", objectId));
