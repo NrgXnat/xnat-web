@@ -22,7 +22,6 @@ import org.json.JSONObject;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.dcm.Dcm2Jpg;
-import org.nrg.xams.xchange.services.storage.XChangeStorageService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.bean.CatEntryBean;
@@ -425,11 +424,7 @@ public class FileList extends XNATCatalogTemplate {
                     }
 
                     if (proj == null) {
-                        if (parent.getItem().instanceOf("xnat:experimentData")) {
-                            proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
-                        } else if (security.getItem().instanceOf("xnat:experimentData")) {
-                            proj = ((XnatExperimentdata) security).getPrimaryProject(false);
-                        }
+                        initializeProjectFromExperiment();
                     }
 
                     if (resource instanceof XnatResourcecatalog) {
@@ -453,12 +448,7 @@ public class FileList extends XNATCatalogTemplate {
                         }
 
                         if (entries.size() == 0 && filePath.endsWith("/")) {
-                            final CatalogUtils.CatEntryFilterI folderFilter=new CatalogUtils.CatEntryFilterI() {
-            					@Override
-            					public boolean accept(CatEntryI entry) {
-            						return entry.getUri().startsWith(filePath);
-            					}
-            				};
+                            final CatalogUtils.CatEntryFilterI folderFilter= entry -> entry.getUri().startsWith(filePath);
 
                             entries.addAll(CatalogUtils.getEntriesByFilter(cat, folderFilter));
                         }
@@ -479,7 +469,6 @@ public class FileList extends XNATCatalogTemplate {
 
                                 CatalogUtils.removeEntry(cat, entry);
                                 CatalogUtils.writeCatalogToFile(cat, catFile);
-                                CatalogUtils.moveToHistory(catFile, file, (CatEntryBean) entry, ci);
 
                                 if (!isQueryVariableFalse("removeFiles") && !file.delete()) {
                                     logger.warn("Error attempting to delete physical file for deleted resource: " + file.getAbsolutePath());
@@ -669,26 +658,24 @@ public class FileList extends XNATCatalogTemplate {
         final String[] file_content = getQueryVariables("file_content");
         final String[] file_format = getQueryVariables("file_format");
         if ((file_content != null && file_content.length > 0) || (file_format != null && file_format.length > 0)) {
-            return new CatEntryFilterI() {
-                public boolean accept(CatEntryI entry) {
-                    if (file_format != null && file_format.length > 0) {
-                        if (entry.getFormat() == null) {
-                            if (!ArrayUtils.contains(file_format, "NULL")) return false;
-                        } else {
-                            if (!ArrayUtils.contains(file_format, entry.getFormat())) return false;
-                        }
+            return entry -> {
+                if (file_format != null && file_format.length > 0) {
+                    if (entry.getFormat() == null) {
+                        if (!ArrayUtils.contains(file_format, "NULL")) return false;
+                    } else {
+                        if (!ArrayUtils.contains(file_format, entry.getFormat())) return false;
                     }
-
-                    if (file_content != null && file_content.length > 0) {
-                        if (entry.getContent() == null) {
-                            return ArrayUtils.contains(file_content, "NULL");
-                        } else {
-                            return ArrayUtils.contains(file_content, entry.getContent());
-                        }
-                    }
-
-                    return true;
                 }
+
+                if (file_content != null && file_content.length > 0) {
+                    if (entry.getContent() == null) {
+                        return ArrayUtils.contains(file_content, "NULL");
+                    } else {
+                        return ArrayUtils.contains(file_content, entry.getContent());
+                    }
+                }
+
+                return true;
             };
         }
 
@@ -761,56 +748,49 @@ public class FileList extends XNATCatalogTemplate {
 
         final Integer index = (containsQueryVariable("index")) ? Integer.parseInt(getQueryVariable("index")) : null;
 
-        for (final XnatAbstractresource temp : resources) {
+        for (final XnatAbstractresource abstractResource : resources) {
             final String rootArchivePath = proj.getRootArchivePath();
-            if (temp.getItem().instanceOf("xnat:resourceCatalog")) {
-                final boolean includeRoot = isQueryVariableTrue("includeRootPath");
+            if (abstractResource.getItem().instanceOf("xnat:resourceCatalog")) {
+                final boolean             includeRoot     = isQueryVariableTrue("includeRootPath");
+                final XnatResourcecatalog resourceCatalog = (XnatResourcecatalog) abstractResource;
+                final CatCatalogBean      catalog         = resourceCatalog.getCleanCatalog(rootArchivePath, includeRoot, null, null);
+                final String              parentPath      = resourceCatalog.getCatalogFile(rootArchivePath).getParent();
 
-                final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
-
-
-                final CatCatalogBean cat = catResource.getCleanCatalog(rootArchivePath, includeRoot, null, null);
-                final String parentPath = catResource.getCatalogFile(rootArchivePath).getParent();
-
-                if (cat != null) {
-                    if (filePath == null || filePath.equals("")) {
-                        table.rows().addAll(CatalogUtils.getEntryDetails(cat, parentPath, (catResource.getBaseURI() != null) ? catResource.getBaseURI() + "/files" : baseURI + "/resources/" + catResource.getXnatAbstractresourceId() + "/files", catResource, isZip || (index != null), entryFilter, proj, locator));
+                if (catalog != null) {
+                    if (StringUtils.isBlank(filePath)) {
+                        table.rows().addAll(CatalogUtils.getEntryDetails(catalog, parentPath, (resourceCatalog.getBaseURI() != null) ? resourceCatalog.getBaseURI() + "/files" : baseURI + "/resources/" + resourceCatalog.getXnatAbstractresourceId() + "/files", resourceCatalog, isZip || (index != null), entryFilter, proj, locator));
                     } else {
-                        ArrayList<CatEntryI> entries = new ArrayList<>();
+                        final ArrayList<CatEntryI> entries = new ArrayList<>();
 
-                        CatEntryBean e = (CatEntryBean) CatalogUtils.getEntryByURI(cat, filePath);
-                        if (e != null) {
-                            entries.add(e);
+                        final CatEntryBean entryByURI = (CatEntryBean) CatalogUtils.getEntryByURI(catalog, filePath);
+                        if (entryByURI != null) {
+                            entries.add(entryByURI);
                         }
-                        if (entries.size() == 0) {
-                            e = (CatEntryBean) CatalogUtils.getEntryById(cat, filePath);
-                            if (e != null) {
-                                entries.add(e);
+                        if (entries.isEmpty()) {
+                            final CatEntryBean entryById = (CatEntryBean) CatalogUtils.getEntryById(catalog, filePath);
+                            if (entryById != null) {
+                                entries.add(entryById);
                             }
                         }
-                        if (entries.size() == 0 && filePath.endsWith("/")) {
+                        if (entries.isEmpty() && filePath.endsWith("/")) {
                         	//recursion is on by default
-                        	final boolean recursive=!(this.isQueryVariableFalse("recursive"));
+                            final boolean recursive = !(isQueryVariableFalse("recursive"));
                         	final String dir= filePath;
-                            final CatalogUtils.CatEntryFilterI folderFilter=new CatalogUtils.CatEntryFilterI() {
-            					@Override
-            					public boolean accept(CatEntryI entry) {
-            						if(entry.getUri().startsWith(dir)){
-            							if(recursive || StringUtils.contains(entry.getUri().substring(dir.length()+1),"/"))
-            							{
-                							return (entryFilter == null || entryFilter.accept(entry));
-            							}
-            						}
-        							return false;
-            					}
-            				};
-                            entries.addAll(CatalogUtils.getEntriesByFilter(cat, folderFilter));
+                            final CatalogUtils.CatEntryFilterI folderFilter= entry -> {
+                                if (entry.getUri().startsWith(dir)) {
+                                    if (recursive || StringUtils.contains(entry.getUri().substring(dir.length() + 1), "/")) {
+                                        return entryFilter == null || entryFilter.accept(entry);
+                                    }
+                                }
+                                return false;
+                            };
+                            entries.addAll(CatalogUtils.getEntriesByFilter(catalog, folderFilter));
                         }
-                        if (entries.size() == 0 && filePath.endsWith("*")) {
-                            StringBuilder regex = new StringBuilder(filePath);
-                            int lastIndex = filePath.lastIndexOf("*");
+                        if (entries.isEmpty() && filePath.endsWith("*")) {
+                            final StringBuilder regex = new StringBuilder(filePath);
+                            final int lastIndex = filePath.lastIndexOf("*");
                             regex.replace(lastIndex, lastIndex + 1, ".*");
-                            entries.addAll(CatalogUtils.getEntriesByRegex(cat, regex.toString()));
+                            entries.addAll(CatalogUtils.getEntriesByRegex(catalog, regex.toString()));
                         }
 
 
@@ -844,7 +824,7 @@ public class FileList extends XNATCatalogTemplate {
             } else {
                 //not catalog
                 if (entryFilter == null) {
-                    ArrayList<File> files = temp.getCorrespondingFiles(rootArchivePath);
+                    ArrayList<File> files = abstractResource.getCorrespondingFiles(rootArchivePath);
                     if (files != null && files.size() > 0) {
                         final boolean checksums = XDAT.getSiteConfigPreferences().getChecksums();
                         for (final File subFile : files) {
@@ -852,17 +832,17 @@ public class FileList extends XNATCatalogTemplate {
                             row.add(subFile.getName());
                             row.add(subFile.length());
                             if (locator.equalsIgnoreCase("URI")) {
-                                row.add(temp.getBaseURI() != null ? temp.getBaseURI() + "/files/" + subFile.getName() : baseURI + "/resources/" + temp.getXnatAbstractresourceId() + "/files/" + subFile.getName());
+                                row.add(abstractResource.getBaseURI() != null ? abstractResource.getBaseURI() + "/files/" + subFile.getName() : baseURI + "/resources/" + abstractResource.getXnatAbstractresourceId() + "/files/" + subFile.getName());
                             } else if (locator.equalsIgnoreCase("absolutePath")) {
                                 row.add(subFile.getAbsolutePath());
                             } else if (locator.equalsIgnoreCase("projectPath")) {
                                 row.add(subFile.getAbsolutePath().substring(rootArchivePath.substring(0, rootArchivePath.lastIndexOf(proj.getId())).length()));
                             }
-                            row.add(temp.getLabel());
-                            row.add(temp.getTagString());
-                            row.add(temp.getFormat());
-                            row.add(temp.getContent());
-                            row.add(temp.getXnatAbstractresourceId());
+                            row.add(abstractResource.getLabel());
+                            row.add(abstractResource.getTagString());
+                            row.add(abstractResource.getFormat());
+                            row.add(abstractResource.getContent());
+                            row.add(abstractResource.getXnatAbstractresourceId());
                             if (isZip) {
                                 row.add(subFile);
                             }
@@ -894,7 +874,7 @@ public class FileList extends XNATCatalogTemplate {
             params.put("title", "Files");
 
             Map<String, Map<String, String>> cp = new Hashtable<>();
-            cp.put("URI", new Hashtable<String, String>());
+            cp.put("URI", new Hashtable<>());
             String rootPath = getRequest().getRootRef().getPath();
             if (rootPath.endsWith("/data")) {
                 rootPath = rootPath.substring(0, rootPath.indexOf("/data"));
@@ -979,29 +959,25 @@ public class FileList extends XNATCatalogTemplate {
 
 
         if (resource.getItem().instanceOf("xnat:resourceCatalog")) {
-            boolean includeRoot = this.isQueryVariableTrue("includeRootPath");
-
-            XnatResourcecatalog catResource = (XnatResourcecatalog) resource;
-            CatCatalogBean cat = catResource.getCleanCatalog(proj.getRootArchivePath(), includeRoot, null, null);
-            String parentPath = catResource.getCatalogFile(proj.getRootArchivePath()).getParent();
+            final boolean             includeRoot     = isQueryVariableTrue("includeRootPath");
+            final XnatResourcecatalog resourceCatalog = (XnatResourcecatalog) resource;
+            final CatCatalogBean      catalog         = resourceCatalog.getCleanCatalog(proj.getRootArchivePath(), includeRoot, null, null);
+            final String              parentPath      = resourceCatalog.getCatalogFile(proj.getRootArchivePath()).getParent();
 
             if (StringUtils.isEmpty(filePath) && index == null) {
-                String baseURI = getBaseURI();
-
-                if (cat != null) {
-                    table.rows().addAll(CatalogUtils.getEntryDetails(cat, parentPath, baseURI + "/resources/" + catResource.getXnatAbstractresourceId() + "/files", catResource, false, entryFilter, proj, locator));
+                if (catalog != null) {
+                    table.rows().addAll(CatalogUtils.getEntryDetails(catalog, parentPath, getBaseURI() + "/resources/" + resourceCatalog.getXnatAbstractresourceId() + "/files", resourceCatalog, false, entryFilter, proj, locator));
                 }
             } else {
-
                 String zipEntry = null;
 
                 CatEntryI entry;
                 if (index != null) {
-                    entry = CatalogUtils.getEntryByFilter(cat, new CatEntryFilterI() {
+                    entry = CatalogUtils.getEntryByFilter(catalog, new CatEntryFilterI() {
                         private int count = 0;
                         private CatEntryFilterI filter = entryFilter;
 
-                        public boolean accept(CatEntryI entry) {
+                        public boolean accept(final CatEntryI entry) {
                             if (filter.accept(entry)) {
                                 return index.equals(count++);
                             }
@@ -1024,37 +1000,34 @@ public class FileList extends XNATCatalogTemplate {
                             break;
                         }
                     }
-                    entry = CatalogUtils.getEntryByURI(cat, filePath);
+                    entry = CatalogUtils.getEntryByURI(catalog, filePath);
 
                     if (entry == null) {
-                        entry = CatalogUtils.getEntryById(cat, filePath);
+                        entry = CatalogUtils.getEntryById(catalog, filePath);
                     }
                 }
 
                 if (entry == null && filePath.endsWith("/")) {
                 	//if no exact matches, look for a folder
-                	String baseURI = getBaseURI();
+                	final String baseURI = getBaseURI();
 
                 	//recursion is on by default
                 	final boolean recursive=!(this.isQueryVariableFalse("recursive"));
                 	final String dir= filePath;
-                    final CatalogUtils.CatEntryFilterI folderFilter=new CatalogUtils.CatEntryFilterI() {
-    					@Override
-    					public boolean accept(CatEntryI entry) {
-    						if(entry.getUri().startsWith(dir)){
-    							if(recursive || StringUtils.contains(entry.getUri().substring(dir.length()+1),"/"))
-    							{
-        							return (entryFilter == null || entryFilter.accept(entry));
-    							}
-    						}
-							return false;
-    					}
-    				};
+                    final CatalogUtils.CatEntryFilterI folderFilter= entry1 -> {
+                        if(entry1.getUri().startsWith(dir)){
+                            if(recursive || StringUtils.contains(entry1.getUri().substring(dir.length() + 1), "/"))
+                            {
+                                return (entryFilter == null || entryFilter.accept(entry1));
+                            }
+                        }
+                        return false;
+                    };
 
 
     				//If there are no matching entries, I'm not sure if this should throw a 404, or return an empty list.
     				if(filePath.endsWith("/")){
-    					table.rows().addAll(CatalogUtils.getEntryDetails(cat, parentPath, baseURI + "/resources/" + catResource.getXnatAbstractresourceId() + "/files", catResource, false, folderFilter, proj, locator));
+    					table.rows().addAll(CatalogUtils.getEntryDetails(catalog, parentPath, baseURI + "/resources/" + resourceCatalog.getXnatAbstractresourceId() + "/files", resourceCatalog, false, folderFilter, proj, locator));
     				}else{
                         getResponse().setStatus(acceptNotFound ? Status.SUCCESS_NO_CONTENT : Status.CLIENT_ERROR_NOT_FOUND, "Unable to find catalog entry for given uri.");
                         return new StringRepresentation("");
@@ -1183,7 +1156,7 @@ public class FileList extends XNATCatalogTemplate {
         params.put("title", "Files");
 
         Map<String, Map<String, String>> cp = new Hashtable<>();
-        cp.put("URI", new Hashtable<String, String>());
+        cp.put("URI", new Hashtable<>());
         cp.get("URI").put("serverRoot", getContextPath());
 
         return representTable(table, mt, params, cp, getSessionMaps());
@@ -1281,20 +1254,4 @@ public class FileList extends XNATCatalogTemplate {
         setResponseHeader("Cache-Control", "must-revalidate");
         return representFile(f, mt);
     }
-
-    private static XChangeStorageService getStorageService() {
-        if (_storageService == null) {
-            synchronized (MUTEX) {
-                _storageService = XDAT.getContextService().getBeanSafely(XChangeStorageService.class);
-                if (_storageService == null) {
-                    log.error("Tried to retrieve an XChangeStorageService implementation but couldn't find anything.");
-                }
-            }
-        }
-        return _storageService;
-    }
-
-    private static final Object MUTEX = new Object();
-
-    private static XChangeStorageService _storageService;
 }

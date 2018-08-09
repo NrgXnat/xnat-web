@@ -339,6 +339,7 @@ public class FileResource extends ItemResource {
 		return null;
 	}
 
+	@SuppressWarnings("Duplicates")
 	@Override
 	public Representation represent(Variant variant) {
 		MediaType mt = overrideVariant(variant);

@@ -14,7 +14,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.twmacinta.util.MD5;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.config.entities.Configuration;
 import org.nrg.config.exceptions.ConfigServiceException;
@@ -33,12 +32,8 @@ import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FileUtils;
-import org.nrg.xft.utils.zip.TarUtils;
-import org.nrg.xft.utils.zip.ZipI;
-import org.nrg.xft.utils.zip.ZipUtils;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.presentation.ChangeSummaryBuilderA;
-import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.archive.CatalogStats;
 import org.xml.sax.SAXException;
 
@@ -48,12 +43,10 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.channels.FileLock;
 import java.nio.charset.Charset;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-import java.util.zip.ZipOutputStream;
 
 /**
  * @author timo
@@ -65,7 +58,7 @@ public class CatalogUtils {
     public final static String[] FILE_HEADERS_W_FILE = {"Name", "Size", "URI", "collection", "file_tags", "file_format", "file_content", "cat_ID", "file", "digest"};
 
     public static boolean getChecksumConfiguration(final XnatProjectdata project) {
-        final String        projectId     = project.getId();
+        final String projectId = project.getId();
         if (StringUtils.isNotBlank(projectId)) {
             final Configuration configuration = getConfigService().getConfig("checksums", "checksums", Scope.Project, projectId);
             if (configuration != null) {
@@ -246,7 +239,7 @@ public class CatalogUtils {
                     return entry;
                 }
             } catch (Exception exception) {
-                log.error("Error occurred filtering catalog entry: " + entry, exception);
+                log.error("Error occurred filtering catalog entry: {}", entry, exception);
             }
         }
 
@@ -267,7 +260,7 @@ public class CatalogUtils {
 
                 }
             } catch (Exception exception) {
-                log.error("Error occurred filtering catalog entry: " + entry, exception);
+                log.error("Error occurred filtering catalog entry: {}", entry, exception);
             }
         }
 
@@ -334,7 +327,7 @@ public class CatalogUtils {
                     entries.add(entry);
                 }
             } catch (Exception exception) {
-                log.error("Error occurred testing catalog entry: " + entry, exception);
+                log.error("Error occurred testing catalog entry: {}", entry, exception);
             }
         }
         return entries;
@@ -547,112 +540,6 @@ public class CatalogUtils {
         }
     }
 
-    public static List<String> storeCatalogEntry(final List<? extends FileWriterWrapperI> fileWriters, final String destination, final XnatResourcecatalog catResource, final XnatProjectdata project, final boolean extract, final XnatResourceInfo info, final boolean overwrite, final EventMetaI ci) throws Exception {
-        final File           catalogFile = catResource.getCatalogFile(project.getRootArchivePath());
-        final String         parentPath  = catalogFile.getParent();
-        final CatCatalogBean catalog     = catResource.getCleanCatalog(project.getRootArchivePath(), false, null, null);
-
-        final List<String> duplicates = new ArrayList<>();
-        for (final FileWriterWrapperI fileWriter : fileWriters) {
-            final String filename    = Paths.get(fileWriter.getName()).getFileName().toString();
-            final String compression = FilenameUtils.getExtension(filename);
-
-            if (extract && StringUtils.equalsAnyIgnoreCase(compression, "tar", "gz", "zip", "zar")) {
-                final Path destinationDir = catalogFile.getParentFile().toPath();
-                log.debug("Found archive file {} using compression method {}, preparing to send to destination {}", filename, compression, destinationDir);
-
-                try (final InputStream inputStream = fileWriter.getInputStream()) {
-                    final ZipI zipper;
-                    switch (compression) {
-                        case "tar":
-                            zipper = new TarUtils();
-                            break;
-
-                        case "gz":
-                            zipper = new TarUtils();
-                            zipper.setCompressionMethod(ZipOutputStream.DEFLATED);
-                            break;
-
-                        default:
-                            zipper = new ZipUtils();
-                    }
-
-                    @SuppressWarnings("unchecked") final List<File> files = zipper.extract(inputStream, destinationDir.toAbsolutePath().toString(), overwrite, ci);
-                    log.debug("Found {} files in the {} compressed archive {}", files.size(), compression, filename);
-                    for (final File file : files) {
-                        if (!file.isDirectory()) {
-                            final String    relative = destinationDir.relativize(file.toPath()).toString();
-                            final CatEntryI entry    = getEntryByURI(catalog, relative);
-                            if (entry == null) {
-                                log.debug("Storing catalog entry for file {}", relative);
-                                addNewEntry(catalog, relative, file, info);
-                            }
-                        }
-                    }
-                    if (!overwrite) {
-                        duplicates.addAll(zipper.getDuplicates());
-                    }
-                }
-            } else {
-                final File   parentFolder = new File(parentPath);
-                final String nestedPath   = fileWriter.getNestedPath();
-                final String instance;
-                if (!StringUtils.isBlank(nestedPath)) {
-                    instance = makePath(nestedPath, filename);
-                } else if (StringUtils.isBlank(destination)) {
-                    instance = filename;
-                } else if (destination.startsWith("/")) {
-                    instance = destination.substring(1);
-                } else {
-                    instance = destination;
-                }
-
-                // XChange start here
-                final File saveTo = new File(parentFolder, instance);
-
-                if (saveTo.exists() && !overwrite) {
-                    duplicates.add(instance);
-                } else {
-                    if (saveTo.exists()) {
-                        final CatEntryBean e = (CatEntryBean) getEntryByURI(catalog, instance);
-                        CatalogUtils.moveToHistory(catalogFile, saveTo, e, ci);
-                    }
-
-                    if (!saveTo.getParentFile().mkdirs() && !saveTo.getParentFile().exists()) {
-                        throw new Exception("Failed to create required directory: " + saveTo.getParentFile().getAbsolutePath());
-                    }
-
-                    log.debug("Saving filename {} to file {}", filename, saveTo.getAbsolutePath());
-
-                    // Here's the actual write. Not compatible.
-                    // _storageService.store();
-                    fileWriter.write(saveTo);
-
-                    if (saveTo.isDirectory()) {
-                        log.debug("Found a directory: {}", saveTo.getAbsolutePath());
-
-                        @SuppressWarnings("unchecked") final Iterator<File> iterator = org.apache.commons.io.FileUtils.iterateFiles(saveTo, null, true);
-                        while (iterator.hasNext()) {
-                            final File movedF = iterator.next();
-
-                            String relativePath = instance + "/" + FileUtils.RelativizePath(saveTo, movedF).replace('\\', '/');
-                            updateEntry(catalog, relativePath, movedF, info, ci);
-                        }
-
-                    } else {
-                        log.debug("Updating catalog entry for file {}", saveTo.getAbsolutePath());
-                        updateEntry(catalog, instance, saveTo, info, ci);
-                    }
-                }
-            }
-        }
-
-        log.debug("Writing catalog file {} with {} total entries", catalogFile.getAbsolutePath(), catalog.getEntries_entry().size());
-        writeCatalogToFile(catalog, catalogFile);
-
-        return duplicates;
-    }
-
     public static void refreshAuditSummary(CatCatalogI cat) {
         CatCatalogMetafieldI field = null;
         for (CatCatalogMetafieldI mf : cat.getMetafields_metafield()) {
@@ -807,11 +694,11 @@ public class CatalogUtils {
                 return (CatCatalogBean) base;
             }
         } catch (FileNotFoundException exception) {
-            log.error("Couldn't find file: " + catalogFile, exception);
+            log.error("Couldn't find file: {}", catalogFile, exception);
         } catch (IOException exception) {
-            log.error("Error occurred reading file: " + catalogFile, exception);
+            log.error("Error occurred reading file: {}", catalogFile, exception);
         } catch (SAXException exception) {
-            log.error("Error processing XML in file: " + catalogFile, exception);
+            log.error("Error processing XML in file: {}", catalogFile, exception);
         }
 
         return null;
@@ -834,11 +721,11 @@ public class CatalogUtils {
                 catalogFile = CatalogUtils.getCatalogFile(rootPath, resource);
             }
         } catch (FileNotFoundException exception) {
-            log.error("Couldn't find file: " + catalogFile, exception);
+            log.error("Couldn't find file: {}", catalogFile, exception);
         } catch (IOException exception) {
-            log.error("Error occurred reading file: " + catalogFile, exception);
+            log.error("Error occurred reading file: {}", catalogFile, exception);
         } catch (Exception exception) {
-            log.error("Unknown exception reading file at: " + rootPath, exception);
+            log.error("Unknown exception reading file at: {}", rootPath, exception);
         }
 
         return catalogFile != null ? getCatalog(catalogFile) : null;
@@ -879,13 +766,13 @@ public class CatalogUtils {
                 return cat;
             }
         } catch (FileNotFoundException exception) {
-            log.error("Couldn't find file indicated by {}", catalogFile.getAbsolutePath(), exception);
+            log.error("Couldn't find file indicated by {}", catalogFile, exception);
         } catch (SAXException exception) {
-            log.error("Couldn't parse file indicated by {}", catalogFile.getAbsolutePath(), exception);
+            log.error("Couldn't parse file indicated by {}", catalogFile, exception);
         } catch (IOException exception) {
-            log.error("Couldn't parse or unzip file indicated by {}", catalogFile.getAbsolutePath(), exception);
+            log.error("Couldn't parse or unzip file indicated by {}", catalogFile, exception);
         } catch (Exception exception) {
-            log.error("Unknown error handling file " + (catalogFile != null ? "indicated by " + catalogFile.getAbsolutePath() : "of unknown location"), exception);
+            log.error("Unknown error handling file {}", catalogFile != null ? "indicated by " + catalogFile : "of unknown location", exception);
         }
 
         return null;
@@ -1044,138 +931,124 @@ public class CatalogUtils {
         CatalogUtils.writeCatalogToFile(newCat, newCatFile);
     }
 
-    public static XFTTable populateTable(XFTTable table, UserI user, XnatProjectdata project, boolean cacheFileStats) {
-        XFTTable newTable = new XFTTable();
-        String[] fields   = {"xnat_abstractresource_id", "label", "element_name", "category", "cat_id", "cat_desc", "file_count", "file_size", "tags", "content", "format"};
-        newTable.initTable(fields);
+    public static XFTTable populateTable(final XFTTable table, final UserI user, final XnatProjectdata project, final boolean cacheFileStats) {
+        final XFTTable newTable = new XFTTable();
+        newTable.initTable(RESOURCE_FIELDS);
         table.resetRowCursor();
         while (table.hasMoreRows()) {
-            Object[] old  = table.nextRow();
-            Object[] _new = new Object[11];
-            if (log.isDebugEnabled()) {
-                log.debug("Found resource with ID: " + old[0] + "(" + old[1] + ")");
-            }
-            _new[0] = old[0];
-            _new[1] = old[1];
-            _new[2] = old[2];
-            _new[3] = old[3];
-            _new[4] = old[4];
-            _new[5] = old[5];
+            final Object[] existingResource = table.nextRow();
+            final Object   resourceId       = existingResource[0];
+            log.debug("Found resource with ID: {} ({})", resourceId, existingResource[1]);
 
-            XnatAbstractresource res = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(old[0], user, false);
-            assert res != null;
+            final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(resourceId, user, false);
+            if (resource == null) {
+                log.warn("Found a resource with ID {} but got null when trying to retrieve it.", resourceId);
+                continue;
+            }
 
             if (cacheFileStats) {
-                if (res.getFileCount() == null) {
-                    res.setFileCount(res.getCount(project.getRootArchivePath()));
+                if (resource.getFileCount() == null) {
+                    resource.setFileCount(resource.getCount(project.getRootArchivePath()));
                 }
-                if (res.getFileSize() == null) {
-                    res.setFileSize(res.getSize(project.getRootArchivePath()));
+                if (resource.getFileSize() == null) {
+                    resource.setFileSize(resource.getSize(project.getRootArchivePath()));
                 }
                 try {
-                    res.save(user, true, false, null);
+                    resource.save(user, true, false, null);
                 } catch (Exception exception) {
-                    if (res instanceof XnatResourcecatalog) {
-                        log.error("Failed to save updates to resource catalog: " + res.getLabel(), exception);
+                    if (resource instanceof XnatResourcecatalog) {
+                        log.error("Failed to save updates to resource catalog with ID {} ({})", resourceId, resource.getLabel(), exception);
                     } else {
-                        log.error("Failed to save updates to abstract resource: " + res.getXnatAbstractresourceId(), exception);
+                        log.error("Failed to save updates to abstract resource: {}", resource.getXnatAbstractresourceId(), exception);
                     }
                 }
             }
 
-            _new[6] = res.getFileCount();
-            _new[7] = res.getFileSize();
-            _new[8] = res.getTagString();
-            _new[9] = res.getContent();
-            _new[10] = res.getFormat();
+            final List<Object> updatedResource = new ArrayList<>(Arrays.asList(existingResource));
+            updatedResource.add(resource.getFileCount());
+            updatedResource.add(resource.getFileSize());
+            updatedResource.add(resource.getTagString());
+            updatedResource.add(resource.getContent());
+            updatedResource.add(resource.getFormat());
 
-            newTable.rows().add(_new);
+            newTable.rows().add(updatedResource.toArray());
         }
 
         return newTable;
     }
 
-    public static boolean populateStats(XnatAbstractresource abstractResource, String rootPath) {
-        Integer c = abstractResource.getCount(rootPath);
-        Long    s = abstractResource.getSize(rootPath);
+    public static boolean populateStats(final XnatAbstractresource abstractResource, final String rootPath) {
+        final Integer fileCount = abstractResource.getCount(rootPath);
+        final Long    fileSize  = abstractResource.getSize(rootPath);
 
-        boolean modified = false;
+        final AtomicBoolean modified = new AtomicBoolean();
 
-        if (!c.equals(abstractResource.getFileCount())) {
-            abstractResource.setFileCount(c);
-            modified = true;
+        if (!fileCount.equals(abstractResource.getFileCount())) {
+            abstractResource.setFileCount(fileCount);
+            modified.set(true);
         }
 
-        if (!s.equals(abstractResource.getFileSize())) {
-            abstractResource.setFileSize(s);
-            modified = true;
+        if (!fileSize.equals(abstractResource.getFileSize())) {
+            abstractResource.setFileSize(fileSize);
+            modified.set(true);
         }
 
-        return modified;
+        return modified.get();
     }
 
     /**
      * Reviews the catalog directory and adds any files that aren't already referenced in the catalog.
      *
-     * @param catFile  path to catalog xml file
-     * @param cat      content of catalog xml file
-     * @param user     user for transaction
-     * @param event_id event id for transaction
+     * @param catalogFile path to catalog xml file
+     * @param catalog     content of catalog xml file
+     * @param user        user for transaction
+     * @param eventId     event id for transaction
      *
-     * @return true if the cat was modified (and needs to be saved).
+     * @return true if the catalog was modified (and needs to be saved).
      */
     @SuppressWarnings("unchecked")
-    public static boolean addUnreferencedFiles(final File catFile, final CatCatalogI cat, UserI user, Number event_id) {
+    public static boolean addUnreferencedFiles(final File catalogFile, final CatCatalogI catalog, final UserI user, final Number eventId) {
         //list of all files in the catalog folder
-        final Collection<File> files = org.apache.commons.io.FileUtils.listFiles(catFile.getParentFile(), null, true);
+        final Collection<File> files = org.apache.commons.io.FileUtils.listFiles(catalogFile.getParentFile(), null, true);
 
         //verify that there is only one catalog xml in this directory
         //fail if more then one is present -- otherwise they will be merged.
-        for (final File f : files) {
-            if (!f.equals(catFile)) {
-                if (f.getName().endsWith(".xml") && isCatalogFile(f)) {
-                    return false;
-                }
-            }
+        if (files.stream().anyMatch(file -> !file.equals(catalogFile) && file.getName().endsWith(".xml") && isCatalogFile(file))) {
+            return false;
         }
 
         //URI object for the catalog folder (used to generate relative file paths)
-        final URI catFolderURI = catFile.getParentFile().toURI();
+        final URI  catFolderURI = catalogFile.getParentFile().toURI();
+        final Date now          = Calendar.getInstance().getTime();
 
-        final Date now = Calendar.getInstance().getTime();
+        final AtomicBoolean modified = new AtomicBoolean();
 
-        boolean modified = false;
+        // Iterate through all the files, filtering out the catalog xml itself.
+        for (final File file : files.stream().filter(file -> !file.equals(catalogFile)).collect(Collectors.toList())) {
+            //relative path is used to compare to existing catalog entries, and add it if its missing.  entry paths are relative to the location of the catalog file.
+            final String    relative     = catFolderURI.relativize(file.toURI()).getPath();
+            final CatEntryI catalogEntry = getEntryByURI(catalog, relative);
 
-        for (final File f : files) {
-            if (!f.equals(catFile)) {//don't add the catalog xml to its own list
-                //relative path is used to compare to existing catalog entries, and add it if its missing.  entry paths are relative to the location of the catalog file.
-                final String relative = catFolderURI.relativize(f.toURI()).getPath();
+            if (catalogEntry == null) {
+                final CatEntryBean newEntry = new CatEntryBean();
+                newEntry.setUri(relative);
+                newEntry.setName(file.getName());
 
-                //
-                final CatEntryI e = getEntryByURI(cat, relative);
+                //create basic resource info to specify file properties at creation.
+                final XnatResourceInfo info = XnatResourceInfo.buildResourceInfo(null, null, null, null, user, now, now, eventId);
+                configureEntry(newEntry, info, false);
 
-                if (e == null) {
-                    final CatEntryBean newEntry = new CatEntryBean();
-                    newEntry.setUri(relative);
-                    newEntry.setName(f.getName());
-
-                    //create basic resource info to specify file properties at creation.
-                    final XnatResourceInfo info = XnatResourceInfo.buildResourceInfo(null, null, null, null, user, now, now, event_id);
-                    configureEntry(newEntry, info, false);
-
-                    try {
-                        cat.addEntries_entry(newEntry);
-                        modified = true;
-                    } catch (Exception exception) {
-                        //this shouldn't happen
-                        log.error("Something very weird occurred when adding catalog entries", exception);
-                    }
+                try {
+                    catalog.addEntries_entry(newEntry);
+                    modified.set(true);
+                } catch (Exception exception) {
+                    //this shouldn't happen
+                    log.error("Something very weird occurred when adding a catalog entry for URI {}", relative, exception);
                 }
-
             }
         }
 
-        return modified;
+        return modified.get();
     }
 
     /**
@@ -1246,43 +1119,6 @@ public class CatalogUtils {
         }
 
         return false;
-    }
-
-    private static String makePath(String nestedPath, String name) {
-        String        separator = nestedPath.contains("\\") ? "\\" : "/";
-        StringBuilder path      = new StringBuilder(nestedPath);
-        if (!nestedPath.endsWith(separator)) {
-            path.append(separator);
-        }
-        return path.append(name).toString();
-    }
-
-    private static void updateEntry(CatCatalogBean cat, String dest, File f, XnatResourceInfo info, EventMetaI ci) {
-        final CatEntryBean e = (CatEntryBean) getEntryByURI(cat, dest);
-
-        if (e == null) {
-            addNewEntry(cat, dest, f, info);
-        } else {
-            if (ci != null) {
-                if (ci.getUser() != null) {
-                    e.setModifiedby(ci.getUser().getUsername());
-                }
-                e.setModifiedtime(ci.getEventDate());
-                if (ci.getEventId() != null) {
-                    e.setModifiedeventid(ci.getEventId().toString());
-                }
-            }
-        }
-    }
-
-    private static void addNewEntry(final CatCatalogBean catalog, final String destination, final File file, final XnatResourceInfo info) {
-        final CatEntryBean newEntry = new CatEntryBean();
-        newEntry.setUri(destination);
-        newEntry.setName(file.getName());
-
-        configureEntry(newEntry, info, false);
-
-        catalog.addEntries_entry(newEntry);
     }
 
     private static String convertAuditToString(Map<String, Map<String, Integer>> summary) {
@@ -1452,9 +1288,10 @@ public class CatalogUtils {
         return _storageService;
     }
 
-    private static SiteConfigPreferences _preferences;
-    private static ConfigService         _configService;
-    private static XChangeStorageService _storageService;
+    private static final String[]              RESOURCE_FIELDS = {"xnat_abstractresource_id", "label", "element_name", "category", "cat_id", "cat_desc", "file_count", "file_size", "tags", "content", "format"};
+    private static       SiteConfigPreferences _preferences;
+    private static       ConfigService         _configService;
+    private static       XChangeStorageService _storageService;
 
     private static AtomicBoolean _maintainFileHistory = null;
     private static AtomicBoolean _checksumConfig      = null;

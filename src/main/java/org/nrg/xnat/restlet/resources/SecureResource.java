@@ -34,6 +34,7 @@ import org.nrg.framework.exceptions.NrgServiceError;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.framework.services.SerializerService;
 import org.nrg.framework.utilities.Reflection;
+import org.nrg.xams.xchange.services.storage.XChangeStorageService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatProjectdataI;
@@ -592,7 +593,7 @@ public abstract class SecureResource extends Resource {
 
         if (mt.equals(MediaType.TEXT_HTML)) {
             try {
-                return new ItemHTMLRepresentation(item, MediaType.TEXT_HTML, getRequest(), getUser(), getQueryVariable("requested_screen"), new Hashtable<String, Object>());
+                return new ItemHTMLRepresentation(item, MediaType.TEXT_HTML, getRequest(), getUser(), getQueryVariable("requested_screen"), new Hashtable<>());
             } catch (Exception e) {
                 getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
                 return null;
@@ -1549,7 +1550,7 @@ public abstract class SecureResource extends Resource {
             table.rows().add(ArrayUtils.toArray(projects.get(key), key.getId(), key.getSecondaryId(), key.getName()));
         }
 
-        return representTable(table, mediaType, new Hashtable<String, Object>());
+        return representTable(table, mediaType, new Hashtable<>());
     }
 
     protected void changeExperimentPrimaryProject(final XnatExperimentdata experiment, final XnatProjectdata source, final XnatProjectdata destination, final String newLabel, final XnatExperimentdataShare share, final int index) throws Exception {
@@ -1750,7 +1751,6 @@ public abstract class SecureResource extends Resource {
         return itemRepresentations;
     }
 
-
     /**
      * This method walks the <b>org.nrg.xnat.restlet.extensions.table.extensions</b> package and attempts to find extensions for the
      * set of available REST table representations.
@@ -1791,6 +1791,18 @@ public abstract class SecureResource extends Resource {
         }
 
         return tableRepresentations;
+    }
+
+    protected XChangeStorageService getStorageService() {
+        if (_storageService == null) {
+            synchronized (MUTEX) {
+                _storageService = XDAT.getContextService().getBeanSafely(XChangeStorageService.class);
+                if (_storageService == null) {
+                    logger.error("Tried to retrieve an XChangeStorageService implementation but couldn't find anything.");
+                }
+            }
+        }
+        return _storageService;
     }
 
     protected boolean isWhitelisted() {
@@ -1908,6 +1920,10 @@ public abstract class SecureResource extends Resource {
             throw e;
         }
     }
+
+    private static final Object MUTEX = new Object();
+
+    private static XChangeStorageService _storageService;
 
     private final UserI             _user;
     private final SerializerService _serializer;

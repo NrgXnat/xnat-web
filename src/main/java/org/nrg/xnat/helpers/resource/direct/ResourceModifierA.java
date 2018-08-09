@@ -10,6 +10,9 @@
 package org.nrg.xnat.helpers.resource.direct;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatAbstractresource;
@@ -24,7 +27,9 @@ import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.exceptions.InvalidArchiveStructure;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
+import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.CatalogUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.io.Serializable;
 import java.nio.file.Path;
@@ -34,9 +39,10 @@ import java.util.*;
 /**
  * @author timo
  */
+@SuppressWarnings("ResultOfMethodCallIgnored")
 public abstract class ResourceModifierA implements Serializable {
-    final boolean overwrite;
-    final UserI user;
+    final boolean    overwrite;
+    final UserI      user;
     final EventMetaI ci;
 
     public ResourceModifierA(final boolean overwrite, final UserI user, final EventMetaI ci) {
@@ -46,9 +52,10 @@ public abstract class ResourceModifierA implements Serializable {
     }
 
     public static class UpdateMeta implements EventMetaI, Serializable {
-        private static final long serialVersionUID = 42L;
-        final EventMetaI i;
-        final boolean update;
+        private static final long       serialVersionUID = 42L;
+        final                EventMetaI i;
+        final                boolean    update;
+
         public UpdateMeta(EventMetaI i, boolean update) {
             this.i = i;
             this.update = update;
@@ -93,44 +100,52 @@ public abstract class ResourceModifierA implements Serializable {
         return getProject().getRootArchivePath();
     }
 
-    public List<String> addFile(final List<? extends FileWriterWrapperI> writers, final Object resourceIdentifier, final String type, final String filepath, final XnatResourceInfo info, final boolean extract) throws Exception {
-        if (writers == null || writers.size() == 0) {
+    public List<String> addFile(final List<? extends FileWriterWrapperI> writers, final Object resourceIdentifier, final String type, final String filePath, final XnatResourceInfo info, final boolean extract) throws Exception {
+        if (ObjectUtils.isEmpty(writers)) {
             return Collections.emptyList();
         }
 
-        XnatAbstractresource abst = (XnatAbstractresource) getResourceByIdentifier(resourceIdentifier, type);
-
-        boolean isNew = false;
-        if (abst == null) {
-            isNew = true;
-            //new resource
-            abst = new XnatResourcecatalog(user);
-
-            if (resourceIdentifier != null) {
-                abst.setLabel(resourceIdentifier.toString());
-            }
-            abst.setFileCount(0);
-            abst.setFileSize(0);
-
-            createCatalog((XnatResourcecatalog) abst, info);
-        } else {
-            if (!(abst instanceof XnatResourcecatalog)) {
-                throw new Exception("Conflict:Non-catalog resource already exits.");
-            }
-        }
+        final Pair<XnatResourcecatalog, Boolean> resourceCatalogPackage = createOrGetResourceCatalog(resourceIdentifier, type, info);
+        final XnatResourcecatalog                resourceCatalog        = resourceCatalogPackage.getLeft();
 
         try {
-            return new ArrayList<>(CatalogUtils.storeCatalogEntry(writers, filepath, (XnatResourcecatalog) abst, getProject(), extract, info, overwrite, ci));
+            return new ArrayList<>(getCatalogService().storeCatalogEntry(writers, getProject(), resourceCatalog, filePath, info, extract, overwrite, ci));
         } finally {
-            CatalogUtils.populateStats(abst, null);
-            if (isNew) {
-                addResource((XnatResourcecatalog) abst, type, user);
+            CatalogUtils.populateStats(resourceCatalog, null);
+            if (resourceCatalogPackage.getRight()) {
+                addResource(resourceCatalog, type, user);
             } else {
                 if ((!(ci instanceof UpdateMeta)) || ((UpdateMeta) ci).getUpdate()) {
-                    SaveItemHelper.authorizedSave(abst, user, false, false, ci);
+                    SaveItemHelper.authorizedSave(resourceCatalog, user, false, false, ci);
                 }
             }
         }
+    }
+
+    private Pair<XnatResourcecatalog, Boolean> createOrGetResourceCatalog(final Object resourceIdentifier, final String type, final XnatResourceInfo info) throws Exception {
+        final XnatAbstractresource abstractResource = (XnatAbstractresource) getResourceByIdentifier(resourceIdentifier, type);
+
+        if (abstractResource != null) {
+            if (abstractResource instanceof XnatResourcecatalog) {
+                return ImmutablePair.of((XnatResourcecatalog) abstractResource, false);
+            }
+            throw new Exception("Conflict: A resource with the identifier " + resourceIdentifier.toString() + " already exists, but it's not a resource catalog.");
+        }
+
+        final String label              = Objects.isNull(resourceIdentifier) ? null : resourceIdentifier.toString();
+        final String catalogId          = StringUtils.defaultIfBlank(label, getDefaultUID());
+        final Path   parent             = Paths.get(buildDestinationPath(), catalogId);
+        final Path   target             = parent.resolve(catalogId + "_catalog.xml");
+        final String resourceCatalogUri = target.toAbsolutePath().toString();
+
+        final XnatResourcecatalog resourceCatalog = getCatalogService().createAndInsertResourceCatalog(user, parent.toString(), label, info.getDescription(),info.getFormat(), info.getContent(), info.getTags());
+
+        final CatCatalogBean catalog = new CatCatalogBean();
+        catalog.setId(catalogId);
+        CatalogUtils.writeCatalogToFile(catalog, target.toFile());
+        resourceCatalog.setUri(resourceCatalogUri);
+
+        return ImmutablePair.of(resourceCatalog, true);
     }
 
     public XnatAbstractresourceI getResourceByIdentifier(final Object resourceIdentifier, final String type) {
@@ -172,19 +187,16 @@ public abstract class ResourceModifierA implements Serializable {
 
     protected abstract XnatAbstractresourceI getResourceByLabel(final String resourceLabel, final String type);
 
-    private void createCatalog(final XnatResourcecatalog resource, final XnatResourceInfo info) throws Exception {
-        CatalogUtils.configureEntry(resource, info, user);
-
-        final CatCatalogBean cat = new CatCatalogBean();
-        cat.setId(StringUtils.defaultIfBlank(resource.getLabel(), getDefaultUID()));
-
-        final Path parent = Paths.get(buildDestinationPath(), cat.getId());
-        parent.toFile().mkdirs();
-        final Path target = parent.resolve(cat.getId() + "_catalog.xml");
-
-        CatalogUtils.writeCatalogToFile(cat, target.toFile());
-        resource.setUri(target.toAbsolutePath().toString());
+    protected CatalogService getCatalogService() {
+        if (_catalogService == null) {
+            synchronized (CATALOG_SERVICE_MUTEX) {
+                _catalogService = XDAT.getContextService().getBean(CatalogService.class);
+            }
+        }
+        return _catalogService;
     }
 
+    private static final Object CATALOG_SERVICE_MUTEX = new Object();
 
+    private static CatalogService _catalogService;
 }

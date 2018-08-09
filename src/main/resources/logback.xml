@@ -1,9 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
+    <!--
+    By default, the logstash appender is a NOPAppender and does nothing. You can define logstash
+    to use something like LogstashTcpSocketAppender to send logging to an ELK service. The appender
+    below is an example of a working Logstash configuration, presuming you have the xnat.logstash.url
+    environment property defined somewhere and the value indicates an operational ELK service.
+
     <appender name="logstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-        <destination>elk.xnat.org:5050</destination>
+        <destination>${xnat.logstash.url}</destination>
         <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+    </appender>
+     -->
+    <appender name="logstash" class="ch.qos.logback.core.helpers.NOPAppender"/>
+
+    <appender name="cache" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${xnat.home}/logs/cache.log</File>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/cache.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
     </appender>
     <appender name="xdat" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>true</append>
@@ -14,25 +32,16 @@
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${xnat.home}/logs/xdat.log.%d{yyyy-MM-dd}</fileNamePattern>
         </rollingPolicy>
-    </appender>
-    <appender name="security" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <append>true</append>
-        <file>${xnat.home}/logs/security.log</file>
-        <encoder>
-            <pattern>%d [%t] %-5p %c - %m%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${xnat.home}/logs/security.log.%d{yyyy-MM-dd}</fileNamePattern>
-        </rollingPolicy>
-    </appender>
-    <appender name="cache" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <File>${xnat.home}/logs/cache.log</File>
-        <encoder>
-            <pattern>%d [%t] %-5p %c - %m%n</pattern>
-        </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${xnat.home}/logs/cache.log.%d{yyyy-MM-dd}</fileNamePattern>
-        </rollingPolicy>
+        <appender name="security" class="ch.qos.logback.core.rolling.RollingFileAppender">
+            <append>true</append>
+            <file>${xnat.home}/logs/security.log</file>
+            <encoder>
+                <pattern>%d [%t] %-5p %c - %m%n</pattern>
+            </encoder>
+            <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                <fileNamePattern>${xnat.home}/logs/security.log.%d{yyyy-MM-dd}</fileNamePattern>
+            </rollingPolicy>
+        </appender>
     </appender>
     <appender name="events" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>false</append>
@@ -277,6 +286,13 @@
     <appender name="avalon" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>false</append>
         <file>${xnat.home}/logs/avalon.log</file>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+    </appender>
+    <appender name="xchange" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <append>false</append>
+        <file>${xnat.home}/logs/xchange.log</file>
         <encoder>
             <pattern>%d [%t] %-5p %c - %m%n</pattern>
         </encoder>
@@ -553,6 +569,10 @@
     </logger>
     <logger name="org.nrg.xnat.turbine" additivity="false" level="ERROR">
         <appender-ref ref="turbine"/>
+        <appender-ref ref="logstash"/>
+    </logger>
+    <logger name="org.nrg.xams.xchange.services" additivity="false" level="INFO">
+        <appender-ref ref="xchange"/>
         <appender-ref ref="logstash"/>
     </logger>
 

@@ -32,7 +32,7 @@ public class XNATCatalogTemplate extends XNATTemplate {
 	XFTTable catalogs=null;
 
 	ArrayList<String> resource_ids=null;
-	ArrayList<XnatAbstractresource> resources=new ArrayList<XnatAbstractresource>();
+	ArrayList<XnatAbstractresource> resources= new ArrayList<>();
 
 	public XNATCatalogTemplate(Context context, Request request,
 			Response response,boolean allowAll) {

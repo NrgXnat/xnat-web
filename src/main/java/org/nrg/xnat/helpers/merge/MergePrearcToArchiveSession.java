@@ -13,7 +13,6 @@ import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
-import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.*;
@@ -48,8 +47,7 @@ public class MergePrearcToArchiveSession extends MergeSessionsA<XnatImagesession
         return "merge";
     }
 
-    public void finalize(XnatImagesessiondata session) throws ClientException,
-                                                              ServerException {
+    public void finalize(XnatImagesessiondata session) {
         final String root = destRootPath.replace('\\', '/') + "/";
         for (XnatImagescandataI scan : session.getScans_scan()) {
             for (final XnatAbstractresourceI file : scan.getFile()) {
@@ -62,33 +60,28 @@ public class MergePrearcToArchiveSession extends MergeSessionsA<XnatImagesession
                 if (file instanceof XnatResourcecatalog) {
                     ((XnatResourcecatalog) file).clearFiles();
                 }
-                CatalogUtils.populateStats((XnatAbstractresource)file, root);
+                CatalogUtils.populateStats((XnatAbstractresource) file, root);
             }
         }
     }
 
     public void postSave(XnatImagesessiondata session) {
-        final String root      = destRootPath.replace('\\', '/') + "/";
-        boolean      checksums = false;
-        try {
-            final XnatProjectdata project = session.getProjectData();
-            checksums = CatalogUtils.getChecksumConfiguration(project);
-        } catch (ConfigServiceException e) {
-            //
-        }
+        final String          root      = destRootPath.replace('\\', '/') + "/";
+        final XnatProjectdata project   = session.getProjectData();
+        final boolean         checksums = CatalogUtils.getChecksumConfiguration(project);
 
-        for (XnatImagescandataI scan : session.getScans_scan()) {
-            for (final XnatAbstractresourceI file : scan.getFile()) {
-                if (file instanceof XnatResourcecatalog) {
-                    XnatResourcecatalog res = (XnatResourcecatalog) file;
+        for (final XnatImagescandataI scan : session.getScans_scan()) {
+            for (final XnatAbstractresourceI abstractResource : scan.getFile()) {
+                if (abstractResource instanceof XnatResourcecatalog) {
+                    final XnatResourcecatalog resourceCatalog = (XnatResourcecatalog) abstractResource;
                     try {
-                        File           f   = CatalogUtils.getCatalogFile(root, res);
-                        CatCatalogBean cat = CatalogUtils.getCatalog(root, res);
-                        if (CatalogUtils.formalizeCatalog(cat, f.getParentFile().getAbsolutePath(), user, c, checksums, false)) {
-                            CatalogUtils.writeCatalogToFile(cat, f, checksums);
+                        final File           catalogFile = CatalogUtils.getCatalogFile(root, resourceCatalog);
+                        final CatCatalogBean catalog     = CatalogUtils.getCatalog(root, resourceCatalog);
+                        if (CatalogUtils.formalizeCatalog(catalog, catalogFile.getParentFile().getAbsolutePath(), user, c, checksums, false)) {
+                            CatalogUtils.writeCatalogToFile(catalog, catalogFile, checksums);
                         }
                     } catch (Exception exception) {
-                        logger.error("An error occurred trying to write catalog data for " + ((XnatResourcecatalog) file).getUri(), exception);
+                        logger.error("An error occurred trying to write catalog data for " + ((XnatResourcecatalog) abstractResource).getUri(), exception);
                     }
                 }
             }

@@ -9,8 +9,10 @@
 
 package org.nrg.xnat.restlet.resources.files;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.nrg.action.ActionException;
+import org.nrg.action.ServerException;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.om.*;
 import org.nrg.xft.XFTItem;
@@ -21,7 +23,6 @@ import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.restlet.resources.ScanList;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.WorkflowUtils;
@@ -32,25 +33,22 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Hashtable;
 
-public class    CatalogResourceList extends XNATTemplate {
-    private final static Logger logger = LoggerFactory.getLogger(ScanList.class);
-
-    public CatalogResourceList(Context context, Request request, Response response) {
+@Slf4j
+public class CatalogResourceList extends XNATTemplate {
+    public CatalogResourceList(Context context, Request request, Response response) throws ServerException {
         super(context, request, response);
 
-        if(recons.size()>0 || scans.size()>0 || expts.size()>0 || sub!=null || proj!=null){
+        if (!recons.isEmpty() || !scans.isEmpty() || !expts.isEmpty() || sub != null || proj != null) {
             getVariants().add(new Variant(MediaType.APPLICATION_JSON));
             getVariants().add(new Variant(MediaType.TEXT_HTML));
             getVariants().add(new Variant(MediaType.TEXT_XML));
-        }else{
-            response.setStatus(Status.CLIENT_ERROR_NOT_FOUND);
+        } else {
+            throw new ServerException(Status.CLIENT_ERROR_NOT_FOUND, "You must specify an entity for which you want to retrieve resources, e.g. experiments, scan IDs, subjects, or projects.");
         }
     }
 
@@ -84,25 +82,16 @@ public class    CatalogResourceList extends XNATTemplate {
             }
 
             if(item.instanceOf("xnat:resourceCatalog")){
-                XnatResourcecatalog catResource = (XnatResourcecatalog)BaseElement.GetGeneratedItem(item);
+                final XnatResourcecatalog resourceCatalog = (XnatResourcecatalog)BaseElement.GetGeneratedItem(item);
 
-                if(catResource.getXnatAbstractresourceId()!=null){
-                    XnatAbstractresource existing=XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(catResource.getXnatAbstractresourceId(), user, false);
-                    if(existing!=null){
-                        getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT,"Specified catalog already exists.");
-                        //MATCHED
-                        return;
-                    }else{
-                        getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY,"Contains erroneous generated fields (xnat_abstractresource_id).");
-                        //MATCHED
-                        return;
-                    }
+                if (!validateNewResourceCatalog(user, resourceCatalog)) {
+                    return;
                 }
 
-                setCatalogAttributes(user, catResource);
+                setCatalogAttributes(user, resourceCatalog);
 
                 PersistentWorkflowI wrk=PersistentWorkflowUtils.getWorkflowByEventId(user,getEventId());
-                if(wrk==null && "SNAPSHOTS".equals(catResource.getLabel())){
+                if(wrk==null && "SNAPSHOTS".equals(resourceCatalog.getLabel())){
                     if(getSecurityItem() instanceof XnatExperimentdata){
                         Collection<? extends PersistentWorkflowI> workflows = PersistentWorkflowUtils.getOpenWorkflows(user,((ArchivableItem)getSecurityItem()).getId());
                         if(workflows!=null && workflows.size()==1){
@@ -124,13 +113,13 @@ public class    CatalogResourceList extends XNATTemplate {
                 assert wrk != null;
                 EventMetaI ci=wrk.buildEvent();
 
-                insertCatalog(catResource);
+                insertCatalog(resourceCatalog);
 
                 if(isNew){
                     WorkflowUtils.complete(wrk, ci);
                 }
 
-                returnSuccessfulCreateFromList(catResource.getXnatAbstractresourceId() + "");
+                returnSuccessfulCreateFromList(resourceCatalog.getXnatAbstractresourceId() + "");
             }else{
                 getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY,"Only ResourceCatalog documents can be PUT to this address.");
             }
@@ -138,7 +127,7 @@ public class    CatalogResourceList extends XNATTemplate {
 			this.getResponse().setStatus(e.getStatus(),e.getMessage());
 		} catch (Exception e) {
             getResponse().setStatus(Status.SERVER_ERROR_INTERNAL,e.getMessage());
-            logger.error("",e);
+            log.error("", e);
         }
     }
 
@@ -153,7 +142,7 @@ public class    CatalogResourceList extends XNATTemplate {
             try {
                 table = loadCatalogs(null, false, isQueryVariableTrue("all"));
             } catch (Exception e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
 
@@ -187,7 +176,7 @@ public class    CatalogResourceList extends XNATTemplate {
                 }
 
             } catch (ElementNotFoundException e) {
-                logger.error("", e);
+                log.error("", e);
             }
         }
 
@@ -202,8 +191,8 @@ public class    CatalogResourceList extends XNATTemplate {
             final ArrayList<Object[]> records     = table.rows();
             final int                 recordCount = (records != null) ? records.size() : 0;
 
-            if (logger.isDebugEnabled()) {
-                logger.debug("Found a total of " + recordCount + " records");
+            if (log.isDebugEnabled()) {
+                log.debug("Found a total of " + recordCount + " records");
             }
             params.put("totalRecords", recordCount);
         }

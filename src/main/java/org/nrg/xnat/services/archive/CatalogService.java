@@ -1,5 +1,5 @@
 /*
- * web: org.nrg.xnat.services.archive.CatalogService
+ * web: org.nrg.xnat.services.archive.ArchiveFolderService
  * XNAT http://www.xnat.org
  * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
@@ -15,9 +15,13 @@ import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.CatCatalogI;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.XFTItem;
+import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
+import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 
 import java.io.File;
 import java.io.IOException;
@@ -183,7 +187,15 @@ public interface CatalogService {
      */
     XnatResourcecatalog createResourceCatalog(final UserI user, final String label, final String description, final String format, final String content, final String... tags) throws Exception;
 
+    XnatResourcecatalog createResourceCatalog(final UserI user, final String label, final String description, final String format, final String content, final List<String> tags) throws Exception;
+
+    XnatResourcecatalog createResourceCatalog(final UserI user, final String label, final String description, final String format, final String content, final List<String> tags, final Map<String, String> metadata) throws Exception;
+
     XnatResourcecatalog createAndInsertResourceCatalog(final UserI user, final String parentUri, final String label, final String description, final String format, final String content, final String... tags) throws Exception;
+
+    XnatResourcecatalog createAndInsertResourceCatalog(final UserI user, final String parentUri, final String label, final String description, final String format, final String content, final List<String> tags) throws Exception;
+
+    XnatResourcecatalog createAndInsertResourceCatalog(final UserI user, final String parentUri, final String label, final String description, final String format, final String content, final List<String> tags, final Map<String, String> metadata) throws Exception;
 
     /**
      * Inserts the resource catalog into the resource specified by the parent URI parameter. If you need to pass
@@ -328,6 +340,8 @@ public interface CatalogService {
      * @throws ServerException When an error occurs in the system during the refresh operation.
      */
     void refreshResourceCatalogs(final UserI user, final List<String> resources, final Collection<Operation> operations) throws ServerException, ClientException;
+
+    List<String> storeCatalogEntry(final List<? extends FileWriterWrapperI> fileWriters, final XnatProjectdata project, final XnatResourcecatalog catResource, final String destination, final XnatResourceInfo info, final boolean extract, final boolean overwrite, final EventMetaI eventMetaI) throws Exception;
 
     /**
      * Inserts the XML object into the XNAT data store. The submitted XML is validated and inserted (created or updated as appropriate). The contents of the parameters map
