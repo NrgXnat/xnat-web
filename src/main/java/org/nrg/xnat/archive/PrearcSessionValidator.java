@@ -58,7 +58,7 @@ public final class PrearcSessionValidator extends PrearcSessionArchiver  {
 	
 			//check if this would change the project (not allowed)
 			if(!StringUtils.equals(existing.getProject(),src.getProject())){
-				fail(3,PROJ_MOD);
+				fail(3, PROJECT_MOD);
 			}
 	
 			//check if this would change the subject (not allowed)

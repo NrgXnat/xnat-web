@@ -1,5 +1,5 @@
 /*
- * web: org.nrg.xnat.restlet.resources.files.FileResource
+ * web: org.nrg.xnat.restlet._resources.files.FileResource
  * XNAT http://www.xnat.org
  * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
@@ -149,7 +149,7 @@ public class FileResource extends ItemResource {
 					query += " AND map.xnat_abstractresource_xnat_abstractresource_id=" + resourceID;
 				}
 			} else {
-				//resources
+				//_resources
 				query += " FROM recon_out_resource map " +
 						 " LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id" +
 						 " LEFT JOIN xnat_resource res ON abst.xnat_abstractresource_id=res.xnat_abstractresource_id";
@@ -185,7 +185,7 @@ public class FileResource extends ItemResource {
 							query += " AND map.xnat_abstractresource_xnat_abstractresource_id=" + resourceID;
 						}
 					} else {
-						//resources
+						//_resources
 						query += " FROM xnat_experimentdata_resource map " +
 								 " LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id" +
 								 " LEFT JOIN xnat_resource res ON abst.xnat_abstractresource_id=res.xnat_abstractresource_id";
@@ -193,7 +193,7 @@ public class FileResource extends ItemResource {
 						query += " AND map.xnat_abstractresource_xnat_abstractresource_id=" + resourceID;
 					}
 				} else {
-					//resources
+					//_resources
 					query += " FROM xnat_experimentdata_resource map " +
 							 " LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id" +
 							 " LEFT JOIN xnat_resource res ON abst.xnat_abstractresource_id=res.xnat_abstractresource_id";
@@ -206,7 +206,7 @@ public class FileResource extends ItemResource {
 		} else if (sub != null) {
 			security = this.sub;
 			parent = this.sub;
-			//resources
+			//_resources
 			query += " FROM xnat_subjectdata_resource map " +
 					 " LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id" +
 					 " LEFT JOIN xnat_resource res ON abst.xnat_abstractresource_id=res.xnat_abstractresource_id";
@@ -215,7 +215,7 @@ public class FileResource extends ItemResource {
 		} else if (proj != null) {
 			security = this.proj;
 			parent = this.proj;
-			//resources
+			//_resources
 			query += " FROM xnat_projectdata_resource map " +
 					 " LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id" +
 					 " LEFT JOIN xnat_resource res ON abst.xnat_abstractresource_id=res.xnat_abstractresource_id";

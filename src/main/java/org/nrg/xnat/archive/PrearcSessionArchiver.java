@@ -10,9 +10,11 @@
 package org.nrg.xnat.archive;
 
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dicomtools.filters.DicomFilterService;
@@ -51,11 +53,9 @@ import org.nrg.xnat.status.ListenerUtils;
 import org.nrg.xnat.turbine.utils.XNATSessionPopulater;
 import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.nrg.xnat.utils.CatalogUtils;
-import org.nrg.xnat.utils.CatalogUtils.CatEntryFilterI;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 import org.xml.sax.SAXException;
 
 import java.io.File;
@@ -70,6 +70,8 @@ import static org.nrg.xft.event.XftItemEventI.UPDATE;
 
 // Migration: I'm not sure why StatusProducer is deprecated
 @SuppressWarnings("deprecation")
+@Component
+@Slf4j
 public class PrearcSessionArchiver extends StatusProducer implements Callable<String>, StatusProducerI {
 
     public static final String MERGED = "Merged";
@@ -80,7 +82,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
     public static final String SUBJECT_MOD = "Invalid modification of session subject via archive process.";
 
-    public static final String PROJ_MOD = "Invalid modification of session project via archive process.";
+    public static final String PROJECT_MOD = "Invalid modification of session project via archive process.";
 
     public static final String LABEL_MOD = "Invalid modification of session label via archive process.";
 
@@ -93,17 +95,16 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     public static final String PARAM_SESSION = "session";
     public static final String PARAM_SUBJECT = "subject";
 
-    private final static Logger logger = LoggerFactory.getLogger(PrearcSessionArchiver.class);
-    protected XnatImagesessiondata src;
-    protected final UserI user;
-    protected final String project;
+    protected XnatImagesessiondata      src;
+    protected final UserI               user;
+    protected final String              project;
     protected final Map<String, Object> params;
 
     protected final PrearcSession prearcSession;
 
     private final boolean overrideExceptions;//as of 1.6.2 this is being used to override any potential overridable exception
     private final boolean allowSessionMerge;//should process proceed if the session already exists
-    private final boolean overwriteFiles;//should process proceed if the same file is reuploaded
+    private final boolean overwriteFiles;//should process proceed if the same file is re-uploaded
     private final boolean waitFor;
 
     private boolean needsScanIdCorrection = false;
@@ -171,7 +172,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     /**
      * Determine an appropriate session label.
      *
-     * @throws ClientException
+     * @throws ClientException When an error is found in the submitted data.
      */
     protected void fixSessionLabel() throws ClientException {
         String label = (String) params.get(PARAM_SESSION);
@@ -229,8 +230,8 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
      * Ensure that the subject label and ID are set in the session --
      * by deriving and setting them, if necessary.
      *
-     * @throws ClientException
-     * @throws ServerException
+     * @throws ClientException When an error is found in the submitted data.
+     * @throws ServerException When an error occurs during processing.
      */
     protected void fixSubject(EventMetaI c, boolean allowNewSubject) throws ClientException, ServerException {
         String subjectID = (String) params.get(PARAM_SUBJECT);
@@ -302,8 +303,9 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
      * Retrieves the archive session directory for the given session.
      *
      * @return archive session directory
-     * @throws UnknownPrimaryProjectException
-     * @throws ServerException
+     *
+     * @throws UnknownPrimaryProjectException When the primary project can't be found or is an invalid value.
+     * @throws ServerException When an error occurs during processing.
      */
     protected File getArcSessionDir() throws ServerException, UnknownPrimaryProjectException {
         final File currentArcDir;
@@ -330,7 +332,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     /**
      * Verify that the session isn't already in the transfer pipeline.
      *
-     * @throws ClientException
+     * @throws ClientException When an error is found in the submitted data.
      */
     protected void preventConcurrentArchiving(final String id, final UserI user) throws ClientException {
         if (!overrideExceptions) {//allow overriding of this behavior via the overwrite parameter
@@ -352,19 +354,19 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
         final File prearcSessionDir = new File(prearcSessionPath);
         try (final FileWriter prearcXML = new FileWriter(prearcSessionDir.getPath() + ".xml")) {
-            logger.debug("Preparing to update prearchive XML for {}", newSession);
+            log.debug("Preparing to update prearchive XML for {}", newSession);
             ((XFTItem) newSession.getItem().clone()).toXML(prearcXML, false);
         } catch (RuntimeException e) {
-            logger.error("unable to update prearchive session XML", e);
+            log.error("unable to update prearchive session XML", e);
             warning("updated prearchive session XML could not be written: " + e.getMessage());
         } catch (SAXException e) {
-            logger.error("attempted to write invalid updated prearchive session XML", e);
+            log.error("attempted to write invalid updated prearchive session XML", e);
             warning("updated prearchive session XML is invalid: " + e.getMessage());
         } catch (FileNotFoundException e) {
-            logger.error("unable to update prearchive session XML", e);
+            log.error("unable to update prearchive session XML", e);
             warning("prearchive session XML not found, cannot update");
         } catch (IOException e) {
-            logger.error("error updating prearchive session XML", e);
+            log.error("error updating prearchive session XML", e);
             warning("could not update prearchive session XML: " + e.getMessage());
         }
     }
@@ -373,7 +375,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     /**
      * This method will allow users to pass xml path as parameters.  The values supplied will be copied into the loaded session.
      *
-     * @throws ClientException
+     * @throws ClientException When an error is found in the submitted data.
      */
     protected void populateAdditionalFields() throws ClientException {
         //prepare params by removing non xml path names
@@ -406,8 +408,8 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
             }
 
             if (!StringUtils.equals(existing.getProject(), src.getProject())) {
-                failed(PROJ_MOD);
-                throw new ClientException(Status.CLIENT_ERROR_CONFLICT, PROJ_MOD, new Exception());
+                failed(PROJECT_MOD);
+                throw new ClientException(Status.CLIENT_ERROR_CONFLICT, PROJECT_MOD, new Exception());
             }
 
             //check if the XSI types match
@@ -469,7 +471,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
         try {
             this.lock(this.prearcSession.getUrl());
         } catch (LockedItemException e3) {
-            throw new ClientException(Status.CLIENT_ERROR_LOCKED, "Duplicate archive attempt.  Preachive session already archiving.", e3);
+            throw new ClientException(Status.CLIENT_ERROR_LOCKED, "Duplicate archive attempt. Prearchive session already archiving.", e3);
         }
 
         try {
@@ -522,11 +524,10 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
             try{
                 fixSubject(c, true);
-            }
-            catch(Exception e){
+            } catch(Exception e){
                 try {
                     Thread.sleep(10000);
-                }catch(InterruptedException e2){
+                }catch(InterruptedException ignored){
                 }
                 fixSubject(c, true);
             }
@@ -562,47 +563,45 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
                     correctScanID(existing);
                 }
 
-                SaveHandlerI<XnatImagesessiondata> saveImpl = new SaveHandlerI<XnatImagesessiondata>() {
-                    public void save(XnatImagesessiondata merged) throws Exception {
-                        if (SaveItemHelper.authorizedSave(merged, user, false, false, c)) {
-                            final Date inserted = merged.getItem().getInsertDate();
-                            final Date lastModified = merged.getItem().getLastModified();
-                            XDAT.triggerXftItemEvent(merged, lastModified == null || lastModified.getTime() - inserted.getTime() == 0 ? CREATE : UPDATE);
-                            Users.clearCache(user);
-                            try {
-                                MaterializedView.deleteByUser(user);
-                            } catch (Exception e) {
-                                logger.error("", e);
-                            }
+                final SaveHandlerI<XnatImagesessiondata> saveImpl = merged -> {
+                    if (SaveItemHelper.authorizedSave(merged, user, false, false, c)) {
+                        final Date inserted = merged.getItem().getInsertDate();
+                        final Date lastModified = merged.getItem().getLastModified();
+                        XDAT.triggerXftItemEvent(merged, lastModified == null || lastModified.getTime() - inserted.getTime() == 0 ? CREATE : UPDATE);
+                        Users.clearCache(user);
+                        try {
+                            MaterializedView.deleteByUser(user);
+                        } catch (Exception e) {
+                            log.error("", e);
+                        }
 
-                            try {
-                                if (shouldForceQuarantine) {
-                                    src.quarantine(user);
-                                } else {
-                                    // A bunch of null checks here because, under certain race or heavy load conditions,
-                                    // one or more of these values can come back null.
-                                    final XnatProjectdata project = src.getPrimaryProject(false);
-                                    if (project != null) {
-                                        final ArcProject arcProject = project.getArcSpecification();
-                                        if (arcProject != null) {
-                                            final Integer quarantineCode = arcProject.getQuarantineCode();
-                                            if (quarantineCode != null) {
-                                                if (quarantineCode.equals(1)) {
-                                                    src.quarantine(user);
-                                                }
-                                            } else {
-                                                logger.debug("Got arcProject {} for project {} associated with session {}, but the quarantine code was null", arcProject.getArcProjectId(), project.getId(), src.getLabel());
+                        try {
+                            if (shouldForceQuarantine) {
+                                src.quarantine(user);
+                            } else {
+                                // A bunch of null checks here because, under certain race or heavy load conditions,
+                                // one or more of these values can come back null.
+                                final XnatProjectdata project = src.getPrimaryProject(false);
+                                if (project != null) {
+                                    final ArcProject arcProject = project.getArcSpecification();
+                                    if (arcProject != null) {
+                                        final Integer quarantineCode = arcProject.getQuarantineCode();
+                                        if (quarantineCode != null) {
+                                            if (quarantineCode.equals(1)) {
+                                                src.quarantine(user);
                                             }
                                         } else {
-                                            logger.debug("Didn't find arcProject for project {}", project.getId());
+                                            log.debug("Got arcProject {} for project {} associated with session {}, but the quarantine code was null", arcProject.getArcProjectId(), project.getId(), src.getLabel());
                                         }
                                     } else {
-                                        logger.debug("Couldn't get primary project for session {}.", src.getLabel());
+                                        log.debug("Didn't find arcProject for project {}", project.getId());
                                     }
+                                } else {
+                                    log.debug("Couldn't get primary project for session {}.", src.getLabel());
                                 }
-                            } catch (Exception e) {
-                                logger.error("", e);
                             }
+                        } catch (Exception e) {
+                            log.error("", e);
                         }
                     }
                 };
@@ -637,7 +636,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
                     WorkflowUtils.complete(workflow, workflow.buildEvent());
 
                 } catch (Exception e1) {
-                    logger.error("", e1);
+                    log.error("", e1);
                 }
 
                 postArchive(user, src, params);
@@ -651,7 +650,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
             } catch (ServerException | ClientException e) {
                 throw e;
             } catch (Throwable e) {
-                logger.error("", e);
+                log.error("", e);
                 throw new ServerException(e.getMessage(), new Exception());
             }
         } finally {
@@ -667,7 +666,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     /**
      * This code is used by this class and PrearcSessionValidator to confirm that all scan data is compliant according to the SeriesImportFilters
      *
-     * @throws ClientException
+     * @throws ClientException When an error is found in the submitted data.
      */
     protected void verifyCompliance() throws ClientException {
         final SeriesImportFilter siteWide = getDicomFilterService().getSeriesImportFilter();
@@ -710,38 +709,36 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     /**
      * This code is used by this class and PrearcSessionValidator to confirm that there are no un-referenced or unexpected files in the prearchive content
      *
-     * @throws ClientException
+     * @throws ClientException When an error is found in the submitted data.
      */
     protected void validateDicomFiles() throws ClientException {
         //validate files to confirm DICOM contents
         for (final XnatImagescandataI scan : src.getScans_scan()) {
             for (final XnatAbstractresourceI resource : scan.getFile()) {
                 if (resource instanceof XnatResourcecatalogI) {
-                    final File f = CatalogUtils.getCatalogFile(src.getPrearchivepath(), (XnatResourcecatalogI) resource);
-                    if (f == null || !f.exists()) {
+                    final File file = CatalogUtils.getCatalogFile(src.getPrearchivepath(), (XnatResourcecatalogI) resource);
+                    if (file == null || !file.exists()) {
                         warn(21, "Expected a catalog file, however it was missing.");
                     }
 
-                    if (f != null) {
-                        final List<String> unreferenced = CatalogUtils.getUnreferencedFiles(f.getParentFile());
+                    if (file != null) {
+                        final List<String> unreferenced = CatalogUtils.getUnreferencedFiles(file.getParentFile());
                         if (unreferenced.size() > 0) {
-                            warn(20, String.format("Scan %1$s has %2$s non-%3$s (or non-parsable %3$s) files", scan.getId(), unreferenced.size(), resource.getLabel()));
+                            warn(20, String.format("Scan %1$s has %2$s non-%3$s (or non-parseable %3$s) files", scan.getId(), unreferenced.size(), resource.getLabel()));
                         }
                     }
 
-                    if (StringUtils.equals(resource.getLabel(), "DICOM")) {
+                    if (file != null && StringUtils.equals(resource.getLabel(), "DICOM")) {
                         //check for entries that aren't DICOM entries or don't have a UID stored
-                        final CatCatalogI cat = CatalogUtils.getCatalog(f);
-                        final Collection<CatEntryI> nonDCM = CatalogUtils.getEntriesByFilter(cat, new CatEntryFilterI() {
-                            @Override
-                            public boolean accept(CatEntryI entry) {
-                                return ((!(entry instanceof CatDcmentryI)) || StringUtils.isEmpty(((CatDcmentryI) entry).getUid()));
+                        final CatCatalogI catalog = CatalogUtils.getCatalog(file);
+                        final Collection<CatEntryI> nonDCM;
+                        if (catalog != null) {
+                            nonDCM = CatalogUtils.getEntriesByFilter(catalog, entry -> ((!(entry instanceof CatDcmentryI)) || StringUtils.isEmpty(((CatDcmentryI) entry).getUid())));
+                            if (!nonDCM.isEmpty()) {
+                                warn(20, String.format("Scan %1$s has %2$s non-DICOM (or non-parseable DICOM) files", scan.getId(), nonDCM.size()));
                             }
-                        });
-
-                        if (nonDCM.size() > 0) {
-                            warn(20, String.format("Scan %1$s has %2$s non-DICOM (or non-parsable DICOM) files", scan.getId(), nonDCM.size()));
                         }
+
                     }
                 }
             }
@@ -752,9 +749,9 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
      * Method to compare new scans to existing scans.  Matching scan IDs (with different UIDs) will have a _1 added to them.
      *
      * @param existing An existing session to correct.
-     * @throws ServerException
+     * @throws ServerException When an error occurs during processing.
      */
-    private void correctScanID(XnatImagesessiondata existing) throws ServerException {
+    private void correctScanID(final XnatImagesessiondata existing) throws ServerException {
         for (final XnatImagescandataI newScan : src.getScans_scan()) {
             //find matching scan by UID
             final XnatImagescandataI match2 = MergeUtils.getMatchingScanByUID(newScan, existing.getScans_scan());//match by UID
@@ -769,17 +766,12 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
                 continue;
             }
 
-            //build modality code via parsing of the xsi:type.  modality code matches first 2 characters after the : for xnat types.  Otherwise, leave it empty.
-            //this is a bit of a hack.  It would be better to have an official mapping
-            String modalityCode = (newScan.getXSIType().startsWith("xnat:")) ? newScan.getXSIType().substring(5, 7).toUpperCase() : "";
-            if ("PE".equals(modalityCode)) {
-                modalityCode = "PT";//this works for everything but PET, which gets called PE instead of PT, so we correct it.
-            }
+            final String modalityCode = getModalityCode(newScan);
 
             String scan_id = newScan.getId();
             int count = 1;
             boolean needsMove = false;
-            //make sure there aren't any matches by ID.  if there aren't needsMove stays false.  And, it identifies a good _scanId to use in the process.
+            //make sure there aren't any matches by ID.  if there aren't needsMove stays false.  And, it identifies a good scan ID to use in the process.
             while (MergeUtils.getMatchingScanById(scan_id, existing.getScans_scan()) != null) {
                 scan_id = newScan.getId() + "-" + modalityCode + count++;
                 needsMove = true;
@@ -794,14 +786,28 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     }
 
     /**
+     * Extracts the modality code via parsing of the XSI type. The modality code matches the first two characters after the ":" for XNAT types.  Otherwise,
+     * this returns empty.
+     * 
+     * @param scan The scan for which you want to retrieve the modality code.
+     *             
+     * @return The modality code if available or an empty string if not.
+     */
+    @NotNull
+    private String getModalityCode(final XnatImagescandataI scan) {
+        final String modalityCode = scan.getXSIType().startsWith("xnat:") ? scan.getXSIType().substring(5, 7).toUpperCase() : "";
+        return "PE".equals(modalityCode) ? "PT" : modalityCode; //this works for everything but PET, which gets called PE instead of PT, so we correct it.
+    }
+
+    /**
      * Used to move a scan to a different scan ID within the prearchive, prior to transfer
      *
      * @param newScan The new scan to move to.
      * @param scan_id The new scan ID.
-     * @throws ServerException
+     * @throws ServerException When an error occurs during processing.
      */
     private void moveScan(XnatImagescandataI newScan, String scan_id) throws ServerException {
-        /******
+        /*
          * SCANS\1\scan_1_catalog.xml
          */
         final String oldScanCatalogPath = ((XnatResourcecatalog) newScan.getFile().get(0)).getUri();
@@ -809,7 +815,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
         final String oldScanFolderPath = "SCANS/" + newScan.getId();
         final String newScanFolderPath = "SCANS/" + scan_id;
         final String newScanCatalogPath = newScanFolderPath + "/DICOM/" + catalog.getName();
-        final String prearcpath = getSrcDIR().getAbsolutePath();
+        final String prearcPath = getSrcDIR().getAbsolutePath();
 
         //confirm expected structure
         if (!catalog.exists()) {
@@ -843,7 +849,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
         }
 
         try {
-            updatePrearchiveSessionXML(prearcpath, src);
+            updatePrearchiveSessionXML(prearcPath, src);
         } catch (Throwable e) {
             throw new ServerException(e);
         }
@@ -863,11 +869,11 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
                     if (PostArchiveAction.class.isAssignableFrom(clazz)) {
                         PostArchiveAction action = (PostArchiveAction) clazz.newInstance();
                         Boolean result = action.execute(user, src, params);
-                        if (logger.isDebugEnabled()) {
-                            logger.debug("Ran post-archive action class: " + clazz.getSimpleName() + ". Result was " + (result == null ? "false" : result.toString()));
+                        if (log.isDebugEnabled()) {
+                            log.debug("Ran post-archive action class: " + clazz.getSimpleName() + ". Result was " + (result == null ? "false" : result.toString()));
                         }
-                    } else if (logger.isInfoEnabled()) {
-                        logger.info("Found class in postArchive action package that's not a valid post-archive action class: " + clazz.getSimpleName());
+                    } else if (log.isInfoEnabled()) {
+                        log.info("Found class in postArchive action package that's not a valid post-archive action class: " + clazz.getSimpleName());
                     }
                 }
             }
@@ -911,7 +917,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
     /************************************
      * We used to use the workflow table to implement locking of the destination session when merging.
-     * We did so by saving the workflow entry towards the begenning of the archive process (the call method), and checking to see
+     * We did so by saving the workflow entry towards the beginning of the archive process (the call method), and checking to see
      * if there were any others open.
      * However, Dan (and Jenny) requested that we only save the workflow entry if the job completes. So, that approach won't work anymore.
      * <p/>
@@ -933,9 +939,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
     }
 
     private static synchronized void releaseLock(String id) {
-        if (GLOBAL_LOCKS.contains(id)) {
-            GLOBAL_LOCKS.remove(id);
-        }
+        GLOBAL_LOCKS.remove(id);
     }
 
     //used to track the strings that have been locked for this particular archiver instance
@@ -959,7 +963,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
     //the following methods are overridden in PrearcSessionValidator
     //PrearcSessionValidator tries to validate whether the PrearcSessionArchiver would work (and if not what would break it)
-    //ideally, the PrearcSessionValidator would use the exact same code as the Archiver.  But, the Archiver code is sometimes uncompatible
+    //ideally, the PrearcSessionValidator would use the exact same code as the Archiver.  But, the Archiver code is sometimes incompatible
     //with the validator (validator wants to collect all failure reasons, archiver fails on first one).
     //however, were possible, they should use the same code.  In those situations the Archiver should use these methods to trigger its exceptions.
     //then Validator can just change the way those exceptions are handled, by changing the implementation of these methods.
@@ -982,7 +986,7 @@ public class PrearcSessionArchiver extends StatusProducer implements Callable<St
 
     private DicomFilterService getDicomFilterService() {
         if (_filterService == null) {
-            synchronized (logger) {
+            synchronized (log) {
                 _filterService = XDAT.getContextService().getBean(DicomFilterService.class);
             }
         }

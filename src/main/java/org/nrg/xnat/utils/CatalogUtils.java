@@ -57,6 +57,15 @@ public class CatalogUtils {
     public final static String[] FILE_HEADERS        = {"Name", "Size", "URI", "collection", "file_tags", "file_format", "file_content", "cat_ID", "digest"};
     public final static String[] FILE_HEADERS_W_FILE = {"Name", "Size", "URI", "collection", "file_tags", "file_format", "file_content", "cat_ID", "file", "digest"};
 
+    public static XChangeStorageService getStorageService() {
+        if (_storageService == null) {
+            synchronized (MUTEX) {
+                _storageService = XDAT.getContextService().getBean(XChangeStorageService.class);
+            }
+        }
+        return _storageService;
+    }
+
     public static boolean getChecksumConfiguration(final XnatProjectdata project) {
         final String projectId = project.getId();
         if (StringUtils.isNotBlank(projectId)) {
@@ -1281,14 +1290,9 @@ public class CatalogUtils {
         return _configService;
     }
 
-    private static XChangeStorageService getStorageService() {
-        if (_storageService == null) {
-            _storageService = XDAT.getContextService().getBean(XChangeStorageService.class);
-        }
-        return _storageService;
-    }
+    private static final String[] RESOURCE_FIELDS = {"xnat_abstractresource_id", "label", "element_name", "category", "cat_id", "cat_desc", "file_count", "file_size", "tags", "content", "format"};
+    private static final Object   MUTEX           = new Object();
 
-    private static final String[]              RESOURCE_FIELDS = {"xnat_abstractresource_id", "label", "element_name", "category", "cat_id", "cat_desc", "file_count", "file_size", "tags", "content", "format"};
     private static       SiteConfigPreferences _preferences;
     private static       ConfigService         _configService;
     private static       XChangeStorageService _storageService;

@@ -1,5 +1,5 @@
 /*
- * web: org.nrg.xnat.restlet.resources.files.DIRResource
+ * web: org.nrg.xnat.restlet._resources.files.DIRResource
  * XNAT http://www.xnat.org
  * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved

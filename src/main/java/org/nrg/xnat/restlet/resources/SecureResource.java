@@ -19,6 +19,8 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.log4j.Logger;
 import org.apache.turbine.util.TurbineException;
 import org.json.JSONException;
@@ -79,6 +81,7 @@ import org.nrg.xnat.restlet.representations.*;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.restlet.util.RequestUtil;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.InteractiveAgentDetector;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.Context;
@@ -375,19 +378,52 @@ public abstract class SecureResource extends Resource {
         return null;
     }
 
-    public String getQueryVariable(String key) {
-        return getQueryVariable(key, getRequest());
+    public String getQueryVariable(final String key) {
+        return getQueryVariable(key, null, getRequest());
     }
 
-    public String getQueryVariable(String key, String _default) {
-        String s = getQueryVariable(key, getRequest());
-        return (s == null) ? _default : s;
+    public String getQueryVariable(final String key, final String defaultValue) {
+        return getQueryVariable(key, defaultValue, getRequest());
     }
 
-    public static String getQueryVariable(String key, Request request) {
-        Form f = getQueryVariableForm(request);
-        if (f != null && f.getValuesMap().containsKey(key)) {
-            return TurbineUtils.escapeParam(f.getFirstValue(key));
+    public static String getQueryVariable(final String key, final Request request) {
+        return getQueryVariable(key, null, request);
+    }
+
+    public static String getQueryVariable(final String key, final String defaultValue, final Request request) {
+        final Form form = getQueryVariableForm(request);
+        if (form != null && form.getValuesMap().containsKey(key)) {
+            final String value = TurbineUtils.escapeParam(form.getFirstValue(key));
+            // This null check avoids returning null if value is "".
+            return defaultValue != null ? StringUtils.defaultIfBlank(value, defaultValue) : value;
+        }
+        return null;
+    }
+
+    public Integer getQueryVariableAsInteger(final String key) {
+        return getQueryVariableAsInteger(key, null, getRequest());
+    }
+
+    public Integer getQueryVariableAsInteger(final String key, final int defaultValue) {
+        return getQueryVariableAsInteger(key, defaultValue, getRequest());
+    }
+
+    public static Integer getQueryVariableAsInteger(final String key, final Request request) {
+        return getQueryVariableAsInteger(key, null, request);
+    }
+
+    public static Integer getQueryVariableAsInteger(final String key, final Integer defaultValue, final Request request) {
+        final Form form = getQueryVariableForm(request);
+        if (form != null && form.getValuesMap().containsKey(key)) {
+            final String value = TurbineUtils.escapeParam(form.getFirstValue(key));
+            if (StringUtils.isBlank(value)) {
+                return defaultValue;
+            }
+            if (!NumberUtils.isParsable(value)) {
+                logger.error("An unparseable value for the query variable '" + key + "' was requested as an integer: " + value);
+                return null;
+            }
+            return Integer.parseInt(value);
         }
         return null;
     }
@@ -600,12 +636,7 @@ public abstract class SecureResource extends Resource {
             }
         } else if (mt.equals(MediaType.APPLICATION_JSON)) {
             try {
-                FlattenedItemA.HistoryConfigI history = (isQueryVariableTrue("includeHistory")) ? FlattenedItemA.GET_ALL : new FlattenedItemA.HistoryConfigI() {
-                    @Override
-                    public boolean getIncludeHistory() {
-                        return false;
-                    }
-                };
+                FlattenedItemA.HistoryConfigI history = (isQueryVariableTrue("includeHistory")) ? FlattenedItemA.GET_ALL : () -> false;
                 return new JSONObjectRepresentation(MediaType.APPLICATION_JSON, (new ItemJSONBuilder()).call(item, history, isQueryVariableTrue("includeHeaders")));
             } catch (Exception e) {
                 getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
@@ -1794,15 +1825,7 @@ public abstract class SecureResource extends Resource {
     }
 
     protected XChangeStorageService getStorageService() {
-        if (_storageService == null) {
-            synchronized (MUTEX) {
-                _storageService = XDAT.getContextService().getBeanSafely(XChangeStorageService.class);
-                if (_storageService == null) {
-                    logger.error("Tried to retrieve an XChangeStorageService implementation but couldn't find anything.");
-                }
-            }
-        }
-        return _storageService;
+        return CatalogUtils.getStorageService();
     }
 
     protected boolean isWhitelisted() {
@@ -1920,10 +1943,6 @@ public abstract class SecureResource extends Resource {
             throw e;
         }
     }
-
-    private static final Object MUTEX = new Object();
-
-    private static XChangeStorageService _storageService;
 
     private final UserI             _user;
     private final SerializerService _serializer;

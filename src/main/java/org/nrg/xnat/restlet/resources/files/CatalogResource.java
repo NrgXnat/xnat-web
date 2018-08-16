@@ -1,5 +1,5 @@
 /*
- * web: org.nrg.xnat.restlet.resources.files.CatalogResource
+ * web: org.nrg.xnat.restlet.getResources().files.CatalogResource
  * XNAT http://www.xnat.org
  * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nrg.action.ActionException;
+import org.nrg.action.ClientException;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.om.*;
@@ -40,27 +41,26 @@ import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Objects;
 
 @Slf4j
 public class CatalogResource extends XNATCatalogTemplate {
-    public CatalogResource(Context context, Request request, Response response) {
+    public CatalogResource(Context context, Request request, Response response) throws ClientException {
         super(context, request, response, false);
+
+        getVariants().add(new Variant(MediaType.TEXT_XML));
 
         _filePathIsEmpty = checkForNonEmptyFilePath(getRequest().getResourceRef().getRemainingPart());
 
         try {
-            if (!org.springframework.util.ObjectUtils.isEmpty(catalogs)) {
-                for (final Object[] row : catalogs.rows()) {
+            if (!org.springframework.util.ObjectUtils.isEmpty(getCatalogs())) {
+                for (final Object[] row : getCatalogs().rows()) {
                     final Integer id    = (Integer) row[0];
                     final String  label = (String) row[1];
-                    resource_ids.stream().filter(resourceId -> id.toString().equals(resourceId) || StringUtils.equals(label, resourceId)).forEach(resourceId -> resources.add(XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(row[0], getUser(), false)));
+                    getResourceIds().stream().filter(resourceId -> id.toString().equals(resourceId) || StringUtils.equals(label, resourceId)).forEach(resourceId -> getResources().add(XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(row[0], getUser(), false)));
                 }
             }
-
-            getVariants().add(new Variant(MediaType.TEXT_XML));
         } catch (Exception e) {
             log.error("", e);
         }
@@ -89,19 +89,19 @@ public class CatalogResource extends XNATCatalogTemplate {
 
         getAllMatches();
 
-        if (resources.isEmpty()) {
+        if (getResources().isEmpty()) {
             getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Unable to find the specified catalog.");
-        } else if (resources.size() == 1) {
-            XnatAbstractresource resource = resources.get(0);
+        } else if (getResources().size() == 1) {
+            final XnatAbstractresource resource = getResources().get(0);
             try {
-                if (proj == null) {
-                    initializeProjectFromExperiment();
+                if (!hasProject()) {
+                    setProject(getProjectFromRelatedItems());
                 }
 
                 if (resource.getItem().instanceOf("xnat:resourceCatalog")) {
                     final boolean             includeRoot     = isQueryVariableTrue("includeRootPath");
                     final XnatResourcecatalog resourceCatalog = (XnatResourcecatalog) resource;
-                    final CatCatalogBean      catalog         = resourceCatalog.getCleanCatalog(proj.getRootArchivePath(), includeRoot, null, null);
+                    final CatCatalogBean      catalog         = resourceCatalog.getCleanCatalog(getProject().getRootArchivePath(), includeRoot, null, null);
 
                     if (catalog != null) {
                         return new BeanRepresentation(catalog, MediaType.TEXT_XML);
@@ -130,15 +130,15 @@ public class CatalogResource extends XNATCatalogTemplate {
             return;
         }
 
-        if (ObjectUtils.allNotNull(parent, security)) {
+        if (ObjectUtils.allNotNull(getParent(), getSecurity())) {
             final UserI user = getUser();
             try {
-                if (!Permissions.canEdit(user, security)) {
+                if (!Permissions.canEdit(user, getSecurity())) {
                     getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "User account doesn't have permission to modify this session.");
                     return;
                 }
 
-                if (!resources.isEmpty()) {
+                if (!getResources().isEmpty()) {
                     getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, "Specified resource already exists.");
                     return;
                 }
@@ -160,7 +160,7 @@ public class CatalogResource extends XNATCatalogTemplate {
                 }
 
                 setCatalogAttributes(user, resourceCatalog);
-                resourceCatalog.setLabel(resource_ids.get(0));
+                resourceCatalog.setLabel(getResourceIds().get(0));
 
                 PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
                 if (workflow == null && "SNAPSHOTS".equals(resourceCatalog.getLabel())) {
@@ -212,12 +212,12 @@ public class CatalogResource extends XNATCatalogTemplate {
             return;
         }
 
-        if (resources.isEmpty() || !ObjectUtils.allNotNull(parent, security)) {
+        if (getResources().isEmpty() || !ObjectUtils.allNotNull(getParent(), getSecurity())) {
             return;
         }
 
         final UserI   user         = getUser();
-        final XFTItem securityItem = security.getItem();
+        final XFTItem securityItem = getSecurity().getItem();
 
         try {
             if (!(securityItem.isActive() || securityItem.isQuarantine())) {
@@ -225,28 +225,28 @@ public class CatalogResource extends XNATCatalogTemplate {
                 return;
             }
 
-            if (!Permissions.canDelete(user, security)) {
+            if (!Permissions.canDelete(user, getSecurity())) {
                 getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "User account doesn't have permission to modify this session.");
                 return;
             }
 
-            for (final XnatAbstractresource resource : resources) {
+            for (final XnatAbstractresource resource : getResources()) {
                 final Pair<String, String> attributes = getResourceAttributes();
                 if (Objects.equals(attributes, ImmutablePair.nullPair())) {
                     getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY, "Unknown object type for the parent and security items.");
                     return;
                 }
 
-                final String               securityId = attributes.getLeft();
-                final String               xsiType    = attributes.getRight();
-                final String               rootPath   = proj.getRootArchivePath();
+                final String securityId = attributes.getLeft();
+                final String xsiType    = attributes.getRight();
+                final String rootPath   = getProject().getRootArchivePath();
 
-                final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, xsiType, securityId, (proj == null) ? null : proj.getId(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_CATALOG));
+                final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, xsiType, securityId, hasProject() ? getProject().getId() : null, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_CATALOG));
                 final EventMetaI          event    = workflow.buildEvent();
 
                 try {
                     resource.deleteWithBackup(rootPath, user, event);
-                    SaveItemHelper.authorizedRemoveChild(parent.getItem(), xmlPath, resource.getItem(), user, event);
+                    SaveItemHelper.authorizedRemoveChild(getParent().getItem(), getXmlPath(), resource.getItem(), user, event);
                     PersistentWorkflowUtils.complete(workflow, event);
                 } catch (Exception e) {
                     PersistentWorkflowUtils.fail(workflow, event);
@@ -260,38 +260,49 @@ public class CatalogResource extends XNATCatalogTemplate {
     }
 
     private Pair<String, String> getResourceAttributes() throws ElementNotFoundException {
-        final XFTItem parentItem   = parent.getItem();
-        final XFTItem securityItem = security.getItem();
-        if (parentItem.instanceOf("xnat:experimentData")) {
-            if (proj == null) {
-                proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+        final XFTItem parentItem   = getParent().getItem();
+        final XFTItem securityItem = getSecurity().getItem();
+        if (parentItem.instanceOf(XnatExperimentdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatExperimentdata parent = (XnatExperimentdata) getParent();
+            if (!hasProject()) {
+                setProject(parent.getPrimaryProject(false));
             }
-            return ImmutablePair.of(((XnatExperimentdata) parent).getId(), parent.getXSIType());
-        } else if (securityItem.instanceOf("xnat:experimentData")) {
-            if (proj == null) {
-                proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+            return ImmutablePair.of(parent.getId(), parent.getXSIType());
+        }
+        if (securityItem.instanceOf(XnatExperimentdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatExperimentdata experiment = (XnatExperimentdata) getSecurity();
+            if (!hasProject()) {
+                setProject(experiment.getPrimaryProject(false));
             }
-            return ImmutablePair.of(((XnatExperimentdata) security).getId(), security.getXSIType());
-        } else if (parentItem.instanceOf("xnat:subjectData")) {
-            if (proj == null) {
-                proj = ((XnatSubjectdata) parent).getPrimaryProject(false);
+            return ImmutablePair.of(experiment.getId(), experiment.getXSIType());
+        }
+        if (parentItem.instanceOf(XnatSubjectdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatSubjectdata subject = (XnatSubjectdata) getParent();
+            if (!hasProject()) {
+                setProject(subject.getPrimaryProject(false));
             }
-            return ImmutablePair.of(((XnatSubjectdata) parent).getId(), parent.getXSIType());
-        } else if (securityItem.instanceOf("xnat:subjectData")) {
-            if (proj == null) {
-                proj = ((XnatSubjectdata) security).getPrimaryProject(false);
+            return ImmutablePair.of(subject.getId(), subject.getXSIType());
+        }
+        if (securityItem.instanceOf(XnatSubjectdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatSubjectdata subject = (XnatSubjectdata) getSecurity();
+            if (!hasProject()) {
+                setProject(subject.getPrimaryProject(false));
             }
-            return ImmutablePair.of(((XnatSubjectdata) security).getId(), security.getXSIType());
-        } else if (parentItem.instanceOf("xnat:projectData")) {
-            if (proj == null) {
-                proj = ((XnatProjectdata) security);
+            return ImmutablePair.of(subject.getId(), subject.getXSIType());
+        }
+        if (parentItem.instanceOf(XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatProjectdata project = (XnatProjectdata) getParent();
+            if (!hasProject()) {
+                setProject(project);
             }
-            return ImmutablePair.of(((XnatProjectdata) parent).getId(), parent.getXSIType());
-        } else if (securityItem.instanceOf("xnat:projectData")) {
-            if (proj == null) {
-                proj = ((XnatProjectdata) security);
+            return ImmutablePair.of(project.getId(), project.getXSIType());
+        }
+        if (securityItem.instanceOf(XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+            final XnatProjectdata project = (XnatProjectdata) getSecurity();
+            if (!hasProject()) {
+                setProject(project);
             }
-            return ImmutablePair.of(((XnatProjectdata) security).getId(), security.getXSIType());
+            return ImmutablePair.of(project.getId(), project.getXSIType());
         }
         return ImmutablePair.nullPair();
     }
@@ -317,25 +328,23 @@ public class CatalogResource extends XNATCatalogTemplate {
     }
 
     private void getAllMatches() {
-        catalogs = null;
-        resources = new ArrayList<>();
+        clearCatalogs();
+        clearResources();
+
         try {
-            catalogs = loadCatalogs(resource_ids, false, true);
+            setCatalogs(loadCatalogs(getResourceIds(), false, true));
         } catch (Exception e) {
-            log.error("", e);
+            log.error("An error occurred trying to retrieve catalogs from the resources IDs: {}", getResourceIds(), e);
         }
 
-        if (catalogs != null && catalogs.size() > 0) {
-            for (Object[] row : catalogs.rows()) {
-                Integer id    = (Integer) row[0];
-                String  label = (String) row[1];
-
-                for (String resourceID : resource_ids) {
-                    if (id.toString().equals(resourceID) || (label != null && label.equals(resourceID))) {
-                        resources.add(XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(row[0], getUser(), false));
-                    }
+        if (hasCatalogs()) {
+            for (final Object[] row : getCatalogs().rows()) {
+                final Integer rowId      = (Integer) row[0];
+                final String  rowIdValue = rowId.toString();
+                final String  rowLabel   = (String) row[1];
+                if (getResourceIds().stream().anyMatch(resourceId -> StringUtils.equalsAny(resourceId, rowIdValue, rowLabel))) {
+                    getResources().add(XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(rowId, getUser(), false));
                 }
-
             }
         }
     }
