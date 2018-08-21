@@ -178,3 +178,6 @@ div.xnat-dialog-shell.loading {
 div.xnat-dialog.embedded { top: 0; left: 0; border: none; box-shadow: none; display: block; z-index: auto;  }
 
 div.xnat-dialog #layout_content { margin: 0; padding: 0; }
+
+div.xnat-dialog div.body div.panel-default { border: none; }
+div.xnat-dialog div.body div.panel-default .panel-body { padding: 10px; }

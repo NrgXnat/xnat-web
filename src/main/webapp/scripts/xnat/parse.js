@@ -32,16 +32,21 @@ var XNAT = getObject(XNAT);
     // value: '$? /data/stuff/thing | :ResultSet:Result:0:contents'   // use lookupObjectValue()
     // value: '$? /data/stuff/thing | /ResultSet/Result/[1]/contents' // use XPath syntax (DefiantJS)
     // value: '$? /data/stuff/thing | $.ResultSet.Result[0].contents'  // use JSONpath syntax
-    REGEX.useLookup = /^(\|*\s*:)/;       //   | :
-    REGEX.useXPath = /^(\|*\s*\/)/;       //   | /
-    REGEX.useJSONpath = /^(\|*\s*\$)/;    //   | $
+    REGEX.useLookup = /^(\|*\s*[:.])/;    //   | :
+    REGEX.useXPath = /^(\|*\s*\/+)/;      //   | /
+    REGEX.useJSONpath = /^(\|*\s*\$\.)/;  //   | $.
 
     // $? = do REST call and use returned value
     // value: '$? /data/stuff/thing'
     REGEX.ajaxPrefix = /^(\$\?[:=]?\s*[*~]*)/;
 
+    // replace non-url parts at the beginning of an ajax string
+    // '$? ~/data/stuff'.replace(REGEX.ajaxReplace, '') ==> '/data/stuff' ('~' is replaced)
+    // '$? */data/things'.replace(REGEX.ajaxReplace, '') ==> '*/data/things' ('*' is preserved)
+    REGEX.ajaxReplace = /^(\$\?[:=]?\s*[~]*)/;
+
     // value: '$? */data/stuff/thing'  // ALWAYS reload data
-    REGEX.ajaxRefresh = /^(\$\?[:=]?\s*[*~])/;
+    REGEX.ajaxRefresh = /^((\$\?)?[:=]?\s*[*])/;
 
     // $: = specify expected data type for ajax request
     // value: '$? /data/stuff/thing $:json'
@@ -307,7 +312,7 @@ var XNAT = getObject(XNAT);
 
             if (jsdebug) console.log('===== doAjax =====');
 
-            // always reload from url string starting with '*' or '~'
+            // always reload from url string starting with '*'
             obj.reloadData = obj.reload || REGEX.ajaxRefresh.test(val);
 
             obj.url = val.replace(REGEX.ajaxPrefix, '');
