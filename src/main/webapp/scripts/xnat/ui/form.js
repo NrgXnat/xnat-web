@@ -309,19 +309,26 @@ var XNAT = getObject(XNAT);
      */
     function Form(formElement){
 
-        if (formElement instanceof HTMLFormElement) {
+        if (!formElement) {
+            this.form$ = $.spawn('form');
+        }
+        else if (formElement instanceof HTMLFormElement) {
             this.form = formElement;
             this.form$ = $(formElement);
         }
         // pass a spawn() arg array to spawn a new form
         else if (Array.isArray(formElement)) {
             this.form$ = $.spawn.apply(null, [].concat('form', formElement));
-            this.form = this.form$[0];
         }
-        else if (formElement) {
+        else if (typeof formElement === 'string') {
             this.form$ = $$(formElement);
-            this.form = this.form$[0];
         }
+
+        if (!this.form$ || !this.form$.length) {
+            this.form$ = $.spawn('form', formElement);
+        }
+
+        this.form = this.form$[0];
 
         // every instance gets a UID
         this.uid = randomID('formx', false);
@@ -331,6 +338,8 @@ var XNAT = getObject(XNAT);
             addDataAttrs(this.form, { uid: this.uid });
             this.form.id = this.form.id || this.uid;
         }
+
+        this.id = this.id || this.form.id || this.uid;
 
         this.element = this.form;
         this.formElement = {};
@@ -709,6 +718,17 @@ var XNAT = getObject(XNAT);
         return newForm;
     };
 
+
+    // <form data-submit-json="url:~/xapi/foo/bar|method:put">
+    // <form action="~/xapi/bogus/data" method="post" data-submit-json>
+    // submit this form at the specified url, relative to the site root
+    // if [id] input has a value, pick it up from the form, append to the
+    // url and submit the data as JSON via PUT
+    $(document).on('submit.json', 'form[data-submit-json]', function(e){
+        e.preventDefault();
+        var optsStr = this.getAttribute('data-submit-json');
+        $(this).submitJSON(optsStr && parseOptions(optsStr));
+    });
 
 
     // this script has loaded

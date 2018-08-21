@@ -616,6 +616,7 @@ var XNAT = getObject(XNAT);
                     }
                 }
             });
+            request.fail(failure);
             return resolve;
         };
 
@@ -651,19 +652,19 @@ var XNAT = getObject(XNAT);
             return resolve;
         };
 
-        resolve.render = function(container, callback){
+        resolve.render = function(container, success, failure){
             resolve.ok(function(data){
                 spawneri = spawneri || spawner.spawn(data);
                 spawneri.render(container);
-                if (isFunction(callback)) {
+                if (isFunction(success)) {
                     try {
-                        spawneri.done.call(resolve, callback)
+                        spawneri.done.call(resolve, success)
                     }
                     catch(e) {
                         if (jsdebug) console.error(e);
                     }
                 }
-            });
+            }, failure);
             return resolve;
         };
 

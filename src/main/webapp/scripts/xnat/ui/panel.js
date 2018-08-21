@@ -494,11 +494,16 @@ var XNAT = getObject(XNAT || {});
     panel.form = function panelForm(opts, callback){
 
         opts = cloneObject(opts);
-        opts.element = opts.element || opts.config || {};
+        opts.element = opts.element || opts.form || opts.config || {};
+        opts.element.style = opts.element.style || {};
         opts.title = opts.title || opts.label || opts.header;
         opts.name = opts.name || opts.element.name || opts.id || opts.element.id || randomID('form-', false);
         opts.action = firstDefined(opts.action, opts.url);
         opts.load = firstDefined(opts.load, opts.url, opts.action);
+
+        if (opts.borderless || opts.border === false) {
+            opts.element.style.border = 'none';
+        }
 
         var payloadRegex = /<\s*\[\[(.*)]]$/;
         var parts;
@@ -882,9 +887,9 @@ var XNAT = getObject(XNAT || {});
             }
 
             // submit data with XNAT's AJAX form submit method
-            XNAT.xhr.form($form, ajaxConfig);
+            return XNAT.xhr.form($form, ajaxConfig);
 
-            return false;
+            // return false;
 
         });
 
@@ -896,7 +901,7 @@ var XNAT = getObject(XNAT || {});
         });
 
         function loadValues(){
-            var loadUrl = '$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '');
+            var loadUrl = '$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxReplace, '');
             try {
                 XNAT.form.setValues($formPanel, loadUrl);
             }
@@ -915,14 +920,15 @@ var XNAT = getObject(XNAT || {});
             get: function(){
                 return _formPanel;
             },
-            render: function(container){
-                if (!container) {
-                    return _formPanel;
-                }
-                else {
+            render: function(container, callback){
+                if (container) {
                     $$(container).append(_formPanel);
-                    return _formPanel;
                 }
+                if (callback && isFunction(callback)){
+                    callback.call(this, _formPanel, _target);
+                }
+                return _formPanel;
+
             }
         }
     };

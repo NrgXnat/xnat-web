@@ -588,26 +588,20 @@ function lookupObjectValue(root, objStr, prop){
 
 }
 
-// replace values wrapped in {{...}} or {(...)} to:
+// replace values wrapped in {{...}} or ((...)) to:
 function strReplace(str){
 
     // {{ foo.bar.baz }} // object lookup
     var LOOKUP_REGEX = /{{(.*?)}}/g;
 
-    // {( 1+2+3 )} // js eval, or...
     // (( 1+2+3 )) // js eval
-    var EVAL_REGEX = /{\((.*?)\)}|\(\((.*?)\)\)/g;
+    var EVAL_REGEX = /\(\((.*?)\)\)/g;
 
     return (str+'').replace(LOOKUP_REGEX, function(part){
-        var pt = (part+'').trim()
-                          .replace(/^{{\s*|\s*}}$/g, '');
+        var pt = (part+'').trim().replace(/^{{\s*|\s*}}$/g, '');
         return firstDefined(lookupObjectValue(pt), part);
     }).replace(EVAL_REGEX, function(part){
-        var pt = (part+'').trim()
-                          .replace(/^{\(\s*|\s*\)}$/g, '')
-                          .replace(/^\(\(\s*|\s*\)\)$/g, '');
-        if (jsdebug) console.log(part);
-        if (jsdebug) console.log(pt);
+        var pt = (part+'').trim().replace(/^\(\(\s*|\s*\)\)$/g, '');
         try {
             return firstDefined(eval(pt), part);
         }

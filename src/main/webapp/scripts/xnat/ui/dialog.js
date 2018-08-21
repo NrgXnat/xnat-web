@@ -966,6 +966,14 @@ window.xmodal = getObject(window.xmodal);
     // WITHOUT showing it
     dialog.init = function(opts){
         var newDialog = new Dialog(opts);
+        if (opts.setup && isFunction(opts.setup)) {
+            try {
+                opts.setup.call(newDialog, newDialog);
+            }
+            catch (e) {
+                console.warn(e)
+            }
+        }
         var resizeTimer = window.setTimeout(null, 60 * 60 * 1000);
         $(window).on('resize', function(){
             // console.log('window-resize');
@@ -1399,9 +1407,180 @@ window.xmodal = getObject(window.xmodal);
         return dialog.static(spawn('div.message.waiting.md', msg), opts).open();
     };
 
+
+    // open a dialog that contains a form to submit
+    dialog.form = function dialogForm(opts, content){
+
+        var config = getObject(opts);
+
+        // defaults for form element
+        config.form = config.form || {};
+        config.form.action = config.form.action || '#!';
+
+        // create form instance
+        var formi = XNAT.ui.form(config.form);
+
+        formi.form$.append(content || config.content);
+
+        if (config.form && (config.form.values || config.form.data)) {
+            formi.setValues(config.form.values || config.form.data)
+        }
+
+        config.content = formi.get();
+
+        // pass these form-related properties through the dialog object
+        config.formElement = formi.form;
+        config.form$ = formi.form$;
+        config.formId = formi.id;
+
+        config.okLabel = 'Submit';
+        config.okAction = function(){
+            formi.form$.submit();
+            // formi.submitJSON();
+        };
+
+        config.target = formi.form;
+
+        return dialog.init(config);
+    };
+
+
+    dialog.form.open = function(opts, content){
+        return dialog.form(opts, content).open()
+    };
+
+
+    dialog.formPanel = function dialogFormPanel(opts, content){
+
+        var config = cloneObject(opts);
+
+        // SAVE THE CONTENT FOR LATER
+        var CONTENT = content || opts.content || '';
+
+        config.padding = 0;
+        config.okClose = false;
+        config.okLabel = config.okLabel || 'Submit';
+        config.okAction = function(dlg){
+            dlg.body$.find('form').first().triggerHandler('submit-data');
+        };
+
+        // create container for form panel
+        var panelContainer = spawn('div.form-panel-container');
+
+        // set the container as the dialog's content
+        config.content = panelContainer;
+
+        // initialize the DIALOG
+        var dialogForm = dialog.init(config);
+
+        config.form = getObject(config.form || config.panel);
+        config.form.borderless = true;
+        config.form.header = config.form.header || false;
+        config.form.footer = false;
+
+        // success handler for form panel submission
+        config.form.success = function(){
+            dialogForm.close();
+        };
+
+        // initialize the form panel
+        var formPanel = XNAT.ui.panel.form(config.form);
+
+        // put the content in the form body
+        $(formPanel.target).append(CONTENT);
+
+        // render the form into the dialog
+        formPanel.render(panelContainer, function(){
+            dialogForm.open();
+        });
+
+        return dialogForm;
+
+    };
+
+
+    /**
+     * Open a dialog with content generated through the Spawner service and UI library
+     * @param {string} path - spawner 'namespace/element' (siteAdmin/notifications)
+     * @param {Object} [opts] - options for dialog
+     * @param {Object} [obj] - overrides for returned spawner JSON
+     * @example XNAT.dialog.spawn('siteAdmin/security')
+     */
+    dialog.spawn = function dialogSpawn(path, opts, obj){
+
+        var config = cloneObject(opts);
+
+        var container = spawn('div.spawn-container');
+        config.content = container;
+
+        var DLG = dialog.init(config);
+
+        function openDialog(){
+            DLG.beforeShow = function(){
+                this.setHeight();
+            };
+            DLG.open();
+        }
+
+        function spawnerError(){
+            DLG.destroy();
+            console.warn('Dialog content not spawned:');
+            console.warn.apply(window, arguments);
+        }
+
+        XNAT.spawner
+            .resolve(path)
+            .ok(function(data){
+                var config = extend(true, data, obj);
+                XNAT.spawner.spawn(config).done(function(){
+                    this.render(container, openDialog);
+                })
+            }, spawnerError);
+
+        return DLG;
+
+    };
+
+
+    /**
+     * spawn a form panel in a dialog from the url to the spawner 'panel.form' element
+     * @param {string} path - url to spawner element path - dir:ns/element
+     * @param {Object} [opts] - options for dialog
+     * @param {Object} [obj] - overrides for returned spawner JSON
+     */
+    dialog.spawn.formPanel = function dialogSpawnFormPanel(path, opts, obj){
+
+        var elementObj = {};
+        var elementName = path.split('/').slice(-1)[0];
+
+        elementObj[elementName] = {
+            padding: 10,
+            border: false,
+            header: false,
+            footer: false
+        };
+
+        extend(true, elementObj, obj);
+
+        var dialogConfig = extend(true, {
+            padding: 20,
+            okClose: false,
+            okLabel: 'Submit',
+            okAction: function(dlg){
+                dlg.body$.find('form').first().triggerHandler('submit-data');
+            }
+        }, opts);
+
+        return dialog.spawn(path, dialogConfig, elementObj)
+
+    };
+
+
     $(document).ready(function(){
+
         // generate the loadingBar on DOM ready
         var body$ = window.body$ = $(document.body);
+
         // elements with a 'data-dialog-load="/url/to/your/template.html" attribute
         // will render a new dialog that loads the specified template
         body$.on('click', '[data-dialog-load]', function(e){
@@ -1411,6 +1590,19 @@ window.xmodal = getObject(window.xmodal);
             var config = dialogOpts ? parseOptions(dialogOpts) : {};
             config.url = this$.attr('data-dialog-load');
             dialog.load(config)
+        });
+
+        // <a href="#!" data-dialog-form="namespace/element">Edit</a>
+        body$.on('click', '[data-dialog-form]', function spawnFormDialog(e){
+            e.preventDefault();
+            var path = this.getAttribute('data-dialog-form');
+            var opts = this.hasAttribute('data-dialog-opts') ? parseOptions(this.getAttribute('data-dialog-opts')) : {};
+            var obj = {};
+            var objName = path.split('/').slice(-1)[0];
+            if (this.hasAttribute('data-panel-opts')) {
+                obj[objName] = parseOptions(this.getAttribute('data-panel-opts'));
+            }
+            XNAT.dialog.spawn.formPanel(path, opts, obj);
         });
 
         // body$.on('mousedown', 'div.xnat-dialog *', function(e){
