@@ -185,7 +185,6 @@
     <!-- Icon sets -->
     <link rel="stylesheet" type="text/css" href="${SITE_ROOT}/style/font-awesome.css?x=${lastAccessed}">
     <link rel="stylesheet" type="text/css" href="${SITE_ROOT}/style/icons.css?${versionString}">
-    <link rel="stylesheet" type="text/css" href="${SITE_ROOT}/page/admin/style.css?${versionString}">
 
     <!-- xdat.css and xnat.css loaded last to override YUI styles -->
     <link rel="stylesheet" type="text/css" href="${SITE_ROOT}/style/app.css?${versionString}">
