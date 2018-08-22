@@ -18,7 +18,7 @@
 #set ($DEBUG = ($debugParam == 'true' || $jsDebugParam == 'true'))
 
 #set ($js = "js?t=${buildTimeTrim}")
-#set ($css = "css?t=${buildTimeTrim}")
+#set ($css = "css?t=${lastAccessed}")
 
 #if ($DEBUG)
     #set ($minjs = "${js}")
