@@ -521,7 +521,7 @@ var XNAT = getObject(XNAT || {});
             dataObj.method = (opts.method || 'POST').toLowerCase();
         }
 
-        if (!/null|false/i.test(opts.load)) {
+        if (!/null|false/i.test(opts.load) && isString(opts.load)) {
             dataObj.load = opts.load;
         }
 
@@ -676,7 +676,7 @@ var XNAT = getObject(XNAT || {});
                 // don't fire default 'reset' event (causes flash of empty inputs)
                 e.preventDefault();
                 $formPanel.triggerHandler('reload-data');
-        });
+            });
         }
 
         // is this form part of a multiForm?
@@ -896,9 +896,14 @@ var XNAT = getObject(XNAT || {});
         });
 
         function loadValues(){
-            var loadUrl = '$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '');
+            var loadData =
+                    isPlainObject(opts.loadData || opts.load) ?
+                        (opts.loadData || opts.load) :
+                        XNAT.parse.REGEX.ajaxPrefix.test(opts.load || opts.url || '') ?
+                            '$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '') :
+                            '';
             try {
-                XNAT.form.setValues($formPanel, loadUrl);
+                XNAT.form.setValues($formPanel, loadData);
             }
             catch (e) {
                 console.error(e);

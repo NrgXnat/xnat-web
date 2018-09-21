@@ -223,7 +223,7 @@ var XNAT = getObject(XNAT);
                     input.title.split(':')[0].trim() ||
                     input.id;
             if (name) {
-                obj[name] = (isPlainObject(data)) ? data[name] || '' : data;
+                obj[name] = (isPlainObject(data)) ? (data[name] || '') : data;
                 parseInputValue(input, obj);
                 // setValue(input, data[name]);
             }
@@ -246,6 +246,11 @@ var XNAT = getObject(XNAT);
         if (jsdebug) {
             console.log('========== setValues ==========');
             console.log(count);
+        }
+
+        // no need to set values for null, undefined, or empty string
+        if (values == null || values === '') {
+            return;
         }
 
         if (count > 300) {
