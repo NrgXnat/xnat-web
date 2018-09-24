@@ -248,11 +248,6 @@ var XNAT = getObject(XNAT);
             console.log(count);
         }
 
-        // no need to set values for null, undefined, or empty string
-        if (values == null || values === '') {
-            return;
-        }
-
         if (count > 300) {
             console.warn('The setValues() function has been called more than 300 times. There is probably something wrong.');
             return;

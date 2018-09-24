@@ -895,15 +895,15 @@ var XNAT = getObject(XNAT || {});
             }
         });
 
+
         function loadValues(){
-            var loadData =
-                    isPlainObject(opts.loadData || opts.load) ?
-                        (opts.loadData || opts.load) :
-                        XNAT.parse.REGEX.ajaxPrefix.test(opts.load || opts.url || '') ?
-                            '$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '') :
-                            '';
             try {
-                XNAT.form.setValues($formPanel, loadData);
+                if (isPlainObject(opts.loadData || opts.load)) {
+                    XNAT.form.setValues($formPanel, (opts.loadData || opts.load));
+                }
+                else {
+                    XNAT.form.setValues($formPanel, ('$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '')));
+                }
             }
             catch (e) {
                 console.error(e);
