@@ -901,7 +901,7 @@ var XNAT = getObject(XNAT || {});
                 if (isPlainObject(opts.loadData || opts.load)) {
                     XNAT.form.setValues($formPanel, (opts.loadData || opts.load));
                 }
-                else {
+                else if (opts.load || opts.url) {
                     XNAT.form.setValues($formPanel, ('$?' + (opts.load || opts.url || '').replace(XNAT.parse.REGEX.ajaxPrefix, '')));
                 }
             }
