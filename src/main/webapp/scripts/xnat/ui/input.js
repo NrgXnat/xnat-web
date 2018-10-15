@@ -449,6 +449,13 @@ var XNAT = getObject(XNAT);
         return input.text(opts);
     };
 
+    // render a file input form without associated upload actions
+    input.file = function(config){
+
+        config = cloneObject(config);
+
+    };
+
     // self-contained form for file uploads
     // with custom XHR functionality
     var fileUploadConfigModel = {
@@ -478,22 +485,27 @@ var XNAT = getObject(XNAT);
 
         config = cloneObject(config);
 
-        if (!config.url) {
-            throw new Error("The 'url' property is required.")
-        }
+        console.log('upload');
+
+        // if (!config.url) {
+        //     throw new Error("The 'url' property is required.")
+        // }
 
         // submission method defaults to 'POST'
         config.method = config.method || 'POST';
         config.contentType = config.contentType || config.enctype || 'multipart/form-data';
 
         config.form = extend(true, {
-            method: config.method,
             action: config.action ? XNAT.url.rootUrl(config.action) : '#!',
             attr: {
                 'content-type': config.contentType,
                 'enctype': config.enctype || config.contentType
             }
         }, config.form);
+
+        if (/put/i.test(config.form.method)) {
+            delete config.form.method;
+        }
 
         var fileTypes = config.fileTypes ? config.fileTypes.split(/[,\s]+/) : null;
 
@@ -508,17 +520,18 @@ var XNAT = getObject(XNAT);
         }, config.button);
 
         // adding 'ignore' class to prevent submitting with parent form
-        var fileInput = spawn('input.ignore|type=file|multiple', config.input);
-        var uploadBtn = spawn('button.upload.btn.btn-sm|type=button', config.button);
-        var fileForm  = spawn('form.file-upload.ignore', config.form, [fileInput, uploadBtn]);
+        var fileInput = spawn('input.file-upload-input.ignore|type=file|multiple', config.input);
+        var uploadBtn = spawn('button.upload.btn.btn1.btn-sm|type=button', config.button);
+        var fileForm  = spawn('form.file-upload-form.ignore', config.form, [fileInput, uploadBtn]);
 
-        var paramName = config.name || config.param || 'fileUpload';
+        var paramName = config.name || config.input.name || config.param || 'fileUpload';
 
-        var URL = XNAT.url.rootUrl(config.url || config.action);
+        var URL = config.url || fileForm.getAttribute('data-url') || fileForm.getAttribute('action');
 
         // function called when 'Upload' button is clicked
         function doUpload(e){
             e.preventDefault();
+            var waitDialog = XNAT.dialog.static('<div class="message waiting">Uploading...</div>').open();
             var formData = new FormData();
             var XHR = new XMLHttpRequest();
             forEach(fileInput.files, function(file){
@@ -536,7 +549,7 @@ var XNAT = getObject(XNAT);
                 }
             });
             XHR.open(config.method, URL, true);
-            XHR.setRequestHeader('Content-Type', config.contentType);
+            // XHR.setRequestHeader('Content-Type', config.contentType);
             XHR.onload = function(){
                 if (XHR.status !== 200) {
                     console.error(XHR.statusText);
@@ -552,8 +565,14 @@ var XNAT = getObject(XNAT);
 
                     });
                 }
+                else {
+                    waitDialog.close().destroy();
+                    XNAT.ui.banner.top(3000, 'Upload complete.', 'success');
+                }
             };
-            XHR.send(formData);
+            window.setTimeout(function(){
+                XHR.send(formData);
+            }, 0);
         }
 
         $(uploadBtn).on('click', doUpload);

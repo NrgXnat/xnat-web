@@ -1346,23 +1346,41 @@ var XNAT = getObject(XNAT || {});
 
         opts.id =  opts.id || randomID('upldx', false);
 
-        var uploadForm = ['form', {
-            id: opts.id + '-form',
+        opts.form = extend(true, {
             method: opts.method || 'POST',
-            action: (opts.action && !/^#/.test(opts.action)) ? XNAT.url.rootUrl(opts.action) : opts.action || '#!',
-            className: addClassName(opts, 'file-upload ignore')
-        }, [
-            ['input', {
-                type: 'file',
-                id: opts.id + '-input',
-                multiple: true,
-                className: addClassName(opts, 'file-upload-input ignore')
-            }],
-            ['button.btn.btn-sm.submit', {
-                type: 'submit',
-                id: opts.id +'-submit',
-                html: 'Upload'
-            }]
+            action: (opts.action && !/^#/.test(opts.action)) ? XNAT.url.rootUrl(opts.action) : (opts.action || '#!'),
+            className: addClassName(opts, 'file-upload ignore'),
+            data: {}
+        }, opts.form);
+
+        // add 'method' attribute as 'data-method' attribute
+        opts.form.data.method = opts.form.method || opts.method;
+
+        // don't allow 'PUT' for 'method' value
+        if (/put/i.test(opts.form.method)) {
+            delete opts.form.method;
+        }
+
+        opts.input = extend(true, {
+            type: 'file',
+            multiple: true,
+            className: addClassName(opts, 'file-upload-input ignore')
+        }, opts.input);
+
+        opts.submit = extend(true, {
+            type: 'submit',
+            html: 'Upload'
+        }, opts.button, opts.submit);
+
+        // modify ids for form, input, and button
+        ['form', 'input', 'submit'].forEach(function(item){
+            var suffixRegex = new RegExp('(-' + item + ')*$');
+            opts[item].id = opts[item].id || opts.id.replace(suffixRegex, ('-' + item));
+        });
+
+        var uploadForm = ['form', opts.form, [
+            ['input', opts.input],
+            ['button.btn.btn-sm.submit', opts.submit]
         ]];
 
         return XNAT.ui.template.panelInput(opts, uploadForm).get();
@@ -1375,6 +1393,7 @@ var XNAT = getObject(XNAT || {});
 
         var config = {};
         config.id = (opts.id||randomID('upldx', false));
+        config.name = (opts.name || config.id);
         config.input = opts.input || opts.element || opts.config || {};
         config.input.id = config.input.id || config.id;
 
@@ -1390,12 +1409,13 @@ var XNAT = getObject(XNAT || {});
 
         config.input = extend(true, {
             id: config.id + '-input',
-            multiple: true,
+            name: config.name,
+            multiple: opts.multiple || true,
             className: addClassName(config, 'file-upload-input ignore')
         }, config.input);
 
         config.button = extend(true, {
-            type: 'submit',
+            type: 'button',
             id: config.id + '-submit',
             html: 'Upload'
         }, config.button);
