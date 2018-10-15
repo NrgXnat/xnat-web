@@ -29,13 +29,14 @@ var XNAT = getObject(XNAT);
     var themeUrl = XNAT.url.rootUrl('/xapi/themes');
     var s = '/', q = '?', a = '&';
     var csrf = {XNAT_CSRF: window.csrfToken};
+
     // ??
     // $('#titleAppName').text(XNAT.app.siteId);
     var currentTheme = $('#current-theme');
     var themeSelector = $('#theme-selection');
     var themeUploadForm = document.getElementById('xnat-theme-upload-form');
     var themeUploader = document.getElementById('xnat-theme-upload-input');
-    var themeUploadSubmit = document.getElementById('xnat-theme-upload-submit');
+    var themeUploadSubmit = document.getElementById('xnat-theme-upload-button');
     var selectedTheme = null;
 
     menuInit(themeSelector, null, '230px');
