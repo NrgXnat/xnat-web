@@ -1363,9 +1363,14 @@ var XNAT = getObject(XNAT || {});
 
         opts.input = extend(true, {
             type: 'file',
-            multiple: true,
-            className: addClassName(opts, 'file-upload-input ignore')
+            className: addClassName(opts, 'file-upload-input ignore'),
+            attr: {}
         }, opts.input);
+
+        if (opts.multiple) {
+            opts.input.attr.multiple = "multiple";
+            opts.input.multiple = opts.multiple;
+        }
 
         opts.submit = extend(true, {
             type: 'submit',
@@ -1410,9 +1415,13 @@ var XNAT = getObject(XNAT || {});
         config.input = extend(true, {
             id: config.id + '-input',
             name: config.name,
-            multiple: opts.multiple || true,
             className: addClassName(config, 'file-upload-input ignore')
         }, config.input);
+
+        if (opts.multiple) {
+            config.input.attr.multiple = "multiple";
+            config.input.multiple = opts.multiple;
+        }
 
         config.button = extend(true, {
             type: 'button',

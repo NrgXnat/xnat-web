@@ -512,15 +512,21 @@ var XNAT = getObject(XNAT);
         config.input = extend(true, {
             id: config.id || config.name || '',
             name: config.name || config.id || '',
-            accept: config.accept || fileTypes
+            accept: config.accept || fileTypes,
+            attr: {}
         }, config.input);
+
+        if (config.multiple) {
+            config.input.attr.multiple = "multiple";
+            config.input.multiple = config.multiple;
+        }
 
         config.button = extend(true, {
             html: 'Upload'
         }, config.button);
 
         // adding 'ignore' class to prevent submitting with parent form
-        var fileInput = spawn('input.file-upload-input.ignore|type=file|multiple', config.input);
+        var fileInput = spawn('input.file-upload-input.ignore|type=file', config.input);
         var uploadBtn = spawn('button.upload.btn.btn1.btn-sm|type=button', config.button);
         var fileForm  = spawn('form.file-upload-form.ignore', config.form, [fileInput, uploadBtn]);
 

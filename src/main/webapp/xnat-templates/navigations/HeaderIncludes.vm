@@ -173,6 +173,16 @@ $navigation.setTemplate("/BaseJS.vm")
         #end
     #end
 
+    // add aliases to make sure these values can be found
+    XNAT.data.context.projectId = XNAT.data.context.projectID || "";
+    XNAT.data.projectId         = XNAT.data.context.projectID || "";
+    XNAT.data.context.subjectId = XNAT.data.context.subjectID || "";
+    XNAT.data.subjectId         = XNAT.data.context.subjectID || "";
+    XNAT.data.context.id        = XNAT.data.context.ID || "";
+
+    XNAT.context = XNAT.data.context;
+    XNAT.page = extend(true, XNAT.page || {}, XNAT.data.page, XNAT.data.context);
+
     // quickly reference today's date
     XNAT.data.todaysDate = {};
     // if today was January 23, 2013...
