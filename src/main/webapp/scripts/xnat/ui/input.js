@@ -449,13 +449,6 @@ var XNAT = getObject(XNAT);
         return input.text(opts);
     };
 
-    // render a file input form without associated upload actions
-    input.file = function(config){
-
-        config = cloneObject(config);
-
-    };
-
     // self-contained form for file uploads
     // with custom XHR functionality
     var fileUploadConfigModel = {
@@ -537,6 +530,10 @@ var XNAT = getObject(XNAT);
         // function called when 'Upload' button is clicked
         function doUpload(e){
             e.preventDefault();
+            if (!fileInput.files || !fileInput.files.length) {
+                XNAT.dialog.message('Error', 'No files selected.');
+                return false;
+            }
             var waitDialog = XNAT.dialog.static('<div class="message waiting">Uploading...</div>').open();
             var formData = new FormData();
             var XHR = new XMLHttpRequest();
