@@ -24,7 +24,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Map;
 
-@Handles("Separate")
+import static org.nrg.xnat.helpers.prearchive.handlers.PrearchiveOperation.Separate;
+
+@Handles(Separate)
 public class PrearchiveSeparatePetMrHandler extends AbstractPrearchiveOperationHandler {
 
     public PrearchiveSeparatePetMrHandler(final PrearchiveOperationRequest request) throws Exception {

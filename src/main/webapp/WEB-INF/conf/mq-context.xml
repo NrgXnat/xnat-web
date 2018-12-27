@@ -18,7 +18,7 @@
 			http://www.springframework.org/schema/jms http://www.springframework.org/schema/jms/spring-jms.xsd">
 
     <!-- embedded ActiveMQ Broker -->
-    <amq:broker id="activeMQBroker" brokerName="activeMQBroker" useJmx="false" persistent="true" schedulerSupport="false" useShutdownHook="true">
+    <amq:broker id="activeMQBroker" brokerName="activeMQBroker" startAsync="true" useJmx="false" persistent="true" schedulerSupport="false" useShutdownHook="true">
         <amq:persistenceAdapter>
             <!-- We'll use XNAT's data source, make sure the Spring ID matches. (For unit testing it's provided by the Spring test
                 context) Also, turning off locking, as we've no need for it with a single broker, and it was causing errors in the ActiveMQ
@@ -35,7 +35,7 @@
     </amq:broker>
 
     <!-- ActiveMQ ConnectionFactory for JMS to use. Spring will find and use the broker we've declared above. -->
-    <amq:connectionFactory id="activeMQConnectionFactory" brokerURL="${spring.activemq.broker-url:vm://localhost}" redeliveryPolicyMap="#activeMQRedeliveryPolicyMap" userName="${spring.activemq.user}" password="${spring.activemq.password}"/>
+    <amq:connectionFactory id="activeMQConnectionFactory" brokerURL="${spring.activemq.broker-url:vm://localhost}" redeliveryPolicyMap="#activeMQRedeliveryPolicyMap" maxThreadPoolSize="10" userName="${spring.activemq.user}" password="${spring.activemq.password}"/>
 
     <amq:redeliveryPolicyMap id="activeMQRedeliveryPolicyMap">
         <amq:defaultEntry>

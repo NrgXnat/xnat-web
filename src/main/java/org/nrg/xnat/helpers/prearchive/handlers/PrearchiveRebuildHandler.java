@@ -20,12 +20,16 @@ import org.nrg.xnat.archive.FinishImageUpload;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
 import org.nrg.xnat.helpers.prearchive.PrearcUtils;
 import org.nrg.xnat.helpers.prearchive.SessionData;
+import org.nrg.xnat.helpers.prearchive.SessionDataTriple;
 import org.nrg.xnat.restlet.actions.PrearcImporterA;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 
 import java.io.File;
 
-@Handles("Rebuild")
+import static org.nrg.xnat.helpers.prearchive.handlers.PrearchiveOperation.Rebuild;
+import static org.nrg.xnat.helpers.prearchive.handlers.PrearchiveOperation.Separate;
+
+@Handles(Rebuild)
 @Slf4j
 public class PrearchiveRebuildHandler extends AbstractPrearchiveOperationHandler {
     public PrearchiveRebuildHandler(final PrearchiveOperationRequest request) throws Exception {
@@ -33,75 +37,67 @@ public class PrearchiveRebuildHandler extends AbstractPrearchiveOperationHandler
     }
 
     @Override
-    public void execute() {
-        try {
-            final boolean receiving = getSessionData().getStatus() != null && getSessionData().getStatus().equals(PrearcUtils.PrearcStatus.RECEIVING);
-            log.info("Received request to process prearchive session at: {}", getSessionData().getExternalUrl());
-            if (!getSessionDir().getParentFile().exists()) {
-                try {
-                    if (log.isInfoEnabled()) {
-                        log.info("The parent of the indicated session " + getSessionData().getName() + " could not be found at the indicated location " + getSessionDir().getParentFile().getAbsolutePath());
-                    }
-                    PrearcDatabase.unsafeSetStatus(getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject(), PrearcUtils.PrearcStatus._DELETING);
-                    PrearcDatabase.deleteCacheRow(getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject());
-                } catch (Exception e) {
-                    log.error("An error occurred attempting to clear the prearchive entry for the session " + getSessionData().getName() + ", which doesn't exist at the indicated location " + getSessionDir().getParentFile().getAbsolutePath());
-                }
-            } else if (PrearcDatabase.setStatus(getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject(), PrearcUtils.PrearcStatus.BUILDING)) {
-                PrearcDatabase.buildSession(getSessionDir(), getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject(), getSessionData().getVisit(), getSessionData().getProtocol(), getSessionData().getTimeZone(), getSessionData().getSource());
+    protected boolean shouldProceed() throws Exception {
+        return PrearcDatabase.setStatus(getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject(), PrearcUtils.PrearcStatus.BUILDING);
+    }
 
-                // We need to check whether the session was updated to RECEIVING_INTERRUPT while the rebuild operation
-                // was happening. If that happened, that means more data started to arrive during the rebuild. If not,
-                // we'll proceed down the path where we check for session splits and autoarchive. If so, we'll just
-                // reset the status to RECEIVING and update the session timestamp.
-                final SessionData current = PrearcDatabase.getSession(getSessionData().getSessionDataTriple());
-                if (current.getStatus() != PrearcUtils.PrearcStatus.RECEIVING_INTERRUPT) {
-                    final boolean separatePetMr = PrearcUtils.isUnassigned(getSessionData()) ? PrearcUtils.shouldSeparatePetMr() : PrearcUtils.shouldSeparatePetMr(getSessionData().getProject());
-                    if (separatePetMr) {
-                        if (log.isDebugEnabled()) {
-                            log.debug("Found create separate PET and MR sessions setting for project {}, now working to separate that.", getSessionData().getProject());
-                        }
-                        final File sessionXml = new File(getSessionDir() + ".xml");
-                        if (sessionXml.exists()) {
-                            if (log.isDebugEnabled()) {
-                                log.debug("Found the session XML in the file {}, processing.", sessionXml.getAbsolutePath());
-                            }
-                            final XnatImagesessiondataBean bean = (XnatImagesessiondataBean) new XDATXMLReader().parse(sessionXml);
-                            if (bean instanceof XnatPetmrsessiondataBean) {
-                                if (log.isDebugEnabled()) {
-                                    log.debug("Found a PET/MR session XML in the file {} with the separate PET/MR flag set to true for the site or project, creating a new request to separate the session.", sessionXml.getAbsolutePath());
-                                }
-                                PrearcUtils.resetStatus(getUser(), getSessionData().getProject(), getSessionData().getTimestamp(), getSessionData().getFolderName(), true);
-                                final PrearchiveOperationRequest request = new PrearchiveOperationRequest(getUser(), getSessionData(), getSessionDir(), "Separate");
-                                XDAT.sendJmsRequest(request);
-                                return;
-                            } else if (log.isDebugEnabled()) {
-                                log.debug("Found a session XML for a {} session in the file {}. Not PET/MR so not separating.", bean.getFullSchemaElementName(), sessionXml.getAbsolutePath());
-                            }
-                        } else {
-                            log.warn("Tried to rebuild a session from the path {}, but that session XML doesn't exist.", sessionXml.getAbsolutePath());
-                        }
-                    }
+    @Override
+    protected void handle() throws Exception {
+        final UserI  user        = getUser();
+        final String folderName  = getSessionData().getFolderName();
+        final String timestamp   = getSessionData().getTimestamp();
+        final String project     = getSessionData().getProject();
+        final String externalUrl = getSessionData().getExternalUrl();
+        final String visit       = getSessionData().getVisit();
+        final String protocol    = getSessionData().getProtocol();
+        final String timeZone    = getSessionData().getTimeZone();
+        final String source      = getSessionData().getSource();
 
-                    PrearcUtils.resetStatus(getUser(), getSessionData().getProject(), getSessionData().getTimestamp(), getSessionData().getFolderName(), true);
+        log.info("Received request to process prearchive session at: {}", externalUrl);
+        PrearcDatabase.buildSession(getSessionDir(), folderName, timestamp, project, visit, protocol, timeZone, source);
 
-                    // we don't want to autoarchive a session that's just being rebuilt
-                    // but we still want to autoarchive sessions that just came from RECEIVING STATE
-                    final PrearcImporterA.PrearcSession session  = new PrearcImporterA.PrearcSession(getSessionData().getProject(), getSessionData().getTimestamp(), getSessionData().getFolderName(), null, getUser());
-                    final FinishImageUpload             uploader = new FinishImageUpload(null, getUser(), session, null, false, true, false);
-                    if (receiving || !uploader.isAutoArchive()) {
-                        log.debug("Processing queue entry for {} in project {} to archive {}", getUser().getUsername(), getSessionData().getProject(), getSessionData().getExternalUrl());
-                        uploader.call();
+        // We need to check whether the session was updated to RECEIVING_INTERRUPT while the rebuild operation
+        // was happening. If that happened, that means more data started to arrive during the rebuild. If not,
+        // we'll proceed down the path where we check for session splits and autoarchive. If so, we'll just
+        // reset the status to RECEIVING and update the session timestamp.
+        final SessionDataTriple sessionDataTriple = getSessionData().getSessionDataTriple();
+        final SessionData       current           = PrearcDatabase.getSession(sessionDataTriple);
+        if (current.getStatus() != PrearcUtils.PrearcStatus.RECEIVING_INTERRUPT) {
+            final boolean separatePetMr = PrearcUtils.isUnassigned(getSessionData()) ? PrearcUtils.shouldSeparatePetMr() : PrearcUtils.shouldSeparatePetMr(project);
+            if (separatePetMr) {
+                log.debug("Found create separate PET and MR sessions setting for project {}, now working to separate that.", project);
+                final File   sessionXml   = new File(getSessionDir() + ".xml");
+                final String absolutePath = sessionXml.getAbsolutePath();
+                if (sessionXml.exists()) {
+                    log.debug("Found the session XML in the file {}, processing.", absolutePath);
+                    final XnatImagesessiondataBean bean = (XnatImagesessiondataBean) new XDATXMLReader().parse(sessionXml);
+                    if (bean instanceof XnatPetmrsessiondataBean) {
+                        log.debug("Found a PET/MR session XML in the file {} with the separate PET/MR flag set to true for the site or project, creating a new request to separate the session.", absolutePath);
+                        PrearcUtils.resetStatus(user, project, timestamp, folderName, true);
+                        final PrearchiveOperationRequest request = new PrearchiveOperationRequest(user, getSessionData(), getSessionDir(), Separate);
+                        XDAT.sendJmsRequest(request);
+                        return;
+                    } else {
+                        log.debug("Found a session XML for a {} session in the file {}. Not PET/MR so not separating.", bean.getFullSchemaElementName(), absolutePath);
                     }
                 } else {
-                    if (log.isInfoEnabled()) {
-                        log.info("Found session " + getSessionData().getSessionDataTriple() + " in RECEIVING_INTERRUPT state, meaning that data began arriving while session was in an interruptible non-receiving state. No session split or autoarchive checks will be performed and session will be restored to RECEIVING state.");
-                    }
-                    PrearcDatabase.setStatus(getSessionData().getFolderName(), getSessionData().getTimestamp(), getSessionData().getProject(), PrearcUtils.PrearcStatus.RECEIVING);
+                    log.warn("Tried to rebuild a session from the path {}, but that session XML doesn't exist.", absolutePath);
                 }
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+
+            PrearcUtils.resetStatus(user, project, timestamp, folderName, true);
+
+            // we don't want to autoarchive a session that's just being rebuilt
+            // but we still want to autoarchive sessions that just came from RECEIVING STATE
+            final PrearcImporterA.PrearcSession session  = new PrearcImporterA.PrearcSession(project, timestamp, folderName, null, user);
+            final FinishImageUpload             uploader = new FinishImageUpload(null, user, session, null, false, true, false);
+            if (isReceiving() || !uploader.isAutoArchive()) {
+                log.debug("Processing queue entry for {} in project {} to archive {}", user.getUsername(), project, externalUrl);
+                uploader.call();
+            }
+        } else {
+            log.info("Found session {} in RECEIVING_INTERRUPT state, meaning that data began arriving while session was in an interruptible non-receiving state. No session split or autoarchive checks will be performed and session will be restored to RECEIVING state.", sessionDataTriple);
+            PrearcDatabase.setStatus(folderName, timestamp, project, PrearcUtils.PrearcStatus.RECEIVING);
         }
     }
 

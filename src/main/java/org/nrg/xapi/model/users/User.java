@@ -12,8 +12,13 @@ package org.nrg.xapi.model.users;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.entities.UserAuthI;
+import org.nrg.xft.security.UserI;
+import org.springframework.security.core.GrantedAuthority;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 
 /**
@@ -24,7 +29,7 @@ import java.util.Date;
  * calls with all data intact.
  */
 @ApiModel(description = "Contains the properties that define a user on the system.")
-public class User {
+public class User implements UserI {
     /**
      * The user's unique key.
      **/
@@ -91,12 +96,12 @@ public class User {
      * Whether the user is enabled.
      **/
     @ApiModelProperty(value = "Whether the user is enabled.")
-    public Boolean isEnabled() {
-        return _isEnabled;
+    public boolean isEnabled() {
+        return _enabled;
     }
 
     public void setEnabled(final boolean isEnabled) {
-        _isEnabled = isEnabled;
+        _enabled = isEnabled;
     }
 
     /**
@@ -104,11 +109,11 @@ public class User {
      **/
     @ApiModelProperty(value = "Whether the user is verified.")
     public Boolean isVerified() {
-        return _isVerified;
+        return _verified;
     }
 
-    public void setVerified(final boolean isVerified) {
-        _isVerified = isVerified;
+    public void setVerified(final boolean verified) {
+        _verified = verified;
     }
 
     /**
@@ -156,9 +161,13 @@ public class User {
         return _secured ? null : _authorization;
     }
 
-    @SuppressWarnings("unused")
-    public void setAuthorization(final UserAuthI authorization) {
+    /**
+     * Sets the user's authorization record used when logging in.
+     **/
+    public UserAuthI setAuthorization(final UserAuthI authorization) {
+        final UserAuthI existing = _authorization;
         _authorization = authorization;
+        return existing;
     }
 
     /**
@@ -174,6 +183,7 @@ public class User {
     /**
      * Sets the date and time of the last successful login attempt for the most recently used authentication provider.
      */
+    @SuppressWarnings("unused")
     public void setLastSuccessfulLogin(Date lastSuccessfulLogin) {
         _lastSuccessfulLogin = lastSuccessfulLogin;
     }
@@ -193,6 +203,123 @@ public class User {
         _secured = secured;
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public Integer getID() {
+        return getId();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getLogin() {
+        return getUsername();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isGuest() {
+        return StringUtils.equalsIgnoreCase(GUEST_USERNAME, getUsername());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getFirstname() {
+        return getFirstName();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getLastname() {
+        return getLastName();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String getDBName() {
+        return "";
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isActive() {
+        return isEnabled() && isVerified();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setLogin(final String username) {
+        setUsername(username);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setFirstname(final String firstName) {
+        setFirstName(firstName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setLastname(final String lastName) {
+        setLastName(lastName);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setPrimaryPassword_encrypt(final Object isEncrypted) {
+        // Nothing to do here
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void setEnabled(final Object enabled) {
+        _enabled = (boolean) enabled;
+    }
+
+    public void setVerified(final Object verified) {
+        _verified = (boolean) verified;
+    }
+
     @Override
     public String toString() {
         return "class User {\n" +
@@ -210,39 +337,39 @@ public class User {
                "}\n";
     }
 
-    public User(int id, String username, String first, String last, String email, String dbname, String password, String salt, boolean secured, Date lastModified, UserAuthI authorization, boolean isEnabled, boolean isVerified, Date lastSuccessfulLogin){
+    public User(final int id, final String username, final String first, final String last, final String email, final String dbName, final String password, final String salt, final boolean secured, final Date lastModified, final UserAuthI authorization, final boolean enabled, final boolean verified, final Date lastSuccessfulLogin) {
         _id = id;
         _username = username;
         _firstName = first;
         _lastName = last;
         _email = email;
-        _dbName = dbname;
+        _dbName = dbName;
         _password = password;
         _salt = salt;
         _secured = secured;
         _lastModified = lastModified;
         _authorization = authorization;
-        _isEnabled = isEnabled;
-        _isVerified = isVerified;
+        _enabled = enabled;
+        _verified = verified;
         _lastSuccessfulLogin = lastSuccessfulLogin;
     }
 
-    public User(){
+    public User() {
 
     }
 
-    private Integer     _id;
-    private String      _username;
-    private String      _firstName;
-    private String      _lastName;
-    private String      _email;
-    private String      _dbName;
-    private String      _password;
-    private String      _salt;
-    private boolean     _secured;
-    private Date        _lastModified;
-    private UserAuthI   _authorization;
-    private Boolean     _isEnabled;
-    private Boolean     _isVerified;
-    private Date        _lastSuccessfulLogin;
+    private Integer   _id;
+    private String    _username;
+    private String    _firstName;
+    private String    _lastName;
+    private String    _email;
+    private String    _dbName;
+    private String    _password;
+    private String    _salt;
+    private boolean   _secured;
+    private Date      _lastModified;
+    private UserAuthI _authorization;
+    private Boolean   _enabled;
+    private Boolean   _verified;
+    private Date      _lastSuccessfulLogin;
 }
