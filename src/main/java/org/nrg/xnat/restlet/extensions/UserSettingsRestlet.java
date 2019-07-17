@@ -30,6 +30,9 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.StringRepresentation;
 import org.restlet.resource.Variant;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.oxm.jaxb.Jaxb2Marshaller;
+import org.springframework.stereotype.Component;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -56,7 +59,8 @@ public class UserSettingsRestlet extends SecureResource {
             synchronized (UserSettingsRestlet.class) {
                 XPath xpath = XPathFactory.newInstance().newXPath();
                 try {
-                    _builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+                    DocumentBuilderFactory dbf = XDAT.getContextService().getBeanSafely(DocumentBuilderFactory.class);
+                    _builder = dbf.newDocumentBuilder();
                     _propertyMappings = new HashMap<>();
                     for (UserProperty property : UserProperty.values()) {
                         _propertyMappings.put(property, xpath.compile(XPATH_EXPRESSIONS.containsKey(property) ? XPATH_EXPRESSIONS.get(property) : String.format("/user/%s", property.toString())));
