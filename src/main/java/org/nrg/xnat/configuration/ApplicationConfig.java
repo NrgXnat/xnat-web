@@ -16,7 +16,6 @@ import org.apache.commons.beanutils.BeanUtils;
 import org.apache.commons.configuration.ConfigurationException;
 import org.nrg.config.services.ConfigService;
 import org.nrg.framework.configuration.ConfigPaths;
-import org.nrg.framework.exceptions.NrgServiceException;
 import org.nrg.framework.services.SerializerService;
 import org.nrg.framework.utilities.OrderedProperties;
 import org.nrg.prefs.services.NrgPreferenceService;
@@ -48,14 +47,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ScheduledExecutorFactoryBean;
 import org.springframework.scheduling.concurrent.ThreadPoolExecutorFactoryBean;
-import org.xml.sax.SAXNotRecognizedException;
-import org.xml.sax.SAXNotSupportedException;
 
 import javax.servlet.ServletContext;
-import javax.xml.XMLConstants;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.parsers.SAXParserFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -216,35 +209,6 @@ public class ApplicationConfig {
     @Bean
     public ProcessorImporterMap processorImporterMap(final List<ProcessorImporterHandlerA> handlers) throws ConfigurationException, IOException, ClassNotFoundException {
         return new ProcessorImporterMap(new HashSet<>(Collections.singletonList("org.nrg.xnat.processor.importer")), handlers);
-    }
-
-    @Bean
-    public DocumentBuilderFactory createDocumentBuilderFactory() throws NrgServiceException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        try {
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-            factory.setExpandEntityReferences(false);
-        }
-        catch( ParserConfigurationException e) {
-            String msg = "Failed to set 'Secure Processing' feature on documentBuilderFactory " + factory;
-            throw new NrgServiceException(msg, e);
-        }
-
-        return factory;
-    }
-
-    @Bean
-    public SAXParserFactory createSAXParserFactory() throws NrgServiceException {
-        SAXParserFactory factory = SAXParserFactory.newInstance();
-        try {
-            factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        }
-        catch( SAXNotRecognizedException | ParserConfigurationException | SAXNotSupportedException e) {
-            String msg = "Failed to set 'Secure Processing' feature on saxParserFactory " + factory;
-            throw new NrgServiceException(msg, e);
-        }
-
-        return factory;
     }
 
     private AsyncOperationsPreferences _asyncOperationsPreferences;

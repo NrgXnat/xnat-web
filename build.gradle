@@ -15,7 +15,7 @@ import io.swagger.models.License
 
 buildscript {
     ext {
-        vXnat = "1.7.5.3-xxx92"
+        vXnat = "1.7.5.4-SNAPSHOT"
     }
     repositories {
         mavenLocal()
@@ -167,6 +167,7 @@ configurations {
         exclude group: "javax.servlet", module: "servlet-api"
         exclude group: "javax.sql", module: "jdbc-stdext"
         exclude group: "javax.transaction", module: "jta"
+        exclude group: "javax.xml", module: "jsr173"
         exclude group: "jdbc", module: "jdbc"
         exclude group: "jmock"
         exclude group: "jms", module: "jms"
@@ -193,7 +194,9 @@ configurations {
         exclude group: "stax", module: "stax-api"
         exclude group: "tomcat"
         exclude group: "velocity"
-        exclude group: "xerces", module: "xmlParserAPIs"
+        exclude group: "xerces"
+        exclude group: "xml-apis"
+        exclude group: "xml-resolver"
         exclude group: "xmlrpc"
         exclude module: "log4j-slf4j-impl"
         exclude module: "pipelineCNDAXNAT"
@@ -299,7 +302,6 @@ dependencies {
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-guava"
     implementation "org.json:json"
     implementation "com.thoughtworks.xstream:xstream"
-    implementation "xerces:xercesImpl"
 
     implementation "commons-beanutils:commons-beanutils"
     implementation "commons-codec:commons-codec"
