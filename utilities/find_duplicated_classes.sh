@@ -8,7 +8,6 @@
 # Released under the Simplified BSD.
 #
 
-
 [[ -z ${1} ]] && {
     LIB_FOLDER=/var/lib/tomcat7/webapps/ROOT/WEB-INF/lib
 } || {
