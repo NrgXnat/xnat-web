@@ -30,7 +30,6 @@ import org.nrg.xdat.services.Initializing;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.nrg.xft.security.UserI;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -39,8 +38,6 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.*;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
-import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
