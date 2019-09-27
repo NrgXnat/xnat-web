@@ -1,0 +1,73 @@
+#!/bin/bash
+
+ORIGIN=`dirname $0`
+
+source ${ORIGIN}/vars.sh
+source ${ORIGIN}/macros
+
+[[ -z ${1} ]] && { echo "You must specify the capture tag to restore"; exit 127; }
+
+CAPTURE_TAG=${1}
+CAPTURE_DIR=/resources/captures/${CAPTURE_TAG}
+
+[[ ! -d ${CAPTURE_DIR} ]] && { echo "The folder for capture tag ${CAPTURE_TAG} does not exist. Exiting."; exit 126; }
+
+echo Restoring capture ${CAPTURE_TAG} for project ${PROJECT}
+
+stopTomcat
+sleep 5; # Just because the service command has returned doesn't mean the service stopped right then.
+
+DB_RESTORE_LOG="${CAPTURE_DIR}/database-${CAPTURE_TAG}-$(timestamp).log"
+echo "Dropping and recreating the database, importing ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql. This may take a"
+echo "little while. You can find the log of this operation in the file ${DB_RESTORE_LOG}."
+sudo -u postgres dropdb ${PROJECT}
+sudo -u postgres createdb --owner=${XNAT_USER} ${PROJECT}
+
+[[ -f ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql.gz ]] && {
+    sudo gunzip --keep ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql.gz
+} || {
+    [[ -f ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql.zip ]] && { sudo unzip -d ${CAPTURE_DIR} ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql.zip; }
+}
+[[ -f ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql ]] && {
+    sudo -u ${XNAT_USER} psql --dbname=${PROJECT} --file=${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql --output=${DB_RESTORE_LOG}
+    sudo rm ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql
+}
+
+# Restore the site URL from the local vars.sh if it differs from the site URL in the restored capture.
+CONFIGURED=$(sudo -u ${XNAT_USER} psql --tuples-only --command="select value from xhbm_preference where name = 'siteUrl'" | sed -e 's/ *$//' | sed 's/^ *//')
+CONTEXT=$(echo ${CONFIGURED} | awk -F/ '{print $4}')
+[[ ${CONFIGURED} == http://* ]] && { UPDATED=http://${SERVER}; } || { UPDATED=https://${SERVER}; }
+[[ ${CONTEXT} != "" ]] && { UPDATED="${UPDATED}/${CONTEXT}"; }
+[[ ${UPDATED} != ${CONFIGURED} ]] && {
+    echo Setting the site URL to the configured server address: ${UPDATED}
+    sudo -u ${XNAT_USER} psql --tuples-only --command="update xhbm_preference set value = '${UPDATED}' where name = 'siteUrl'"
+}
+
+for SUBFOLDER in archive plugins config; do
+    echo Clearing the ${SUBFOLDER} folder and replacing with ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.zip.
+    TARGET_FOLDER=$([[ -d "${DATA_ROOT}/${SUBFOLDER}" ]] && { echo "${DATA_ROOT}/${SUBFOLDER}"; } || { echo "${XNAT_HOME}/${SUBFOLDER}"; })
+    sudo rm -rf ${TARGET_FOLDER}/*
+    [[ -f ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.tar.gz ]] && {
+        sudo tar xfz ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.tar.gz --directory="${TARGET_FOLDER}"
+    } || {
+        [[ -f ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.zip ]] && { sudo unzip -d "${TARGET_FOLDER}" ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.zip; }
+    }
+done
+
+startTomcat
+monitorTomcatStartup
+
+STATUS=$?
+[[ ${STATUS} == 0 ]] && {
+    echo "The application was started successfully."
+} || {
+    echo "The application does not appear to have started properly."
+    echo
+    echo "Status code: ${STATUS}"
+    echo
+    echo "The last lines in the log are:"
+    echo
+    tail -n 40 /var/log/${TOMCAT}/catalina.out
+}
+
+exit ${STATUS}

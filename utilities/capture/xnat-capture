@@ -1,0 +1,46 @@
+#!/bin/bash
+
+ORIGIN=`dirname $0`
+source ${ORIGIN}/vars.sh
+source ${ORIGIN}/macros
+
+# tag argument takes priority
+[[ ! -z $1 ]] && CAPTURE_TAG=$1 || CAPTURE_TAG="capture-$(timestamp)"
+CAPTURE_DIR=/resources/captures/${CAPTURE_TAG}
+
+[[ ! -d ${CAPTURE_DIR} ]] && { sudo mkdir -p ${CAPTURE_DIR}; }
+
+setFolderOwner ${USER} /resources/captures
+
+echo "Capturing ${PROJECT} database, ${DATA_ROOT}/archive, ${XNAT_HOME}/config, and ${XNAT_HOME}/plugins"
+echo
+
+stopTomcat
+sleep 5; # Just because the service command has returned doesn't mean the service stopped right then.
+
+pg_dump ${PROJECT} | gzip > ${CAPTURE_DIR}/database-${CAPTURE_TAG}.sql.gz
+
+for SUBFOLDER in archive plugins config; do
+    TARGET_FOLDER="$([[ -d "${DATA_ROOT}/${SUBFOLDER}" ]] && { echo "${DATA_ROOT}/${SUBFOLDER}"; } || { echo "${XNAT_HOME}/${SUBFOLDER}"; })"
+    pushd "${TARGET_FOLDER}"
+    tar czf ${CAPTURE_DIR}/${SUBFOLDER}-${CAPTURE_TAG}.tar.gz *
+    popd
+done
+
+echo "All captured data can be found in the folder \"${CAPTURE_DIR}\":"
+ls -lh ${CAPTURE_DIR}
+
+startTomcat
+monitorTomcatStartup
+
+STATUS=${?}
+[[ ${STATUS} == 0 ]] && {
+    echo The application was started successfully.
+} || {
+    echo The application does not appear to have started properly. Status code: ${STATUS}
+    echo The last lines in the log are:
+    tail -n 40 /var/log/${TOMCAT}/catalina.out
+}
+
+exit ${STATUS}
+
