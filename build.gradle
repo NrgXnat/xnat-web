@@ -10,6 +10,7 @@
 buildscript {
     ext {
         vXnat = "1.7.6-SNAPSHOT"
+        vXnatAcl = "1.7.6-ACL-SNAPSHOT"
     }
     repositories {
         mavenLocal()
@@ -36,7 +37,7 @@ buildscript {
 }
 
 group "org.nrg.xnat"
-version "1.7.6-SER-SNAPSHOT"
+version vXnatAcl
 
 apply plugin: "com.bmuschko.cargo"
 apply plugin: "com.bmuschko.tomcat"
@@ -184,8 +185,8 @@ dependencies {
     annotationProcessor "org.nrg:framework"
 
     // NRG dependencies first.
-    api "org.nrg.xdat:core:1.7.6-SER-SNAPSHOT"
-    api "org.nrg.xnat:xnat-data-models:1.7.6-SER-SNAPSHOT"
+    api "org.nrg.xdat:core:${vXnatAcl}"
+    api "org.nrg.xnat:xnat-data-models:${vXnatAcl}"
     api "org.nrg:framework"
     api "org.springframework.security:spring-security-ldap"
     api "org.springframework.security.oauth:spring-security-oauth2"
