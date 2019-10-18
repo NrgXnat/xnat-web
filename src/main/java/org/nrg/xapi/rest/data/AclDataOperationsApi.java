@@ -14,6 +14,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.*;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.event.EventDetails;
@@ -65,7 +66,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments", consumes = {APPLICATION_JSON_VALUE, APPLICATION_XML_VALUE}, produces = APPLICATION_JSON_VALUE, method = POST)
+    @XapiRequestMapping(value = "experiments", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
     @ResponseBody
     public XnatExperimentdata createExperiment(final @RequestBody XnatExperimentdata experiment) throws Exception {
         return createExperiment(experiment, "Created new experiment " + experiment.getLabel() + " in project " + experiment.getProject(), "");
@@ -76,15 +77,17 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments", consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_JSON_VALUE, method = POST)
+    @XapiRequestMapping(value = "experiments", consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
     @ResponseBody
     public XnatExperimentdata createExperiment(final @RequestParam XnatExperimentdata experiment, final @RequestParam(required = false) String reason, final @RequestParam(required = false) String comment) throws Exception {
         // TODO: Dummy implementation: doesn't filter by user access, could use @PostFilter
+        if (StringUtils.isNotBlank(experiment.getId())) {
+            throw new DataFormatException("You can't create an experiment if it already has an ID.");
+        }
+        final String newId = XnatExperimentdata.CreateNewID();
+        experiment.setId(newId);
         SaveItemHelper.authorizedSave(experiment, getSessionUser(), false, false, false, true, newEventInstance(reason, comment));
-        final CriteriaCollection criteria = new CriteriaCollection("AND");
-        criteria.addClause("label", experiment.getLabel());
-        criteria.addClause("project", experiment.getProject());
-        return XnatExperimentdata.getXnatExperimentdatasByField(criteria, getSessionUser(), false).get(0);
+        return XnatExperimentdata.getXnatExperimentdatasById(newId, getSessionUser(), false);
     }
 
     @ApiOperation(value = "Gets the experiment with the specified ID.", response = XnatExperimentdata.class)
@@ -92,7 +95,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified experiment."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "experiments/{experimentId}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatExperimentdata retrieveExperiment(final @PathVariable String experimentId) {
         // TODO: Dummy implementation: doesn't check experiment access
@@ -104,7 +107,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified experiment."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}", consumes = {APPLICATION_JSON_VALUE, APPLICATION_XML_VALUE}, produces = APPLICATION_JSON_VALUE, method = PUT)
+    @XapiRequestMapping(value = "experiments/{experimentId}", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = PUT)
     @ResponseBody
     public XnatExperimentdata updateExperiment(final @PathVariable String experimentId, final @RequestBody XnatExperimentdata experiment) throws Exception {
         // TODO: Dummy implementation: doesn't check experiment access
@@ -120,7 +123,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified experiment."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}", produces = APPLICATION_JSON_VALUE, method = DELETE)
+    @XapiRequestMapping(value = "experiments/{experimentId}", method = DELETE)
     public void deleteExperiment(final @PathVariable String experimentId) {
         // TODO: Dummy implementation: doesn't check experiment access
         final XnatExperimentdata experiment = retrieveExperiment(experimentId);
@@ -144,10 +147,13 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}/assessors", consumes = {APPLICATION_JSON_VALUE, APPLICATION_XML_VALUE}, produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "experiments/{experimentId}/assessors", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
     @ResponseBody
     public XnatImageassessordata createExperimentAssessor(final @PathVariable String experimentId, final @RequestParam XnatImageassessordata assessor) throws Exception {
         // TODO: Dummy implementation: doesn't filter by user access, could use @PostFilter
+        if (StringUtils.isNotBlank(assessor.getId())) {
+            throw new DataFormatException("You can't create an experiment if it already has an ID.");
+        }
         final XnatExperimentdata experiment = retrieveExperiment(experimentId);
         if (experiment == null) {
             throw new NotFoundException("Image session " + experimentId + " does not exist.");
@@ -155,12 +161,11 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
         if (!(experiment instanceof XnatImagesessiondata)) {
             throw new DataFormatException("The experiment " + experimentId + " is not an image session.");
         }
+        final String newId = XnatImagesessiondata.CreateNewID();
+        assessor.setId(newId);
         assessor.setImagesessionId(experimentId);
         SaveItemHelper.authorizedSave(assessor, getSessionUser(), false, false, false, true, newEventInstance("Created new assessor for image session " + experimentId, ""));
-        final CriteriaCollection criteria = new CriteriaCollection("AND");
-        criteria.addClause("label", assessor.getLabel());
-        criteria.addClause("project", assessor.getProject());
-        return XnatImageassessordata.getXnatImageassessordatasByField(criteria, getSessionUser(), false).get(0);
+        return XnatImageassessordata.getXnatImageassessordatasById(newId, getSessionUser(), false);
     }
 
     @ApiOperation(value = "Gets the assessor with the indicated ID or label associated with the indicated experiment.", response = XnatImageassessordata.class)
@@ -168,7 +173,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}/assessors/{assessorId}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "experiments/{experimentId}/assessors/{assessorId}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatImageassessordata retrieveExperimentAssessor(final @PathVariable String experimentId, final @PathVariable String assessorId) throws NotFoundException {
         // TODO: Dummy implementation: doesn't check experiment or assessor access
@@ -185,7 +190,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "experiments/{experimentId}/assessors/{assessorId}", consumes = {APPLICATION_JSON_VALUE, APPLICATION_XML_VALUE}, produces = APPLICATION_JSON_VALUE, method = PUT)
+    @XapiRequestMapping(value = "experiments/{experimentId}/assessors/{assessorId}", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = PUT)
     @ResponseBody
     public XnatImageassessordata updateExperimentAssessor(final @PathVariable String experimentId, final @PathVariable String assessorId, final @RequestBody XnatImageassessordata assessor) throws Exception {
         // TODO: Dummy implementation: doesn't check experiment or assessor access
@@ -195,15 +200,6 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
         criteria.addClause("label", assessor.getLabel());
         criteria.addClause("project", assessor.getProject());
         return XnatImageassessordata.getXnatImageassessordatasByField(criteria, getSessionUser(), false).get(0);
-    }
-
-    private void validateExperimentAssessor(@PathVariable final String experimentId, @PathVariable final String assessorId, @RequestBody final XnatImageassessordata assessor) throws DataFormatException {
-        if (!StringUtils.equals(assessorId, assessor.getId())) {
-            throw new DataFormatException("The assessor ID does not match the ID of the submitted assessor");
-        }
-        if (!StringUtils.equals(experimentId, assessor.getImagesessionId())) {
-            throw new DataFormatException("The experiment ID does not match the ID of the image session ID for the submitted assessor");
-        }
     }
 
     @ApiOperation(value = "Deletes the assessor with the indicated ID or label associated with the indicated experiment.")
@@ -232,16 +228,134 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
         return getTemplate().queryForList("SELECT id FROM xnat_projectdata", EmptySqlParameterSource.INSTANCE, String.class);
     }
 
+    @ApiOperation(value = "Creates a new project.", response = XnatProjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully created the project."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "projects", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
+    @ResponseBody
+    public XnatProjectdata createProject(final @RequestBody XnatProjectdata project) throws Exception {
+        return createProject(project, "Created new project " + project.getName(), "");
+    }
+
+    @ApiOperation(value = "Creates a new project.", response = XnatProjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully created the project."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "projects", consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
+    @ResponseBody
+    public XnatProjectdata createProject(final @RequestParam XnatProjectdata project, final @RequestParam(required = false) String reason, final @RequestParam(required = false) String comment) throws Exception {
+        // TODO: Dummy implementation: doesn't filter by user access, could use @PostFilter
+        final String projectId = project.getId();
+        if (StringUtils.isBlank(projectId)) {
+            throw new DataFormatException("You can't create an project without an ID.");
+        }
+        SaveItemHelper.authorizedSave(project, getSessionUser(), false, false, false, true, newEventInstance(reason, comment));
+        return XnatProjectdata.getXnatProjectdatasById(projectId, getSessionUser(), false);
+    }
+
     @ApiOperation(value = "Gets the project with the specified ID.", response = XnatProjectdata.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the requested object."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{project}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "projects/{project}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatProjectdata retrieveProject(final @PathVariable String project) {
         // TODO: Dummy implementation: mostly fine but doesn't check permissions at all, so good with @PreAuthorize on project ID
         return XnatProjectdata.getProjectByIDorAlias(project, getSessionUser(), false);
+    }
+
+    @ApiOperation(value = "Updates the project with the specified ID.", response = XnatProjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the requested project."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified project."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "projects/{projectId}", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = PUT)
+    @ResponseBody
+    public XnatProjectdata updateProject(final @PathVariable String projectId, final @RequestBody XnatProjectdata project) throws Exception {
+        // TODO: Dummy implementation: doesn't check project access
+        if (!StringUtils.equalsIgnoreCase(projectId, project.getId())) {
+            throw new DataFormatException("The project ID does not match the ID of the submitted project");
+        }
+        SaveItemHelper.authorizedSave(project, getSessionUser(), false, false, false, true, newEventInstance("Updated project " + projectId, ""));
+        return XnatProjectdata.getXnatProjectdatasById(projectId, getSessionUser(), false);
+    }
+
+    @ApiOperation(value = "Deletes the project with the specified ID.", response = XnatProjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully deleted the requested project."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified project."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "projects/{projectId}", method = DELETE)
+    public void deleteProject(final @PathVariable String projectId) throws Exception {
+        // TODO: Dummy implementation: doesn't check project access
+        final XnatProjectdata project = retrieveProject(projectId);
+        project.delete(true, getSessionUser(), DEFAULT_EVENT(getSessionUser(), "Deleted project " + projectId));
+    }
+
+    @ApiOperation(value = "Creates a new subject.", response = XnatSubjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully created the subject."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "subjects", consumes = APPLICATION_XML_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
+    @ResponseBody
+    public XnatSubjectdata createSubject(final @RequestBody XnatSubjectdata subject) throws Exception {
+        return createSubject(subject, "Created new subject " + subject.getLabel() + " in project " + subject.getProject(), "");
+    }
+
+    @ApiOperation(value = "Creates a new subject.", response = XnatSubjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully created the subject."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "subjects", consumes = MULTIPART_FORM_DATA_VALUE, produces = APPLICATION_XML_VALUE, method = POST)
+    @ResponseBody
+    public XnatSubjectdata createSubject(final @RequestParam XnatSubjectdata subject, final @RequestParam(required = false) String reason, final @RequestParam(required = false) String comment) throws Exception {
+        // TODO: Dummy implementation: doesn't filter by user access, could use @PostFilter
+        if (StringUtils.isNotBlank(subject.getId())) {
+            throw new DataFormatException("You can't create an subject if it already has an ID.");
+        }
+        if (StringUtils.isBlank(subject.getProject())) {
+            throw new DataFormatException("You can't create an subject without a project ID.");
+        }
+        final String newId = XnatSubjectdata.CreateNewID();
+        subject.setId(newId);
+        SaveItemHelper.authorizedSave(subject, getSessionUser(), false, false, false, true, newEventInstance(reason, comment));
+        return XnatSubjectdata.getXnatSubjectdatasById(newId, getSessionUser(), false);
+    }
+
+    @ApiOperation(value = "Deletes the subject with the specified ID.", response = XnatSubjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully deleted the requested subject."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified subject."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "subjects/{subjectId}", method = DELETE)
+    public void deleteSubject(final @PathVariable String subjectId) throws Exception {
+        // TODO: Dummy implementation: doesn't check subject access
+        final XnatSubjectdata subject = retrieveSubject(subjectId);
+        if (subject == null) {
+            throw new NotFoundException("Couldn't find subject with ID " + subjectId);
+        }
+        subject.delete(subject.getPrimaryProject(false), getSessionUser(), true, DEFAULT_EVENT(getSessionUser(), "Deleted subject " + subjectId));
+    }
+
+    @ApiOperation(value = "Deletes the subject with the specified ID or label in the specified project.", response = XnatSubjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully deleted the requested subject."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified subject."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "projects/{projectId}/subjects/{subjectId}", method = DELETE)
+    public void deleteSubject(final @PathVariable String projectId, final @PathVariable String subjectId) throws Exception {
+        // TODO: Dummy implementation: doesn't check subject access
+        final XnatSubjectdata subject = retrieveProjectSubject(projectId, subjectId);
+        if (subject == null) {
+            throw new NotFoundException("Couldn't find subject with ID " + subjectId);
+        }
+        subject.delete((BaseXnatProjectdata) subject.getProject(projectId, false), getSessionUser(), true, DEFAULT_EVENT(getSessionUser(), "Deleted subject " + subjectId + " in project " + projectId));
     }
 
     @ApiOperation(value = "Gets the IDs of the experiments accessible by the current user in the specified project.", response = String.class, responseContainer = "List")
@@ -261,7 +375,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{project}/experiments/{experiment}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "projects/{project}/experiments/{experiment}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatExperimentdata retrieveProjectExperiment(final @PathVariable String project, final @PathVariable String experiment) throws NotFoundException {
         // TODO: Dummy implementation: doesn't include shared experiments, doesn't check permissions, could use @PreFilter for project access, @PostFilter for experiment access.
@@ -290,7 +404,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatSubjectdata retrieveProjectSubject(final @PathVariable String project, final @PathVariable String subject) throws NotFoundException {
         // TODO: Dummy implementation: doesn't include shared subjects, doesn't check permissions, could use @PreFilter for project/subject access.
@@ -319,7 +433,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}/experiments/{experiment}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}/experiments/{experiment}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatExperimentdata retrieveProjectSubjectExperiment(final @PathVariable String project, final @PathVariable String subject, final @PathVariable String experiment) throws NotFoundException {
         // TODO: Dummy implementation: doesn't include shared subjects/experiments, doesn't check permissions.
@@ -348,7 +462,7 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}/experiments/{experiment}/assessors/{assessor}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "projects/{project}/subjects/{subject}/experiments/{experiment}/assessors/{assessor}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatImageassessordata retrieveProjectSubjectExperimentAssessor(final @PathVariable String project, final @PathVariable String subject, final @PathVariable String experiment, final @PathVariable String assessor) throws NotFoundException {
         // TODO: Dummy implementation: doesn't include shared subjects/experiments, doesn't check permissions.
@@ -377,11 +491,29 @@ public class AclDataOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "The object doesn't exist or the current user is not authorized to perform the requested operation on the specified object."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "subjects/{subject}", produces = APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "subjects/{subject}", produces = APPLICATION_XML_VALUE, method = GET)
     @ResponseBody
     public XnatSubjectdata retrieveSubject(final @PathVariable String subject) {
         // TODO: Dummy implementation: doesn't check permissions, check with @PreAuthorize on subject ID and corresponding project
         return XnatSubjectdata.getXnatSubjectdatasById(subject, getSessionUser(), false);
+    }
+
+    /**
+     * Checks that the submitted assessor matches the experiment and assessor IDs.
+     *
+     * @param experimentId The ID of the experiment with which the assessor is associated.
+     * @param assessorId   The ID of the assessor to match.
+     * @param assessor     The assessor object.
+     *
+     * @throws DataFormatException Thrown when either the experiment or assessor ID doesn't match the corresponding properties in the assessor object.
+     */
+    private void validateExperimentAssessor(@PathVariable final String experimentId, @PathVariable final String assessorId, @RequestBody final XnatImageassessordata assessor) throws DataFormatException {
+        if (!StringUtils.equals(assessorId, assessor.getId())) {
+            throw new DataFormatException("The assessor ID does not match the ID of the submitted assessor");
+        }
+        if (!StringUtils.equals(experimentId, assessor.getImagesessionId())) {
+            throw new DataFormatException("The experiment ID does not match the ID of the image session ID for the submitted assessor");
+        }
     }
 
     private EventDetails newEventInstance(final String reason, final String comment) {
