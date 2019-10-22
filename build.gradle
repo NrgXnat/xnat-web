@@ -165,11 +165,11 @@ dependencies {
 
     implementation "org.nrg.xnat:spawner"
 
-    implementation("org.nrg.xnat:xnat-data-models:${vXnat}") {
+    implementation("org.nrg.xnat:xnat-data-models") {
         transitive = false
     }
-    implementation "org.nrg.xdat:core:${vXnatDev}"
-    implementation "org.nrg:framework:${vXnatDev}"
+    implementation "org.nrg.xdat:core"
+    implementation "org.nrg:framework"
 
 
     implementation "org.nrg:transaction"
