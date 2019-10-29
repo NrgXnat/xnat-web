@@ -15,6 +15,7 @@ import org.nrg.xnat.eventservice.entities.SubscriptionDeliveryEntity;
 import org.nrg.xnat.eventservice.entities.SubscriptionEntity;
 import org.nrg.xnat.eventservice.entities.TimedEventStatusEntity;
 import org.nrg.xnat.eventservice.entities.TriggeringEventEntity;
+import org.nrg.xnat.eventservice.events.ImageAssessorEvent;
 import org.nrg.xnat.eventservice.events.ProjectEvent;
 import org.nrg.xnat.eventservice.events.ScanEvent;
 import org.nrg.xnat.eventservice.events.SessionEvent;
@@ -113,9 +114,6 @@ public class EventServiceTestConfig {
     public TestListener testListener() {return new TestListener(); }
 
     @Bean
-    public TestCombinedEvent testCombinedEvent() {return new TestCombinedEvent(); }
-
-    @Bean
     public ContextService contextService(final ApplicationContext applicationContext) {
         final ContextService contextService = new ContextService();
         contextService.setApplicationContext(applicationContext);
@@ -204,6 +202,11 @@ public class EventServiceTestConfig {
     public ScanEvent scanArchiveEvent() {return new ScanEvent();}
     @Bean
     public SessionEvent sessionArchiveEvent() {return new SessionEvent();}
+    @Bean
+    public ImageAssessorEvent imagesAssessorEvent() {return new ImageAssessorEvent();}
+    @Bean
+    public TestCombinedEvent testCombinedEvent() {return new TestCombinedEvent(); }
+
     @Bean
     public WorkflowStatusChangeEvent workflowStatusChangeEvent() {return new WorkflowStatusChangeEvent();}
 }

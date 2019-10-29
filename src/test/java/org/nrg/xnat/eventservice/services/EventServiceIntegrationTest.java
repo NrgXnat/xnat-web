@@ -42,7 +42,19 @@ import org.nrg.xnat.eventservice.events.TestCombinedEvent;
 import org.nrg.xnat.eventservice.events.WorkflowStatusChangeEvent;
 import org.nrg.xnat.eventservice.listeners.EventServiceListener;
 import org.nrg.xnat.eventservice.listeners.TestListener;
-import org.nrg.xnat.eventservice.model.*;
+import org.nrg.xnat.eventservice.model.Action;
+import org.nrg.xnat.eventservice.model.ActionAttributeConfiguration;
+import org.nrg.xnat.eventservice.model.ActionProvider;
+import org.nrg.xnat.eventservice.model.EventFilter;
+import org.nrg.xnat.eventservice.model.EventFilterCreator;
+import org.nrg.xnat.eventservice.model.EventSignature;
+import org.nrg.xnat.eventservice.model.ProjectEventFilterCreator;
+import org.nrg.xnat.eventservice.model.ProjectSubscriptionCreator;
+import org.nrg.xnat.eventservice.model.SimpleEvent;
+import org.nrg.xnat.eventservice.model.Subscription;
+import org.nrg.xnat.eventservice.model.SubscriptionCreator;
+import org.nrg.xnat.eventservice.model.SubscriptionDelivery;
+import org.nrg.xnat.eventservice.model.TimedEventStatus;
 import org.nrg.xnat.eventservice.model.xnat.Scan;
 import org.nrg.xnat.eventservice.model.xnat.Session;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1110,20 +1122,20 @@ public class EventServiceIntegrationTest {
 
         }
         sw1.stop();
-        System.out.print("\n" + Integer.toString(eventService.getSubscriptions().size()) + " Subscriptions created in : " + sw1.getTotalTimeSeconds() + "seconds\n");
+        //System.out.print("\n" + Integer.toString(eventService.getSubscriptions().size()) + " Subscriptions created in : " + sw1.getTotalTimeSeconds() + "seconds\n");
 
         XnatImagesessiondata session = new XnatImagesessiondata();
         session.setModality("MR");
         session.setProject(projectId);
         session.setSessionType("xnat:imageSessionData");
-        eventService.triggerEvent(new SessionEvent(session, mockUser.getLogin(),SessionEvent.Status.CREATED, projectId + "500"));
+        eventService.triggerEvent(new SessionEvent(session, mockUser.getLogin(),SessionEvent.Status.CREATED, projectId + "100"));
 
-        eventService.triggerEvent(new SessionEvent(session, mockUser.getLogin(), SessionEvent.Status.CREATED, projectId + "600"));
+        eventService.triggerEvent(new SessionEvent(session, mockUser.getLogin(), SessionEvent.Status.CREATED, projectId + "900"));
 
         StopWatch sw2 = new StopWatch();
         sw2.start("eventTriggerToAction");
         synchronized (testAction) {
-            testAction.wait(100);
+            testAction.wait(1000);
         }
         sw2.stop();
         TestAction action = (TestAction) testAction;
@@ -1536,7 +1548,7 @@ public class EventServiceIntegrationTest {
         }
 
         String testActionKey = testAction.getAllActions().get(0).actionKey();
-        eventService.getAllActions();
+        //eventService.getAllActions();
         SubscriptionCreator subscriptionCreator = SubscriptionCreator.builder()
                                                                      .name(name)
                                                                      .active(true)
@@ -1556,7 +1568,7 @@ public class EventServiceIntegrationTest {
             filter = EventFilterCreator.builder().projectIds(Arrays.asList(projectId)).eventType(eventType).status(status.name()).build();
         }
         String testActionKey = testAction.getAllActions().get(0).actionKey();
-        eventService.getAllActions();
+        //eventService.getAllActions();
         SubscriptionCreator subscriptionCreator = SubscriptionCreator.builder()
                                                                      .name(name)
                                                                      .active(true)
