@@ -28,9 +28,10 @@ DROP FUNCTION IF EXISTS public.data_type_fns_fix_orphaned_scans();
 DROP FUNCTION IF EXISTS public.data_type_fns_correct_experiment_extension();
 DROP FUNCTION IF EXISTS public.data_type_fns_correct_group_permissions();
 DROP FUNCTION IF EXISTS public.data_type_fns_can(username VARCHAR(255), entityId VARCHAR(255), ACTION VARCHAR(15));
-DROP FUNCTION IF EXISTS public.data_type_fns_can(username VARCHAR(255), ACTION VARCHAR(15), entityId VARCHAR(255), projectId VARCHAR(255));
+DROP FUNCTION IF EXISTS public.data_type_fns_can(username VARCHAR(255), operation VARCHAR(15), entityId VARCHAR(255), projectId VARCHAR(255));
 DROP FUNCTION IF EXISTS public.data_type_fns_get_secured_property_permissions(username VARCHAR(255), projectId VARCHAR(255), securedProperty VARCHAR(255));
-DROP FUNCTION IF EXISTS public.data_type_fns_can_action_entity(username VARCHAR(255), action VARCHAR(15), entityId VARCHAR(255));
+DROP FUNCTION IF EXISTS public.data_type_fns_can_action_entity(username VARCHAR(255), ACTION VARCHAR(15), entityId VARCHAR(255));
+DROP FUNCTION IF EXISTS public.data_type_fns_can_action_data_type(username VARCHAR(255), ACTION VARCHAR(15), DATATYPE VARCHAR(255), projectId VARCHAR(255));
 DROP FUNCTION IF EXISTS public.data_type_fns_get_entity_permissions(username VARCHAR(255), entityId VARCHAR(255));
 DROP FUNCTION IF EXISTS public.data_type_fns_get_entity_permissions(username VARCHAR(255), entityId VARCHAR(255), projectId VARCHAR(255));
 DROP FUNCTION IF EXISTS public.data_type_fns_get_entity_projects(entityId VARCHAR(255));
@@ -82,33 +83,33 @@ WHERE
     m.field NOT LIKE a.element_name || '%';
 
 CREATE OR REPLACE VIEW public.data_type_views_missing_mapping_elements AS
-    WITH
-        public_project_access_mappings AS (SELECT
-                                               field_value,
-                                               element_name,
-                                               field,
-                                               xdat_field_mapping_set_id
-                                           FROM
-                                               data_type_views_element_access
-                                           WHERE
-                                               element_name != 'xnat:projectData' AND
-                                               entity = 'user:guest')
-    SELECT
-        f.primary_security_field AS field,
-        m.field_value,
-        m.xdat_field_mapping_set_id
-    FROM
-        xdat_primary_security_field f
-        LEFT JOIN public_project_access_mappings m ON f.primary_security_fields_primary_element_name = element_name
-    WHERE
-        f.primary_security_fields_primary_element_name != 'xnat:projectData' AND
-        m.xdat_field_mapping_set_id IS NOT NULL AND
-        (m.field_value IS NULL OR
-         (f.primary_security_fields_primary_element_name, f.primary_security_field) NOT IN (SELECT
-                                                                                                m.element_name,
-                                                                                                m.field
-                                                                                            FROM
-                                                                                                public_project_access_mappings m));
+WITH
+    public_project_access_mappings AS (SELECT
+                                           field_value,
+                                           element_name,
+                                           field,
+                                           xdat_field_mapping_set_id
+                                       FROM
+                                           data_type_views_element_access
+                                       WHERE
+                                           element_name != 'xnat:projectData' AND
+                                           entity = 'user:guest')
+SELECT
+    f.primary_security_field AS field,
+    m.field_value,
+    m.xdat_field_mapping_set_id
+FROM
+    xdat_primary_security_field f
+    LEFT JOIN public_project_access_mappings m ON f.primary_security_fields_primary_element_name = element_name
+WHERE
+    f.primary_security_fields_primary_element_name != 'xnat:projectData' AND
+    m.xdat_field_mapping_set_id IS NOT NULL AND
+    (m.field_value IS NULL OR
+     (f.primary_security_fields_primary_element_name, f.primary_security_field) NOT IN (SELECT
+                                                                                            m.element_name,
+                                                                                            m.field
+                                                                                        FROM
+                                                                                            public_project_access_mappings m));
 
 CREATE OR REPLACE VIEW public.data_type_views_orphaned_field_sets AS
 SELECT
@@ -122,42 +123,43 @@ WHERE
     m.xdat_field_mapping_id IS NULL;
 
 CREATE OR REPLACE VIEW public.data_type_views_secured_identified_data_types AS
-    WITH
-        secure_elements AS (SELECT
-                                s.element_name AS element_name,
-                                regexp_replace(s.element_name, '[^A-z0-9]', '_', 'g') AS table_name
-                            FROM
-                                xdat_element_security s
-                            WHERE
-                                s.secure = 1)
-    SELECT
-        e.element_name,
-        e.table_name
-    FROM
-        secure_elements e
-        LEFT JOIN information_schema.columns c ON lower(e.table_name) = lower(c.table_name) AND column_name = 'id'
-    WHERE c.column_name IS NOT NULL;
+WITH
+    secure_elements AS (SELECT
+                            s.element_name AS element_name,
+                            regexp_replace(s.element_name, '[^A-z0-9]', '_', 'g') AS table_name
+                        FROM
+                            xdat_element_security s
+                        WHERE
+                            s.secure = 1)
+SELECT
+    e.element_name,
+    e.table_name
+FROM
+    secure_elements e
+    LEFT JOIN information_schema.columns c ON lower(e.table_name) = lower(c.table_name) AND column_name = 'id'
+WHERE
+    c.column_name IS NOT NULL;
 
 CREATE OR REPLACE VIEW public.data_type_views_scan_data_types AS
-    WITH
-        data_elements AS (SELECT
-                              element_name,
-                              regexp_replace(element_name, '[^A-z0-9]', '_', 'g') AS table_name
-                          FROM
-                              xdat_meta_element
-                          WHERE
-                              lower(element_name) LIKE '%scan%' AND element_name ~ '^([^:]+:[^_]+)$')
-    SELECT DISTINCT
-        element_name,
-        table_name
-    FROM
-        (SELECT
-             e.element_name,
-             e.table_name
-         FROM
-             data_elements e
-             LEFT JOIN information_schema.columns c ON lower(e.table_name) = lower(c.table_name) AND (column_name = 'id' OR column_name LIKE '%_id')
-         WHERE c.column_name IS NOT NULL) SOURCE;
+WITH
+    data_elements AS (SELECT
+                          element_name,
+                          regexp_replace(element_name, '[^A-z0-9]', '_', 'g') AS table_name
+                      FROM
+                          xdat_meta_element
+                      WHERE
+                          lower(element_name) LIKE '%scan%' AND element_name ~ '^([^:]+:[^_]+)$')
+SELECT DISTINCT
+    element_name,
+    table_name
+FROM
+    (SELECT
+         e.element_name,
+         e.table_name
+     FROM
+         data_elements e
+         LEFT JOIN information_schema.columns c ON lower(e.table_name) = lower(c.table_name) AND (column_name = 'id' OR column_name LIKE '%_id')
+     WHERE c.column_name IS NOT NULL) SOURCE;
 
 CREATE OR REPLACE VIEW public.data_type_views_experiments_without_data_type AS
 SELECT DISTINCT
@@ -169,7 +171,8 @@ FROM
     LEFT JOIN xdat_meta_element m ON e.extension = m.xdat_meta_element_id
     LEFT JOIN wrk_workflowdata w ON e.id = w.id
     LEFT JOIN xdat_meta_element xme ON w.data_type = xme.element_name
-WHERE m.element_name IS NULL
+WHERE
+    m.element_name IS NULL
 GROUP BY
     e.id,
     w.data_type,
@@ -913,9 +916,31 @@ BEGIN
             LEFT JOIN xdat_field_mapping_set s ON a.xdat_element_access_id = s.permissions_allow_set_xdat_elem_xdat_element_access_id
             LEFT JOIN xdat_field_mapping m ON s.xdat_field_mapping_set_id = m.xdat_field_mapping_set_xdat_field_mapping_set_id
         WHERE
-                u.login = username AND
-                m.field_value IN (projectId, '*') AND
-                m.field = securedProperty;
+            u.login = username AND
+            m.field_value IN (projectId, '*') AND
+            m.field = securedProperty;
+END
+$$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION public.data_type_fns_can_action_data_type(username VARCHAR(255), action VARCHAR(15), dataType VARCHAR(255), projectId VARCHAR(255))
+    RETURNS BOOLEAN
+AS
+$$
+DECLARE
+    securedProperty VARCHAR(255);
+    found_can       BOOLEAN;
+BEGIN
+    IF dataType = 'xnat:projectData'
+    THEN
+        securedProperty = 'xnat:projectData/ID';
+    ELSE
+        securedProperty = dataType || '/project';
+    END IF;
+
+    EXECUTE format('SELECT coalesce(bool_or(can_%1$s), FALSE) AS can_%1$s FROM data_type_fns_get_secured_property_permissions(''%2$s'', ''%3$s'', ''%4$s'')', action, username, projectId, securedProperty)
+        INTO found_can;
+    RETURN found_can;
 END
 $$
     LANGUAGE plpgsql;
@@ -925,6 +950,7 @@ CREATE OR REPLACE FUNCTION public.data_type_fns_can(username VARCHAR(255), actio
 AS
 $$
 DECLARE
+    is_data_type BOOLEAN;
     found_can    BOOLEAN;
     field_count  INTEGER;
     fields       TEXT;
@@ -934,32 +960,39 @@ BEGIN
     THEN
         SELECT * FROM data_type_fns_can_action_entity(username, action, entityId) INTO found_can;
     ELSE
-        EXECUTE format('WITH ' ||
-                       '    permissions AS ' ||
-                       '        (SELECT ' ||
-                       '             cardinality(array_agg(DISTINCT field)) AS field_count, ' ||
-                       '             array_to_string(array_agg(DISTINCT field), '' '') AS fields, ' ||
-                       '             array_to_string(array_agg(DISTINCT field_value), '' '') AS field_values, ' ||
-                       '             coalesce(bool_or(can_%1$s), FALSE) AS can_%1$s, ' ||
-                       '             array_agg(field_value) AS projects ' ||
-                       '         FROM ' ||
-                       '             data_type_fns_get_entity_permissions(''%2$s'', ''%3$s'', ''%4$s'')) ' ||
-                       'SELECT ' ||
-                       '    p.field_count, ' ||
-                       '    p.fields, ' ||
-                       '    p.field_values, ' ||
-                       '    CASE WHEN ARRAY [''%4$s''::VARCHAR(255), ''*''::VARCHAR(255)] && projects THEN p.can_%1$s ELSE FALSE END AS can_%1$s ' ||
-                       'FROM ' ||
-                       '    permissions p', action, username, entityId, projectId)
-            INTO field_count, fields, field_values, found_can;
-
-        -- Delete with sharing is a special case: if the user can't delete the entity, but
-        -- that entity is shared they may be able to unshare the entity if they can delete
-        -- entities of the same data type in the project.
-        IF action = 'delete' AND found_can = FALSE AND field_count = 1 AND fields LIKE '%/sharing/share/project'
+        SELECT EXISTS(SELECT element_name FROM xdat_element_security WHERE element_name = entityId) INTO is_data_type;
+        IF is_data_type
         THEN
-            EXECUTE format('SELECT can_%1$s FROM data_type_fns_get_secured_property_permissions(''%2$s'', ''%3$s'', ''%4$s'')', action, username, projectId, split_part(fields, '/', 1) || '/project')
+            EXECUTE format('SELECT data_type_fns_can_action_data_type(''%2$s'', ''%1$s'', ''%3$s'', ''%4$s'')', action, username, entityId, projectId)
                 INTO found_can;
+        ELSE
+            EXECUTE format('WITH ' ||
+                           '    permissions AS ' ||
+                           '        (SELECT ' ||
+                           '             cardinality(array_agg(DISTINCT field)) AS field_count, ' ||
+                           '             array_to_string(array_agg(DISTINCT field), '' '') AS fields, ' ||
+                           '             array_to_string(array_agg(DISTINCT field_value), '' '') AS field_values, ' ||
+                           '             coalesce(bool_or(can_%1$s), FALSE) AS can_%1$s, ' ||
+                           '             array_agg(field_value) AS projects ' ||
+                           '         FROM ' ||
+                           '             data_type_fns_get_entity_permissions(''%2$s'', ''%3$s'', ''%4$s'')) ' ||
+                           'SELECT ' ||
+                           '    p.field_count, ' ||
+                           '    p.fields, ' ||
+                           '    p.field_values, ' ||
+                           '    CASE WHEN ARRAY [''%4$s''::VARCHAR(255), ''*''::VARCHAR(255)] && projects THEN p.can_%1$s ELSE FALSE END AS can_%1$s ' ||
+                           'FROM ' ||
+                           '    permissions p', action, username, entityId, projectId)
+                INTO field_count, fields, field_values, found_can;
+
+            -- Delete with sharing is a special case: if the user can't delete the entity, but
+            -- that entity is shared they may be able to unshare the entity if they can delete
+            -- entities of the same data type in the project.
+            IF action = 'delete' AND found_can = FALSE AND field_count = 1 AND fields LIKE '%/sharing/share/project'
+            THEN
+                EXECUTE format('SELECT can_%1$s FROM data_type_fns_get_secured_property_permissions(''%2$s'', ''%3$s'', ''%4$s'')', action, username, projectId, split_part(fields, '/', 1) || '/project')
+                    INTO found_can;
+            END IF;
         END IF;
     END IF;
     RETURN found_can;
