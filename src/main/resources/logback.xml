@@ -298,6 +298,16 @@
             <fileNamePattern>${xnat.home}/logs/avalon.log.%d{yyyy-MM-dd}</fileNamePattern>
         </rollingPolicy>
     </appender>
+    <appender name="eventservice" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${xnat.home}/logs/eventservice.log</File>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/eventservice.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
 
     <root level="ERROR">
         <appender-ref ref="app"/>
@@ -508,5 +518,8 @@
     </logger>
     <logger name="org.nrg.xnat.turbine" additivity="false" level="ERROR">
         <appender-ref ref="turbine"/>
+    </logger>
+    <logger name="org.nrg.xnat.eventservice" additivity="false" level="DEBUG">
+        <appender-ref ref="eventservice"/>
     </logger>
 </configuration>
