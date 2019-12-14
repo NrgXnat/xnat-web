@@ -151,9 +151,9 @@ var XNAT = getObject(XNAT);
     dataTypeAccess.reqCount = 0;
 
     if (getFreshData && window.loadDataTypes) {
-        window.setTimeout(function(){
+        dataTypeAccess.loadingTimeout = window.setTimeout(function(){
             cacheLoadingMessage.open();
-        }, 1);
+        }, 3000);
     }
 
     // make sure there aren't duplicate data type elements
@@ -326,24 +326,29 @@ var XNAT = getObject(XNAT);
                         10,
                         function(){
                             console.log('refresh: ' + getFreshData);
-                            return !getFreshData || dataTypeAccess.reqCount >= (dataTypeAccess.displays.length + 1);
+                            return dataTypeAccess.isReady || !getFreshData || dataTypeAccess.reqCount >= (dataTypeAccess.displays.length + 1);
                         },
                         function(){
                             console.log('ALL LOADED');
-                            if (getFreshData) {
-                                window.setTimeout(function(){
-                                    cacheLoadingMessage.dialog$.fadeOut(50, function(){
-                                        cacheLoadingMessage.destroy()
-                                    });
-                                    // window.location.reload(true);
-                                }, 10);
-                            }
-                            else {
-                                // make sure the loading dialog closes
-                                window.setTimeout(function(){
-                                    cacheLoadingMessage.destroy()
-                                }, 10);
-                            }
+                            dataTypeAccess.isReady = true;
+                            // this should prevent the loading dialog from showing up if everything has loaded within 3 seconds
+                            dataTypeAccess.loadingTimeout && window.clearTimeout(dataTypeAccess.loadingTimeout);
+                            cacheLoadingMessage.destroy();
+                            // if (getFreshData) {
+                            //     window.clearTimeout(dataTypeAccess.loading);
+                            //     window.setTimeout(function(){
+                            //         cacheLoadingMessage.dialog$.fadeOut(50, function(){
+                            //             cacheLoadingMessage.destroy()
+                            //         });
+                            //         // window.location.reload(true);
+                            //     }, 10);
+                            // }
+                            // else {
+                            //     // make sure the loading dialog closes
+                            //     window.setTimeout(function(){
+                            //         cacheLoadingMessage.destroy()
+                            //     }, 10);
+                            // }
                         }
                     );
                 }
