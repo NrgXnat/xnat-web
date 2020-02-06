@@ -1,6 +1,6 @@
 package org.nrg.xapi.rest.dicomweb.search.jdbc;
 
-import org.h2.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.model.dicomweb.DicomObjectFactory;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.QIDOResponse;
