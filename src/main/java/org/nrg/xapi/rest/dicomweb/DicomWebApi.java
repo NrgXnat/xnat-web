@@ -214,10 +214,10 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         try {
             user = getUser();
             DicomObjectI instance = _searchEngine.retrieveInstance( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
-            instances.add(instance);
-            if( instances.isEmpty()) {
+            if( instance == null) {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
+            instances.add(instance);
             return new ResponseEntity<>(instances, HttpStatus.OK );
 
         } catch (IllegalAccessException e) {
