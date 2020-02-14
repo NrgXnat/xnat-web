@@ -290,6 +290,8 @@ dependencies {
     implementation "net.logstash.logback:logstash-logback-encoder"
     implementation "com.google.auto.value:auto-value-annotations"
 
+    implementation "com.github.pgelinas:jackson-javax-json:1.0.0"
+
     providedCompile "com.google.code.findbugs:jsr305"
     providedCompile "javax.servlet:javax.servlet-api"
     providedCompile "org.jetbrains:annotations"
