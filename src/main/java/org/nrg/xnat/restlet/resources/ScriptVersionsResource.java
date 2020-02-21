@@ -56,7 +56,7 @@ public class ScriptVersionsResource extends AutomationResource {
         if (!Roles.isSiteAdmin(user)) {
             // You can't put or post or delete a script and you can't retrieve a specific script OTHER THAN the split
             // PET/MR script.
-            if ((StringUtils.isNotBlank(_scriptId) && !_scriptId.equals(PrearcDatabase.SPLIT_PETMR_SESSION_ID))) {
+            if (StringUtils.isNotBlank(_scriptId) && !PrearcDatabase.isSplitPetMrSessionScript(_scriptId)) {
                 _log.warn(getRequestContext("User " + user.getLogin() + " attempted to access forbidden script trigger template resources"));
                 response.setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");
                 throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");

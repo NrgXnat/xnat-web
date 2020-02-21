@@ -119,7 +119,7 @@ public class RecentPrearchiveSessions extends SecureResource {
 				}
 			}
 
-			ArrayList<ArrayList<Object>> rows = new ArrayList<ArrayList<Object>>();
+			final List<List<Object>> rows = new ArrayList<>();
 			for (SessionData s: mostRecent) {
 				if (UserHelper.getUserHelperService(getUser()).hasEditAccessToSessionDataByTag(s.getProject())){
 					ArrayList<Object> row= new ArrayList<>();
@@ -135,9 +135,8 @@ public class RecentPrearchiveSessions extends SecureResource {
 					}
 					rows.add(row);	
 				}
-				else {
 					// user doesn't have access to this session
-				}
+
 			}
 			t = PrearcUtils.convertArrayLtoTable(rows);
 		}

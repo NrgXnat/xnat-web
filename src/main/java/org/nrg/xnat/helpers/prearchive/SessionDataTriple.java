@@ -19,6 +19,7 @@ import java.util.MissingFormatArgumentException;
 import java.util.Objects;
 
 import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.formatSession;
 
 public class SessionDataTriple implements Serializable {
     public SessionDataTriple() {
@@ -89,11 +90,7 @@ public class SessionDataTriple implements Serializable {
     }
 
     public SessionDataTriple setProject(final String project) {
-        if (StringUtils.isNotBlank(project)) {
-            _project = project;
-        } else {
-            _project = UNASSIGNED;
-        }
+        _project = StringUtils.defaultIfBlank(project, UNASSIGNED);
         return this;
     }
 
@@ -104,7 +101,7 @@ public class SessionDataTriple implements Serializable {
 
     @Override
     public String toString() {
-        return _folderName + ':' + _timestamp + ':' + _project;
+        return formatSession(_project, _timestamp, _folderName);
     }
 
     @Override

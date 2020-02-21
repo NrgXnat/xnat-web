@@ -17,8 +17,8 @@ import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author Mike McKay
@@ -41,7 +41,7 @@ public class FindStudy extends SecureAction {
         //XFTTable table = null;
         try {
             //table = PrearcUtils.convertArrayLtoTable(PrearcDatabase.findMyStudy(patientName, patientID, studyDate));
-            ArrayList<ArrayList<Object>> results = PrearcDatabase.findMyStudy(patientName, patientID, studyDate);
+            final List<List<Object>> results = PrearcDatabase.findMyStudy(patientName, patientID, studyDate);
             context.put("results",results);
             context.put("resultsSize",results.size());
             context.put("displayManager", DisplayManager.GetInstance());

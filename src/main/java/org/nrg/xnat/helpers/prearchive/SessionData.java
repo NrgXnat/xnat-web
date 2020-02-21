@@ -17,6 +17,7 @@ import java.lang.reflect.Field;
 import java.util.Date;
 
 import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.formatSession;
 
 public final class SessionData implements Serializable {
     private static final long serialVersionUID = 7915299491932778685L;
@@ -324,17 +325,6 @@ public final class SessionData implements Serializable {
 	
 	@Override
 	public String toString () {
-		StringBuilder sb = new StringBuilder();
-        for (Field f : SessionData.class.getDeclaredFields()) {
-            sb.append(f.toString());
-			sb.append(":");
-			try {
-                sb.append(f.get(this));
-            } catch (IllegalAccessException e) {
-				sb.append("<cannot access>");
-			}
-			sb.append("\n");
-		}
-		return sb.toString();		
+		return formatSession(getProject(), getTimestamp(),getFolderName());
 	}
 			}

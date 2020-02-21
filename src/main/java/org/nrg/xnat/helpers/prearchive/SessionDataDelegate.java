@@ -9,6 +9,7 @@
 
 package org.nrg.xnat.helpers.prearchive;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase.SyncFailedException;
 import org.nrg.xnat.helpers.prearchive.PrearcUtils.PrearcStatus;
 
@@ -16,32 +17,37 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 
+@Slf4j
 public abstract class SessionDataDelegate implements SessionDataProducerI, SessionDataModifierI {
-	private SessionDataProducerI sp;
-	private SessionDataModifierI sm;
+	private final SessionDataProducerI _producer;
+	private final SessionDataModifierI _modifier;
 
-	public SessionDataDelegate(SessionDataProducerI sp, SessionDataModifierI sm) {
-		this.sp = sp;
-		this.sm = sm;
+	public SessionDataDelegate(final SessionDataProducerI producer, final SessionDataModifierI modifier) {
+		_producer = producer;
+		_modifier = modifier;
 	}
 	
-	public void setSp (SessionDataProducerI sp) {this.sp = sp;};
-	public void setSm (SessionDataModifierI sm) {this.sm = sm;}
-	public SessionDataProducerI getSp() {return sp;}
-	public SessionDataModifierI getSm() {return sm;};
 	public Collection<SessionData> get() throws IOException {
-		return this.sp.get();
+		return _producer.get();
 	}
-	public void move(SessionData s, String newProj) throws SyncFailedException {
-		this.sm.move(s, newProj);		
+
+	public void move(final SessionData sessionData, final String project) throws SyncFailedException {
+		log.debug("Moving session {} to project {}", sessionData, project);
+		_modifier.move(sessionData, project);
 	}
-	public void moveScans(SessionData source, final String newSessionLabel, final String newSessionFolder, final List<String> scans) throws SyncFailedException {
-		this.sm.moveScans(source, newSessionLabel, newSessionFolder, scans);
+
+	public void moveScans(final SessionData sessionData, final String label, final String folder, final List<String> scans) throws SyncFailedException {
+		log.debug("Moving session {} to new folder {} with label {} and {} scans: {}", sessionData, folder, label, scans.size(), scans);
+		_modifier.moveScans(sessionData, label, folder, scans);
 	}
-	public void delete(SessionData sd) throws SyncFailedException {
-		this.sm.delete(sd);
+
+	public void delete(final SessionData sessionData) throws SyncFailedException {
+		log.debug("Deleting session {}", sessionData);
+		_modifier.delete(sessionData);
 	}
-	public void setStatus(SessionData sd, PrearcStatus status) {
-		this.sm.setStatus(sd, status);
+
+	public void setStatus(final SessionData sessionData, final PrearcStatus status) {
+		log.debug("Setting status for session {} to {}", sessionData, status);
+		_modifier.setStatus(sessionData, status);
 	}
 }

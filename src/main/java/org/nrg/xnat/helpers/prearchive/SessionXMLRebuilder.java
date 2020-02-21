@@ -9,6 +9,8 @@
 
 package org.nrg.xnat.helpers.prearchive;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.exceptions.NrgServiceError;
@@ -18,6 +20,7 @@ import org.nrg.framework.task.services.XnatTaskService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.archive.Operation;
 import org.nrg.xnat.services.XnatAppInfo;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 import org.nrg.xnat.task.AbstractXnatTask;
@@ -28,10 +31,13 @@ import javax.inject.Provider;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
-import static org.nrg.xnat.archive.Operation.Rebuild;
+import static org.nrg.xft.db.PoolDBUtils.SEARCH_SCHEMA_NAME;
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.PREARCHIVE_TABLE;
+import static org.nrg.xnat.helpers.prearchive.PrearcUtils.PREARC_LOCKS;
 
 /**
  * The Class SessionXMLRebuilder.
@@ -66,7 +72,7 @@ public class SessionXMLRebuilder extends AbstractXnatTask {
                 return;
             }
 
-            if (!PrearcDatabase.ready) {
+            if (!PrearcDatabase.isReady()) {
                 log.info("The prearchive database is not ready, exiting.");
                 return;
             }
@@ -87,7 +93,7 @@ public class SessionXMLRebuilder extends AbstractXnatTask {
                     final Boolean                  preventAutoCommit = sessionData.getPreventAutoCommit();
                     final String                   source            = sessionData.getSource();
 
-                    log.debug("Testing session #{} of {} total, '{}' with status {}, prevent auto commit {}, source {}", processedSessionCount, totalSessionCount, triple, status, preventAutoCommit, source);
+                    log.info("Testing session #{} of {} total, '{}' with status {}, prevent auto commit {}, source {}", processedSessionCount, totalSessionCount, triple, status, preventAutoCommit, source);
 
                     if (status.equals(PrearcUtils.PrearcStatus.RECEIVING) && !preventAutoCommit && !StringUtils.trimToEmpty(source).equals(SessionData.UPLOADER)) {
                         try {
@@ -95,16 +101,25 @@ public class SessionXMLRebuilder extends AbstractXnatTask {
                             final long   then       = sessionData.getLastBuiltDate().getTime();
                             final double diff       = diffInMinutes(then, now);
 
-                            log.debug("Prearchive session '{}' is {} minutes old", sessionData.toString(), diff);
+                            log.debug("Prearchive session '{}' is {} minutes old", sessionData, diff);
 
-                            if (diff >= _interval && !PrearcUtils.isSessionReceiving(triple)) {
+                            final boolean intervalExceeded        = diff >= _interval;
+                            final boolean extremeIntervalExceeded = intervalExceeded && diff >= _interval * 10;
+
+                            if (extremeIntervalExceeded) {
+                                log.error("Prearchive session {} locked for an abnormally large time: {} minutes", sessionData, diff);
+                            } else if (intervalExceeded) {
+                                log.info("Update #{}: prearchive session {} is {} minutes old, greater than configured interval {}, checking that session isn't currently receiving data", updatedSessionCount, sessionData, diff, _interval);
+                                final boolean sessionReceiving = isSessionReceiving(triple);
+                                if (sessionReceiving) {
+                                    log.info("Update #{}: prearchive session {} is {} minutes old but is reported as receiving.", updatedSessionCount, sessionData, diff);
+                                } else {
+                                    log.info("Update #{}: creating JMS queue entry for {} to build session {} to {}", updatedSessionCount, user.getUsername(), sessionData, sessionData.getExternalUrl());
                                 updatedSessionCount++;
-                                log.info("Update #{}: prearchive session {} is {} minutes old, greater than configured interval {}, creating JMS queue entry for {} to archive {}", updatedSessionCount, sessionData.toString(), diff, _interval, user.getUsername(), sessionData.getExternalUrl());
-                                XDAT.sendJmsRequest(_jmsTemplate, new PrearchiveOperationRequest(user, Rebuild, sessionData, sessionDir));
-                            } else if (diff >= (_interval * 10)) {
-                                log.error(String.format("Prearchive session locked for an abnormally large time within CACHE_DIR/prearc_locks/%1$s/%2$s/%3$s", sessionData.getProject(), sessionData.getTimestamp(), sessionData.getName()));
-                            } else if (diff < _interval) {
-                                log.debug("Prearchive session {} is {} minutes old, less than configured interval {}, remaining in RECEIVING status", sessionData.toString(), diff, _interval);
+                                    XDAT.sendJmsRequest(_jmsTemplate, new PrearchiveOperationRequest(user, Operation.Rebuild, sessionData, sessionDir));
+                                }
+                            } else {
+                                log.debug("Prearchive session {} is {} minutes old, less than configured interval {}, remaining in RECEIVING status", sessionData, diff, _interval);
                             }
                         } catch (IOException e) {
                             final String message = String.format("An error occurred trying to write the session %s %s %s.", sessionData.getFolderName(), sessionData.getTimestamp(), sessionData.getProject());
@@ -124,7 +139,7 @@ public class SessionXMLRebuilder extends AbstractXnatTask {
             log.error("", e);
         } catch (SQLException e) {
             // Swallow this message so it doesn't fill the logs before the prearchive is initialized.
-            if (!e.getMessage().contains("relation \"xdat_search.prearchive\" does not exist")) {
+            if (!e.getMessage().contains("relation \"" + SEARCH_SCHEMA_NAME + "." + PREARCHIVE_TABLE + "\" does not exist")) {
                 log.error("", e);
             }
         } catch (final NrgServiceRuntimeException e) {
@@ -145,8 +160,38 @@ public class SessionXMLRebuilder extends AbstractXnatTask {
      *
      * @return the double
      */
-    public static double diffInMinutes(long start, long end) {
-        return Math.floor(Math.floor((end - start) / 1000) / 60);
+    private static double diffInMinutes(final long start, final long end) {
+        return Math.floor(Math.floor(((float) end - (float) start) / 1000) / 60);
+    }
+
+    /**
+     * Checks whether the session is currently receiving files. This method reviews the file locks that are currently open for this session.
+     *
+     * @param session The session to test for receiving.
+     *
+     * @return Returns true if the session still appears to be receiving new files, false otherwise.
+     */
+    private static boolean isSessionReceiving(final SessionDataTriple session) {
+        final File lockFolder = PrearcUtils.buildCacheSubDir(PREARC_LOCKS, session.getProject(), session.getTimestamp(), session.getFolderName());
+        log.debug("Checking for lock folder \"{}\" for session {}", lockFolder, session);
+        if (!lockFolder.exists()) {
+            log.debug("The lock folder \"{}\" for session {} doesn't exist, session is not currently receiving", lockFolder, session);
+            return false;
+        }
+
+        final File[] locks = lockFolder.listFiles();
+        final boolean hasLockFiles = locks != null && locks.length > 0;
+        if (hasLockFiles) {
+            log.info("Found {} lock files in the folder \"{}\" for session {}: {}", locks.length, lockFolder, session, StringUtils.join(Lists.transform(Arrays.asList(locks), new Function<File, String>() {
+                @Override
+                public String apply(final File file) {
+                    return file.getName();
+                }
+            }), ", "));
+        } else {
+            log.info("There's a lock folder \"{}\" for session {} but it doesn't have any lock files in it.", lockFolder, session);
+        }
+        return hasLockFiles;
     }
 
     private final Provider<UserI> _provider;

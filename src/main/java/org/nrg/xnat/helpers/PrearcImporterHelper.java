@@ -9,6 +9,34 @@
 
 package org.nrg.xnat.helpers;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.nrg.action.ActionException;
+import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
+import org.nrg.xdat.XDAT;
+import org.nrg.xdat.bean.XnatImagesessiondataBean;
+import org.nrg.xdat.model.XnatImagesessiondataI;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.services.cache.UserDataCache;
+import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.FileUtils;
+import org.nrg.xnat.helpers.merge.MergePrearchiveSessions;
+import org.nrg.xnat.helpers.merge.MergeSessionsA.SaveHandlerI;
+import org.nrg.xnat.helpers.prearchive.*;
+import org.nrg.xnat.helpers.prearchive.PrearcUtils.PrearcStatus;
+import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
+import org.nrg.xnat.restlet.actions.PrearcImporterA;
+import org.nrg.xnat.restlet.util.FileWriterWrapperI;
+import org.nrg.xnat.status.ListenerUtils;
+import org.nrg.xnat.turbine.utils.ArcSpecManager;
+import org.nrg.xnat.turbine.utils.ImageUploadHelper;
+import org.nrg.xnat.utils.functions.FileToPrearcSession;
+import org.restlet.data.Status;
+
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Paths;
@@ -16,41 +44,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
-import org.nrg.action.ActionException;
-import org.nrg.action.ClientException;
-import org.nrg.action.ServerException;
-import org.nrg.xdat.XDAT;
-import org.nrg.xdat.services.cache.UserDataCache;
-import org.nrg.xnat.helpers.prearchive.*;
-import org.nrg.xnat.status.ListenerUtils;
-import org.nrg.xdat.bean.XnatImagesessiondataBean;
-import org.nrg.xdat.model.XnatImagesessiondataI;
-import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xft.security.UserI;
-import org.nrg.xft.utils.FileUtils;
-import org.nrg.xnat.helpers.merge.MergePrearchiveSessions;
-import org.nrg.xnat.helpers.merge.MergeSessionsA.SaveHandlerI;
-import org.nrg.xnat.helpers.prearchive.PrearcUtils.PrearcStatus;
-import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
-import org.nrg.xnat.restlet.actions.PrearcImporterA;
-import org.nrg.xnat.restlet.util.FileWriterWrapperI;
-import org.nrg.xnat.turbine.utils.ArcSpecManager;
-import org.nrg.xnat.turbine.utils.ImageUploadHelper;
-import org.nrg.xnat.utils.functions.FileToPrearcSession;
-import org.restlet.data.Status;
-
-import javax.annotation.Nullable;
-
+@SuppressWarnings("RedundantThrows")
+@Slf4j
 public class PrearcImporterHelper extends PrearcImporterA{
-    private static final String SESSION = "session";
-	private static final String SUBJECT = "subject";
-	static org.apache.log4j.Logger logger = Logger.getLogger(PrearcImporterHelper.class);
-	
-	
+    private static final String    SESSION = "session";
+	private static final String    SUBJECT = "subject";
+
 	private final FileWriterWrapperI fi;
 	private final UserI user;
 	
@@ -117,7 +116,7 @@ public class PrearcImporterHelper extends PrearcImporterA{
 					}
 				}
 			} catch (Exception e) {
-				logger.error("",e);
+				log.error("", e);
 			}
 		}else if(StringUtils.isNotEmpty(old_session_folder)){
 			if(StringUtils.isEmpty(old_timestamp)){
@@ -125,14 +124,13 @@ public class PrearcImporterHelper extends PrearcImporterA{
 				throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,"User must specify timestamp portion of prearchive path, if session portion is specified.",new IllegalArgumentException());
 			}
 		}
-		
+
 		final List<File> files = new ArrayList<>();
 		try {
 			final Map<String,Object> additionalValues=XMLPathShortcuts.identifyUsableFields(params,XMLPathShortcuts.EXPERIMENT_DATA,false);
 			if(params.containsKey(SUBJECT)){
 				additionalValues.put("xnat:subjectAssessorData/subject_ID", params.remove(SUBJECT));
 			}
-
 			if(params.containsKey(SESSION)){
 				additionalValues.put("xnat:experimentData/label", params.remove(SESSION));
 			}
@@ -145,15 +143,11 @@ public class PrearcImporterHelper extends PrearcImporterA{
 			if(StringUtils.isEmpty(old_timestamp))old_timestamp=new_timestamp;
 								
 			if(destination_specified || project==null){
-				File projectPrearc;
-				if(project==null){
-					projectPrearc=new File(ArcSpecManager.GetInstance().getGlobalPrearchivePath(),PrearcUtils.TEMP_UNPACK);
-				}else{
-					projectPrearc=new File(ArcSpecManager.GetInstance().getPrearchivePathForProject(project));
-				}
+				final String projectPrearcPath = StringUtils.isNotBlank(project) ? ArcSpecManager.GetInstance().getPrearchivePathForProject(project) : null;
+				final File   projectPrearc     = StringUtils.isBlank(projectPrearcPath) ? new File(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), PrearcUtils.TEMP_UNPACK) : new File(projectPrearcPath);
 
 				//CAn this return the project?
-				List<File> tempFiles=reorganize(cacheDIR, new File(projectPrearc,new_timestamp),null, additionalValues);
+				final List<File> tempFiles=reorganize(cacheDIR, new File(projectPrearc,new_timestamp),null, additionalValues);
 				
 				//should 2-srcs to project=null also be merged?
 				//Merge_to_destination will write it to separate folders if old_session_folder is null
@@ -171,7 +165,7 @@ public class PrearcImporterHelper extends PrearcImporterA{
 				try {
 					PrearcUtils.resetStatus(user, project, old_timestamp, old_session_folder,true);
 				} catch (Exception e) {
-					logger.error("",e);
+					log.error("", e);
 				}
 			}
 			throw e1;	

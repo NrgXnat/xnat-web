@@ -13,8 +13,10 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.DirectoryFileFilter;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.config.entities.Configuration;
 import org.nrg.framework.constants.Scope;
@@ -38,12 +40,8 @@ import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.restlet.util.RequestUtil;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
-import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.restlet.resource.ResourceException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
@@ -52,6 +50,8 @@ import java.net.MalformedURLException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -60,18 +60,16 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.formatSession;
 import static org.nrg.xnat.turbine.utils.XNATUtils.setArcProjectPaths;
 
+@Slf4j
 public class PrearcUtils {
-    private final static Logger logger = LoggerFactory.getLogger(PrearcUtils.class);
-
     public static final String APPEND = "append";
-
     public static final String DELETE = "delete";
-
     public static final String PREARC_TIMESTAMP = "PREARC_TIMESTAMP";
-
     public static final String PREARC_SESSION_FOLDER = "PREARC_SESSION_FOLDER";
+    public static final String PREARC_LOCKS          = "prearc_locks";
 
     public static String getSeparatePetMr() {
         final String siteWide = XDAT.getSiteConfigPreferences().getSitewidePetMr();
@@ -145,10 +143,6 @@ public class PrearcUtils {
         private final boolean _interruptable;
     }
 
-    private static Logger logger() {
-        return LoggerFactory.getLogger(PrearcUtils.class);
-    }
-
     public static final Map<PrearcStatus, PrearcStatus> inProcessStatusMap = createInProcessMap();
 
     public static Map<PrearcStatus, PrearcStatus> createInProcessMap() {
@@ -190,7 +184,7 @@ public class PrearcUtils {
                         projects.add(id);
                     }
                 } catch (Exception e) {
-                    logger().error("Exception caught testing prearchive access", e);
+                    log.error("Exception caught testing prearchive access", e);
                 }
             }
             // if the user is an admin also add unassigned projects
@@ -201,17 +195,12 @@ public class PrearcUtils {
         return projects;
     }
 
-    private static String cleanProject(final String p) {
-        if (UNASSIGNED.equals(p)) {
-            return null;
-        } else {
-            return p;
-        }
+    private static String cleanProject(final String project) {
+        return StringUtils.equals(UNASSIGNED, project) ? null : project;
     }
 
     public static boolean canModify(final UserI user, final String projectId) throws Exception {
-        final UserHelperServiceI userHelperService = UserHelper.getUserHelperService(user);
-        return Roles.isSiteAdmin(user) || projectId != null && userHelperService.hasEditAccessToSessionDataByTag(projectId);
+        return Roles.isSiteAdmin(user) || projectId != null && UserHelper.getUserHelperService(user).hasEditAccessToSessionDataByTag(projectId);
     }
 
     /**
@@ -306,14 +295,14 @@ public class PrearcUtils {
 
             if (null == prearcPath) {
                 final String message = "Unable to retrieve prearchive path for project " + project;
-                logger().error(message);
+                log.error(message);
                 throw new Exception(message);
             }
         }
         final File prearc = new File(prearcPath);
         if (prearc.exists() && !prearc.isDirectory()) {
             final String message = "Prearchive directory is invalid for project " + project;
-            logger().error(message);
+            log.error(message);
             throw new Exception(message);
         }
         return prearc;
@@ -326,23 +315,24 @@ public class PrearcUtils {
      * @param user    The user to test.
      * @param project If the project is null, it is the unassigned project
      *                project abbreviation or alias
+     *
      * @return true if the user has permissions to access the project, false otherwise
+     *
      * @throws Exception When something goes wrong.
      * @throws IOException When an error occurs reading or writing data.
      */
     @SuppressWarnings("unused")
     public static boolean validUser(final UserI user, final String project, final boolean allowUnassigned) throws Exception {
-        boolean valid = true;
         try {
             if (null == project) {
-                PrearcUtils.getPrearcDir(user, UNASSIGNED, allowUnassigned);
+                getPrearcDir(user, UNASSIGNED, allowUnassigned);
             } else {
-                PrearcUtils.getPrearcDir(user, project, allowUnassigned);
+                getPrearcDir(user, project, allowUnassigned);
             }
-        } catch (InvalidPermissionException e) {
-            valid = false;
+            return true;
+        } catch (InvalidPermissionException ignored) {
+            return false;
         }
-        return valid;
     }
 
     /**
@@ -401,6 +391,7 @@ public class PrearcUtils {
      * Checks for obvious problems with a session XML: existence, permissions.
      *
      * @param sessionXML The XML defining the session
+     *
      * @return The {@link PrearcStatus} for the session.
      */
     public static PrearcStatus checkSessionStatus(final File sessionXML) {
@@ -408,15 +399,15 @@ public class PrearcUtils {
             return PrearcStatus.RECEIVING;
         }
         if (!sessionXML.isFile()) {
-            logger().error("{} exists, but is not a file. ", sessionXML);
+            log.error("{} exists, but is not a file. ", sessionXML);
             return PrearcStatus.ERROR;
         }
         if (!sessionXML.canRead()) {
-            logger().error("cannot read {}.", sessionXML);
+            log.error("cannot read {}.", sessionXML);
             return PrearcStatus.ERROR;
         }
         if (sessionXML.length() == 0) {
-            logger().error("{} is empty.", sessionXML);
+            log.error("{} is empty.", sessionXML);
             return PrearcStatus.ERROR;
         }
         return null;
@@ -442,8 +433,10 @@ public class PrearcUtils {
      * @param project      The project for the session data object.
      * @param sessionLabel The label for the session data object.
      * @param tag          The tag for the session data object.
+     *
      * @return A new blank session data object.
      */
+    @SuppressWarnings("unused")
     public static SessionData blankSession(String project, String sessionLabel, String tag) throws IOException {
         if (sessionLabel == null || tag == null) {
             throw new IOException("Cannot create a SessionData object with a session label or study instance uid");
@@ -470,6 +463,7 @@ public class PrearcUtils {
         return sess;
     }
 
+    @SuppressWarnings("unused")
     public static void deleteProject(String project) throws Exception {
         final List<SessionData> sessions = PrearcDatabase.getSessionsInProject(project);
         for (final SessionData session : sessions) {
@@ -505,12 +499,7 @@ public class PrearcUtils {
         }
 
         addSession(user, project, timestamp, session, allowUnassigned);
-        if (deleted != null) {
-            PrearcDatabase.setAutoArchive(session, timestamp, project, deleted.getAutoArchive());
-            PrearcDatabase.setPreventAnon(session, timestamp, project, deleted.getPreventAnon());
-            PrearcDatabase.setSource(session, timestamp, project, deleted.getSource());
-            PrearcDatabase.setPreventAutoCommit(session, timestamp, project, deleted.getPreventAutoCommit());
-        }
+        resetPrearcEntry(project, timestamp, session, deleted);
     }
 
     public static void resetStatus(final UserI user, final String project, final String timestamp, final String session, final String uID, final boolean allowUnassigned) throws Exception {
@@ -523,12 +512,7 @@ public class PrearcUtils {
         }
 
         addSession(user, project, timestamp, session, uID, allowUnassigned);
-        if (deleted != null) {
-            PrearcDatabase.setAutoArchive(session, timestamp, project, deleted.getAutoArchive());
-            PrearcDatabase.setPreventAnon(session, timestamp, project, deleted.getPreventAnon());
-            PrearcDatabase.setSource(session, timestamp, project, deleted.getSource());
-            PrearcDatabase.setPreventAutoCommit(session, timestamp, project, deleted.getPreventAutoCommit());
-        }
+        resetPrearcEntry(project, timestamp, session, deleted);
     }
 
     public static void addSession(final UserI user, final String project, final String timestamp, final String session, final boolean allowUnassigned) throws Exception {
@@ -557,10 +541,10 @@ public class PrearcUtils {
         return StringUtils.join("/prearchive/projects/", (project == null) ? UNASSIGNED : project, "/", timestamp, "/", folderName);
     }
 
-    public static XFTTable convertArrayLtoTable(ArrayList<ArrayList<Object>> rows) {
+    public static XFTTable convertArrayLtoTable(final List<List<Object>> rows) {
         XFTTable table = new XFTTable();
-        table.initTable(PrearcDatabase.getCols());
-        for (final ArrayList<Object> row : rows) {
+        table.initTable(new ArrayList<>(PrearcDatabase.getCols()));
+        for (final List<Object> row : rows) {
             table.insertRow(row.toArray());
         }
         return table;
@@ -586,7 +570,7 @@ public class PrearcUtils {
      * <p/>
      * In the future, we might want to move this to a database table.  However, the current prearchive table doesn't have a primary key column (really?).
      * So, there would be no way to reliably join from the logs table to the prearchive table.  Also, this would make more sense to do as part of a image session logging framework
-     * which would capture a lot more than just preachive logs, but requires more requirements gathering.
+     * which would capture a lot more than just prearchive logs, but requires more requirements gathering.
      * <p/>
      * As such, this is more of a stub implementation, that should probably change when the above problems are dealt with.  It will facilitate the current requirement, which
      * is just that we can show the last exception via REST.
@@ -644,13 +628,13 @@ public class PrearcUtils {
      */
     public static void log(final String project, final String timestamp, final String session, final String message) {
         try {
-            File logs = getLogDir(project, timestamp, session);
+            final File logs = getLogDir(project, timestamp, session);
             if (!logs.exists()) {
                 logs.mkdirs();
             }
-            FileUtils.writeStringToFile(new File(logs, Calendar.getInstance().getTimeInMillis() + ".log"), message);
+            FileUtils.writeStringToFile(new File(logs, Calendar.getInstance().getTimeInMillis() + ".log"), message, Charset.defaultCharset());
         } catch (Exception e) {
-            logger.error("", e);
+            log.error("", e);
         }
     }
 
@@ -666,9 +650,9 @@ public class PrearcUtils {
             if (!logs.exists()) {
                 logs.mkdirs();
             }
-            FileUtils.writeStringToFile(new File(logs, Calendar.getInstance().getTimeInMillis() + ".log"), message.getMessage());
+            FileUtils.writeStringToFile(new File(logs, Calendar.getInstance().getTimeInMillis() + ".log"), message.getMessage(), Charset.defaultCharset());
         } catch (Exception e) {
-            logger.error("", e);
+            log.error("", e);
         }
     }
 
@@ -678,6 +662,7 @@ public class PrearcUtils {
      * @param project   The project to check for log files.
      * @param timestamp The timestamp to check for log files.
      * @param session   The prearchive session's ID.
+     *
      * @return A collection of file objects referencing any located log files.
      */
     public static Collection<File> getLogs(final String project, final String timestamp, final String session) {
@@ -691,13 +676,13 @@ public class PrearcUtils {
                 }
             }
         } catch (IOException e) {
-            logger.error("", e);
+            log.error("An error occurred accessing the log folder for {}:{}:{}", project, timestamp, session, e);
             return null;
         } catch (InvalidPermissionException e) {
-            logger.error("", e);
+            log.error("Permission denied accessing session {}:{}:{}", project, timestamp, session, e);
             return null;
         } catch (Exception e) {
-            logger.error("", e);
+            log.error("An unknown error occurred trying to get logs in the log folder for session {}:{}:{}", project, timestamp, session, e);
             return null;
         }
         return logs;
@@ -710,10 +695,11 @@ public class PrearcUtils {
      * @param project   The project to check for log files.
      * @param timestamp The timestamp to check for log files.
      * @param session   The prearchive session's ID.
+     *
      * @return A collection of file objects referencing any located log files.
      */
     public static Collection<String> getLogIds(final String project, final String timestamp, final String session) {
-        final Collection<String> logs = Lists.newArrayList();
+        final Collection<String> logs  = new ArrayList<>();
         final Collection<File> found = PrearcUtils.getLogs(project, timestamp, session);
         if (found != null && found.size() > 0) {
             try {
@@ -721,7 +707,7 @@ public class PrearcUtils {
                     logs.add(f.getName().substring(0, f.getName().indexOf(".log")));//strip off the .log so it would be seamless to not use physical log files here.
                 }
             } catch (Exception e) {
-                logger.error("", e);
+                log.error("", e);
                 return null;
             }
         }
@@ -735,26 +721,26 @@ public class PrearcUtils {
      * @param timestamp The timestamp to check for log files.
      * @param session   The prearchive session's ID.
      * @param logId     The ID of the desired log entry.
+     *
      * @return The log entry if found, null otherwise.
      */
     public static String getLog(final String project, final String timestamp, final String session, final String logId) {
+        final File logDir;
         try {
-            final File logDir = getLogDir(project, timestamp, session);
+            logDir = getLogDir(project, timestamp, session);
+        } catch (Exception e) {
+            log.error("An error occurred trying to retrieve the log folder for session {}", formatSession(project, timestamp, session), e);
+            return null;
+        }
             if (logDir.exists()) {
-                final File log = new File(logDir, logId + ".log");//the .log is hidden from log users to conceal implementation details
-                if (log.exists()) {
-                    return DateUtils.format(new Date(log.lastModified()), "MM/dd/yyyy HH:mm:ss") + ":" + FileUtils.readFileToString(log);
+            final File logFile = new File(logDir, logId + ".log");//the .log is hidden from log users to conceal implementation details
+            if (logFile.exists()) {
+                try {
+                    return DateUtils.format(new Date(logFile.lastModified()), "MM/dd/yyyy HH:mm:ss") + ":" + FileUtils.readFileToString(logFile, Charset.defaultCharset());
+                } catch (IOException e) {
+                    log.error("An error occurred trying to retrieve the contents of the log file {}", logFile, e);
                 }
             }
-        } catch (IOException e) {
-            logger.error("", e);
-            return null;
-        } catch (InvalidPermissionException e) {
-            logger.error("", e);
-            return null;
-        } catch (Exception e) {
-            logger.error("", e);
-            return null;
         }
         return null;
     }
@@ -765,6 +751,7 @@ public class PrearcUtils {
      * @param project   The project to check for log files.
      * @param timestamp The timestamp to check for log files.
      * @param session   The prearchive session's ID.
+     *
      * @return The last log entry for the indicated log, null if not found.
      */
     public static String getLastLog(final String project, final String timestamp, final String session) {
@@ -785,10 +772,10 @@ public class PrearcUtils {
                         }
                     }
                 }
-                return lastFile != null ? FileUtils.readFileToString(lastFile) : null;
+                return lastFile != null ? FileUtils.readFileToString(lastFile, Charset.defaultCharset()) : null;
             }
         } catch (Exception e) {
-            logger.error("", e);
+            log.error("", e);
             return null;
         }
         return null;
@@ -831,42 +818,46 @@ public class PrearcUtils {
      *
      * @param session  The session to be locked.
      * @param filename The filename to be locked.
+     *
      * @return PrearcFileLock
+     *
      * @throws SessionFileLockException When an attempt is made to access a locked file.
      * @throws IOException When an error occurs reading or writing data.
      */
     public static PrearcFileLock lockFile(final SessionDataTriple session, final String filename) throws SessionFileLockException, IOException {
         //putting these in a subdirectory of the cache space
         //this will allow other features to see if there are any locks in this session.
-        final File lockFolder = org.nrg.xnat.utils.FileUtils.buildCacheSubDir("prearc_locks", session.getProject(), session.getTimestamp(), session.getFolderName());
-
+        final File lockFolder = buildCacheSubDir(PREARC_LOCKS, session.getProject(), session.getTimestamp(), session.getFolderName());
         if (!lockFolder.exists()) {
             lockFolder.mkdirs();
         }
 
         final File lockFile = new File(lockFolder, filename);
+        log.info("Creating lock file {} for session {}", lockFile, session);
+
         final FileLock lock;
         final FileOutputStream stream;
-        final FileChannel channel;
 
         synchronized (syncLock) {
             //the lock will be lost if this stream is closed.
             stream = new FileOutputStream(lockFile);
-            channel = stream.getChannel();
+            final FileChannel channel = stream.getChannel();
 
             try {
                 lock = channel.tryLock();
                 if (lock == null) {
+                    log.error("Failed creating lock file {} for session {}", lockFile, session);
                     stream.close();
                     throw new SessionFileLockException(session, filename);
                 }
+                log.info("Returning prearc file lock file {} for session {}", lockFile, session);
+                return new PrearcFileLock(lockFile, lock, stream);
             } catch (OverlappingFileLockException e) {
+                log.error("Got an overlapping file lock error while creating lock file {} for session {}", lockFile, session, e);
                 stream.close();
                 throw new SessionFileLockException(session, filename, e);
             }
         }
-
-        return new PrearcFileLock(lockFile, lock, stream);
     }
 
     /**
@@ -875,33 +866,15 @@ public class PrearcUtils {
      * @param session The session to be cleaned.
      */
     public static void cleanLockDirs(final SessionDataTriple session) {
-        final File project = org.nrg.xnat.utils.FileUtils.buildCacheSubDir("prearc_locks", session.getProject());
+        final File project    = buildCacheSubDir(PREARC_LOCKS, session.getProject());
         final File timestamp = new File(project, session.getTimestamp());
-        final File name = new File(timestamp, session.getFolderName());
+        final File lockFolder = new File(timestamp, session.getFolderName());
 
+        log.info("Cleaning lock folder {} for session {}", lockFolder, session);
         synchronized (syncLock) {
             //synchronized to prevent overlap with .lockFile()
-            if (name.exists()) {
-                final String[] names = name.list();
-                if (names == null || names.length == 0) {
-                    try {
-                        FileUtils.deleteDirectory(name);
-                        if (timestamp.exists()) {
-                            final String[] timestamps = timestamp.list();
-                            if (timestamps == null || timestamps.length == 0) {
-                                FileUtils.deleteDirectory(timestamp);
-                                if (project.exists()) {
-                                    final String[] projects = project.list();
-                                    if (projects == null || projects.length == 0) {
-                                        FileUtils.deleteDirectory(project);
-                                    }
-                                }
-                            }
-                        }
-                    } catch (IOException e) {
-                        logger.error("Couldn't clean temporary lock directories in the cache folder.", e);
-                    }
-                }
+            if (deleteLockFolder(lockFolder) && deleteLockFolder(timestamp) && deleteLockFolder(project)) {
+                log.info("Successfully deleted the lock folder {} for session {}", lockFolder, session);
             }
         }
     }
@@ -912,14 +885,14 @@ public class PrearcUtils {
      * @author tim@deck5consulting.com
      */
     public static class PrearcFileLock {
-        private final File f;
-        private final FileLock lock;
-        private final FileOutputStream stream;
+        private final File             _file;
+        private final FileLock         _fileLock;
+        private final FileOutputStream _outputStream;
 
-        public PrearcFileLock(final File f, final FileLock fl, final FileOutputStream stream) {
-            this.f = f;
-            this.stream = stream;
-            this.lock = fl;
+        public PrearcFileLock(final File file, final FileLock fileLock, final FileOutputStream outputStream) {
+            _file = file;
+            _fileLock = fileLock;
+            _outputStream = outputStream;
         }
 
         /**
@@ -927,22 +900,28 @@ public class PrearcUtils {
          * amended to specifically release the file lock, in case closing the stream was inadequate.
          */
         public void release() {
+            log.debug("Preparing to release lock on file {}", _file);
+            if (_fileLock != null) {
             try {
-                if (lock != null) {
-                    try {
-                        lock.release();
+                    log.debug("Released lock on file {}", _file);
+                    _fileLock.release();
                     } catch (Exception e) {
-                        // ignore
+                    log.info("Something went wrong releasing lock on file {}", _file, e);
                     }
                 }
-                if (stream != null) {
-                    stream.close();
+            try {
+                if (_outputStream != null) {
+                    _outputStream.close();
                 }
-            } catch (Exception e) {
-                //ignore
+            } catch (IOException e) {
+                log.info("Something went wrong trying to close the output stream on file {}", _file, e);
             }
 
-            FileUtils.deleteQuietly(f);
+            if (FileUtils.deleteQuietly(_file)) {
+                log.info("Released lock on and deleted lock file {}", _file);
+            } else {
+                log.warn("Tried to release lock on and delete lock file {} but got false from delete method", _file);
+            }
         }
     }
 
@@ -961,5 +940,50 @@ public class PrearcUtils {
         public SessionFileLockException(SessionDataTriple session, String fileName, Exception e) {
             super(String.format("Unable to obtain lock on %4$s within %1$s/%2$s/%3$s", session.getProject(), session.getTimestamp(), session.getFolderName(), fileName), e);
         }
+    }
+
+    public static File buildCacheSubDir(final String... directories) {
+        final Path path = Paths.get(XDAT.getSiteConfigPreferences().getCachePath(), directories);
+        log.debug("Found cache sub-directory: {}", path);
+        return path.toFile();
+    }
+
+    private static String getPrearcPath(final UserI user, final String project, final String prearcRootPref, final UserHelperServiceI userHelperService, final String prearchivePathForProject) throws Exception {
+        if (!userHelperService.hasEditAccessToSessionDataByTag(project)) {
+            throw new InvalidPermissionException(user.getUsername(), "edit", XnatProjectdata.SCHEMA_ELEMENT_NAME, project);
+        }
+        final String newPathForProject = prearchivePathForProject.replaceFirst("^/data/xnat/prearchive/", "");
+        return StringUtils.equals(prearchivePathForProject, newPathForProject) ? prearchivePathForProject : Paths.get(prearcRootPref, newPathForProject).toString();
+    }
+
+    private static void resetPrearcEntry(final String project, final String timestamp, final String session, final SessionData deleted) throws Exception {
+        if (deleted != null) {
+            PrearcDatabase.setAutoArchive(session, timestamp, project, deleted.getAutoArchive());
+            PrearcDatabase.setPreventAnon(session, timestamp, project, deleted.getPreventAnon());
+            PrearcDatabase.setSource(session, timestamp, project, deleted.getSource());
+            PrearcDatabase.setPreventAutoCommit(session, timestamp, project, deleted.getPreventAutoCommit());
+        }
+    }
+
+    private static boolean deleteLockFolder(final File folder) {
+        if (folder.exists() && folder.isDirectory()) {
+            log.debug("Found lock folder {} and it's empty, preparing to delete it.", folder);
+            final String[] files = folder.list();
+            if (ArrayUtils.isEmpty(files)) {
+                try {
+                    log.debug("Deleting empty lock folder {}", folder);
+                    FileUtils.deleteDirectory(folder);
+                    return true;
+                } catch (IOException e) {
+                    log.error("Failed deleting temporary lock folder in the cache folder: {}", folder, e);
+                }
+            } else {
+                assert files != null;
+                log.warn("The lock folder {} contains {} files, not deleting", folder, files.length);
+            }
+        } else {
+            log.warn("Got request to delete {} but that {}", folder, folder.exists() ? "is not a directory" : "doesn't exist");
+        }
+        return false;
     }
 }

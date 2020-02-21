@@ -20,6 +20,7 @@ import java.util.Calendar;
 import java.util.List;
 
 import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.PREARCHIVE_TABLE_WITH_SCHEMA;
 
 public enum DatabaseSession {
 	// a project column is allowed to hold a null value to indicate
@@ -147,7 +148,7 @@ public enum DatabaseSession {
 		}
 		@Override
 		public String updateSessionSql (String sess, String timestamp, String proj, Object newVal) {
-			String s =  "UPDATE " + PrearcDatabase.tableWithSchema + " SET " + 
+			String s =  "UPDATE " + PREARCHIVE_TABLE_WITH_SCHEMA + " SET " +
 			       this.searchSql(newVal) +
 			       ", " + DatabaseSession.LASTMOD.searchSql(Calendar.getInstance().getTime()) + 
 			       " WHERE " + DatabaseSession.sessionSql(sess, timestamp, proj);
@@ -603,7 +604,7 @@ public enum DatabaseSession {
 	
 	
 	public String updateSessionSql (String sess, String timestamp, String proj, Object newVal) {
-		return "UPDATE " + PrearcDatabase.tableWithSchema + " SET " + 
+		return "UPDATE " + PREARCHIVE_TABLE_WITH_SCHEMA + " SET " +
 		       this.updateSql(newVal) + " WHERE " +
 		       DatabaseSession.sessionSql(sess, timestamp, proj);
 	}
@@ -611,11 +612,11 @@ public enum DatabaseSession {
 	
 	
 	public String findSql (String sess, String timestamp, String proj) {
-		return "SELECT " + this.columnName + " FROM " + PrearcDatabase.tableWithSchema + " WHERE " + DatabaseSession.sessionSql(sess, timestamp, proj);
+		return "SELECT " + this.columnName + " FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + DatabaseSession.sessionSql(sess, timestamp, proj);
 	}
 	
 	public String findSql (final Object o) {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema + " WHERE " + this.searchSql(o);
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + this.searchSql(o);
 	}
 	
 	/**
@@ -624,7 +625,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public static String findSessionSql (SessionData s) {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema + " WHERE " + DatabaseSession.searchSql(s, " AND ");			
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + DatabaseSession.searchSql(s, " AND ");
 	}
 	
 	/**
@@ -638,7 +639,7 @@ public enum DatabaseSession {
 	 * @return A complete SQL statement constructed from the submitted constraints.
 	 */
 	public static String findSessionSql (String[] sql) {
-		String selectAll = "SELECT * FROM " + PrearcDatabase.tableWithSchema; 
+		String selectAll = "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA;
 		if (sql.length == 0) {
 			return selectAll;
 		}
@@ -656,7 +657,7 @@ public enum DatabaseSession {
      * @return A complete SQL statement constructed from the submitted criteria.
 	 */
 	public static String findSessionSql (String session, String timestamp, String project) {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema + " WHERE " + DatabaseSession.sessionSql(session,timestamp,project);
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + DatabaseSession.sessionSql(session,timestamp,project);
 	}
 
 	/**
@@ -667,7 +668,7 @@ public enum DatabaseSession {
 	 * @return A complete SQL statement constructed from the submitted criteria.
 	 */
 	public static String findMyStudySql () {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema + " WHERE project IS NULL AND (name = ? OR subject = ? OR scan_date = ?)";
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE project IS NULL AND (name = ? OR subject = ? OR scan_date = ?)";
 	}
 		
 	/**
@@ -678,12 +679,12 @@ public enum DatabaseSession {
      * @return A complete SQL statement constructed from the submitted criteria.
 	 */
 	public static String countSessionSql (String session, String timestamp, String project) {
-		String statement = "SELECT COUNT(*) FROM " + PrearcDatabase.tableWithSchema + " WHERE " + DatabaseSession.sessionSql(session, timestamp, project);
+		String statement = "SELECT COUNT(*) FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + DatabaseSession.sessionSql(session, timestamp, project);
 		return statement;
 	}
 	
 	public static String countSessionSql (final String sess, final String timestamp, final String proj, final String suid) {
-		String s = "SELECT COUNT(*) FROM " + PrearcDatabase.tableWithSchema + " WHERE "  + DatabaseSession.sessionSql(sess, timestamp,proj) 
+		String s = "SELECT COUNT(*) FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE "  + DatabaseSession.sessionSql(sess, timestamp,proj)
 		           + " AND " + DatabaseSession.TAG.searchSql(suid);
 		return s;
 	}
@@ -701,7 +702,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public static String deleteSessionSql (String sess, String timestamp, String proj) {
-		return "DELETE FROM " + PrearcDatabase.tableWithSchema + " WHERE " + DatabaseSession.sessionSql(sess,timestamp,proj);
+		return "DELETE FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + DatabaseSession.sessionSql(sess,timestamp,proj);
 	}
 
     /**
@@ -710,7 +711,7 @@ public enum DatabaseSession {
      * @return
      */
     public static String deleteUnusedSessionsSql (String usedSessionTimestamps) {
-        return "DELETE FROM " + PrearcDatabase.tableWithSchema + " WHERE timestamp NOT IN (" + usedSessionTimestamps + ")";
+        return "DELETE FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE timestamp NOT IN (" + usedSessionTimestamps + ")";
     }
 
 	/**
@@ -720,7 +721,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public String allMatchesSql (String[]names){
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema + " WHERE " + this.searchSql(names);
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA + " WHERE " + this.searchSql(names);
 	}
 	
 	/**
@@ -728,7 +729,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public static String allMatchesSql () {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema;
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA;
 	}
 	
 	/**
@@ -791,7 +792,7 @@ public enum DatabaseSession {
 	 */
 	public static String createTableSql () {
 		StringBuilder s = new StringBuilder();
-		s.append("CREATE TABLE " + PrearcDatabase.tableWithSchema + "(");
+		s.append("CREATE TABLE " + PREARCHIVE_TABLE_WITH_SCHEMA + "(");
 		List<String> values = new ArrayList<String>();
 		for (DatabaseSession d : DatabaseSession.values()) {
 			values.add(d.getColumnName() + " " + d.getColumnDefinition());
@@ -803,7 +804,7 @@ public enum DatabaseSession {
 	
 
 	public static String getAllRows() {
-		return "SELECT * FROM " + PrearcDatabase.tableWithSchema; 
+		return "SELECT * FROM " + PREARCHIVE_TABLE_WITH_SCHEMA;
 	}
 	
 	/**
@@ -843,7 +844,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public static String updateSessionStatusSQL (String sess, String timestamp, String proj, PrearcUtils.PrearcStatus status) {
-		return "UPDATE " + PrearcDatabase.tableWithSchema + " SET " + 
+		return "UPDATE " + PREARCHIVE_TABLE_WITH_SCHEMA + " SET " +
 		       DatabaseSession.STATUS.updateSql(status) + ", " + 
 		       DatabaseSession.LASTMOD.updateSql(Calendar.getInstance().getTime()) + " WHERE " +
 		       DatabaseSession.sessionSql(sess, timestamp, proj);
@@ -857,7 +858,7 @@ public enum DatabaseSession {
 	 * @return
 	 */
 	public static String updateSessionLastModSQL (String sess, String timestamp, String proj) {
-		return "UPDATE " + PrearcDatabase.tableWithSchema + " SET " + 
+		return "UPDATE " + PREARCHIVE_TABLE_WITH_SCHEMA + " SET " +
 		       DatabaseSession.LASTMOD.updateSql(Calendar.getInstance().getTime()) + " WHERE " +
 		       DatabaseSession.sessionSql(sess, timestamp, proj);
 	}

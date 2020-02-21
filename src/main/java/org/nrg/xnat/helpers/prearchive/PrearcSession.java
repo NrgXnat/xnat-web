@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import static org.nrg.xnat.helpers.prearchive.PrearcDatabase.formatSession;
+
 @Getter
 @Accessors(prefix = "_")
 public class PrearcSession {
@@ -60,7 +62,7 @@ public class PrearcSession {
 
     @Override
     public String toString() {
-        return StringUtils.joinWith("/", _project, _timestamp, _folderName);
+        return formatSession(_project, _timestamp, _folderName);
     }
 
     public String getUrl() {
