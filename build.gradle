@@ -9,13 +9,13 @@
 
 buildscript {
     ext {
-        vXnat = "1.7.6"
+        vXnat = "1.7.6.1"
     }
     repositories {
         mavenLocal()
         mavenCentral()
         maven {
-            url "https://plugins.gradle.org/m2/"
+            url "https://plugins.gradle.org/m2"
         }
         maven {
             url "https://nrgxnat.jfrog.io/nrgxnat/libs-release"
@@ -27,11 +27,11 @@ buildscript {
         }
     }
     dependencies {
-        classpath "com.bmuschko:gradle-cargo-plugin:2.6.1"
+        classpath "com.bmuschko:gradle-cargo-plugin:2.7.1"
         classpath "com.bmuschko:gradle-tomcat-plugin:2.5"
-        classpath "gradle.plugin.com.palantir.gradle.gitversion:gradle-git-version:0.12.0-rc2"
-        classpath "io.franzbecker:gradle-lombok:3.1.0"
-        classpath "io.spring.gradle:dependency-management-plugin:1.0.8.RELEASE"
+        classpath "com.palantir.gradle.gitversion:gradle-git-version:0.12.3"
+        classpath "io.franzbecker:gradle-lombok:3.3.0"
+        classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
     }
 }
 
@@ -54,7 +54,7 @@ apply plugin: "war"
 
 repositories {
     mavenLocal()
-    maven { url "https://www.dcm4che.org/maven2/" }
+    maven { url "https://www.dcm4che.org/maven2" }
     jcenter()
     mavenCentral()
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }
