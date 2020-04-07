@@ -95,7 +95,7 @@ public class SnapshotGenerationApi extends AbstractXapiRestController {
 			@ApiResponse(code = 403, message = "Insufficient privileges to resolve the dataset definition."),
 			@ApiResponse(code = 404, message = "The requested dataset definition doesn't exist."),
 			@ApiResponse(code = 500, message = "Unexpected error") })
-	@XapiRequestMapping(value = "{projectID}/experiment3/{sessionIdentifier}/scan/{scanIdentifier}/snapshot/grid/{gridView}", produces = {
+	@XapiRequestMapping(value = "{projectID}/experiments/{sessionIdentifier}/scan/{scanIdentifier}/snapshot/grid/{gridView}", produces = {
 			MediaType.IMAGE_GIF_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE,
 			MediaType.IMAGE_PNG_VALUE }, method = RequestMethod.GET, restrictTo = Admin)
 	public ResponseEntity<ByteArrayResource> generateSnapshotView(@PathVariable final String projectID,
