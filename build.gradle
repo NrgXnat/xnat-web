@@ -319,6 +319,7 @@ dependencies {
     implementation "ch.qos.logback:logback-classic"
     implementation "ch.qos.logback:logback-core"
     implementation "net.logstash.logback:logstash-logback-encoder"
+    implementation "net.imagej:ij:1.50e"
 
     providedCompile "com.google.code.findbugs:jsr305"
     providedCompile "junit:junit"

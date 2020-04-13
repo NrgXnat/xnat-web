@@ -3,8 +3,10 @@ package org.nrg.xnat.snapshot.services.impl;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
+
 import org.nrg.action.ClientException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.bean.XnatImagescandataBean;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.archive.ResourceData;
@@ -12,10 +14,12 @@ import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.snapshot.services.SnapshotGenerationService;
+import org.nrg.xnat.snapshot.services.convert.SnapshotDicomConventImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -25,7 +29,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class SnapshotGenerationServiceImpl implements SnapshotGenerationService {
-	
+
 	/**
 	 * @param catalogService
 	 */
@@ -40,7 +44,7 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 		try {
 			_log.debug("SnapshotServiceImpl  generateSnapshot method start ");
 			boolean verifySnapshot = verifySnapshots(sessionIdentifier, scanIdentifier);
-			boolean verifyImage = verifyImage(projectID, sessionIdentifier, scanIdentifier);
+			boolean verifyImage = verifyImage(sessionIdentifier, scanIdentifier);
 			if (verifySnapshot && verifyImage) {
 				path = getValidImage(sessionIdentifier, scanIdentifier);
 			} else if (!verifySnapshot) {
@@ -61,8 +65,7 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	}
 
 	/**
-	 * @param projectID
-	 * @param sessionIdentifier
+	 * @param accessionId
 	 * @param scanIdentifier
 	 * @return
 	 */
@@ -89,8 +92,9 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	 * @param sessionIdentifier
 	 * @param scanIdentifier
 	 * @return
+	 * @throws Exception 
 	 */
-	private boolean verifySnapshots(String accessionId, String scanIdentifier) {
+	private boolean verifySnapshots(String accessionId, String scanIdentifier) throws Exception {
 		System.out.println("Snapshots verifySnapshots()");
 		_log.debug("Snapshots verifySnapshots() ");
 		// implementation pending
@@ -99,18 +103,23 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	}
 
 	/**
-	 * @param projectID
-	 * @param sessionIdentifier
+	 * @param accessionId
 	 * @param scanIdentifier
 	 * @return
+	 * @throws Exception
 	 */
-	private boolean verifyImage(String projectID, String sessionIdentifier, String scanIdentifier) {
-		// implementation
+	private boolean verifyImage(String accessionId, String scanIdentifier) throws Exception {
 		System.out.println("Snapshots verifyImage() ");
 		_log.debug("Snapshots verifyImage() ");
+		// implementation pending
+		boolean imageFlag = imageUpload(accessionId, scanIdentifier);
 		return true;
 	}
 
+	/**
+	 * @param snapshotPath
+	 * @return
+	 */
 	private String getImage(String snapshotPath) {
 		String extension = "";
 		String path = new File(snapshotPath).getParent();
@@ -143,8 +152,7 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	}
 
 	/**
-	 * @param projectID
-	 * @param sessionIdentifier
+	 * @param accessionNo
 	 * @param scanIdentifier
 	 * @return
 	 */
@@ -178,6 +186,45 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			return false;
 		}
 		return true;
+	}
+	
+	/**
+	 * @param accessionId
+	 * @param scanIdentifier
+	 * @return
+	 * @throws Exception
+	 */
+	private boolean imageUpload(String accessionId, String scanIdentifier) throws Exception {
+		String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier;
+		try {
+			final UserI userI = XDAT.getUserDetails();
+			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri + "/resources/DICOM/files",
+					true);
+			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
+			File dicomFile = new File(xnatResourcecatalog.getUri());
+			String dicompath = dicomFile.getParent();
+			String tempImagePath = new File(dicompath).getParent();
+			SnapshotDicomConventImage dcm = new SnapshotDicomConventImage(dicompath);
+			XnatImagescandataBean scan = new XnatImagescandataBean();
+			scan.setId(scanIdentifier);
+			File file = dcm.createThumbnail(dcm.getImagePlus(), scan, accessionId, tempImagePath);
+			System.out.println("file1 :: " + file);
+			String[] tags = { "" };
+			_catalogService.insertResources(userI, parentUri + SNAPSHOTS_RESOURCE, file, SNAPSHOTS, null, "GIF",
+					"ORIGINAL", tags);
+			System.out.println("delete temp file ::" + file.getAbsolutePath());
+			dcm.deleteFile(file);
+		} catch (ClientException e) {
+			_message = String.format(e.getMessage(), parentUri);
+			_log.error(_message);
+			e.printStackTrace();
+			return false ;
+		} catch (Exception e) {
+			_log.error(" Snapshots image error:: " + e.getMessage());
+			e.printStackTrace();
+			return false ;
+		}
+        return true;
 	}
 	
 	private final String SNAPSHOTS_RESOURCE = "/resources/SNAPSHOTS/files";
