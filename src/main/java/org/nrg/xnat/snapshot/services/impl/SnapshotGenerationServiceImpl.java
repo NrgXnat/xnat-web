@@ -3,7 +3,6 @@ package org.nrg.xnat.snapshot.services.impl;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
-
 import org.nrg.action.ClientException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.XnatImagescandataBean;
@@ -13,13 +12,12 @@ import org.nrg.xnat.archive.ResourceData;
 import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.services.archive.CatalogService;
+import org.nrg.xnat.snapshot.convert.SnapshotDicomConvertImage;
 import org.nrg.xnat.snapshot.services.SnapshotGenerationService;
-import org.nrg.xnat.snapshot.services.convert.SnapshotDicomConventImage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -44,7 +42,7 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 		try {
 			_log.debug("SnapshotServiceImpl  generateSnapshot method start ");
 			boolean verifySnapshot = verifySnapshots(sessionIdentifier, scanIdentifier);
-			boolean verifyImage = verifyImage(sessionIdentifier, scanIdentifier);
+			boolean verifyImage = verifyImage(sessionIdentifier, scanIdentifier, gridView);
 			if (verifySnapshot && verifyImage) {
 				path = getValidImage(sessionIdentifier, scanIdentifier);
 			} else if (!verifySnapshot) {
@@ -92,7 +90,7 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	 * @param sessionIdentifier
 	 * @param scanIdentifier
 	 * @return
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	private boolean verifySnapshots(String accessionId, String scanIdentifier) throws Exception {
 		System.out.println("Snapshots verifySnapshots()");
@@ -108,11 +106,11 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean verifyImage(String accessionId, String scanIdentifier) throws Exception {
+	private boolean verifyImage(String accessionId, String scanIdentifier, String verifyImage) throws Exception {
 		System.out.println("Snapshots verifyImage() ");
 		_log.debug("Snapshots verifyImage() ");
 		// implementation pending
-		boolean imageFlag = imageUpload(accessionId, scanIdentifier);
+		boolean imageFlag = imageUpload(accessionId, scanIdentifier, verifyImage);
 		return true;
 	}
 
@@ -182,19 +180,19 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			_message = "Snapshot folder not generated- error";
 			System.out.println(_message);
 			e.printStackTrace();
-			_log.error(_message,e.getMessage());
+			_log.error(_message, e.getMessage());
 			return false;
 		}
 		return true;
 	}
-	
+
 	/**
 	 * @param accessionId
 	 * @param scanIdentifier
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean imageUpload(String accessionId, String scanIdentifier) throws Exception {
+	private boolean imageUpload(String accessionId, String scanIdentifier, String gridView) throws Exception {
 		String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier;
 		try {
 			final UserI userI = XDAT.getUserDetails();
@@ -204,10 +202,18 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			File dicomFile = new File(xnatResourcecatalog.getUri());
 			String dicompath = dicomFile.getParent();
 			String tempImagePath = new File(dicompath).getParent();
-			SnapshotDicomConventImage dcm = new SnapshotDicomConventImage(dicompath);
+			SnapshotDicomConvertImage dcm = new SnapshotDicomConvertImage(dicompath);
 			XnatImagescandataBean scan = new XnatImagescandataBean();
 			scan.setId(scanIdentifier);
-			File file = dcm.createThumbnail(dcm.getImagePlus(), scan, accessionId, tempImagePath);
+			scan.setImageSessionId(accessionId);
+			File file = null;
+			if (!gridView.equals("notApplicable")) {
+				System.out.println("Grid View ...........");
+				file = dcm.createThumbnail(scan, tempImagePath, true);
+			} else {
+				file = dcm.createThumbnail(scan, tempImagePath, false);
+			}
+
 			System.out.println("file1 :: " + file);
 			String[] tags = { "" };
 			_catalogService.insertResources(userI, parentUri + SNAPSHOTS_RESOURCE, file, SNAPSHOTS, null, "GIF",
@@ -218,15 +224,15 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			_message = String.format(e.getMessage(), parentUri);
 			_log.error(_message);
 			e.printStackTrace();
-			return false ;
+			return false;
 		} catch (Exception e) {
 			_log.error(" Snapshots image error:: " + e.getMessage());
 			e.printStackTrace();
-			return false ;
+			return false;
 		}
-        return true;
+		return true;
 	}
-	
+
 	private final String SNAPSHOTS_RESOURCE = "/resources/SNAPSHOTS/files";
 	private final String ROOT_URI = "/archive/experiments/";
 	private final String SNAPSHOTS = "SNAPSHOTS";
