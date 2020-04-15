@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
 import java.util.Random;
-
 import org.nrg.xdat.bean.XnatImagescandataBean;
 import org.nrg.xnat.plexiviewer.lite.io.PlexiFileSaver;
 import org.nrg.xnat.plexiviewer.utils.FileUtils;
@@ -16,7 +15,8 @@ import org.nrg.xnat.plexiviewer.utils.UnzipFile;
 import org.nrg.xnat.plexiviewer.utils.transform.BitConverter;
 import org.nrg.xnat.plexiviewer.utils.transform.IntensitySetter;
 import org.nrg.xnat.plexiviewer.utils.transform.PlexiMontageMaker;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
@@ -38,13 +38,8 @@ public class SnapshotDicomConvertImage {
 	private String directory;
 	private String[] list;
 	private String title;
-	boolean zipped = false;
-
-	public static final String ORIENTATION_AS_ACQUIRED = "As Acquired";
-
-	String rowAxis;
-	String colAxis;
-	int width = 0, height = 0, depth = 0, bitDepth = 0;
+	private boolean zipped = false;
+	private int width = 0, height = 0, depth = 0;
 
 	/**
 	 * @param dir
@@ -94,7 +89,7 @@ public class SnapshotDicomConvertImage {
 	 * @return
 	 */
 	public ImagePlus getImagePlus() {
-		ImagePlus rtn = null;
+		ImagePlus imagesPlus = null;
 		n = list.length;
 		ImageStack stack = null;
 		double min = Double.MAX_VALUE;
@@ -103,6 +98,7 @@ public class SnapshotDicomConvertImage {
 		boolean allSameCalibration = true;
 		int count = 0;
 		System.out.println("list ::" + list);
+
 		try {
 			for (int i = start; i < list.length; i++) {
 				Opener opener = new Opener();
@@ -113,11 +109,13 @@ public class SnapshotDicomConvertImage {
 					System.out.println("imp != null ::" + imp);
 					width = imp.getWidth();
 					height = imp.getHeight();
-					depth = imp.getStackSize();
-					bitDepth = imp.getBitDepth();
 					cal = imp.getCalibration();
 					ColorModel cm = imp.getProcessor().getColorModel();
-					stack = new ImageStack(width, height, cm);
+					if (scale < 100.0) {
+						stack = new ImageStack((int) (width * scale / 100.0), (int) (height * scale / 100.0), cm);
+					} else {
+						stack = new ImageStack(width, height, cm);
+					}
 				}
 
 				if (imp == null) {
@@ -126,7 +124,14 @@ public class SnapshotDicomConvertImage {
 					}
 					continue;
 				}
-			
+				String label = imp.getTitle();
+				if (depth == 1) {
+					String info = (String) imp.getProperty("Info");
+					if (info != null) {
+						label += "\n" + info;
+					}
+				}
+
 				ImageStack inputStack = imp.getStack();
 				for (int slice = 1; slice <= inputStack.getSize(); slice++) {
 					ImageProcessor ip = inputStack.getProcessor(slice);
@@ -142,9 +147,8 @@ public class SnapshotDicomConvertImage {
 					if (ip.getMax() > max) {
 						max = ip.getMax();
 					}
-					String label2 = null;
 					if (depth > 1) {
-						label2 = "" + slice;
+						label = "" + slice;
 					}
 					stack.addSlice(ip);
 				}
@@ -153,44 +157,50 @@ public class SnapshotDicomConvertImage {
 				}
 			}
 			if (stack != null && stack.getSize() > 0) {
-				ImagePlus imp2 = new ImagePlus(title, stack);
-				if (imp2.getType() == ImagePlus.GRAY16 || imp2.getType() == ImagePlus.GRAY32) {
-					imp2.getProcessor().setMinAndMax(min, max);
+				ImagePlus imagePlus = new ImagePlus(title, stack);
+				if (imagePlus.getType() == ImagePlus.GRAY16 || imagePlus.getType() == ImagePlus.GRAY32) {
+					imagePlus.getProcessor().setMinAndMax(min, max);
 				}
-				imp2.setFileInfo(fi); // saves FileInfo of the first image
+				imagePlus.setFileInfo(fi);
 				if (allSameCalibration) {
-					imp2.setCalibration(cal); // use calibration from first image
+					imagePlus.setCalibration(cal);
 				}
-				if (imp2.getStackSize() == 1 && info1 != null) {
-					imp2.setProperty("Info", info1);
+				if (imagePlus.getStackSize() == 1 && info1 != null) {
+					imagePlus.setProperty("Info", info1);
 				}
-				rtn = imp2;
+				imagesPlus = imagePlus;
 			}
 		} catch (OutOfMemoryError e) {
+
 		} finally {
 			if (zipped) {
 				FileUtils.deleteFile(directory, true);
 			}
 		}
-		return rtn;
+		return imagesPlus;
 	}
 
 	/**
 	 * @param scan
 	 * @param cachepaths
 	 * @param montageFlag
+	 * @param gridview
 	 * @return
 	 * @throws Exception
 	 */
-	public File createThumbnail(XnatImagescandataBean scan, String cachepaths, boolean montageFlag) throws Exception {
+	public File createThumbnail(XnatImagescandataBean scan, String cachepaths, boolean montageFlag, String gridview)
+			throws Exception {
 		ImagePlus baseimage = getImagePlus();
 		File targetFile = null;
-		ImagePlus snapshot = getSnapshot(baseimage, montageFlag);
+		ImagePlus snapshot = getSnapshot(baseimage, montageFlag, gridview);
 
 		if (snapshot != null) {
 			BitConverter converter = new BitConverter();
 			converter.convertTo8BitColor(snapshot);
-			String tbfilenameroot = scan.getImageSessionId() + "_" + scan.getId() + "_qc";
+			String tbfilenameroot = scan.getImageSessionId() + "_" + scan.getId() ;
+			if(!gridview.isEmpty()) {
+				tbfilenameroot = tbfilenameroot+ "_" + gridview.toUpperCase();
+			} 
 			PlexiFileSaver fs = new PlexiFileSaver(snapshot.getImage());
 			String fileName = tbfilenameroot + ".gif";
 			String filePath = cachepaths + File.separator + fileName;
@@ -207,12 +217,14 @@ public class SnapshotDicomConvertImage {
 	/**
 	 * @param baseimage
 	 * @param montage
+	 * @param gridview
 	 * @return
+	 * @throws Exception
 	 */
-	private ImagePlus getSnapshot(ImagePlus baseimage, boolean montage) {
+	private ImagePlus getSnapshot(ImagePlus baseimage, boolean montage, String gridview) throws Exception {
 		ImagePlus rtn = null;
 		if (montage) {
-			rtn = createMontage(baseimage);
+			rtn = createMontage(baseimage, gridview);
 		} else {
 			if (baseimage != null) {
 				int sliceNo = 5;
@@ -221,8 +233,8 @@ public class SnapshotDicomConvertImage {
 				} else if (baseimage.getStackSize() < sliceNo) {
 					sliceNo = 2;
 				}
-				baseimage.setSlice(sliceNo);//
-				baseimage.updateImage();// five images or 5th fi
+				baseimage.setSlice(sliceNo);
+				baseimage.updateImage();
 				baseimage.getProcessor().setColor(Color.WHITE);
 				baseimage.getProcessor().setFont(new Font("Serif", Font.BOLD, 10));
 				baseimage.getProcessor().drawString("Frame: " + sliceNo, baseimage.getWidth() - 50,
@@ -236,34 +248,45 @@ public class SnapshotDicomConvertImage {
 
 	/**
 	 * @param image
+	 * @param gridViews
 	 * @return
+	 * @throws Exception
 	 */
-	private ImagePlus createMontage(ImagePlus image) {
-		PlexiMontageMaker mm = new PlexiMontageMaker();
+	private ImagePlus createMontage(ImagePlus image, String gridViews) throws Exception {
 		int columns = 1;
 		int rows = 1;
-		if (image.getStackSize() == 1) {
-			columns = 1;
-			rows = 1;
-		} else if (image.getStackSize() == 2) {
-			rows = 1;
-			columns = 2;
-		} else if (image.getStackSize() == 3) {
-			rows = 1;
-			columns = 3;
-		} else { // extract the nearest square
-			for (; columns * columns <= image.getStackSize(); columns++) {
-				;
+		PlexiMontageMaker mm = new PlexiMontageMaker();
+		try {
+			if (gridViews != null && !gridViews.isEmpty()) {
+				String[] rowCol = gridViews.toUpperCase().split("X");
+				rows = Integer.parseInt(rowCol[0]);
+				columns = Integer.parseInt(rowCol[1]);
 			}
-			columns--;
-			rows = columns;
+		} catch (NumberFormatException ex) {
+			_log.error("Error createMontage :: " + ex.getMessage());
+			throw new NumberFormatException("Provide valid Grid views ROWXCOL paramter");
+
+		} catch (Exception ex) {
+			_log.error("Error createMontage :: " + ex.getMessage());
+			throw new Exception("Provide valid Grid views ROWXCOL paramter");
 		}
-		// If there are too many frames then we reduce the grid size
-		if (columns > 7) {
-			columns = 7;
-			rows = columns;
+		int paramGridImags = rows * columns;
+		if (image.getStackSize() < paramGridImags) {
+			if (image.getStackSize() == 1) {
+				columns = 1;
+				rows = 1;
+			} else if (image.getStackSize() == 2) {
+				rows = 1;
+				columns = 2;
+			} else if (image.getStackSize() == 3) {
+				rows = 1;
+				columns = 3;
+			} else if (image.getStackSize() == 4) {
+				rows = 2;
+				columns = 2;
+			}
 		}
-		Hashtable attribs = ImageUtils.getSliceIncrement(image, columns * rows);
+		Hashtable<?, ?> attribs = ImageUtils.getSliceIncrement(image, columns * rows);
 
 		int startslice = ((Integer) attribs.get("startslice")).intValue();
 		int endslice = ((Integer) attribs.get("endslice")).intValue();
@@ -277,11 +300,13 @@ public class SnapshotDicomConvertImage {
 	}
 
 	/**
-	 * @param f
+	 * @param file
 	 */
-	public void deleteFile(File f) {
-		if (f != null && f.exists()) {
-			f.delete();
+	public void deleteFile(File file) {
+		if (file != null && file.exists()) {
+			file.delete();
 		}
 	}
+
+	private static final Logger _log = LoggerFactory.getLogger(SnapshotDicomConvertImage.class);
 }

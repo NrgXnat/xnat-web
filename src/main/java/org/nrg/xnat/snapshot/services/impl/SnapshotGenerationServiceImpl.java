@@ -1,15 +1,12 @@
 package org.nrg.xnat.snapshot.services.impl;
 
 import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
 import org.nrg.action.ClientException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.XnatImagescandataBean;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.archive.ResourceData;
-import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.snapshot.convert.SnapshotDicomConvertImage;
@@ -18,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -42,19 +40,17 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 		try {
 			_log.debug("SnapshotServiceImpl  generateSnapshot method start ");
 			boolean verifySnapshot = verifySnapshots(sessionIdentifier, scanIdentifier);
-			boolean verifyImage = verifyImage(sessionIdentifier, scanIdentifier, gridView);
-			if (verifySnapshot && verifyImage) {
-				path = getValidImage(sessionIdentifier, scanIdentifier);
+			if (verifySnapshot) {
+				path = getSnapshotsImage(sessionIdentifier, scanIdentifier, gridView);
 			} else if (!verifySnapshot) {
 				_message = "Snapshots Folder does not exist";
-				_log.error(_message);
+				_log.error("Snapshots Folder does not exist");
 				return _message;
 			} else {
 				_message = "Snapshots- images does not exist";
 				_log.error(_message);
 				return _message;
 			}
-			System.out.println("generateSnapshot()- Snapshot path ::  " + path);
 			_log.debug("generateSnapshot()- Snapshot path ::  " + path);
 		} catch (Exception ex) {
 			_log.error("SnapshotServiceImpl  generateSnapshot method error -" + ex.getMessage());
@@ -65,39 +61,46 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	/**
 	 * @param accessionId
 	 * @param scanIdentifier
-	 * @return
-	 */
-	private String getValidImage(String accessionId, String scanIdentifier) {
-		String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier + SNAPSHOTS_RESOURCE;
-		String snanshotsImage = null;
-		try {
-			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri);
-			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
-			snanshotsImage = getImage(xnatResourcecatalog.getUri());
-		} catch (ClientException e) {
-			_message = String.format(e.getMessage(), parentUri);
-			_log.error(_message);
-		} catch (Exception e) {
-			_log.error(" Snapshots image error:: " + e.getMessage());
-		}
-		System.out.println("getValidImage()- Snapshot path ::  " + snanshotsImage);
-		_log.debug("getValidImage()- Snapshot path ::  " + snanshotsImage);
-		return snanshotsImage;
-	}
-
-	/**
-	 * @param projectID
-	 * @param sessionIdentifier
-	 * @param scanIdentifier
+	 * @param gridView
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean verifySnapshots(String accessionId, String scanIdentifier) throws Exception {
-		System.out.println("Snapshots verifySnapshots()");
-		_log.debug("Snapshots verifySnapshots() ");
-		// implementation pending
-		boolean flag = snapshotsFolder(accessionId, scanIdentifier);
-		return true;
+	private String getSnapshotsImage(String accessionId, String scanIdentifier, String gridView) throws Exception {
+		_log.debug("Snapshots verifyImage() ");
+		boolean imageVerify = false;
+		String path = null;
+		String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier + SNAPSHOTS_RESOURCE;
+		this.imageName = accessionId + "_" + scanIdentifier;
+		if (gridView.equals("notApplicable")) {
+			this.imageName = this.imageName + ".gif";
+		} else {
+			this.imageName = this.imageName + "_" + gridView.toUpperCase() + ".gif";
+		}
+		try {
+			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri);
+			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
+			path = new File(xnatResourcecatalog.getUri()).getParent();
+			File snapshotFile = new File(path);
+			String[] fileNames = snapshotFile.list();
+			if (fileNames != null && fileNames.length > 0) {
+				for (String fileNm : fileNames) {
+					if (fileNm.equals(this.imageName)) {
+						imageVerify = true; // snapshots image exist
+						_log.debug("Exist snapshot image ");
+						path = path + "/" + this.imageName;
+					}
+				}
+			}
+			if (!imageVerify) {
+				path = imageUpload(accessionId, scanIdentifier, gridView);
+			}
+
+		} catch (ClientException e) {
+			_log.error(String.format(e.getMessage(), parentUri));
+		} catch (Exception e) {
+			_log.error(" Snapshots image error:: " + e.getMessage());
+		}
+		return path;
 	}
 
 	/**
@@ -106,47 +109,31 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean verifyImage(String accessionId, String scanIdentifier, String verifyImage) throws Exception {
-		System.out.println("Snapshots verifyImage() ");
-		_log.debug("Snapshots verifyImage() ");
-		// implementation pending
-		boolean imageFlag = imageUpload(accessionId, scanIdentifier, verifyImage);
-		return true;
-	}
-
-	/**
-	 * @param snapshotPath
-	 * @return
-	 */
-	private String getImage(String snapshotPath) {
-		String extension = "";
-		String path = new File(snapshotPath).getParent();
-		File snapshotFile = new File(path);
-		String[] fileNames = snapshotFile.list();
-		if (fileNames != null && fileNames.length > 0) {
-			for (String fileNm : fileNames) {
-				System.out.println("fileNm:: " + fileNm);
-				extension = fileNm.substring(fileNm.lastIndexOf(".") + 1).toLowerCase().trim();
-				System.out.println("extension::" + extension);
-				System.out.println("validImageType :: " + validImageType());
-				if (validImageType().contains(extension)) {
-					System.out.println("Snapshots getImage()- Snapshot image ::  " + fileNm);
-					_log.debug("Snapshots getImage()- Snapshot image ::  " + fileNm);
-					return path + "/" + fileNm;
+	private boolean verifySnapshots(String accessionId, String scanIdentifier) throws Exception {
+		boolean folderCreate = false;
+		try {
+			String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier + DICOM_RESOURCE;
+			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri, true);
+			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
+			File fileUri = new File(xnatResourcecatalog.getUri());
+			String dicompath = fileUri.getParent();
+			String dicombaseDir = new File(dicompath).getParent();
+			File baseDir = new File(dicombaseDir);
+			String[] fileNames = baseDir.list();
+			if (fileNames != null && fileNames.length > 0) {
+				for (String fileNm : fileNames) {
+					if (fileNm.equals(SNAPSHOTS)) {
+						_log.debug("Snapshots folder exist ");
+						return true;
+					}
 				}
 			}
+			folderCreate = snapshotsFolder(accessionId, scanIdentifier);
+		} catch (Exception ex) {
+			_log.error("Error : Verify snapshots folder");
+			ex.printStackTrace();
 		}
-		return "Snapshots -Valid image does not exist";
-	}
-
-	/**
-	 * @return
-	 */
-	private Set<String> validImageType() {
-		Set<String> validImageTypeList = new HashSet<>();
-		validImageTypeList.add("jpg");
-		validImageTypeList.add("gif");
-		return validImageTypeList;
+		return folderCreate;
 	}
 
 	/**
@@ -156,31 +143,22 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	 */
 	private boolean snapshotsFolder(String accessionNo, String scanIdentifier) {
 		String parentUri = ROOT_URI + accessionNo + "/scans/" + scanIdentifier + SNAPSHOTS_RESOURCE;
-		System.out.println("-------------Snapshots directory generation-----------------");
 		_log.debug(" Snapshots directory generation ");
 		String createdUri = null;
 		try {
 			final UserI userI = XDAT.getUserDetails();
-			final URIManager.DataURIA uri = UriParserUtils.parseURI(parentUri);
-			System.out.println("---------uri " + uri);
 			String[] tags = { "" };
 			final XnatResourcecatalog resourcecatalog = _catalogService.createAndInsertResourceCatalog(userI, parentUri,
 					1, SNAPSHOTS, "Snapshots Desc", "GIF", SNAPSHOTS, tags);
-			System.out.println(" resourcecatalog  ::" + resourcecatalog);
 			createdUri = UriParserUtils.getArchiveUri(resourcecatalog);
-			System.out.println(" Snapshots directory generation-  createdUri :: " + createdUri);
 			_log.debug(" Snapshots directory generation-  createdUri :: " + createdUri);
 		} catch (ClientException e) {
-			_message = String.format(": " + e.getMessage(), parentUri);
-			System.out.println(_message);
-			_log.error(_message);
+			_log.error(String.format(": " + e.getMessage(), parentUri));
 			e.printStackTrace();
 			return false;
 		} catch (Exception e) {
-			_message = "Snapshot folder not generated- error";
-			System.out.println(_message);
+			_log.error("Snapshot folder not generated- error", e.getMessage());
 			e.printStackTrace();
-			_log.error(_message, e.getMessage());
 			return false;
 		}
 		return true;
@@ -189,15 +167,16 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	/**
 	 * @param accessionId
 	 * @param scanIdentifier
+	 * @param gridView
 	 * @return
 	 * @throws Exception
 	 */
-	private boolean imageUpload(String accessionId, String scanIdentifier, String gridView) throws Exception {
+	private String imageUpload(String accessionId, String scanIdentifier, String gridView) throws Exception {
 		String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier;
+		String path = null;
 		try {
 			final UserI userI = XDAT.getUserDetails();
-			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri + "/resources/DICOM/files",
-					true);
+			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri + DICOM_RESOURCE, true);
 			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
 			File dicomFile = new File(xnatResourcecatalog.getUri());
 			String dicompath = dicomFile.getParent();
@@ -208,35 +187,46 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			scan.setImageSessionId(accessionId);
 			File file = null;
 			if (!gridView.equals("notApplicable")) {
-				System.out.println("Grid View ...........");
-				file = dcm.createThumbnail(scan, tempImagePath, true);
+				_log.debug("Create Montage- GridView MXN image ");
+				file = dcm.createThumbnail(scan, tempImagePath, true, gridView);
 			} else {
-				file = dcm.createThumbnail(scan, tempImagePath, false);
+				file = dcm.createThumbnail(scan, tempImagePath, false, "");
 			}
-
-			System.out.println("file1 :: " + file);
 			String[] tags = { "" };
+			_log.debug("Upload image into Snapshots folder ");
 			_catalogService.insertResources(userI, parentUri + SNAPSHOTS_RESOURCE, file, SNAPSHOTS, null, "GIF",
 					"ORIGINAL", tags);
-			System.out.println("delete temp file ::" + file.getAbsolutePath());
 			dcm.deleteFile(file);
+			resourceData = _catalogService.getResourceDataFromUri(parentUri + SNAPSHOTS_RESOURCE);
+			xnatResourcecatalog = resourceData.getCatalogResource();
+			path = new File(xnatResourcecatalog.getUri()).getParent();
+			File snapshotFile = new File(path);
+			String[] fileNames = snapshotFile.list();
+			if (fileNames != null && fileNames.length > 0) {
+				for (String fileNm : fileNames) {
+					if (fileNm.equals(this.imageName)) {
+						_log.debug("Path and name of generated snapshot image ");
+						path = path + "/" + this.imageName;
+					}
+				}
+			}
+
 		} catch (ClientException e) {
-			_message = String.format(e.getMessage(), parentUri);
-			_log.error(_message);
+			_log.error(String.format(e.getMessage(), parentUri));
 			e.printStackTrace();
-			return false;
 		} catch (Exception e) {
 			_log.error(" Snapshots image error:: " + e.getMessage());
 			e.printStackTrace();
-			return false;
 		}
-		return true;
+		return path;
 	}
 
+	private String imageName = null;
+	private String _message = "";
+	private final String DICOM_RESOURCE = "/resources/DICOM/files";
 	private final String SNAPSHOTS_RESOURCE = "/resources/SNAPSHOTS/files";
 	private final String ROOT_URI = "/archive/experiments/";
 	private final String SNAPSHOTS = "SNAPSHOTS";
-	private String _message = "";
 	private final CatalogService _catalogService;
 	private static final Logger _log = LoggerFactory.getLogger(SnapshotGenerationServiceImpl.class);
 }
