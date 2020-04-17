@@ -76,17 +76,15 @@ var XNAT = getObject(XNAT);
             if (elementLoaded) {
                 return true;
             }
-            var src = '/data/experiments/' + exprId + '/scans/' + scanID + '/resources/SNAPSHOTS/files';
-            var origSrc = src + '?file_content=ORIGINAL&index=0';
-            var thumbSrc = src + '?file_content=THUMBNAIL&index=0';
+            var src = '/xapi/projects/' + projectId + '/experiments/' + exprId + '/scan/' + scanID + '/snapshot';
             $.ajax({
-                url: XNAT.url.restUrl(origSrc),
+                url: XNAT.url.restUrl(src),
                 type: 'HEAD',
                 success: function() {
                     element.data('loaded', true);
                     element.html(
-                        '<a target="_blank" class="scan-original-link" href="' + origSrc + '">' +
-                        '<img class="scan-snapshot" src="' + thumbSrc + '"/>' +
+                        '<a target="_blank" class="scan-original-link" href="' + src + '">' +
+                        '<img class="scan-snapshot" src="' + src + '"/>' +
                         '</a>');
                 },
                 error: function() {
