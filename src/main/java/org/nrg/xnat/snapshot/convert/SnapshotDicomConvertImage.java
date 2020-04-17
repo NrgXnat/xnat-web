@@ -188,7 +188,7 @@ public class SnapshotDicomConvertImage {
 	 * @return
 	 * @throws Exception
 	 */
-	public File createThumbnail(XnatImagescandataBean scan, String cachepaths, boolean montageFlag, String gridview)
+	public File createSnapshotImage(XnatImagescandataBean scan, String cachepaths, boolean montageFlag, String gridview)
 			throws Exception {
 		ImagePlus baseimage = getImagePlus();
 		File targetFile = null;

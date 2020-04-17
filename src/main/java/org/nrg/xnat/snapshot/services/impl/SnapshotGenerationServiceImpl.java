@@ -112,21 +112,11 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 	private boolean verifySnapshots(String accessionId, String scanIdentifier) throws Exception {
 		boolean folderCreate = false;
 		try {
-			String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier + DICOM_RESOURCE;
+			String parentUri = ROOT_URI + accessionId + "/scans/" + scanIdentifier + "/resources/SNAPSHOTS";
 			ResourceData resourceData = _catalogService.getResourceDataFromUri(parentUri, true);
 			XnatResourcecatalog xnatResourcecatalog = resourceData.getCatalogResource();
-			File fileUri = new File(xnatResourcecatalog.getUri());
-			String dicompath = fileUri.getParent();
-			String dicombaseDir = new File(dicompath).getParent();
-			File baseDir = new File(dicombaseDir);
-			String[] fileNames = baseDir.list();
-			if (fileNames != null && fileNames.length > 0) {
-				for (String fileNm : fileNames) {
-					if (fileNm.equals(SNAPSHOTS)) {
-						_log.debug("Snapshots folder exist ");
-						return true;
-					}
-				}
+			if(xnatResourcecatalog == null) {
+				folderCreate = snapshotsFolder(accessionId, scanIdentifier);
 			}
 			folderCreate = snapshotsFolder(accessionId, scanIdentifier);
 		} catch (Exception ex) {
@@ -188,9 +178,9 @@ public class SnapshotGenerationServiceImpl implements SnapshotGenerationService 
 			File file = null;
 			if (!gridView.equals("notApplicable")) {
 				_log.debug("Create Montage- GridView MXN image ");
-				file = dcm.createThumbnail(scan, tempImagePath, true, gridView);
+				file = dcm.createSnapshotImage(scan, tempImagePath, true, gridView);
 			} else {
-				file = dcm.createThumbnail(scan, tempImagePath, false, "");
+				file = dcm.createSnapshotImage(scan, tempImagePath, false, "");
 			}
 			String[] tags = { "" };
 			_log.debug("Upload image into Snapshots folder ");
