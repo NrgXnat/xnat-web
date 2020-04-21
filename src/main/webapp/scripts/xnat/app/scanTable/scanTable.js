@@ -97,6 +97,32 @@ var XNAT = getObject(XNAT);
 
         return true;
     }
+    
+    function loadSnapshotImageNoBlockingGrid(scanID,gridVal) {
+        var element = $(".span-" + "scan" + scanID + "snapshot"),
+            exprId = element ? element.data('expt-id') : null,
+            elementLoaded = element ? element.data('loaded') : false;
+        if (exprId) {
+             var src = '/xapi/projects/' + projectId + '/experiments/' + exprId + '/scan/' + scanID + '/snapshot/grid/'+ gridVal;
+           $.ajax({
+                url: XNAT.url.restUrl(src),
+                type: 'HEAD',
+                success: function() {
+                  element.data('loaded', true);
+                 element.html(
+                        '<a target="_blank" class="scan-original-link" href="' + src + '">' +
+                        '<img class="scan-snapshot" src="' + src + '"/>' +
+                        '</a>');
+                },
+                error: function() {
+                    element.html('No snapshot available');
+                }
+            });
+        } else if (element) {
+            element.html('No snapshot available');
+        }
+        return true;
+    }
 
     // inline scan table functions
     scanTable.displayScanDetails = function(scanId){
@@ -122,6 +148,7 @@ var XNAT = getObject(XNAT);
             },
             afterClose: function(){
                 delete scanTable.scanDetailsOpen[scanTable.scanDetailsOpen.indexOf(scanId)];
+                window.location.reload();
             },
             footer: {
                 content: 'Click in the header to move this dialog around the page'
@@ -130,6 +157,13 @@ var XNAT = getObject(XNAT);
 
     };
 
+
+    scanTable.displayScanDetailsGrid = function(scanId,gridVal){
+        if (!scanId) return false;
+        if(scanTable.scanDetailsOpen.includes(scanId)) return false;
+        //    var tmpl = $('#scan-' + scanId + '-details-template').html();
+        loadSnapshotImageNoBlockingGrid(scanId,gridVal);
+     };
     // download all selected scans
     function downloadSelectedScans(){
         var selectedScans = [];
@@ -409,8 +443,21 @@ var XNAT = getObject(XNAT);
         if (scanId) { scanTable.displayScanDetails(scanId) }
         else { console.log('No Scan ID found') }
     });
+      
+
+  $(document).ready(function(){
+    $(".select-montage").change(function(){
+        var gridVal = $(this).children("option:selected").val();
+        var scanId = $(this).attr('name').toString();
+        if (scanId ) { 
+            scanTable.displayScanDetailsGrid(scanId,gridVal);
+         }
+        else { console.log('No Scan ID found') } 
+    });
     
-    // Array that keeps track of which scan details modals are open.
+   });
+      
+   // Array that keeps track of which scan details modals are open.
     scanTable.scanDetailsOpen = [];
 
     // this script has loaded

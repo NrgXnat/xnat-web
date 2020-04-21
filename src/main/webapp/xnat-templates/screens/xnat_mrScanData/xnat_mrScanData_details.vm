@@ -1,12 +1,24 @@
 <!-- START /xnat-templates/screens/xnat_mrScanData/xnat_mrScanData_details.vm -->
 #macro(escapeProperty $prop)#escapeHTML("$!scan.getProperty($prop)")#end
-
+<script src="$content.getURI("/scripts/xnat/app/scanTable/scanTable.js")"></script>
 <table class="xnat-table alt1 compact rows-only scan-details" style="border: none;">
     <tr>
         <th>Image</th>
         <td align="left">
             #scanSnapshotImage($content $om $scan)
-        </td>
+            <br>
+		 <select class="select-montage" name=$scan.getId() >
+		    <option value="Switch to Montage View">Switch to Montage View</option>
+		 	<option value="1X2">1X2</option>
+		 	<option value="2X2">2X2</option>
+		 	<option value="2X3">2X3</option>
+		 	<option value="3X3">3X3</option>
+		 	<option value="3X4">3X4</option>
+		 </select>
+		 
+    </td>
+        
+      
     </tr>
     #if($scan.getProperty("quality"))
         <tr>
