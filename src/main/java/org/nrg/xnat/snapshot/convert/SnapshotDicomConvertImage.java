@@ -269,9 +269,9 @@ public class SnapshotDicomConvertImage {
 		} catch (Exception ex) {
 			_log.error("Error createMontage :: " + ex.getMessage());
 			throw new Exception("Provide valid Grid views ROWXCOL paramter");
-		}
-		int paramGridImags = rows * columns;
-		if (image.getStackSize() < paramGridImags) {
+		}  
+		int gridImg = rows * columns;
+		if (image.getStackSize() <= gridImg && image.getStackSize() > 0) {
 			if (image.getStackSize() == 1) {
 				columns = 1;
 				rows = 1;
@@ -281,10 +281,7 @@ public class SnapshotDicomConvertImage {
 			} else if (image.getStackSize() == 3) {
 				rows = 1;
 				columns = 3;
-			} else if (image.getStackSize() == 4) {
-				rows = 2;
-				columns = 2;
-			}
+			} 
 		}
 		Hashtable<?, ?> attribs = ImageUtils.getSliceIncrement(image, columns * rows);
 

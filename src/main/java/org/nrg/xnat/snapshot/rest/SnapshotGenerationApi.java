@@ -1,6 +1,6 @@
 package org.nrg.xnat.snapshot.rest;
 
-import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
+import static org.nrg.xdat.security.helpers.AccessLevel.Read;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -64,7 +64,7 @@ public class SnapshotGenerationApi extends AbstractXapiRestController {
 			@ApiResponse(code = 500, message = "Unexpected error") })
 	@XapiRequestMapping(value = "/{projectID}/experiments/{sessionIdentifier}/scan/{scanIdentifier}/snapshot", produces = {
 			MediaType.IMAGE_GIF_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE,
-			MediaType.IMAGE_PNG_VALUE }, method = RequestMethod.GET, restrictTo = Admin)
+			MediaType.IMAGE_PNG_VALUE }, method = RequestMethod.GET, restrictTo = Read)
 	public ResponseEntity<ByteArrayResource> generateSnapshot(@PathVariable final String projectID,
 			@PathVariable final String sessionIdentifier, @PathVariable final String scanIdentifier)
 			throws IOException {
@@ -97,7 +97,7 @@ public class SnapshotGenerationApi extends AbstractXapiRestController {
 			@ApiResponse(code = 500, message = "Unexpected error") })
 	@XapiRequestMapping(value = "{projectID}/experiments/{sessionIdentifier}/scan/{scanIdentifier}/snapshot/grid/{gridView}", produces = {
 			MediaType.IMAGE_GIF_VALUE, MediaType.IMAGE_JPEG_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE,
-			MediaType.IMAGE_PNG_VALUE }, method = RequestMethod.GET, restrictTo = Admin)
+			MediaType.IMAGE_PNG_VALUE }, method = RequestMethod.GET, restrictTo = Read)
 	public ResponseEntity<ByteArrayResource> generateSnapshotView(@PathVariable final String projectID,
 			@PathVariable final String sessionIdentifier, @PathVariable final String scanIdentifier,
 			@PathVariable final String gridView) throws IOException {
