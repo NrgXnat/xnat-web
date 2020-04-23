@@ -435,7 +435,7 @@ var XNAT = getObject(XNAT);
 
     $(document).ready(scanTable.init);
 
-    $(document).on('click', 'table.scan-details a.view-dicom-headers', function(e){
+    $(document).off().on('click', 'table.scan-details a.view-dicom-headers', function(e){
         e.preventDefault();
         XNAT.dialog.load($(this).attr('href') + ' #layout_content table.dump', { minWidth: 800, width: '80%', esc: true, enter: true });
     });
