@@ -236,8 +236,8 @@ public class SnapshotDicomConvertImage {
 				baseimage.updateImage();
 				baseimage.getProcessor().setColor(Color.WHITE);
 				baseimage.getProcessor().setFont(new Font("Serif", Font.BOLD, 10));
-				baseimage.getProcessor().drawString("Frame: " + sliceNo, baseimage.getWidth() - 50,
-						baseimage.getHeight() - 5);
+				baseimage.getProcessor().drawString("Frame: " + sliceNo, baseimage.getWidth(),
+						baseimage.getHeight());
 				baseimage.updateImage();
 				rtn = baseimage;
 			}
@@ -282,7 +282,7 @@ public class SnapshotDicomConvertImage {
 		IntensitySetter is = new IntensitySetter(image, true);
 		is.autoAdjust(image, image.getProcessor());
 
-		image = mm.makeMontage(image, columns, rows, 0.5, startslice, endslice, increment, true, false);
+		image = mm.makeMontage(image, columns, rows, 1.0, startslice, endslice, increment, true, false);
 		image.getProcessor().resetMinAndMax();
 		return image;
 	}
