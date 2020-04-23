@@ -103,7 +103,6 @@ public class SnapshotDicomConvertImage {
 			for (int i = start; i < list.length; i++) {
 				Opener opener = new Opener();
 				opener.setSilentMode(true);
-				System.out.println("directory ::" + directory);
 				ImagePlus imp = opener.openImage(directory, list[i]);
 				if (imp != null && stack == null) {
 					System.out.println("imp != null ::" + imp);
@@ -269,19 +268,11 @@ public class SnapshotDicomConvertImage {
 		} catch (Exception ex) {
 			_log.error("Error createMontage :: " + ex.getMessage());
 			throw new Exception("Provide valid Grid views ROWXCOL paramter");
-		}  
-		int gridImg = rows * columns;
-		if (image.getStackSize() <= gridImg && image.getStackSize() > 0) {
-			if (image.getStackSize() == 1) {
-				columns = 1;
-				rows = 1;
-			} else if (image.getStackSize() == 2) {
-				rows = 1;
-				columns = 2;
-			} else if (image.getStackSize() == 3) {
-				rows = 1;
-				columns = 3;
-			} 
+		} 
+		
+		if(image.getStackSize() <= 0) {
+			_log.error("Error createMontage :: DICOM Image does not exist ");
+			throw new Exception("DICOM Image does not exist");
 		}
 		Hashtable<?, ?> attribs = ImageUtils.getSliceIncrement(image, columns * rows);
 
