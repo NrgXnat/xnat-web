@@ -17,7 +17,6 @@ import org.nrg.xnat.plexiviewer.utils.transform.IntensitySetter;
 import org.nrg.xnat.plexiviewer.utils.transform.PlexiMontageMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
 import ij.io.FileInfo;
@@ -39,7 +38,7 @@ public class SnapshotDicomConvertImage {
 	private String[] list;
 	private String title;
 	private boolean zipped = false;
-	private int width = 0, height = 0, depth = 0;
+	private int width = 0, height = 0;
 
 	/**
 	 * @param dir
@@ -78,7 +77,7 @@ public class SnapshotDicomConvertImage {
 				directory = dir.getPath();
 				list = (new File(directory)).list();
 			} catch (IOException ioe) {
-				System.out.println("DicomSequence:: Unable to create temporary directory " + ioe.getMessage());
+				_log.error("DicomSequence:: Unable to create temporary directory " + ioe.getMessage());
 			} catch (Exception ee) {
 				ee.printStackTrace();
 			}
@@ -97,7 +96,6 @@ public class SnapshotDicomConvertImage {
 		Calibration cal = null;
 		boolean allSameCalibration = true;
 		int count = 0;
-		System.out.println("list ::" + list);
 
 		try {
 			for (int i = start; i < list.length; i++) {
@@ -105,7 +103,6 @@ public class SnapshotDicomConvertImage {
 				opener.setSilentMode(true);
 				ImagePlus imp = opener.openImage(directory, list[i]);
 				if (imp != null && stack == null) {
-					System.out.println("imp != null ::" + imp);
 					width = imp.getWidth();
 					height = imp.getHeight();
 					cal = imp.getCalibration();
@@ -119,16 +116,9 @@ public class SnapshotDicomConvertImage {
 
 				if (imp == null) {
 					if (!list[i].startsWith(".")) {
-						IJ.log(list[i] + ": unable to open");
+						_log.error(list[i] + ": unable to open");
 					}
 					continue;
-				}
-				String label = imp.getTitle();
-				if (depth == 1) {
-					String info = (String) imp.getProperty("Info");
-					if (info != null) {
-						label += "\n" + info;
-					}
 				}
 
 				ImageStack inputStack = imp.getStack();
@@ -140,14 +130,15 @@ public class SnapshotDicomConvertImage {
 					if (scale < 100.0) {
 						ip = ip.resize((int) (width * scale / 100.0), (int) (height * scale / 100.0));
 					}
+					if(ip.getWidth() != width || ip.getHeight() != height) {
+						_log.error(list[i] + ": wrong size; " + width + "x" + height + " expected, " + ip.getWidth() + "x" + ip.getHeight() + " found");
+						ip = ip.resize(width, height); 
+                    }
 					if (ip.getMin() < min) {
 						min = ip.getMin();
 					}
 					if (ip.getMax() > max) {
 						max = ip.getMax();
-					}
-					if (depth > 1) {
-						label = "" + slice;
 					}
 					stack.addSlice(ip);
 				}
@@ -213,6 +204,7 @@ public class SnapshotDicomConvertImage {
 		return targetFile;
 	}
 
+
 	/**
 	 * @param baseimage
 	 * @param montage
@@ -277,7 +269,12 @@ public class SnapshotDicomConvertImage {
 		Hashtable<?, ?> attribs = ImageUtils.getSliceIncrement(image, columns * rows);
 
 		int startslice = ((Integer) attribs.get("startslice")).intValue();
-		int endslice = ((Integer) attribs.get("endslice")).intValue();
+		int endslice = 0;
+		if (rows == 1 && columns == 1) {
+			endslice = image.getStackSize() ;
+		} else {
+			endslice = ((Integer) attribs.get("endslice")).intValue();
+		}
 		int increment = ((Integer) attribs.get("increment")).intValue();
 		IntensitySetter is = new IntensitySetter(image, true);
 		is.autoAdjust(image, image.getProcessor());

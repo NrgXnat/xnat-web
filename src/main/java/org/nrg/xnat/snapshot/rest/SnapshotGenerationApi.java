@@ -69,7 +69,6 @@ public class SnapshotGenerationApi extends AbstractXapiRestController {
 		_log.debug("Start Snapshot Generation- Snapshots");
 		String imagePath = _snapshotService.generateSnapshot(projectID, sessionIdentifier, scanIdentifier,
 				"notApplicable");
-		System.out.println("imagePath ::" + imagePath);
 		_log.debug(" Snapshot Generation image path " + imagePath);
 		File file = new File(imagePath);
 		Resource fileSystemResource = new FileSystemResource(file);
@@ -98,7 +97,6 @@ public class SnapshotGenerationApi extends AbstractXapiRestController {
 			@PathVariable final String gridView) throws IOException {
 		_log.debug("Start Snapshot Generation- GridView");
 		String imagePath = _snapshotService.generateSnapshot(projectID, sessionIdentifier, scanIdentifier, gridView);
-		System.out.println("imagePath ::" + imagePath);
 		_log.debug(" Snapshot Generation image path " + imagePath);
 		File file = new File(imagePath);
 		Resource fileSystemResource = new FileSystemResource(file);
