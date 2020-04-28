@@ -5,7 +5,9 @@ import java.awt.Font;
 import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Map;
 import java.util.Random;
 import org.nrg.xdat.bean.XnatImagescandataBean;
 import org.nrg.xnat.plexiviewer.lite.io.PlexiFileSaver;
@@ -17,8 +19,10 @@ import org.nrg.xnat.plexiviewer.utils.transform.IntensitySetter;
 import org.nrg.xnat.plexiviewer.utils.transform.PlexiMontageMaker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import ij.IJ;
 import ij.ImagePlus;
 import ij.ImageStack;
+import ij.gui.Toolbar;
 import ij.io.FileInfo;
 import ij.io.Opener;
 import ij.measure.Calibration;
@@ -30,7 +34,6 @@ import ij.process.ImageProcessor;
  */
 public class SnapshotDicomConvertImage {
 
-	private double scale = 100.0;
 	private int n, start;
 	private FileInfo fi;
 	private String info1;
@@ -67,10 +70,7 @@ public class SnapshotDicomConvertImage {
 				if (dir.exists()) {
 					dir.delete();
 				}
-				System.out.println("DicomSequence tempdir " + dir.getPath());
-
 				boolean success = dir.mkdir();
-				System.out.println("DicomSequence tempdir " + dir.getPath() + " success " + success);
 				for (int i = 0; i < list.length; i++) {
 					new UnzipFile().gunzip(directory + File.separator + list[i], dir.getPath());
 				}
@@ -98,6 +98,16 @@ public class SnapshotDicomConvertImage {
 		int count = 0;
 
 		try {
+			String dimResult = getResizeDimensionCalc();
+			Integer resizeWid = null;
+			Integer resizeHigh = null;
+			if(dimResult != null) {
+			   String reSize[]  =	dimResult.split("X");
+			   resizeWid = Integer.parseInt(reSize[0]);
+			   resizeHigh = Integer.parseInt(reSize[1]);
+			   _log.debug("Different dimension is found " +dimResult);
+			}
+			
 			for (int i = start; i < list.length; i++) {
 				Opener opener = new Opener();
 				opener.setSilentMode(true);
@@ -107,8 +117,9 @@ public class SnapshotDicomConvertImage {
 					height = imp.getHeight();
 					cal = imp.getCalibration();
 					ColorModel cm = imp.getProcessor().getColorModel();
-					if (scale < 100.0) {
-						stack = new ImageStack((int) (width * scale / 100.0), (int) (height * scale / 100.0), cm);
+					if(resizeWid != null & resizeHigh != null) {
+						stack = new ImageStack(resizeWid, resizeHigh, cm);
+						width = resizeWid; height = resizeHigh;
 					} else {
 						stack = new ImageStack(width, height, cm);
 					}
@@ -120,20 +131,41 @@ public class SnapshotDicomConvertImage {
 					}
 					continue;
 				}
-
+                
+				if(imp.getWidth() != width || imp.getHeight() != height) {
+					_log.error(list[i] + ": wrong size; " + width + "x" + height + " expected, " + imp.getWidth() + "x" + imp.getHeight() + " found");
+					double tempWidth = 0, tempHeight = 0 ;
+					if(imp.getWidth() > resizeWid && resizeWid > 0) {
+						tempWidth = resizeWid;
+						tempHeight = (double)(imp.getHeight()*resizeWid)/(double)imp.getWidth();
+						if(tempHeight > resizeHigh && tempHeight > 0 ) {
+					    	tempHeight = resizeHigh;
+					    	tempWidth = (double)(tempWidth*resizeHigh)/(double)tempHeight;
+					    }
+                    }
+					if(imp.getHeight() > resizeHigh && resizeHigh >0) {
+						tempHeight = resizeHigh;
+						tempWidth = (double)(imp.getWidth()*resizeHigh)/(double)imp.getHeight();
+						if(tempWidth > resizeWid && tempWidth > 0) {
+							tempWidth = resizeWid ;
+							tempHeight = (double)(tempHeight*resizeWid)/(double)tempWidth;
+						}
+					}
+				    ImageProcessor imageProcessor = imp.getProcessor();
+				    imageProcessor = imageProcessor.resize((int)Math.round(tempWidth), (int)Math.round(tempHeight));
+                    imp.setProcessor(imageProcessor);
+                    _log.error("tempWidth :: "+tempWidth  + "  --tempHeight:: "+tempHeight );
+				}
+				
 				ImageStack inputStack = imp.getStack();
+				if(resizeWid != null & resizeHigh != null) {
+					inputStack = resizeStack(inputStack, resizeWid, resizeHigh, 0, 0);
+				}
 				for (int slice = 1; slice <= inputStack.getSize(); slice++) {
 					ImageProcessor ip = inputStack.getProcessor(slice);
 					if (slice == 1) {
 						count++;
 					}
-					if (scale < 100.0) {
-						ip = ip.resize((int) (width * scale / 100.0), (int) (height * scale / 100.0));
-					}
-					if(ip.getWidth() != width || ip.getHeight() != height) {
-						_log.error(list[i] + ": wrong size; " + width + "x" + height + " expected, " + ip.getWidth() + "x" + ip.getHeight() + " found");
-						ip = ip.resize(width, height); 
-                    }
 					if (ip.getMin() < min) {
 						min = ip.getMin();
 					}
@@ -291,6 +323,57 @@ public class SnapshotDicomConvertImage {
 		if (file != null && file.exists()) {
 			file.delete();
 		}
+	}
+	
+	/**
+	 * @return
+	 */
+	private String getResizeDimensionCalc() {
+		Map<String, Integer> dimList = new HashMap<String, Integer>();
+		String  dimResult = null;
+		for (int j = start; j < list.length; j++) {
+			Opener opener = new Opener();
+			opener.setSilentMode(true);
+			ImagePlus impagePlug = opener.openImage(directory, list[j]);
+			Integer maxCount = 0;
+			if (impagePlug != null ) {
+				String dimension = impagePlug.getWidth()+ "X" +impagePlug.getHeight();
+				Integer dimCount = dimList.get(dimension);
+				dimList.put(dimension, (dimCount == null) ? 1 : dimCount + 1);
+				if(dimList.size()>1) {
+					if(dimList.get(dimension) >  maxCount) {
+						maxCount = dimList.get(dimension);
+						dimResult = dimension;
+					}
+				}
+			}
+		}
+		return dimResult;
+	}
+	
+	/**
+	 * @param stackOld
+	 * @param widNew
+	 * @param highNew
+	 * @param xOff
+	 * @param yOff
+	 * @return
+	 */
+	private ImageStack resizeStack(ImageStack stackOld, int widNew, int highNew, int xOff, int yOff) {
+		int nFrames = stackOld.getSize();
+		ImageProcessor imProcOld = stackOld.getProcessor(1);
+		Color colorBack = Toolbar.getBackgroundColor();
+		ImageStack stackNew = new ImageStack(widNew, highNew, stackOld.getColorModel());
+		ImageProcessor imProcNew;
+		for (int i=1; i<=nFrames; i++) {
+			IJ.showProgress((double)i/nFrames);
+			imProcNew = imProcOld.createProcessor(widNew, highNew);
+			imProcNew.setColor(colorBack);
+			imProcNew.fill();
+			imProcNew.insert(stackOld.getProcessor(i), xOff, yOff);
+			stackNew.addSlice(null, imProcNew);
+		}
+		return stackNew;
 	}
 
 	private static final Logger _log = LoggerFactory.getLogger(SnapshotDicomConvertImage.class);
