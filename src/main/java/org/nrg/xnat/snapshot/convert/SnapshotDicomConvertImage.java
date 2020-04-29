@@ -100,11 +100,11 @@ public class SnapshotDicomConvertImage {
 		try {
 			String dimResult = getResizeDimensionCalc();
 			Integer resizeWid = null;
-			Integer resizeHigh = null;
+			Integer resizeHeight = null;
 			if(dimResult != null) {
 			   String reSize[]  =	dimResult.split("X");
 			   resizeWid = Integer.parseInt(reSize[0]);
-			   resizeHigh = Integer.parseInt(reSize[1]);
+			   resizeHeight = Integer.parseInt(reSize[1]);
 			   _log.debug("Different dimension is found " +dimResult);
 			}
 			
@@ -117,9 +117,9 @@ public class SnapshotDicomConvertImage {
 					height = imp.getHeight();
 					cal = imp.getCalibration();
 					ColorModel cm = imp.getProcessor().getColorModel();
-					if(resizeWid != null & resizeHigh != null) {
-						stack = new ImageStack(resizeWid, resizeHigh, cm);
-						width = resizeWid; height = resizeHigh;
+					if(resizeWid != null & resizeHeight != null) {
+						stack = new ImageStack(resizeWid, resizeHeight, cm);
+						width = resizeWid; height = resizeHeight;
 					} else {
 						stack = new ImageStack(width, height, cm);
 					}
@@ -138,28 +138,37 @@ public class SnapshotDicomConvertImage {
 					if(imp.getWidth() > resizeWid && resizeWid > 0) {
 						tempWidth = resizeWid;
 						tempHeight = (double)(imp.getHeight()*resizeWid)/(double)imp.getWidth();
-						if(tempHeight > resizeHigh && tempHeight > 0 ) {
-					    	tempHeight = resizeHigh;
-					    	tempWidth = (double)(tempWidth*resizeHigh)/(double)tempHeight;
+						if(tempHeight > resizeHeight && tempHeight > 0 ) {
+					    	tempHeight = resizeHeight;
+					    	tempWidth = (double)(tempWidth*resizeHeight)/(double)tempHeight;
 					    }
                     }
-					if(imp.getHeight() > resizeHigh && resizeHigh >0) {
-						tempHeight = resizeHigh;
-						tempWidth = (double)(imp.getWidth()*resizeHigh)/(double)imp.getHeight();
+					if(imp.getHeight() > resizeHeight && resizeHeight >0) {
+						tempHeight = resizeHeight;
+						tempWidth = (double)(imp.getWidth()*resizeHeight)/(double)imp.getHeight();
 						if(tempWidth > resizeWid && tempWidth > 0) {
 							tempWidth = resizeWid ;
 							tempHeight = (double)(tempHeight*resizeWid)/(double)tempWidth;
 						}
 					}
-				    ImageProcessor imageProcessor = imp.getProcessor();
-				    imageProcessor = imageProcessor.resize((int)Math.round(tempWidth), (int)Math.round(tempHeight));
-                    imp.setProcessor(imageProcessor);
-                    _log.error("tempWidth :: "+tempWidth  + "  --tempHeight:: "+tempHeight );
+					if((int)Math.round(tempWidth) >0  && (int)Math.round(tempHeight) >0) {
+						 ImageProcessor imageProcessor = imp.getProcessor();
+						 imageProcessor = imageProcessor.resize((int)Math.round(tempWidth), (int)Math.round(tempHeight));
+		                 imp.setProcessor(imageProcessor);
+		                 _log.error("resize Width :: "+tempWidth  + "  --resize Height:: "+tempHeight );
+					}
 				}
 				
 				ImageStack inputStack = imp.getStack();
-				if(resizeWid != null & resizeHigh != null) {
-					inputStack = resizeStack(inputStack, resizeWid, resizeHigh, 0, 0);
+				if(imp.getWidth() != width || imp.getHeight() != height) {
+					int xCenter = 0,yCenter=0 ;
+					if(resizeWid>imp.getWidth()) {
+						xCenter = (resizeWid - imp.getWidth())/2;
+					}
+					if(resizeHeight>imp.getHeight()) {
+						yCenter = (resizeHeight - imp.getHeight())/2;
+					}
+					inputStack = resizeStack(inputStack, resizeWid, resizeHeight, xCenter, yCenter);
 				}
 				for (int slice = 1; slice <= inputStack.getSize(); slice++) {
 					ImageProcessor ip = inputStack.getProcessor(slice);
@@ -353,21 +362,21 @@ public class SnapshotDicomConvertImage {
 	
 	/**
 	 * @param stackOld
-	 * @param widNew
-	 * @param highNew
+	 * @param widthNew
+	 * @param heightNew
 	 * @param xOff
 	 * @param yOff
 	 * @return
 	 */
-	private ImageStack resizeStack(ImageStack stackOld, int widNew, int highNew, int xOff, int yOff) {
+	private ImageStack resizeStack(ImageStack stackOld, int widthNew, int heightNew, int xOff, int yOff) {
 		int nFrames = stackOld.getSize();
 		ImageProcessor imProcOld = stackOld.getProcessor(1);
 		Color colorBack = Toolbar.getBackgroundColor();
-		ImageStack stackNew = new ImageStack(widNew, highNew, stackOld.getColorModel());
+		ImageStack stackNew = new ImageStack(widthNew, heightNew, stackOld.getColorModel());
 		ImageProcessor imProcNew;
 		for (int i=1; i<=nFrames; i++) {
 			IJ.showProgress((double)i/nFrames);
-			imProcNew = imProcOld.createProcessor(widNew, highNew);
+			imProcNew = imProcOld.createProcessor(widthNew, heightNew);
 			imProcNew.setColor(colorBack);
 			imProcNew.fill();
 			imProcNew.insert(stackOld.getProcessor(i), xOff, yOff);
