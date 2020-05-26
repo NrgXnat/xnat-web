@@ -4,11 +4,13 @@
 package org.nrg.xnat.services.upload.csv.impl.base;
 
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
+import org.springframework.stereotype.Service;
 
 /**
  * 
  *
  */
+@Service
 public class DefaultCsvUploadServiceImpl implements CsvUploadService {
 
 	@Override
