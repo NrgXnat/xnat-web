@@ -10,10 +10,7 @@ package org.nrg.xnat.entities;
 
 import java.util.List;
 
-import javax.persistence.CascadeType;
 import javax.persistence.Column;
-import javax.persistence.FetchType;
-import javax.persistence.OneToMany;
 
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
@@ -29,6 +26,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+//@Entity
+//@Table
 @Getter
 @Setter
 @NoArgsConstructor
@@ -43,11 +42,15 @@ public class ValidationResult extends AbstractHibernateEntity {
 	 */
 	private static final long serialVersionUID = -7672058761367018378L;
 
+	@Column
 	private boolean validData;
+
 	@Type(type = "jsonb")
 	@Column(columnDefinition = "jsonb")
 	private List<Object> errors;
-	
-	@OneToMany(mappedBy = "result", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-	private List<DataToUpload> dataToUpload;
+
+	/*
+	 * @OneToMany(mappedBy = "result", cascade = CascadeType.ALL, fetch =
+	 * FetchType.LAZY) private List<DataToUpload> dataToUpload;
+	 */
 }

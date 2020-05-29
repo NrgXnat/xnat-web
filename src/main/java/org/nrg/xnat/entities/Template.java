@@ -8,7 +8,7 @@
  */
 package org.nrg.xnat.entities;
 
-import javax.persistence.Entity;
+import javax.persistence.Column;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
 
@@ -21,12 +21,13 @@ import lombok.Setter;
 /**
  * The Class Template.
  */
-@Setter
+//@Entity
 @Getter
-@Entity
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper = true)
+//@Table
 public class Template extends AbstractHibernateEntity {
 
 	/**
@@ -34,10 +35,15 @@ public class Template extends AbstractHibernateEntity {
 	 */
 	private static final long serialVersionUID = -7198554882365445210L;
 
+	@Column(unique = true)
 	private String label;
+	@Column(unique = true)
 	private String xsiType;
+	@Column
 	private String user;
+	@Column
 	private String lastModified;
+	@Column
 	private String project;
 
 }
