@@ -3,19 +3,25 @@
  */
 package org.nrg.xnat.services.upload.csv;
 
+import java.util.List;
+
+import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xnat.entities.CsvTemplate;
+import org.springframework.stereotype.Service;
+
 /**
  * 
  *
  */
 public interface CsvUploadService {
 
-	String listTemplates();
+	List<CsvTemplate> getTemplates();
 
-	String addTemplate(String templateDefination);
+	boolean addTemplate(CsvTemplate templateDefination);
 
-	String listProjectTemplates(String projectId);
+	List<CsvTemplate> getTemplatesByProjectId(String projectId);
 
-	String getSingleTemplate(String id);
+	CsvTemplate getTemplateById(String id) throws NotFoundException;
 
 	String updateTemplate(String id);
 

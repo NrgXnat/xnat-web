@@ -5,12 +5,17 @@ package org.nrg.xapi.rest.upload;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 
+import java.util.List;
+
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.entities.CsvTemplate;
+import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,12 +41,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CsvUploadApi extends AbstractXapiRestController {
 
-//	public CsvUploadApi(UserManagementServiceI userManagementService, RoleHolder roleHolder, CsvUploadService service)
 	@Autowired
-	public CsvUploadApi(UserManagementServiceI userManagementService, RoleHolder roleHolder)
+	public CsvUploadApi(UserManagementServiceI userManagementService, RoleHolder roleHolder, CsvUploadService service)
 	{
 		super(userManagementService, roleHolder);
-//		_uploadService = service;
+		_uploadService = service;
 	}
 
 	@ApiOperation(value = "Retrieves all templates for site.")
@@ -53,9 +57,8 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of templates
 	 */
 	@XapiRequestMapping(value = "/templates", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<String> getAllTemplates() {
-		return new ResponseEntity<>("getAllTemplates sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.listTemplates(), HttpStatus.OK);
+	public ResponseEntity<List<CsvTemplate>> getAllTemplates() {
+		return new ResponseEntity<>(_uploadService.getTemplates(), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "adds a template definition to your site.")
@@ -69,10 +72,9 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * 
 	 */
 	@XapiRequestMapping(value = "/templates", method = RequestMethod.POST, restrictTo = Admin)
-	public ResponseEntity<String> addNewTemplate(
-			@ApiParam(value = "Template to be added in JSON format.", required = true) @RequestBody final String templateDefination) {
-		return new ResponseEntity<>("addNewTemplate sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.addTemplate(templateDefination), HttpStatus.OK);
+	public ResponseEntity<Boolean> addNewTemplate(
+			@ApiParam(value = "Template to be added in JSON format.", required = true) @RequestBody final CsvTemplate templateDefination) {
+		return new ResponseEntity<>(_uploadService.addTemplate(templateDefination), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "retrieves all templates for a project")
@@ -85,10 +87,10 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of templates
 	 */
 	@XapiRequestMapping(value = "/templates/projects/{projectId}", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<String> getAllTemplatesForProject(
+	public ResponseEntity<List<CsvTemplate>> getAllTemplatesForProject(
 			@ApiParam(value = "Indicates the ID of the project whose templates are to be retrieved.", required = true) @PathVariable("projectId") @Project final String projectId) {
-		return new ResponseEntity<>("getAllTemplatesForProject sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.listProjectTemplates(projectId), HttpStatus.OK);
+//		return new ResponseEntity<>("getAllTemplatesForProject sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.getTemplatesByProjectId(projectId), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Gets an individual template by Id.")
@@ -101,10 +103,11 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return Template
 	 */
 	@XapiRequestMapping(value = "/templates/{id}", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<String> getTemplateById(
-			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id) {
-		return new ResponseEntity<>("getTemplateById sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.getSingleTemplate(id), HttpStatus.OK);
+	public ResponseEntity<CsvTemplate> getTemplateById(
+			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id)
+			throws NotFoundException {
+//		return new ResponseEntity<>("getTemplateById sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.getTemplateById(id), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Updates an existing template")
@@ -118,8 +121,8 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	@XapiRequestMapping(value = "/templates/{id}", method = RequestMethod.PUT, restrictTo = Admin)
 	public ResponseEntity<String> updateExistingTemplateById(
 			@ApiParam(value = "Indicates the ID of templates that is to be modified.", required = true) @PathVariable("id") @Project final String id) {
-		return new ResponseEntity<>("updateExistingTemplateById sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.updateTemplate(id), HttpStatus.OK);
+//		return new ResponseEntity<>("updateExistingTemplateById sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.updateTemplate(id), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Deletes an existing template")
@@ -133,8 +136,8 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	@XapiRequestMapping(value = "/templates/{id}", method = RequestMethod.DELETE, restrictTo = Admin)
 	public ResponseEntity<String> deleteExistingTemplateById(
 			@ApiParam(value = "Indicates the ID of templates that is to be removed.", required = true) @PathVariable("id") @Project final String id) {
-		return new ResponseEntity<>("deleteExistingTemplateById sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.deleteTemplate(id), HttpStatus.OK);
+//		return new ResponseEntity<>("deleteExistingTemplateById sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.deleteTemplate(id), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Submits CSV data for validation")
@@ -152,8 +155,8 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate", method = RequestMethod.POST, restrictTo = Admin)
 	public ResponseEntity<String> validateCsvData(
 			@ApiParam(value = "Indicates the ID of the project whose template is to be validated.", required = true) @PathVariable("projectId") @Project final String projectId) {
-		return new ResponseEntity<>("validateCsvData sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.validateData(projectId), HttpStatus.OK);
+//		return new ResponseEntity<>("validateCsvData sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.validateData(projectId), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Submits validated CSV data")
@@ -167,9 +170,9 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	@XapiRequestMapping(value = "/upload/projects/{projectId}/submit", method = RequestMethod.POST, restrictTo = Admin)
 	public ResponseEntity<String> submitCsvData(
 			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true) @PathVariable("projectId") @Project final String projectId) {
-		return new ResponseEntity<>("submitCsvData sucessful", HttpStatus.OK);
-//		return new ResponseEntity<>(_uploadService.submitData(projectId), HttpStatus.OK);
+//		return new ResponseEntity<>("submitCsvData sucessful", HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.submitData(projectId), HttpStatus.OK);
 	}
 
-//	private final CsvUploadService _uploadService ;
+	private final CsvUploadService _uploadService;
 }

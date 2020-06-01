@@ -3,10 +3,12 @@
  */
 package org.nrg.xnat.services.upload;
 
+import org.springframework.stereotype.Service;
+
 /**
  * 
  *
  */
-public interface XnatUploadService {
-
+@Service
+public interface XnatUploadService  {
 }
