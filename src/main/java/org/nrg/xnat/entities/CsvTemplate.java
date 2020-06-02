@@ -13,17 +13,12 @@ import java.util.List;
 
 import javax.persistence.Access;
 import javax.persistence.AccessType;
-import javax.persistence.Column;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.Table;
 
-import org.hibernate.annotations.Type;
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
-
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType;
-import com.vladmihalcea.hibernate.type.json.JsonStringType;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -49,22 +44,22 @@ import lombok.experimental.Accessors;
 public class CsvTemplate extends AbstractHibernateEntity {
 
 	/**
-     * The Constant serialVersionUID.
-     */
-    private static final long serialVersionUID = -5742162667606724940L;
+	 * The Constant serialVersionUID.
+	 */
+	private static final long serialVersionUID = -5742162667606724940L;
 
-    private String _label;
-    
-    private String _xsiType;
-    
-    private String _user;
-    
-    private String _project;
-    
+	private String _label;
+
+	private String _xsiType;
+
+	private String _user;
+
+	private String _project;
+
 //    @Type(type = "jsonb")
 //    @Column(columnDefinition = "jsonb")
-    
-    
-    private String _template;
+
+	@ElementCollection(fetch = FetchType.EAGER)
+	private List<String> _template;
 
 }

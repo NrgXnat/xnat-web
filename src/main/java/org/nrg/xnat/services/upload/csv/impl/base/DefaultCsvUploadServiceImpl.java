@@ -3,8 +3,14 @@
  */
 package org.nrg.xnat.services.upload.csv.impl.base;
 
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
@@ -29,7 +35,13 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	@Override
 	public List<CsvTemplate> getTemplates() {
-		return getDao().findAll();
+		Set<CsvTemplate>  templates = new HashSet<>(getDao().findAll());
+		
+		for (CsvTemplate csvTemplate : templates) {
+			csvTemplate.setTemplate(null);
+		}
+		
+		return new LinkedList<CsvTemplate>(templates);
 	}
 
 	@Override
@@ -43,9 +55,14 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	public List<CsvTemplate> getTemplatesByProjectId(String id) {
 
 		log.info("Project id passed is " + id);
-		List<CsvTemplate> templates = getDao().findByProperty("_project", id);
+		Set<CsvTemplate>  templates = new HashSet<>(getDao().findByProperty("_project", id));
 		log.info("Templates returned are " + templates.toString());
-		return templates;
+		
+		for (CsvTemplate csvTemplate : templates) {
+			csvTemplate.setTemplate(null);
+		}
+		
+		return new LinkedList<CsvTemplate>(templates);
 	}
 
 	/**
