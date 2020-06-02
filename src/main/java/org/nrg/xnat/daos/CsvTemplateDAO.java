@@ -28,7 +28,7 @@ public class CsvTemplateDAO extends AbstractHibernateDAO<CsvTemplate> {
 	 * @return {@link CsvTemplate CsvTemplate} of the given id.
 	 */
 	public CsvTemplate findTemplateById(final long id) {
-		return findById(id);
+		return retrieve(id);
 	}
 	
 	/**

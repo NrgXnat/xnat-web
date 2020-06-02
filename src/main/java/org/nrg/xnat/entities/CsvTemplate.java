@@ -9,6 +9,8 @@
 
 package org.nrg.xnat.entities;
 
+import java.util.List;
+
 import javax.persistence.Access;
 import javax.persistence.AccessType;
 import javax.persistence.Column;
@@ -42,8 +44,8 @@ import lombok.experimental.Accessors;
 @Access(AccessType.FIELD)
 @Accessors(prefix = "_")
 @EqualsAndHashCode(callSuper = true)
-@TypeDefs({ @TypeDef(name = "json", typeClass = JsonStringType.class),
-    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class) })
+//@TypeDefs({ @TypeDef(name = "json", typeClass = JsonStringType.class),
+//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class) })
 public class CsvTemplate extends AbstractHibernateEntity {
 
 	/**
@@ -59,8 +61,10 @@ public class CsvTemplate extends AbstractHibernateEntity {
     
     private String _project;
     
-    @Type(type = "jsonb")
-    @Column(columnDefinition = "jsonb")
+//    @Type(type = "jsonb")
+//    @Column(columnDefinition = "jsonb")
+    
+    
     private String _template;
 
 }
