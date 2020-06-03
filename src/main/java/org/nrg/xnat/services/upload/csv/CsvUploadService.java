@@ -6,6 +6,7 @@ package org.nrg.xnat.services.upload.csv;
 import java.util.List;
 
 import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.entities.CsvTemplate;
 
 /**
@@ -14,11 +15,11 @@ import org.nrg.xnat.entities.CsvTemplate;
  */
 public interface CsvUploadService {
 
-	List<CsvTemplate> getTemplates();
+	List<TemplateData> getTemplates();
 
 	void addTemplate(CsvTemplate templateDefination);
 
-	List<CsvTemplate> getTemplatesByProjectId(String projectId);
+	List<TemplateData> getTemplatesByProjectId(String projectId);
 
 	CsvTemplate getTemplateById(String id) throws NotFoundException;
 

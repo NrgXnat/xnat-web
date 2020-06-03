@@ -3,20 +3,18 @@
  */
 package org.nrg.xnat.services.upload.csv.impl.base;
 
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xnat.daos.CsvTemplateDAO;
+import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.entities.CsvTemplate;
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.stereotype.Service;
@@ -34,14 +32,12 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		implements CsvUploadService {
 
 	@Override
-	public List<CsvTemplate> getTemplates() {
-		Set<CsvTemplate>  templates = new HashSet<>(getDao().findAll());
-		
-		for (CsvTemplate csvTemplate : templates) {
-			csvTemplate.setTemplate(null);
-		}
-		
-		return new LinkedList<CsvTemplate>(templates);
+	public List<TemplateData> getTemplates() {
+		Set<CsvTemplate> templates = new HashSet<>(getDao().findAll());
+
+		List<TemplateData> templateDatas = convertCsvTemplateToTemplateData(templates);
+
+		return templateDatas;
 	}
 
 	@Override
@@ -52,17 +48,47 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	}
 
 	@Override
-	public List<CsvTemplate> getTemplatesByProjectId(String id) {
+	public List<TemplateData> getTemplatesByProjectId(String id) {
 
 		log.info("Project id passed is " + id);
-		Set<CsvTemplate>  templates = new HashSet<>(getDao().findByProperty("_project", id));
+		Set<CsvTemplate> templates = new HashSet<>(getDao().findByProperty("_project", id));
 		log.info("Templates returned are " + templates.toString());
-		
+
+		List<TemplateData> templateDatas = convertCsvTemplateToTemplateData(templates);
+
+		return templateDatas;
+	}
+
+	private List<TemplateData> convertCsvTemplateToTemplateData(Set<CsvTemplate> templates) {
+
+		List<TemplateData> templateDatas = new ArrayList<TemplateData>();
+
 		for (CsvTemplate csvTemplate : templates) {
-			csvTemplate.setTemplate(null);
+			TemplateData templateData = new TemplateData();
+//			BeanUtils.copyProperties(csvTemplate, templateData);
+
+			if (Objects.nonNull(csvTemplate)) {
+				if (Objects.nonNull(csvTemplate.getId())) {
+					templateData.setId(csvTemplate.getId());
+				}
+				if (Objects.nonNull(csvTemplate.getProject())) {
+					templateData.setProject(csvTemplate.getProject());
+				}
+				if (Objects.nonNull(csvTemplate.getLabel())) {
+					templateData.setLabel(csvTemplate.getLabel());
+				}
+				if (Objects.nonNull(csvTemplate.getUser())) {
+					templateData.setUser(csvTemplate.getUser());
+				}
+				if (Objects.nonNull(csvTemplate.getXsiType())) {
+					templateData.setXsiType(csvTemplate.getXsiType());
+				}
+			}
+
+			templateDatas.add(templateData);
 		}
-		
-		return new LinkedList<CsvTemplate>(templates);
+
+		return templateDatas;
 	}
 
 	/**
@@ -91,28 +117,29 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		log.info("id converted is " + templateId);
 		CsvTemplate updatedTemplate = getDao().findById(templateId);
-		Objects.requireNonNull(updatedTemplate, "No Template for the given templateId:  \"" + templateId + "\" was found.");
+		Objects.requireNonNull(updatedTemplate,
+				"No Template for the given templateId:  \"" + templateId + "\" was found.");
 
-		 if(Objects.nonNull(template)) {
-			 if(Objects.nonNull(template.getProject())) {
-				 updatedTemplate.setProject(template.getProject());
-			 }
-			 if(Objects.nonNull(template.getLabel())) {
-				 updatedTemplate.setLabel(template.getLabel());
-			 }
-			 if(Objects.nonNull(template.getUser())) {
-				 updatedTemplate.setUser(template.getUser());
-			 }
-			 if(Objects.nonNull(template.getXsiType())) {
-				 updatedTemplate.setXsiType(template.getXsiType());
-			 }
-			 if(Objects.nonNull(template.getTemplate())) {
-				 updatedTemplate.setTemplate(template.getTemplate());
-			 }
-		 }
-		
+		if (Objects.nonNull(template)) {
+			if (Objects.nonNull(template.getProject())) {
+				updatedTemplate.setProject(template.getProject());
+			}
+			if (Objects.nonNull(template.getLabel())) {
+				updatedTemplate.setLabel(template.getLabel());
+			}
+			if (Objects.nonNull(template.getUser())) {
+				updatedTemplate.setUser(template.getUser());
+			}
+			if (Objects.nonNull(template.getXsiType())) {
+				updatedTemplate.setXsiType(template.getXsiType());
+			}
+			if (Objects.nonNull(template.getTemplate())) {
+				updatedTemplate.setTemplate(template.getTemplate());
+			}
+		}
+
 		getDao().update(updatedTemplate);
-		
+
 //		return String.format(" Template Id passed of template to be updated is %l", id);
 	}
 

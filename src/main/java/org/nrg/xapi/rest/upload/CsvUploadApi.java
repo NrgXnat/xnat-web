@@ -14,6 +14,7 @@ import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.entities.CsvTemplate;
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +57,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of templates
 	 */
 	@XapiRequestMapping(value = "/templates", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<List<CsvTemplate>> getAllTemplates() {
+	public ResponseEntity<List<TemplateData>> getAllTemplates() {
 		log.info("getAllTemplates called");
 		return new ResponseEntity<>(_uploadService.getTemplates(), HttpStatus.OK);
 	}
@@ -89,7 +90,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of templates
 	 */
 	@XapiRequestMapping(value = "/templates/projects/{projectId}", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<List<CsvTemplate>> getAllTemplatesForProject(
+	public ResponseEntity<List<TemplateData>> getAllTemplatesForProject(
 			@ApiParam(value = "Indicates the ID of the project whose templates are to be retrieved.", required = true) @PathVariable("projectId") @Project final String projectId) {
 		log.info("getAllTemplatesByProjectId called");
 		return new ResponseEntity<>(_uploadService.getTemplatesByProjectId(projectId), HttpStatus.OK);
@@ -130,7 +131,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 			@ApiParam(value = "Template to be update in JSON format.", required = true) @RequestBody final CsvTemplate templateDefination) {
 		log.info("updateExistingTemplateById called");
 		_uploadService.updateTemplate(id, templateDefination);
-		
+
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
@@ -147,7 +148,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 			@ApiParam(value = "Indicates the ID of templates that is to be removed.", required = true) @PathVariable("id") @Project final String id) {
 		log.info("deleteExistingTemplateById called");
 		_uploadService.deleteTemplate(id);
-		
+
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
