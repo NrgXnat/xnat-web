@@ -1,97 +1,214 @@
-<SCRIPT language="javascript">
-var all_elements = new Array();
+<style>
+    .page-title {
+        font-size: 24px;
+    }
 
-#foreach($gwe in $all_elements)
-all_elements.push("$gwe.getFullXMLName()");
-#end
-all_elements.sort(function(a, b) {
-    if (a.toLowerCase() < b.toLowerCase()) return -1;
-    if (a.toLowerCase() > b.toLowerCase()) return 1;
-    return 0;
-});
+    table,
+    td,
+    th {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
 
-function removeAllOptions(selectbox)
-{
-var j;
-for(j=selectbox.options.length-1;j>=0;j--)
-{
-selectbox.remove(j);
-}
-}
+    td,
+    th {
+        padding: 5px 15px;
+        text-align: center;
+    }
 
-function populateFullList(){
-  var selectBox = document.getElementById("root_data_type");
+    .installed-template-box-container {
+        border: 2px solid #e5e5e5;
+    }
 
-  removeAllOptions(selectBox);
+    .installed-template-box-header {
+        display: flex;
+        background: #1a74bb;
+        justify-content: space-between;
+    }
 
-  selectBox.options[0]= new Option("(SELECT)","");
+    .installed-template-box-title {
+        font-size: 18px;
+        color: white;
+        margin: 10px 20px;
+    }
 
-  for(var i=0;i<all_elements.length;i++){
-    selectBox.options[i + 1]= new Option(all_elements[i],all_elements[i]);
-  }
-}
-</SCRIPT>
-	#if ($data.message)
-<DIV class="error">$data.message</DIV><br>
-#end
-<form name="form1" method="post" action="$link.setAction("CSVUpload1")">
- <table border="0" >
-   <tr>
-    <td colspan="2"><DIV class="edit_header1">Step 1: Select the root data type to be inserted.</DIV></td>
-  </tr>
-   <tr>
-    <td colspan="2">&nbsp;</td>
-  </tr>
-   <tr>
-    <td>Title</td>
-    <td><input type="text" name="title"/></td>
-    <td> (This will be used to reload this spreadsheet template at a later date.)</td>
-  </tr>
-  <tr>
-    <td>Root Data Type:
-    </td><td>
-        <select ID="root_data_type" name="root_data_type" />
-	</td>
-    <td><A ONCLICK="populateFullList();">Show All</A>
-    </td>
-  </tr>
-  <tr>
-    <td colspan="2" align="right">
-        <input type="submit" name="eventSubmit_doPrep" value="Submit" />
-    </td>
-  </tr>
-  #if($fms.size()>0)
-   <tr>
-    <td colspan="2">&nbsp;</td>
-  </tr>
-   <tr>
-    <td colspan="2"><DIV class="edit_header1">Or, load a saved template.</DIV></td>
-  </tr>
-  #foreach($fm in $fms)
-   <tr>
-    <td>$fm.getCreateDate()</td><td><A HREF="$link.setPage("XDATScreen_uploadCSV2.vm").addPathInfo("fm_id","$fm.getID()")">$fm.getTitle()</A></td>
-  </tr>
-  #end
-  #end
-</table>
-</form>
+    .btn-install-new-template {
+        height: fit-content;
+        align-self: center;
+        margin-right: 20px;
+    }
 
-<SCRIPT>
-    var elements = new Array();
-        #foreach($gwe in $elements)
-        elements.push("$gwe");
-        #end
-    elements.sort(function(a, b) {
-        if (a.toLowerCase() < b.toLowerCase()) return -1;
-        if (a.toLowerCase() > b.toLowerCase()) return 1;
+    .table-template-list {
+        width: 100%;
+    }
+</style>
+<script language="javascript">
+    var all_elements = new Array();
+
+    #foreach($gwe in $all_elements)
+    all_elements.push("$gwe.getFullXMLName()");
+    #end
+    all_elements.sort(function (a, b) {
+        if (a.toLowerCase() < b.toLowerCase()) 
+            return -1;
+        if (a.toLowerCase() > b.toLowerCase()) 
+            return 1;
         return 0;
     });
 
-    var selectBox = document.getElementById("root_data_type");
-
-    selectBox.options[0]= new Option("(SELECT)","BAD");
-
-    for(var i=0;i<elements.length;i++){
-        selectBox.options[i + 1]= new Option(elements[i],elements[i]);
+    function removeAllOptions(selectbox) {
+        var j;
+        for (j = selectbox.options.length - 1; j >= 0; j--) {
+            selectbox.remove(j);
+        }
     }
-</SCRIPT>
+
+    function populateFullList() {
+        var selectBox = document.getElementById("root_data_type");
+
+        removeAllOptions(selectBox);
+
+        selectBox.options[0] = new Option("(SELECT)", "");
+
+        for (var i = 0; i < all_elements.length; i++) {
+            selectBox.options[i + 1] = new Option(all_elements[i], all_elements[i]);
+        }
+    }
+</script>
+#if ($data.message)
+    <DIV class="error">$data.message</div><br>
+#end
+<p class="page-title">
+    Upload Data via CSV Template
+</p>
+<div class="installed-template-box-container">
+    <div class="installed-template-box-header">
+        <p class="installed-template-box-title">
+            Installed Templates
+        </p>
+        <button onclick="createNewTemplate()" class="btn-install-new-template" type="button">
+            Install New Template
+        </button>
+    </div>
+    <div style="margin:20px">
+        <table class="table-template-list">
+            <thead>
+                <tr>
+                    <th>Template Name</th>
+                    <th>Datatype</th>
+                    <th>Last Modified</th>
+                    <th>Project</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="installed-template-tbody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function createInstalledTemplateRows(templates) {
+        var tbodyContainer = document.getElementById('installed-template-tbody')
+        var tbodyContent = '';
+        templates.forEach((template) => {
+            tbodyContent += `
+            <tr>
+              <td>${template.label}</td>
+              <td>${template.xsiType}</td>
+              <td>${template.updateOn}</td>
+              <td>${template.project}</td>
+              <td></td>
+            </tr>
+        `
+        })
+
+        XNAT
+            .spawner
+            .spawn({content: tbodyContent})
+            .render(tbodyContainer)
+    }
+
+    XNAT
+        .xhr
+        .get({
+            url: XNAT
+                .url
+                .restUrl('/xapi/csv/templates'),
+            success: function (DATA) {
+                console.log(DATA)
+                createInstalledTemplateRows(DATA)
+            }
+        })
+
+    function selectDatatype() {
+        return {
+            selectDatatype: {
+                tag: "div",
+                content: `
+        <div class='row'>
+          <div class='rowTitle' for='root_data_type'>Select data-type </div>
+          <select ID="root_data_type" name="root_data_type" />
+          </div>
+        </div>
+        `
+            }
+        };
+    }
+
+    function createNewTemplate() {
+        XNAT
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: "Select Datatype for New Template",
+                content: XNAT
+                    .spawner
+                    .spawn(selectDatatype())
+                    .get(),
+                buttons: [
+                    {
+                        label: "Continue",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            console.log('Selected Root Data Type => ', obj.$dialog.find('#root_data_type')[0].value)
+                            // var $form = obj.$modal.find('form'); if (XNAT.validate.form($form)){     var doSave =
+                            // saveUserData($form);     doSave.done(function(){         updated = true;         obj.close(); });
+                            // }
+
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ],
+                onClose: function (obj) {
+                    console.log(obj)
+                    // if (typeof onclose === 'function') {     onclose(obj) } if (updated) {
+                    // updateUserData(data.username);      renderUsersTable(); }
+                },
+                afterShow: function () {
+                    var elements = new Array();
+                    #foreach($gwe in $elements)
+                    elements.push("$gwe");
+                    #end
+                    elements.sort(function (a, b) {
+                        if (a.toLowerCase() < b.toLowerCase()) 
+                            return -1;
+                        if (a.toLowerCase() > b.toLowerCase()) 
+                            return 1;
+                        return 0;
+                    });
+                    var selectBox = document.getElementById('root_data_type');
+                    selectBox.options[0] = new Option("(SELECT)", "BAD");
+
+                    for (var i = 0; i < elements.length; i++) {
+                        selectBox.options[i + 1] = new Option(elements[i], elements[i]);
+                    }
+                }
+            });
+    }
+</script>
