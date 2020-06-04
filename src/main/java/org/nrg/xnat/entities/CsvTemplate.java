@@ -9,14 +9,11 @@
 
 package org.nrg.xnat.entities;
 
-import java.util.List;
-
 import javax.persistence.Access;
 import javax.persistence.AccessType;
-import javax.persistence.CollectionTable;
-import javax.persistence.ElementCollection;
+import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.FetchType;
+import javax.persistence.Lob;
 import javax.persistence.Table;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
@@ -40,8 +37,6 @@ import lombok.experimental.Accessors;
 @Access(AccessType.FIELD)
 @Accessors(prefix = "_")
 @EqualsAndHashCode(callSuper = true)
-//@TypeDefs({ @TypeDef(name = "json", typeClass = JsonStringType.class),
-//    @TypeDef(name = "jsonb", typeClass = JsonBinaryType.class) })
 public class CsvTemplate extends AbstractHibernateEntity {
 
 	/**
@@ -49,19 +44,17 @@ public class CsvTemplate extends AbstractHibernateEntity {
 	 */
 	private static final long serialVersionUID = -5742162667606724940L;
 
+//	@Column(name = "label")
 	private String _label;
-
+//	@Column(name = "xsiType")
 	private String _xsiType;
-
+//	@Column(name = "user")
 	private String _user;
-
+//	@Column(name = "project")
 	private String _project;
 
-//    @Type(type = "jsonb")
-//    @Column(columnDefinition = "jsonb")
-
-	@ElementCollection(fetch = FetchType.EAGER)
-	@CollectionTable(name = "csv_template_data")
-	private List<String> _template;
+	@Column(columnDefinition = "TEXT")
+	@Lob
+	private String _template;
 
 }

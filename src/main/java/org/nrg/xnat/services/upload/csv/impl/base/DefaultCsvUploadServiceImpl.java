@@ -4,6 +4,7 @@
 package org.nrg.xnat.services.upload.csv.impl.base;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -83,6 +84,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				if (Objects.nonNull(csvTemplate.getXsiType())) {
 					templateData.setXsiType(csvTemplate.getXsiType());
 				}
+				if (Objects.nonNull(csvTemplate.getTimestamp())) {
+					templateData.setUpdateOn(csvTemplate.getTimestamp().toString());
+				}
 			}
 
 			templateDatas.add(templateData);
@@ -136,6 +140,8 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			if (Objects.nonNull(template.getTemplate())) {
 				updatedTemplate.setTemplate(template.getTemplate());
 			}
+			updatedTemplate.setTimestamp(new Date());
+
 		}
 
 		getDao().update(updatedTemplate);

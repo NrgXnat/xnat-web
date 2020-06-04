@@ -23,4 +23,8 @@ public class TemplateData {
 	private String _user;
 
 	private String _project;
+	
+	private String _updateOn;
+	
+	
 }
