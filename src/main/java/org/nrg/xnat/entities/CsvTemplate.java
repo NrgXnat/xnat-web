@@ -9,14 +9,17 @@
 
 package org.nrg.xnat.entities;
 
+import java.util.List;
+
 import javax.persistence.Access;
 import javax.persistence.AccessType;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
+import org.nrg.xnat.helpers.upload.ListToStringConverter;
 
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -53,8 +56,8 @@ public class CsvTemplate extends AbstractHibernateEntity {
 //	@Column(name = "project")
 	private String _project;
 
-	@Column(columnDefinition = "TEXT")
-	@Lob
-	private String _template;
+	@Column(columnDefinition = "text")
+	@Convert(converter = ListToStringConverter.class)
+	private List<String> _template;
 
 }
