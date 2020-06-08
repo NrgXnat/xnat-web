@@ -5,9 +5,12 @@ package org.nrg.xnat.services.upload.csv;
 
 import java.util.List;
 
-import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.TemplateData;
+import org.nrg.xnat.dto.TemplateDto;
+import org.nrg.xnat.dto.ValidationResult;
 import org.nrg.xnat.entities.CsvTemplate;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * 
@@ -21,13 +24,13 @@ public interface CsvUploadService {
 
 	List<TemplateData> getTemplatesByProjectId(String projectId);
 
-	CsvTemplate getTemplateById(String id) throws NotFoundException;
+	TemplateDto getTemplateById(String id);
 
 	void deleteTemplate(String id);
 
-	String validateData(String projectId);
+	ValidationResult validateData(String projectId, MultipartFile multipartFile);
 
-	String submitData(String projectId);
+	String submitData(String projectId, List<DataToUpload> dataToUpload);
 
 	/**
 	 *

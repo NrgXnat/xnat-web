@@ -3,6 +3,8 @@
  */
 package org.nrg.xnat.services.upload.csv.impl.base;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -12,13 +14,18 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
-import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
+import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
+import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.daos.CsvTemplateDAO;
+import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.TemplateData;
+import org.nrg.xnat.dto.TemplateDto;
+import org.nrg.xnat.dto.ValidationResult;
 import org.nrg.xnat.entities.CsvTemplate;
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -99,16 +106,51 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	 *
 	 */
 	@Override
-	public CsvTemplate getTemplateById(String id) throws NotFoundException {
+	public TemplateDto getTemplateById(String id) {
 		log.info("id passed is " + id);
 		Long templateId = Long.parseLong(id);
 
 		log.info("id converted is " + templateId);
 		CsvTemplate csvTemplate = getDao().findById(templateId);
 		Objects.requireNonNull(csvTemplate, "No Template for the given templateId:  \"" + templateId + "\" was found.");
-
 		log.debug("Template found is " + csvTemplate);
-		return csvTemplate;
+
+		TemplateDto dto = convertCsvTemplateToTemplateDto(csvTemplate);
+
+		log.debug("Template DTO is " + dto);
+
+		return dto;
+	}
+
+	private TemplateDto convertCsvTemplateToTemplateDto(CsvTemplate csvTemplate) {
+
+		TemplateDto templateDto = new TemplateDto();
+
+//			TemplateData templateData = new TemplateData();
+//			BeanUtils.copyProperties(csvTemplate, templateData);
+
+		if (Objects.nonNull(csvTemplate)) {
+			if (Objects.nonNull(csvTemplate.getId())) {
+				templateDto.setId(csvTemplate.getId());
+			}
+			if (Objects.nonNull(csvTemplate.getProject())) {
+				templateDto.setProject(csvTemplate.getProject());
+			}
+			if (Objects.nonNull(csvTemplate.getLabel())) {
+				templateDto.setLabel(csvTemplate.getLabel());
+			}
+			if (Objects.nonNull(csvTemplate.getUser())) {
+				templateDto.setUser(csvTemplate.getUser());
+			}
+			if (Objects.nonNull(csvTemplate.getXsiType())) {
+				templateDto.setXsiType(csvTemplate.getXsiType());
+			}
+			if (Objects.nonNull(csvTemplate.getTemplate())) {
+				templateDto.setTemplate(csvTemplate.getTemplate());
+			}
+		}
+
+		return templateDto;
 	}
 
 	/**
@@ -166,14 +208,72 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	}
 
 	@Override
-	public String validateData(String projectId) {
-		// TODO Auto-generated method stub
-		return String.format(" Project Id passed is %s", projectId);
+	public ValidationResult validateData(String projectId, MultipartFile multipartFile) {
+		
+		log.info("Project Id passed is " + projectId);
+		ValidationResult result = new ValidationResult();
+
+		List<DataToUpload> dataToUploads = new ArrayList<>();
+		List<String> headers = new ArrayList<>();
+
+		try {
+			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
+
+			if (file != null) {
+				int lineCount = 0;
+				int columnNumber = 0;
+				result.setValidData(true);
+
+				List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
+				for (List<String> row : rows) {
+					columnNumber = 0;
+					if (lineCount < 1) {
+						headers = row;
+					} else {
+						for (String value : row) {
+							DataToUpload dataToUpload = new DataToUpload();
+							// some validation
+							if (true) {
+							}
+
+							dataToUpload.setAttribute(headers.get(columnNumber));
+							dataToUpload.setValue(value);
+							dataToUpload.setDescription(String.format("The value for key %s for column %d is %s ",
+									dataToUpload.getAttribute(), columnNumber+1, dataToUpload.getValue()));
+							columnNumber++;
+							dataToUploads.add(dataToUpload);
+						}
+					}
+
+					lineCount++;
+				}
+			}
+			
+//			deleting the temporary file
+			file.delete();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		result.setDataToUpload(dataToUploads);
+
+		return result;
+	}
+
+	public static File multipartToFile(MultipartFile multipart, String fileName)
+			throws IllegalStateException, IOException {
+		File convFile = new File(System.getProperty("java.io.tmpdir") + "/" + fileName);
+		multipart.transferTo(convFile);
+		return convFile;
 	}
 
 	@Override
-	public String submitData(String projectId) {
-		// TODO Auto-generated method stub
+	public String submitData(String projectId, List<DataToUpload> dataToUpload) {
+			CSVUpload2 upload2 = new CSVUpload2();
+			
+//			upload2.doStore(dataToUpload, );
+		
 		return String.format(" Project Id passed is %s", projectId);
 	}
 
