@@ -16,6 +16,7 @@ import javax.transaction.Transactional;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
+import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.daos.CsvTemplateDAO;
 import org.nrg.xnat.dto.DataToUpload;
@@ -275,6 +276,15 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 //			upload2.doStore(dataToUpload, );
 		
 		return String.format(" Project Id passed is %s", projectId);
+	}
+
+	@Override
+	public FieldMapping getRoot(String root) {
+		 FieldMapping fm = new FieldMapping();
+         fm.setElementName(root);
+         
+         
+		return fm;
 	}
 
 }

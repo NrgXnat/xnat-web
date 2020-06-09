@@ -14,6 +14,7 @@ import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
@@ -193,5 +194,20 @@ public class CsvUploadApi extends AbstractXapiRestController {
 		return new ResponseEntity<>(_uploadService.submitData(projectId, dataToUpload), HttpStatus.OK);
 	}
 
+	@ApiOperation(value = "retrieves all attributes for a root")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns list of attributes for a root."),
+			@ApiResponse(code = 400, message = "Not Found"), @ApiResponse(code = 409, message = "Permission denied") })
+	/**
+	 * Returns list of attributes for root name passed.
+	 * 
+	 * @param rootName whose related attribute are to be returned
+	 * @return List of Attributes
+	 */
+	@XapiRequestMapping(value = "/templates/root/{rootName}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	public ResponseEntity<FieldMapping> getRoot(
+			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootName") final String rootName) {
+		log.info("getRoot called");
+		return new ResponseEntity<FieldMapping>(_uploadService.getRoot(rootName), HttpStatus.OK);
+	}
 	private final CsvUploadService _uploadService;
 }

@@ -5,6 +5,7 @@ package org.nrg.xnat.services.upload.csv;
 
 import java.util.List;
 
+import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
@@ -36,5 +37,7 @@ public interface CsvUploadService {
 	 *
 	 */
 	void updateTemplate(String id, CsvTemplate template);
+
+	FieldMapping getRoot(String root);
 
 }
