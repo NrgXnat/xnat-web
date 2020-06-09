@@ -90,55 +90,118 @@
             Install New Template
         </button>
     </div>
-    <div style="margin:20px">
-        <table class="table-template-list">
-            <thead>
-                <tr>
-                    <th>Template Name</th>
-                    <th>Datatype</th>
-                    <th>Last Modified</th>
-                    <th>Project</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="installed-template-tbody"></tbody>
-        </table>
-    </div>
+    <div id="installed-template-table-container" style="margin:20px"></div>
 </div>
 
 <script>
-    function createInstalledTemplateRows(templates) {
-        var tbodyContainer = document.getElementById('installed-template-tbody')
-        var tbodyContent = '';
-        templates.forEach((template) => {
-            tbodyContent += `
-            <tr>
-              <td>${template.label}</td>
-              <td>${template.xsiType}</td>
-              <td>${template.updateOn}</td>
-              <td>${template.project}</td>
-              <td></td>
-            </tr>
-        `
-        })
+    var templatesTableContainer = 'div#installed-template-table-container'
+    renderTemplatesTable();
 
-        XNAT
-            .spawner
-            .spawn({content: tbodyContent})
-            .render(tbodyContainer)
+    function renderTemplatesTable() {
+        var $container = $(templatesTableContainer);
+        if ($container.length) {
+            setTimeout(function () {
+                $container.html('loading...');
+                setTimeout(function () {
+                    XNAT
+                        .dialog
+                        .loadingBar
+                        .show();
+                    XNAT
+                        .spawner
+                        .spawn({
+                            templateTable: {
+                                kind: 'table.dataTable',
+                                name: 'templates',
+                                id: 'templates',
+                                load: XNAT
+                                    .url
+                                    .restUrl('/xapi/csv/templates'),
+                                items: {
+                                    templateName: {
+                                        label: 'Template Name',
+                                        filter: true,
+                                        apply: function () {
+                                            return spawn('p', {
+                                                title: this.label,
+                                                html: escapeHtml(this.label)
+                                            });
+                                        }
+                                    },
+                                    dataType: {
+                                        label: 'Datatype',
+                                        filter: true,
+                                        apply: function () {
+                                            return spawn('p', {
+                                                title: this.xsiType,
+                                                html: escapeHtml(this.xsiType)
+                                            });
+                                        }
+                                    },
+                                    lastModified: {
+                                        label: 'Last Modified',
+                                        filter: true,
+                                        apply: function () {
+                                            return spawn('div', {
+                                                title: this.updateOn,
+                                                html: escapeHtml(this.updateOn)
+                                            });
+                                        }
+                                    },
+                                    project: {
+                                        label: 'Project',
+                                        filter: true,
+                                        apply: function () {
+                                            return spawn('p', {
+                                                title: this.project,
+                                                html: escapeHtml(this.project)
+                                            });
+                                        }
+                                    },
+                                    actions: {
+                                        label: 'Actions',
+                                        filter: false,
+                                        apply: function () {
+                                            return spawn(
+                                                'p',
+                                                {html: `
+                                    <div style="justify-content: space-evenly; display: flex;">
+                                        <a> <i style="padding: 5px;" class="fa fa-edit" aria-hidden="true"></i> </a>
+                                        <a> <i style="padding: 5px;" class="fa fa-download" aria-hidden="true"></i> </a>
+                                        <a> <i style="padding: 5px;" class="fa fa-upload" aria-hidden="true"></i> </a>
+                                        <a onClick="deleteTemplate(${this.id})"> <i style="padding: 5px;" class="fa fa-trash-o" aria-hidden="true"></i> </a>
+                                    </div>
+                                    `}
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                        .render($container.empty(), function () {
+                            XNAT
+                                .dialog
+                                .loadingBar
+                                .hide();
+                        });
+                }, 10);
+            }, 1);
+        }
     }
 
-    XNAT
-        .xhr
-        .get({
-            url: XNAT
-                .url
-                .restUrl('/xapi/csv/templates'),
-            success: function (DATA) {
-                console.log(DATA)
-                createInstalledTemplateRows(DATA)
-            }
-        })
+    function deleteTemplate(templateId) {
+        XNAT
+            .xhr
+            .delete({
+                url: XNAT
+                    .url
+                    .restUrl('/xapi/csv/templates/' + templateId),
+                success: function () {
+                    console.log("Template deleted successfully")
+                    renderTemplatesTable()
+                }
+            })
+    }
 
     function selectDatatype() {
         return {
