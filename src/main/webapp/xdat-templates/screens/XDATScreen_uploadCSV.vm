@@ -96,12 +96,13 @@
 <script>
     var templatesTableContainer = 'div#installed-template-table-container'
     renderTemplatesTable();
+    var allElements = new Array();
 
     function renderTemplatesTable() {
-        var $container = $(templatesTableContainer);
-        if ($container.length) {
+        var container = $(templatesTableContainer);
+        if (container.length) {
             setTimeout(function () {
-                $container.html('loading...');
+                container.html('loading...');
                 setTimeout(function () {
                     XNAT
                         .dialog
@@ -178,7 +179,7 @@
                                 }
                             }
                         })
-                        .render($container.empty(), function () {
+                        .render(container.empty(), function () {
                             XNAT
                                 .dialog
                                 .loadingBar
@@ -237,11 +238,13 @@
                         close: false,
                         isDefault: true,
                         action: function (obj) {
-                            console.log('Selected Root Data Type => ', obj.$dialog.find('#root_data_type')[0].value)
-                            // var $form = obj.$modal.find('form'); if (XNAT.validate.form($form)){     var doSave =
-                            // saveUserData($form);     doSave.done(function(){         updated = true;         obj.close(); });
-                            // }
-
+                            console.log(obj)
+                            const rootDataType = obj
+                                .$dialog
+                                .find('#root_data_type')[0]
+                                .value
+                            renderAttributes(rootDataType)
+                            obj.close()
                         }
                     }, {
                         label: "Cancel",
@@ -250,8 +253,6 @@
                 ],
                 onClose: function (obj) {
                     console.log(obj)
-                    // if (typeof onclose === 'function') {     onclose(obj) } if (updated) {
-                    // updateUserData(data.username);      renderUsersTable(); }
                 },
                 afterShow: function () {
                     var elements = new Array();
@@ -273,5 +274,292 @@
                     }
                 }
             });
+    }
+
+    function renderAttributes(rootDataType) {
+        XNAT
+            .xhr
+            .get({
+                url: XNAT
+                    .url
+                    .restUrl('/xapi/csv/templates/root/' + rootDataType),
+                success: function (data) {
+
+                    function ElementFieldMapping(name) {
+                        this.elementName = name;
+                        this.fields = new Array();
+                        this.extensionPaths = new Array();
+                        this.extensionTypes = new Array();
+                        this.required = new Array();
+                    }
+                    for (var entry in data) {
+                        var mapping = new ElementFieldMapping(entry);
+                        var fields = data[entry][0]
+                        var extensions = data[entry][1]
+                        var required = data[entry][2]
+                        mapping
+                            .fields
+                            .push(...fields);
+                        mapping
+                            .required
+                            .push(...required);
+                        var count = 0
+                        for (var e in extensions) {
+                            mapping.extensionPaths[count] = e;
+                            mapping.extensionTypes[count] = new Array();
+                            for (var foreign in extensions[e]) {
+                                mapping
+                                    .extensionTypes[count]
+                                    .push(foreign);
+                            }
+                            count = count + 1
+                        }
+                        allElements.push(mapping);
+                    }
+                    console.log(allElements);
+                    openSelectAttributesModal(rootDataType, data)
+                }
+            })
+    }
+
+    function openSelectAttributesModal(rootDataType, data) {
+        const content = selectAttributesContent(rootDataType, data)
+        XNAT
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: `Define CSV Template for ${rootDataType}`,
+                content: content,
+                buttons: [
+                    {
+                        label: "OK",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            const selected = new Array()
+                            const ips = obj
+                                .$dialog
+                                .find('input')
+                            for (let i = 0; i < ips.length; i++) {
+                                if (ips[i].checked) 
+                                    selected.push(ips[i].value)
+                            }
+                            createTemplate(rootDataType, selected)
+                            obj.close()
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ],
+                onClose: function (obj) {
+                    console.log(obj)
+                },
+                afterShow: function () {}
+            });
+    }
+
+    function selectAttributesContent(rootDataType, data) {
+        const rootFields = data[rootDataType]
+        const fields = rootFields[0]
+        const extensions = rootFields[1]
+        const required = rootFields[2]
+        let content = ` 
+        <div id="rootDIV">
+            <input type="checkbox" id="checkALL" onclick="checkAll();"/>
+            Check All
+            <div class="field rootField">`
+
+        required.forEach((ele) => {
+            content += `    
+            <DIV class="field rootField">
+                <input type="hidden" value="${ele}" name="fields"/>
+                <b>${ele} (Required)</b>
+            </div>`
+        })
+
+        fields.forEach((field) => {
+            content += `
+        <DIV class="field rootField">
+            <input type="checkbox" value="${field}" name="fields"/>
+            ${field}
+        </div>`
+        })
+
+        for (const e in extensions) {
+            content += `
+            <DIV class="extension rootExtension">
+                <b>${e}</b>
+                <select
+                    id="${e}SEL"
+                    onchange="renderAdditionalFields('${e}','${e}','${e}SEL');">
+                        <option value="">(SELECT)</option>`
+            extensions[e].forEach((foreign) => {
+                content += `<OPTION value="${foreign}">${foreign}</option>`
+            })
+            content += `
+                </select>
+            </div>
+            <div class="extension rootExtension" id="${e}">
+                This field can be extended by multiple data types. Please select the data-type you would like to use.
+            </div>`
+        }
+        content += `</div>`
+        console.log(content)
+        return content;
+    }
+
+    function createTemplate(rootDataType, columns, label = "Example Template", project = "sample") {
+        const body = {
+            label,
+            xsiType: rootDataType,
+            project,
+            template: [...columns]
+        }
+
+        XNAT
+            .xhr
+            .postJSON({
+                url: XNAT
+                    .url
+                    .restUrl('/xapi/csv/templates'),
+                data: JSON.stringify(body),
+                success: function () {
+                    console.log("Template created successfully")
+                    renderTemplatesTable()
+                }
+            })
+    }
+
+    function getElementFieldMapping(name) {
+        for (var i = 0; i < allElements.length; i++) {
+            if (allElements[i].elementName == name) {
+                return allElements[i];
+            }
+        }
+    }
+
+    function renderAdditionalFields(header, destinationDIV, selectBox) {
+        var dest = document.getElementById(destinationDIV);
+        while (dest.firstChild) {
+            dest.removeChild(dest.firstChild);
+        }
+
+        var checkAll = document.getElementById("checkALL");
+        if (selectBox.selectedIndex != 0) {
+            var foreignElementName = selectBox
+                .options[selectBox.selectedIndex]
+                .value;
+            var elementMapping = getElementFieldMapping(foreignElementName);
+            for (var i = 0; i < elementMapping.fields.length; i++) {
+                var field = elementMapping.fields[i];
+
+                var newDIV = document.createElement("DIV");
+                newDIV.className = "field rootField";
+
+                var inputBox = document.createElement("INPUT");
+                inputBox.type = "checkbox";
+                inputBox.name = "fields";
+                inputBox.checked = checkAll.checked;
+                inputBox.value = header + "[@xsi:type='" + foreignElementName + "']" + field.substring(
+                    field.indexOf("/")
+                );;
+
+                newDIV.appendChild(inputBox);
+
+                var labelTxt = document.createElement("LABEL");
+                labelTxt.innerHTML = header + field.substring(field.indexOf("/"));
+                newDIV.appendChild(labelTxt);
+
+                dest.appendChild(newDIV);
+            }
+        }
+    }
+
+    function renderAdditionalFields(header, destinationDIV, selectBoxID) {
+        var dest = document.getElementById(destinationDIV);
+        while (dest.firstChild) {
+            dest.removeChild(dest.firstChild);
+        }
+        var selectBox = document.getElementById(selectBoxID);
+
+        var checkAll = document.getElementById("checkALL");
+        if (selectBox.selectedIndex != 0) {
+            var foreignElementName = selectBox
+                .options[selectBox.selectedIndex]
+                .value;
+            var elementMapping = getElementFieldMapping(foreignElementName);
+            for (var i = 0; i < elementMapping.fields.length; i++) {
+                var field = elementMapping.fields[i];
+
+                var newDIV = document.createElement("DIV");
+                newDIV.className = "field rootField";
+
+                var inputBox = document.createElement("INPUT");
+                inputBox.type = "checkbox";
+                inputBox.name = "fields";
+                inputBox.checked = checkAll.checked;
+                inputBox.value = header + "[@xsi:type='" + foreignElementName + "']" + field.substring(
+                    field.indexOf("/")
+                );;
+
+                newDIV.appendChild(inputBox);
+
+                var labelTxt = document.createElement("LABEL");
+                labelTxt.innerHTML = header + field.substring(field.indexOf("/"));
+                newDIV.appendChild(labelTxt);
+
+                dest.appendChild(newDIV);
+            }
+
+            for (var i = 0; i < elementMapping.extensionPaths.length; i++) {
+                var field = elementMapping.extensionPaths[i];
+
+                var newDIV = document.createElement("DIV");
+                newDIV.className = "extension rootExtension";
+
+                var labelTxt = document.createElement("LABEL");
+                labelTxt.innerHTML = "<B>" + header + field.substring(field.indexOf("/")) + "</B>";
+                newDIV.appendChild(labelTxt);
+
+                var newSelectBox = document.createElement("SELECT");
+                newSelectBox.ID = field + "SEL";
+                newSelectBox.onchange = new function () {
+                    renderAdditionalFields("" + field + "", "" + field + "", field + "SEL");
+                };
+                newSelectBox.options[0] = new Option('', '(SELECT)');
+                for (var j = 0; j < elementMapping.extensionTypes[i].length; j++) {
+                    newSelectBox.options[j + 1] = new Option(
+                        elementMapping.extensionTypes[i][j],
+                        elementMapping.extensionTypes[i][j]
+                    );
+                }
+                newDIV.appendChild(newSelectBox);
+
+                dest.appendChild(newDIV);
+
+                newDIV = document.createElement("DIV");
+                newDIV.className = "extension rootExtension";
+                newDIV.ID = "$e.getKey()";
+                newDIV.innerHTML = "This field can be extended by multiple data types.  Please select the data-type you would like to " +
+                        "use.";
+
+                dest.appendChild(newDIV);
+            }
+        }
+    }
+
+    function checkAll() {
+        var tbls = document.getElementsByTagName("input");
+        var checkAll = document.getElementById("checkALL");
+        for (ti = 0; ti < tbls.length; ti++) {
+            thisTbl = tbls[ti];
+            if (thisTbl.id != "checkALL") {
+                thisTbl.checked = checkAll.checked;
+            }
+        }
     }
 </script>
