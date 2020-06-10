@@ -3,6 +3,9 @@
  */
 package org.nrg.xnat.services.upload.csv;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.nrg.xft.utils.FieldMapping;
@@ -38,6 +41,8 @@ public interface CsvUploadService {
 	 */
 	void updateTemplate(String id, CsvTemplate template);
 
-	FieldMapping getRoot(String root);
+	File downloadTemplate(TemplateDto template);
+	
+	Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
 
 }

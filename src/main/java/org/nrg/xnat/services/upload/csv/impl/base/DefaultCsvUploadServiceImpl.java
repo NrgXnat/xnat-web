@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -16,6 +18,10 @@ import javax.transaction.Transactional;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
+import org.nrg.xft.db.ViewManager;
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperField;
+import org.nrg.xft.schema.design.SchemaElementI;
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.daos.CsvTemplateDAO;
@@ -278,13 +284,171 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return String.format(" Project Id passed is %s", projectId);
 	}
 
+	/*
+	 * @Override public FieldMapping getRoot(String root) { FieldMapping fm = new
+	 * FieldMapping(); fm.setElementName(root);
+	 * 
+	 * 
+	 * return fm; }
+	 */
+	public Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception{
+		Hashtable<String,ArrayList<Object>> all = new Hashtable<String,ArrayList<Object>>();
+		Hashtable<String,ArrayList<String>> extendable = new Hashtable<String,ArrayList<String>>();
+        ArrayList<String> cleaned =new ArrayList<String>();
+        ArrayList<String> required =new ArrayList<String>();
+        
+        String fm_id = fm.getID();
+        String root = fm.getElementName();
+        
+        
+        GenericWrapperElement gwe = GenericWrapperElement.GetElement(root);
+        for(String s: ViewManager.GetFieldNames(gwe, ViewManager.ACTIVE, false, true)) {
+            s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
+            if ((! s.endsWith("/meta/last_modified")) &&
+                    (! s.endsWith("/meta/status")) &&
+                    (! s.endsWith("/meta/activation_date")) &&
+                    (! s.endsWith("/meta/insert_date")) &&
+                    (! s.endsWith("/meta/activation_user_xdat_user_id")) &&
+                    (! s.endsWith("/meta/insert_user_xdat_user_id")) &&
+                    (! s.endsWith("/meta/origin")) &&
+                    (! s.endsWith("/meta/modified")) &&
+                    (! s.endsWith("/meta/meta_data_id")) &&
+                    (! s.endsWith("/meta/shareable")) &&
+                    (! s.endsWith("/extension")) &&
+                    (! s.equals(root +"/project")) &&
+                    (! s.equals(root +"/ID")) &&
+                    (! s.endsWith("_info")) &&
+                    (! s.endsWith("/extension_item/element_name")) &&
+                    (! s.endsWith("/extension_item/xdat_meta_element_id")) ){
+                if (!cleaned.contains(s))
+                    cleaned.add(s);
+            }else if(s.endsWith("/extension")){
+                String xmlPath = s.substring(0,s.length()-10);
+                if (xmlPath.indexOf("/")>-1){
+                    GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+                    if (f.isReference()){
+                        if (extendable.get(xmlPath)==null)
+                        {
+                            extendable.put(xmlPath, new ArrayList<String>());
+                            extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
+                        }
+                        for(SchemaElementI se :f.getReferenceElement().getGenericXFTElement().getPossibleExtenders())
+                        {
+                            extendable.get(xmlPath).add(se.getFullXMLName());
+                        }
+                    }else{
+                        if (!cleaned.contains(s))
+                            cleaned.add(s);
+                    }
+                }
+            }else if((s.equals(root +"/project"))){
+                //context.put("hasProject",true);
+            }else if(s.equals(root +"/ID")){
+                if (!required.contains(s))
+                    required.add(s);
+            }
+        }
+
+        ArrayList<String> toRemove = new ArrayList<String>();
+        for(String key : extendable.keySet()){
+            for(String value : cleaned){
+                if (value.startsWith(key)){
+                    toRemove.add(value);
+                }
+            }
+        }
+        
+        for(String key : toRemove){
+            cleaned.remove(key);
+        }
+        
+        ArrayList<Object> temp = new ArrayList<Object>();
+        temp.add(cleaned);
+        temp.add(extendable);
+        temp.add(required);
+        all.put(root, temp);
+                
+        for(Map.Entry<String,ArrayList<String>> entry: extendable.entrySet()){
+            for(String relation : entry.getValue()){
+                root = relation;
+                if (!all.containsKey(root)){
+                    gwe = GenericWrapperElement.GetElement(root);
+                    cleaned =new ArrayList<String>();
+                    extendable = new Hashtable<String,ArrayList<String>>();
+                    
+                    for(String s: ViewManager.GetFieldNames(gwe,ViewManager.ACTIVE,false,true)){
+                        s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
+                        if ((! s.endsWith("/meta/last_modified")) &&
+                                (! s.endsWith("/meta/status")) &&
+                                (! s.endsWith("/meta/activation_date")) &&
+                                (! s.endsWith("/meta/insert_date")) &&
+                                (! s.endsWith("/meta/activation_user_xdat_user_id")) &&
+                                (! s.endsWith("/meta/insert_user_xdat_user_id")) &&
+                                (! s.endsWith("/meta/origin")) &&
+                                (! s.endsWith("/meta/modified")) &&
+                                (! s.endsWith("/meta/meta_data_id")) &&
+                                (! s.endsWith("/meta/shareable")) &&
+                                (! s.endsWith("/extension")) &&
+                                (! s.endsWith("_info")) &&
+                                (! s.endsWith("/extension_item/element_name")) &&
+                                (! s.endsWith("/extension_item/xdat_meta_element_id")) ){
+                            if (!cleaned.contains(s))
+                                cleaned.add(s);
+                        }else if(s.endsWith("/extension")){
+                            String xmlPath = s.substring(0,s.length()-10);
+                            if (xmlPath.indexOf("/")>-1){
+                                GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+                                if (f.isReference()){
+                                    if (extendable.get(xmlPath)==null)
+                                    {
+                                        extendable.put(xmlPath, new ArrayList<String>());
+                                        extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
+                                    }
+                                    for(SchemaElementI se :f.getReferenceElement().getGenericXFTElement().getPossibleExtenders())
+                                    {
+                                        extendable.get(xmlPath).add(se.getFullXMLName());
+                                    }
+                                }else{
+                                    if (!cleaned.contains(s))
+                                        cleaned.add(s);
+                                }
+                            }
+                        }
+                    }
+
+                    toRemove = new ArrayList<String>();
+                    for(String key : extendable.keySet()){
+                        for(String value : cleaned){
+                            if (value.startsWith(key)){
+                                toRemove.add(value);
+                            }
+                        }
+                    }
+                    
+                    for(String key : toRemove){
+                        cleaned.remove(key);
+                    }
+                    
+                    temp = new ArrayList<Object>();
+                    temp.add(cleaned);
+                    temp.add(extendable);
+                    temp.add(new ArrayList());
+                    all.put(root, temp);
+                }
+            }
+            
+        }   
+        return all;
+    }
+	
 	@Override
-	public FieldMapping getRoot(String root) {
-		 FieldMapping fm = new FieldMapping();
-         fm.setElementName(root);
-         
-         
-		return fm;
+	public File downloadTemplate(TemplateDto template) {
+		
+		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + template.getXsiType());
+		
+		FileUtils.OutputToFile(template.getTemplate().toString(), file.getPath());
+		
+		return file;
 	}
 
 }

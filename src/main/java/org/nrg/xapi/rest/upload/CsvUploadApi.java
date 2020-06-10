@@ -5,6 +5,10 @@ package org.nrg.xapi.rest.upload;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Hashtable;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
@@ -22,6 +26,7 @@ import org.nrg.xnat.dto.ValidationResult;
 import org.nrg.xnat.entities.CsvTemplate;
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -203,11 +208,54 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param rootName whose related attribute are to be returned
 	 * @return List of Attributes
 	 */
-	@XapiRequestMapping(value = "/templates/root/{rootName}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<FieldMapping> getRoot(
-			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootName") final String rootName) {
+	@XapiRequestMapping(value = "/templates/root/{rootDataType}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	public ResponseEntity<Hashtable<String,ArrayList<Object>>> getAtrributesBasedOnRootDataType(
+			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootDataType") final String rootDataType) {
 		log.info("getRoot called");
-		return new ResponseEntity<FieldMapping>(_uploadService.getRoot(rootName), HttpStatus.OK);
+		
+		Hashtable<String,ArrayList<Object>> attributes = new Hashtable<>();
+		String id = "" + Calendar.getInstance().getTimeInMillis();
+        FieldMapping fm = new FieldMapping();
+        fm.setElementName(rootDataType);
+//        fm.setElementName("xnat:subjectData");
+        fm.setTitle("Sample Template hard coded tests");
+        fm.setID(id);   
+		try {
+			attributes = _uploadService.getAttributes(fm);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new ResponseEntity<Hashtable<String,ArrayList<Object>>>(attributes, HttpStatus.OK);
+		
+//		return new ResponseEntity<FieldMapping>(_uploadService.getRoot(rootName), HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "download template for a root")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Download file associated with root name passed."),
+			@ApiResponse(code = 400, message = "Not Found"), @ApiResponse(code = 409, message = "Permission denied") })
+	/**
+	 * Download file associated with root name passed.
+	 * 
+	 * @param rootName Indicates the name of root whose template is to be downloaded
+	 * @return File
+	 */
+	@XapiRequestMapping(value = "/templates/download/{id}", method = RequestMethod.GET, restrictTo = Admin)
+	public ResponseEntity<FileSystemResource> downloadTemplate(
+			@ApiParam(value = "Indicates the name of root whose template is to be downloaded.", required = true) @PathVariable("id") final String id) {
+		log.info("template download called");
+		
+		TemplateDto dto = _uploadService.getTemplateById(id);
+		
+		File csvFile = _uploadService.downloadTemplate(dto);
+
+		return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=" + dto.getXsiType() + ".csv")
+                .contentLength(csvFile.length())
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(new FileSystemResource(csvFile));
+		
+//		return new ResponseEntity<>(_uploadService.downloadTemplate(rootName), HttpStatus.OK);
 	}
 	private final CsvUploadService _uploadService;
 }
