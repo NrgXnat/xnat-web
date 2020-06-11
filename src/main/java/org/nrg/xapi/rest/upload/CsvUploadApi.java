@@ -5,12 +5,17 @@ package org.nrg.xapi.rest.upload;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
 
+import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
@@ -26,7 +31,8 @@ import org.nrg.xnat.dto.ValidationResult;
 import org.nrg.xnat.entities.CsvTemplate;
 import org.nrg.xnat.services.upload.csv.CsvUploadService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -179,7 +185,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate", method = RequestMethod.POST, restrictTo = Admin)
 	public ResponseEntity<ValidationResult> validateCsvData(
 			@ApiParam(value = "Indicates the ID of the project whose template is to be validated.", required = true) @PathVariable("projectId") @Project final String projectId,
-			@RequestParam("file")MultipartFile file) {
+			@RequestParam("file") MultipartFile file) {
 		return new ResponseEntity<ValidationResult>(_uploadService.validateData(projectId, file), HttpStatus.OK);
 	}
 
@@ -209,28 +215,28 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of Attributes
 	 */
 	@XapiRequestMapping(value = "/templates/root/{rootDataType}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<Hashtable<String,ArrayList<Object>>> getAtrributesBasedOnRootDataType(
+	public ResponseEntity<Hashtable<String, ArrayList<Object>>> getAtrributesBasedOnRootDataType(
 			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootDataType") final String rootDataType) {
 		log.info("getRoot called");
-		
-		Hashtable<String,ArrayList<Object>> attributes = new Hashtable<>();
+
+		Hashtable<String, ArrayList<Object>> attributes = new Hashtable<>();
 		String id = "" + Calendar.getInstance().getTimeInMillis();
-        FieldMapping fm = new FieldMapping();
-        fm.setElementName(rootDataType);
+		FieldMapping fm = new FieldMapping();
+		fm.setElementName(rootDataType);
 //        fm.setElementName("xnat:subjectData");
-        fm.setTitle("Sample Template hard coded tests");
-        fm.setID(id);   
+		fm.setTitle("Sample Template hard coded tests");
+		fm.setID(id);
 		try {
 			attributes = _uploadService.getAttributes(fm);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return new ResponseEntity<Hashtable<String,ArrayList<Object>>>(attributes, HttpStatus.OK);
-		
+		return new ResponseEntity<Hashtable<String, ArrayList<Object>>>(attributes, HttpStatus.OK);
+
 //		return new ResponseEntity<FieldMapping>(_uploadService.getRoot(rootName), HttpStatus.OK);
 	}
-	
+
 	@ApiOperation(value = "download template for a root")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Download file associated with root name passed."),
 			@ApiResponse(code = 400, message = "Not Found"), @ApiResponse(code = 409, message = "Permission denied") })
@@ -241,21 +247,73 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return File
 	 */
 	@XapiRequestMapping(value = "/templates/download/{id}", method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<FileSystemResource> downloadTemplate(
-			@ApiParam(value = "Indicates the name of root whose template is to be downloaded.", required = true) @PathVariable("id") final String id) {
+	public ResponseEntity<Resource> downloadTemplate(
+			@ApiParam(value = "Indicates the id of template that is to be downloaded.", required = true) @PathVariable("id") final String id)
+			throws IOException {
 		log.info("template download called");
-		
+
 		TemplateDto dto = _uploadService.getTemplateById(id);
-		
+
 		File csvFile = _uploadService.downloadTemplate(dto);
 
-		return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=" + dto.getXsiType() + ".csv")
-                .contentLength(csvFile.length())
-                .contentType(MediaType.parseMediaType("text/csv"))
-                .body(new FileSystemResource(csvFile));
+//		String header = _uploadService.getHeaderString(dto);
+
+		log.info(csvFile.getAbsolutePath());
+
+//		FileInputStream input = new FileInputStream(csvFile);
+
+//		DiskFileItem fileItem = new DiskFileItem("file", "text/csv", false, csvFile.getName(), (int) csvFile.length(),
+//				csvFile.getParentFile());
+//	    fileItem.getOutputStream();
+//	    MultipartFile multipartFile = new CommonsMultipartFile(fileItem);
+
+//		MultipartFile multipartFile = new MultipartFile("file",
+//				csvFile.getName(), "text/plain", IOUtils.toByteArray(input));
+//		
+		/*
+		 * byte[] yourBytes; ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		 * ObjectOutputStream out = null; try { out = new ObjectOutputStream(bos);
+		 * out.writeObject(dto); out.flush(); yourBytes = bos.toByteArray();
+		 * 
+		 * } finally { try { bos.close(); } catch (IOException ex) { // ignore close
+		 * exception } }
+		 */
 		
+		Resource resource = null;
+		resource = new ByteArrayResource(Files.readAllBytes(csvFile.toPath()));
+		System.out.println(resource);
+//		resource = new InputStreamResource();
+
+//		resource = new FileSystemResource(csvFile); working but data is different
+//		resource = new ByteArrayResource(Files.readAllBytes(csvFile.toPath()));
+
+		return ResponseEntity.ok().header("Content-Disposition", "attachment; filename=" + dto.getXsiType() + ".csv")
+				.contentLength(csvFile.length()).contentType(MediaType.parseMediaType("text/csv")).body(resource);
+//                .body(resource);
+//                .body(new ByteArrayResource(csvFile.getData());
+
 //		return new ResponseEntity<>(_uploadService.downloadTemplate(rootName), HttpStatus.OK);
 	}
+
+	@ApiOperation(value = "Retrieves a string for site.")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns string for site."),
+			@ApiResponse(code = 400, message = "Could not retrieve listings.") })
+	/**
+	 * Returns a string Upload CSV
+	 * 
+	 * @return string
+	 */
+	@XapiRequestMapping(value = "/templates/test", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	public ResponseEntity<String> testAPI() {
+		log.info("testAPI called");
+
+//		TemplateDto dto = _uploadService.getTemplateById("1");
+
+		String val = _uploadService.getHeaderString("1");
+		String test = (val != null && val != "") ? val : "val undefined.";
+
+		return new ResponseEntity<String>("some string", HttpStatus.OK);
+	}
+
 	private final CsvUploadService _uploadService;
 }

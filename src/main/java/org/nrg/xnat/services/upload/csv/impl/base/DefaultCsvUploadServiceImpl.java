@@ -4,8 +4,10 @@
 package org.nrg.xnat.services.upload.csv.impl.base;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -14,10 +16,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
+import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.db.ViewManager;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperField;
@@ -99,7 +104,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					templateData.setXsiType(csvTemplate.getXsiType());
 				}
 				if (Objects.nonNull(csvTemplate.getTimestamp())) {
-					templateData.setUpdateOn(csvTemplate.getTimestamp().toString());
+					templateData.setUpdateOn(csvTemplate.getTimestamp().toInstant().toString());
 				}
 			}
 
@@ -216,7 +221,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	@Override
 	public ValidationResult validateData(String projectId, MultipartFile multipartFile) {
-		
+
 		log.info("Project Id passed is " + projectId);
 		ValidationResult result = new ValidationResult();
 
@@ -246,7 +251,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 							dataToUpload.setAttribute(headers.get(columnNumber));
 							dataToUpload.setValue(value);
 							dataToUpload.setDescription(String.format("The value for key %s for column %d is %s ",
-									dataToUpload.getAttribute(), columnNumber+1, dataToUpload.getValue()));
+									dataToUpload.getAttribute(), columnNumber + 1, dataToUpload.getValue()));
 							columnNumber++;
 							dataToUploads.add(dataToUpload);
 						}
@@ -255,7 +260,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					lineCount++;
 				}
 			}
-			
+
 //			deleting the temporary file
 			file.delete();
 		} catch (Exception e) {
@@ -277,10 +282,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	@Override
 	public String submitData(String projectId, List<DataToUpload> dataToUpload) {
-			CSVUpload2 upload2 = new CSVUpload2();
-			
+		CSVUpload2 upload2 = new CSVUpload2();
+
 //			upload2.doStore(dataToUpload, );
-		
+
 		return String.format(" Project Id passed is %s", projectId);
 	}
 
@@ -291,164 +296,250 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	 * 
 	 * return fm; }
 	 */
-	public Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception{
-		Hashtable<String,ArrayList<Object>> all = new Hashtable<String,ArrayList<Object>>();
-		Hashtable<String,ArrayList<String>> extendable = new Hashtable<String,ArrayList<String>>();
-        ArrayList<String> cleaned =new ArrayList<String>();
-        ArrayList<String> required =new ArrayList<String>();
-        
-        String fm_id = fm.getID();
-        String root = fm.getElementName();
-        
-        
-        GenericWrapperElement gwe = GenericWrapperElement.GetElement(root);
-        for(String s: ViewManager.GetFieldNames(gwe, ViewManager.ACTIVE, false, true)) {
-            s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
-            if ((! s.endsWith("/meta/last_modified")) &&
-                    (! s.endsWith("/meta/status")) &&
-                    (! s.endsWith("/meta/activation_date")) &&
-                    (! s.endsWith("/meta/insert_date")) &&
-                    (! s.endsWith("/meta/activation_user_xdat_user_id")) &&
-                    (! s.endsWith("/meta/insert_user_xdat_user_id")) &&
-                    (! s.endsWith("/meta/origin")) &&
-                    (! s.endsWith("/meta/modified")) &&
-                    (! s.endsWith("/meta/meta_data_id")) &&
-                    (! s.endsWith("/meta/shareable")) &&
-                    (! s.endsWith("/extension")) &&
-                    (! s.equals(root +"/project")) &&
-                    (! s.equals(root +"/ID")) &&
-                    (! s.endsWith("_info")) &&
-                    (! s.endsWith("/extension_item/element_name")) &&
-                    (! s.endsWith("/extension_item/xdat_meta_element_id")) ){
-                if (!cleaned.contains(s))
-                    cleaned.add(s);
-            }else if(s.endsWith("/extension")){
-                String xmlPath = s.substring(0,s.length()-10);
-                if (xmlPath.indexOf("/")>-1){
-                    GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
-                    if (f.isReference()){
-                        if (extendable.get(xmlPath)==null)
-                        {
-                            extendable.put(xmlPath, new ArrayList<String>());
-                            extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
-                        }
-                        for(SchemaElementI se :f.getReferenceElement().getGenericXFTElement().getPossibleExtenders())
-                        {
-                            extendable.get(xmlPath).add(se.getFullXMLName());
-                        }
-                    }else{
-                        if (!cleaned.contains(s))
-                            cleaned.add(s);
-                    }
-                }
-            }else if((s.equals(root +"/project"))){
-                //context.put("hasProject",true);
-            }else if(s.equals(root +"/ID")){
-                if (!required.contains(s))
-                    required.add(s);
-            }
-        }
+	public Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
+		Hashtable<String, ArrayList<Object>> all = new Hashtable<String, ArrayList<Object>>();
+		Hashtable<String, ArrayList<String>> extendable = new Hashtable<String, ArrayList<String>>();
+		ArrayList<String> cleaned = new ArrayList<String>();
+		ArrayList<String> required = new ArrayList<String>();
 
-        ArrayList<String> toRemove = new ArrayList<String>();
-        for(String key : extendable.keySet()){
-            for(String value : cleaned){
-                if (value.startsWith(key)){
-                    toRemove.add(value);
-                }
-            }
-        }
-        
-        for(String key : toRemove){
-            cleaned.remove(key);
-        }
-        
-        ArrayList<Object> temp = new ArrayList<Object>();
-        temp.add(cleaned);
-        temp.add(extendable);
-        temp.add(required);
-        all.put(root, temp);
-                
-        for(Map.Entry<String,ArrayList<String>> entry: extendable.entrySet()){
-            for(String relation : entry.getValue()){
-                root = relation;
-                if (!all.containsKey(root)){
-                    gwe = GenericWrapperElement.GetElement(root);
-                    cleaned =new ArrayList<String>();
-                    extendable = new Hashtable<String,ArrayList<String>>();
-                    
-                    for(String s: ViewManager.GetFieldNames(gwe,ViewManager.ACTIVE,false,true)){
-                        s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
-                        if ((! s.endsWith("/meta/last_modified")) &&
-                                (! s.endsWith("/meta/status")) &&
-                                (! s.endsWith("/meta/activation_date")) &&
-                                (! s.endsWith("/meta/insert_date")) &&
-                                (! s.endsWith("/meta/activation_user_xdat_user_id")) &&
-                                (! s.endsWith("/meta/insert_user_xdat_user_id")) &&
-                                (! s.endsWith("/meta/origin")) &&
-                                (! s.endsWith("/meta/modified")) &&
-                                (! s.endsWith("/meta/meta_data_id")) &&
-                                (! s.endsWith("/meta/shareable")) &&
-                                (! s.endsWith("/extension")) &&
-                                (! s.endsWith("_info")) &&
-                                (! s.endsWith("/extension_item/element_name")) &&
-                                (! s.endsWith("/extension_item/xdat_meta_element_id")) ){
-                            if (!cleaned.contains(s))
-                                cleaned.add(s);
-                        }else if(s.endsWith("/extension")){
-                            String xmlPath = s.substring(0,s.length()-10);
-                            if (xmlPath.indexOf("/")>-1){
-                                GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
-                                if (f.isReference()){
-                                    if (extendable.get(xmlPath)==null)
-                                    {
-                                        extendable.put(xmlPath, new ArrayList<String>());
-                                        extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
-                                    }
-                                    for(SchemaElementI se :f.getReferenceElement().getGenericXFTElement().getPossibleExtenders())
-                                    {
-                                        extendable.get(xmlPath).add(se.getFullXMLName());
-                                    }
-                                }else{
-                                    if (!cleaned.contains(s))
-                                        cleaned.add(s);
-                                }
-                            }
-                        }
-                    }
+		String fm_id = fm.getID();
+		String root = fm.getElementName();
 
-                    toRemove = new ArrayList<String>();
-                    for(String key : extendable.keySet()){
-                        for(String value : cleaned){
-                            if (value.startsWith(key)){
-                                toRemove.add(value);
-                            }
-                        }
-                    }
-                    
-                    for(String key : toRemove){
-                        cleaned.remove(key);
-                    }
-                    
-                    temp = new ArrayList<Object>();
-                    temp.add(cleaned);
-                    temp.add(extendable);
-                    temp.add(new ArrayList());
-                    all.put(root, temp);
-                }
-            }
-            
-        }   
-        return all;
-    }
-	
+		GenericWrapperElement gwe = GenericWrapperElement.GetElement(root);
+		for (String s : ViewManager.GetFieldNames(gwe, ViewManager.ACTIVE, false, true)) {
+			s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
+			if ((!s.endsWith("/meta/last_modified")) && (!s.endsWith("/meta/status"))
+					&& (!s.endsWith("/meta/activation_date")) && (!s.endsWith("/meta/insert_date"))
+					&& (!s.endsWith("/meta/activation_user_xdat_user_id"))
+					&& (!s.endsWith("/meta/insert_user_xdat_user_id")) && (!s.endsWith("/meta/origin"))
+					&& (!s.endsWith("/meta/modified")) && (!s.endsWith("/meta/meta_data_id"))
+					&& (!s.endsWith("/meta/shareable")) && (!s.endsWith("/extension")) && (!s.equals(root + "/project"))
+					&& (!s.equals(root + "/ID")) && (!s.endsWith("_info"))
+					&& (!s.endsWith("/extension_item/element_name"))
+					&& (!s.endsWith("/extension_item/xdat_meta_element_id"))) {
+				if (!cleaned.contains(s))
+					cleaned.add(s);
+			} else if (s.endsWith("/extension")) {
+				String xmlPath = s.substring(0, s.length() - 10);
+				if (xmlPath.indexOf("/") > -1) {
+					GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+					if (f.isReference()) {
+						if (extendable.get(xmlPath) == null) {
+							extendable.put(xmlPath, new ArrayList<String>());
+							extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
+						}
+						for (SchemaElementI se : f.getReferenceElement().getGenericXFTElement()
+								.getPossibleExtenders()) {
+							extendable.get(xmlPath).add(se.getFullXMLName());
+						}
+					} else {
+						if (!cleaned.contains(s))
+							cleaned.add(s);
+					}
+				}
+			} else if ((s.equals(root + "/project"))) {
+				// context.put("hasProject",true);
+			} else if (s.equals(root + "/ID")) {
+				if (!required.contains(s))
+					required.add(s);
+			}
+		}
+
+		ArrayList<String> toRemove = new ArrayList<String>();
+		for (String key : extendable.keySet()) {
+			for (String value : cleaned) {
+				if (value.startsWith(key)) {
+					toRemove.add(value);
+				}
+			}
+		}
+
+		for (String key : toRemove) {
+			cleaned.remove(key);
+		}
+
+		ArrayList<Object> temp = new ArrayList<Object>();
+		temp.add(cleaned);
+		temp.add(extendable);
+		temp.add(required);
+		all.put(root, temp);
+
+		for (Map.Entry<String, ArrayList<String>> entry : extendable.entrySet()) {
+			for (String relation : entry.getValue()) {
+				root = relation;
+				if (!all.containsKey(root)) {
+					gwe = GenericWrapperElement.GetElement(root);
+					cleaned = new ArrayList<String>();
+					extendable = new Hashtable<String, ArrayList<String>>();
+
+					for (String s : ViewManager.GetFieldNames(gwe, ViewManager.ACTIVE, false, true)) {
+						s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
+						if ((!s.endsWith("/meta/last_modified")) && (!s.endsWith("/meta/status"))
+								&& (!s.endsWith("/meta/activation_date")) && (!s.endsWith("/meta/insert_date"))
+								&& (!s.endsWith("/meta/activation_user_xdat_user_id"))
+								&& (!s.endsWith("/meta/insert_user_xdat_user_id")) && (!s.endsWith("/meta/origin"))
+								&& (!s.endsWith("/meta/modified")) && (!s.endsWith("/meta/meta_data_id"))
+								&& (!s.endsWith("/meta/shareable")) && (!s.endsWith("/extension"))
+								&& (!s.endsWith("_info")) && (!s.endsWith("/extension_item/element_name"))
+								&& (!s.endsWith("/extension_item/xdat_meta_element_id"))) {
+							if (!cleaned.contains(s))
+								cleaned.add(s);
+						} else if (s.endsWith("/extension")) {
+							String xmlPath = s.substring(0, s.length() - 10);
+							if (xmlPath.indexOf("/") > -1) {
+								GenericWrapperField f = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+								if (f.isReference()) {
+									if (extendable.get(xmlPath) == null) {
+										extendable.put(xmlPath, new ArrayList<String>());
+										extendable.get(xmlPath).add(f.getReferenceElementName().getFullForeignType());
+									}
+									for (SchemaElementI se : f.getReferenceElement().getGenericXFTElement()
+											.getPossibleExtenders()) {
+										extendable.get(xmlPath).add(se.getFullXMLName());
+									}
+								} else {
+									if (!cleaned.contains(s))
+										cleaned.add(s);
+								}
+							}
+						}
+					}
+
+					toRemove = new ArrayList<String>();
+					for (String key : extendable.keySet()) {
+						for (String value : cleaned) {
+							if (value.startsWith(key)) {
+								toRemove.add(value);
+							}
+						}
+					}
+
+					for (String key : toRemove) {
+						cleaned.remove(key);
+					}
+
+					temp = new ArrayList<Object>();
+					temp.add(cleaned);
+					temp.add(extendable);
+					temp.add(new ArrayList());
+					all.put(root, temp);
+				}
+			}
+
+		}
+		return all;
+	}
+
 	@Override
-	public File downloadTemplate(TemplateDto template) {
+	public File downloadTemplate(TemplateDto templateDto) {
+
+//		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + template.getXsiType());
+
+		String filePath = System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType();
+		File file = new File(filePath);
+
+		FileWriter writer;
+		String templateString = null;
 		
-		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + template.getXsiType());
+		try {
+			templateString =  convertListToCommaSeperatedString(templateDto) ;
+			
+			log.info("string is "+ templateString);
+			System.out.println("string is "+ templateString);
+			
+			writer = new FileWriter(file);
+			writer.append(templateString);
+			writer.close();
+
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+//		for (String template : templateDto.getTemplate()) {
+//			
+//		}
+
+//		return templateString;
+
+//		FileUtils.OutputToFile(templateString, filePath);
+
+		/*
+		 * FileWriter csvWriter; try { csvWriter = new FileWriter(file);
+		 * csvWriter.append(templateString);
+		 * 
+		 * csvWriter.flush(); csvWriter.close(); } catch (IOException e) { // TODO
+		 * Auto-generated catch block e.printStackTrace(); }
+		 */
 		
-		FileUtils.OutputToFile(template.getTemplate().toString(), file.getPath());
-		
+
 		return file;
+
+	}
+
+	private String convertListToCommaSeperatedString(TemplateDto templateDto) throws IOException {
+//		String id = "" + Calendar.getInstance().getTimeInMillis();
+//
+//		FieldMapping fm = new FieldMapping();
+//		fm.setElementName(templateDto.getXsiType());
+////	        fm.setElementName("xnat:subjectData");
+//		fm.setTitle("Sample Template hard coded tests");
+//		fm.setID(id);
+//		FieldMapping fm = (FieldMapping)TurbineUtils.GetPassedParameter("fm", data);
+//        String fm_id = (String)TurbineUtils.GetPassedParameter("fm_id", data);
+//        if (fm==null && fm_id!=null){
+//            File f = Users.getUserCacheFile(TurbineUtils.getUser(data),"csv/" + fm_id + ".xml");
+//            fm  = new FieldMapping(f);
+//        }
+
+//		String templateString = getHeaderString("1");
+
+//        String templateString = String.join(", ", templateDto.getTemplate());
+//
+
+		
+//		HttpServletResponse response = templateDto.getTemplate()
+		// We have to set the size to workaround a bug in IE (see com.lowagie iText FAQ)
+		// data.getResponse().setContentLength(baos.size());
+//		TurbineUtils.setContentDisposition(data.getResponse(), "template.csv", false);
+//		ServletOutputStream out = response.getOutputStream();
+		
+		
+		StringBuffer sb = new StringBuffer();
+		List<String> fields = templateDto.getTemplate();
+		for (int i = 0; i < fields.size(); i++) {
+			String xmlPath = fields.get(i);
+			if (i > 0)
+				sb.append(", ");
+			sb.append(xmlPath.substring(xmlPath.lastIndexOf("/") + 1));
+		}
+		
+		
+		
+//		
+		return (sb == null || sb.toString().isEmpty()) ? "new string, string1, string2": sb.toString();
+	}
+
+	public String getHeaderString(String id) {
+//		String replace = templateDto.getXsiType() + "/";
+//		String newTemplate;
+//
+//		List<String> templateList = new ArrayList<String>();
+//
+//		for (String template : templateDto.getTemplate()) {
+//			newTemplate = template.replace(replace, "");
+//			templateList.add(newTemplate);
+//
+//		}
+
+		Long templateId = Long.parseLong(id);
+
+		log.info("id converted is " + templateId);
+		CsvTemplate csvTemplate = getDao().findById(templateId);
+
+		String templateString = csvTemplate.getTemplate().toString();
+
+		return "some string";
 	}
 
 }

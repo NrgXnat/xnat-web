@@ -44,5 +44,7 @@ public interface CsvUploadService {
 	File downloadTemplate(TemplateDto template);
 	
 	Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
+	
+	public String getHeaderString(String id);
 
 }
