@@ -263,12 +263,15 @@
                                         label: 'Actions',
                                         filter: false,
                                         apply: function () {
+                                            let downloadURL = XNAT
+                                                .url
+                                                .restUrl('/xapi/csv/templates/download/' + this.id)
                                             return spawn(
                                                 'p',
                                                 {html: `
                                     <div style="justify-content: space-evenly; display: flex;">
                                         <a> <i style="padding: 5px;" class="fa fa-edit" aria-hidden="true"></i> </a>
-                                        <a> <i style="padding: 5px;" class="fa fa-download" aria-hidden="true"></i> </a>
+                                        <a href="${downloadURL}" target="_blank"> <i style="padding: 5px;" class="fa fa-download" aria-hidden="true"></i> </a>
                                         <a> <i style="padding: 5px;" class="fa fa-upload" aria-hidden="true"></i> </a>
                                         <a onClick="deleteTemplate(${this.id})"> <i style="padding: 5px;" class="fa fa-trash-o" aria-hidden="true"></i> </a>
                                     </div>
