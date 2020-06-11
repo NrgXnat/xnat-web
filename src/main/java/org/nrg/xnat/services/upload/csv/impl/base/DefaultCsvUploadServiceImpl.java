@@ -433,78 +433,27 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	@Override
 	public File downloadTemplate(TemplateDto templateDto) {
 
-//		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + template.getXsiType());
+		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType());
 
-		String filePath = System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType();
-		File file = new File(filePath);
-
-		FileWriter writer;
-		String templateString = null;
-		
 		try {
-			templateString =  convertListToCommaSeperatedString(templateDto) ;
+			String	templateString =  convertListToCommaSeperatedString(templateDto) ;
 			
 			log.info("string is "+ templateString);
-			System.out.println("string is "+ templateString);
 			
-			writer = new FileWriter(file);
+			FileWriter writer = new FileWriter(file);
 			writer.append(templateString);
 			writer.close();
 
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-
-//		for (String template : templateDto.getTemplate()) {
-//			
-//		}
-
-//		return templateString;
-
-//		FileUtils.OutputToFile(templateString, filePath);
-
-		/*
-		 * FileWriter csvWriter; try { csvWriter = new FileWriter(file);
-		 * csvWriter.append(templateString);
-		 * 
-		 * csvWriter.flush(); csvWriter.close(); } catch (IOException e) { // TODO
-		 * Auto-generated catch block e.printStackTrace(); }
-		 */
-		
 
 		return file;
 
 	}
 
 	private String convertListToCommaSeperatedString(TemplateDto templateDto) throws IOException {
-//		String id = "" + Calendar.getInstance().getTimeInMillis();
-//
-//		FieldMapping fm = new FieldMapping();
-//		fm.setElementName(templateDto.getXsiType());
-////	        fm.setElementName("xnat:subjectData");
-//		fm.setTitle("Sample Template hard coded tests");
-//		fm.setID(id);
-//		FieldMapping fm = (FieldMapping)TurbineUtils.GetPassedParameter("fm", data);
-//        String fm_id = (String)TurbineUtils.GetPassedParameter("fm_id", data);
-//        if (fm==null && fm_id!=null){
-//            File f = Users.getUserCacheFile(TurbineUtils.getUser(data),"csv/" + fm_id + ".xml");
-//            fm  = new FieldMapping(f);
-//        }
 
-//		String templateString = getHeaderString("1");
-
-//        String templateString = String.join(", ", templateDto.getTemplate());
-//
-
-		
-//		HttpServletResponse response = templateDto.getTemplate()
-		// We have to set the size to workaround a bug in IE (see com.lowagie iText FAQ)
-		// data.getResponse().setContentLength(baos.size());
-//		TurbineUtils.setContentDisposition(data.getResponse(), "template.csv", false);
-//		ServletOutputStream out = response.getOutputStream();
-		
-		
 		StringBuffer sb = new StringBuffer();
 		List<String> fields = templateDto.getTemplate();
 		for (int i = 0; i < fields.size(); i++) {
@@ -514,32 +463,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			sb.append(xmlPath.substring(xmlPath.lastIndexOf("/") + 1));
 		}
 		
-		
-		
-//		
-		return (sb == null || sb.toString().isEmpty()) ? "new string, string1, string2": sb.toString();
-	}
-
-	public String getHeaderString(String id) {
-//		String replace = templateDto.getXsiType() + "/";
-//		String newTemplate;
-//
-//		List<String> templateList = new ArrayList<String>();
-//
-//		for (String template : templateDto.getTemplate()) {
-//			newTemplate = template.replace(replace, "");
-//			templateList.add(newTemplate);
-//
-//		}
-
-		Long templateId = Long.parseLong(id);
-
-		log.info("id converted is " + templateId);
-		CsvTemplate csvTemplate = getDao().findById(templateId);
-
-		String templateString = csvTemplate.getTemplate().toString();
-
-		return "some string";
+		return sb.toString();
 	}
 
 }
