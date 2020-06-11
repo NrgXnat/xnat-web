@@ -41,6 +41,24 @@
     .table-template-list {
         width: 100%;
     }
+
+    .filter-last-modified {
+        display: none;
+    }
+
+    .attributes-info-div {
+        display: flex;
+        padding: 10px 10px 0;
+        margin-bottom: 10px;
+        border: 2px solid rgb(204, 204, 204);
+        background: rgb(228, 239, 255);
+    }
+
+    .attributes-info-icon {
+        padding-right: 10px;
+        font-size: 16px;
+        color: rgb(26, 117, 187);
+    }
 </style>
 <script language="javascript">
     var all_elements = new Array();
@@ -97,6 +115,7 @@
     var templatesTableContainer = 'div#installed-template-table-container'
     renderTemplatesTable();
     var allElements = new Array();
+    var $dataRows = []
 
     function renderTemplatesTable() {
         var container = $(templatesTableContainer);
@@ -141,12 +160,93 @@
                                     },
                                     lastModified: {
                                         label: 'Last Modified',
-                                        filter: true,
+                                        filter: function (table) {
+                                            var MIN = 60 * 1000;
+                                            var HOUR = MIN * 60;
+                                            var X8HRS = HOUR * 8;
+                                            var X24HRS = HOUR * 24;
+                                            var X7DAYS = X24HRS * 7;
+                                            var X30DAYS = X24HRS * 30;
+                                            return spawn('div.center', [
+                                                XNAT
+                                                    .ui
+                                                    .select
+                                                    .menu({
+                                                        value: 0,
+                                                        options: {
+                                                            all: {
+                                                                label: 'All',
+                                                                value: 0,
+                                                                selected: true
+                                                            },
+                                                            lastHour: {
+                                                                label: 'Last Hour',
+                                                                value: HOUR
+                                                            },
+                                                            last8hours: {
+                                                                label: 'Last 8 Hrs',
+                                                                value: X8HRS
+                                                            },
+                                                            last24hours: {
+                                                                label: 'Last 24 Hrs',
+                                                                value: X24HRS
+                                                            },
+                                                            lastWeek: {
+                                                                label: 'Last Week',
+                                                                value: X7DAYS
+                                                            },
+                                                            last30days: {
+                                                                label: 'Last 30 days',
+                                                                value: X30DAYS
+                                                            }
+                                                        },
+                                                        element: {
+                                                            id: 'template-filter-select-last-modified',
+                                                            on: {
+                                                                change: function () {
+                                                                    var FILTERCLASS = 'filter-last-modified';
+                                                                    var selectedValue = parseInt(this.value, 10);
+                                                                    var currentTime = Date.now();
+                                                                    $dataRows = $dataRows.length
+                                                                        ? $dataRows
+                                                                        : $$(table)
+                                                                            .find('tbody')
+                                                                            .find('tr');
+                                                                    if (selectedValue === 0) {
+                                                                        $dataRows.removeClass(FILTERCLASS);
+                                                                    } else {
+                                                                        $dataRows
+                                                                            .addClass(FILTERCLASS)
+                                                                            .filter(function () {
+                                                                                var timestamp = this.querySelector('input.timestamp');
+                                                                                var lastLogin = +(timestamp.value);
+                                                                                return selectedValue === lastLogin - 1 || selectedValue > (currentTime - lastLogin);
+                                                                            })
+                                                                            .removeClass(FILTERCLASS);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    })
+                                                    .element
+                                            ])
+                                        },
                                         apply: function () {
-                                            return spawn('div', {
-                                                title: this.updateOn,
-                                                html: escapeHtml(this.updateOn)
-                                            });
+                                            return spawn('!', [
+                                                [
+                                                    'input.hidden.timestamp.filtering|type=hidden', {
+                                                        value: (new Date(this.updateOn)).getTime()
+                                                    }
+                                                ],
+                                                [
+                                                    'span.date-time',
+                                                    (
+                                                        this.updateOn
+                                                            ? (new Date(this.updateOn)).toLocaleString()
+                                                            : ''
+                                                    )
+                                                ]
+                                            ])
                                         }
                                     },
                                     project: {
@@ -335,7 +435,7 @@
                 content: content,
                 buttons: [
                     {
-                        label: "OK",
+                        label: "Continue",
                         close: false,
                         isDefault: true,
                         action: function (obj) {
@@ -347,7 +447,7 @@
                                 if (ips[i].checked) 
                                     selected.push(ips[i].value)
                             }
-                            createTemplate(rootDataType, selected)
+                            templateNameModal(rootDataType, selected)
                             obj.close()
                         }
                     }, {
@@ -369,16 +469,22 @@
         const required = rootFields[2]
         let content = ` 
         <div id="rootDIV">
+            <div class="attributes-info-div"> 
+                <i class="fa fa-info-circle attributes-info-icon" aria-hidden="true"></i>
+                <p> Select all attributes you want to include in your template. Each attribute will correspond to a column in your comma-delimited template file. You can reorder columns as needed when fitting our data and uploading.</p>
+            </div>
             <input type="checkbox" id="checkALL" onclick="checkAll();"/>
-            Check All
-            <div class="field rootField">`
+            Select All
+            <div class="field rootField">
+            <hr style="margin: 10px 0;">`
 
         required.forEach((ele) => {
             content += `    
             <DIV class="field rootField">
-                <input type="hidden" value="${ele}" name="fields"/>
+                <input type="checkbox" checked disabled value="${ele}" name="fields"/>
                 <b>${ele} (Required)</b>
-            </div>`
+            </div>
+            <hr style="margin: 10px 0;">`
         })
 
         fields.forEach((field) => {
@@ -410,6 +516,123 @@
         content += `</div>`
         console.log(content)
         return content;
+    }
+
+    function templateNameModal(rootDataType, selected) {
+        var formContainer$ = null
+        XNAT
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: `Save Template`,
+                content: function () {
+                    formContainer$ = $.spawn('div.new-user-form');
+                    XNAT
+                        .spawner
+                        .spawn({
+                            templateNameForm: saveTemplateContent(rootDataType, selected)
+                        })
+                        .render(formContainer$)
+                    return formContainer$[0];
+                },
+                buttons: [
+                    {
+                        label: "Save Template",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            console.log(obj)
+                            let templateName = obj
+                                .$dialog
+                                .find('input#template-name')[0]
+                                .value
+                            let projectName = obj
+                                .$dialog
+                                .find('select#project-name')[0]
+                                .value
+                            createTemplate(rootDataType, selected, templateName, projectName)
+                            obj.close()
+                            renderTemplatesTable()
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ],
+                onClose: function (obj) {
+                    console.log(obj)
+                },
+                afterShow: function () {}
+            });
+    }
+
+    function saveTemplateContent(rootDataType, columns) {
+        console.log(rootDataType)
+        var rootDataTypeEsc = escapeHtml(rootDataType)
+        return {
+            kind: 'panel.form',
+            name: 'saveTemplateForm',
+            id: 'save-template-form',
+            footer: false,
+            header: false,
+            element: {
+                autocomplete: 'off'
+            },
+            contents: {
+                templateName: {
+                    kind: 'panel.input.text',
+                    label: 'Template Name',
+                    element: {
+                        placeholder: 'Enter a unique name',
+                        autocomplete: 'off'
+                    }
+                },
+                projectName: {
+                    kind: "panel.select.single",
+                    label: "Select Project",
+                    options: {
+                        "sample 1": "Sample 1",
+                        "sample 2": "Sample 2",
+                        "sample 3": "Sample 3"
+                    }
+                },
+                rootDataType: {
+                    kind: "panel.element",
+                    label: "Datatype",
+                    content: {
+                        description: {
+                            tag: 'div.description',
+                            content: rootDataTypeEsc
+                        }
+                    }
+                },
+                fieldsSelected: {
+                    kind: "panel.element",
+                    label: "Fields selected",
+                    content: {
+                        description: {
+                            tag: 'div.description',
+                            content: columns.length
+                        },
+                        editLink: {
+                            tag: 'a.link',
+                            element: {
+                                href: '#!',
+                                title: 'edit',
+                                on: {
+                                    click: function (e) {}
+                                }
+                            },
+                            content: 'Edit'
+                        }
+                    }
+                }
+
+            }
+        }
     }
 
     function createTemplate(rootDataType, columns, label = "Example Template", project = "sample") {
