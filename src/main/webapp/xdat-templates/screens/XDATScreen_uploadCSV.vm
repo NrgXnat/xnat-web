@@ -3,19 +3,6 @@
         font-size: 24px;
     }
 
-    table,
-    td,
-    th {
-        border: 1px solid black;
-        border-collapse: collapse;
-    }
-
-    td,
-    th {
-        padding: 5px 15px;
-        text-align: center;
-    }
-
     .installed-template-box-container {
         border: 2px solid #e5e5e5;
     }
@@ -44,20 +31,6 @@
 
     .filter-last-modified {
         display: none;
-    }
-
-    .attributes-info-div {
-        display: flex;
-        padding: 10px 10px 0;
-        margin-bottom: 10px;
-        border: 2px solid rgb(204, 204, 204);
-        background: rgb(228, 239, 255);
-    }
-
-    .attributes-info-icon {
-        padding-right: 10px;
-        font-size: 16px;
-        color: rgb(26, 117, 187);
     }
 </style>
 <script language="javascript">
@@ -116,6 +89,9 @@
     renderTemplatesTable();
     var allElements = new Array();
     var $dataRows = []
+    var rootDataType = ''
+    var selectedAttributes = []
+    var attributesList = []
 
     function renderTemplatesTable() {
         var container = $(templatesTableContainer);
@@ -269,13 +245,17 @@
                                             return spawn(
                                                 'p',
                                                 {html: `
-                                    <div style="justify-content: space-evenly; display: flex;">
-                                        <a> <i style="padding: 5px;" class="fa fa-edit" aria-hidden="true"></i> </a>
-                                        <a href="${downloadURL}" target="_blank"> <i style="padding: 5px;" class="fa fa-download" aria-hidden="true"></i> </a>
-                                        <a> <i style="padding: 5px;" class="fa fa-upload" aria-hidden="true"></i> </a>
-                                        <a onClick="deleteTemplate(${this.id})"> <i style="padding: 5px;" class="fa fa-trash-o" aria-hidden="true"></i> </a>
-                                    </div>
-                                    `}
+                                                    <div style="justify-content: space-evenly; display: flex;">
+                                                        <button type="button" class="btn btn-sm" onclick="uploadData(${this.id})"> 
+                                                            Upload Data 
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm" onclick="downloadTemplate(${this.id})"> 
+                                                            <i class="fa fa-file-excel-o" aria-hidden="true"></i> 
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm" onClick="deleteTemplate(${this.id})"> 
+                                                            <i class="fa fa-trash-o" aria-hidden="true"></i> 
+                                                        </button>
+                                                    </div>`}
                                             );
                                         }
                                     }
@@ -293,18 +273,133 @@
         }
     }
 
+    function openErrorModal(error) {
+        XNAT
+            .dialog
+            .open({
+                width: 400,
+                speed: 200,
+                esc: true,
+                enter: false,
+                content: `
+                    Error:${error}
+                `,
+                buttons: [
+                    {
+                        label: "OK",
+                        close: true,
+                        isDefault: true
+                    }
+                ]
+            });
+    }
+
+    function uploadData(templateId) {
+        XNAT
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: "Upload Data File Using Template",
+                content: `
+                    <h2 class="edit_header1" style="">Uploading Data</h2>
+                    <p> Select a CSV file that follows your template. One experiment will be added or modified for each row of data. </p>
+                    <div id="csv-upload-container">
+                    </div>`,
+                buttons: [
+                    {
+                        label: "Upload",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            const projectID = ''
+                            const uploadUrl = XNAT
+                                .url
+                                .restUrl(`/xapi/csv/upload/projects/${projectID}/validate`)
+
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ]
+            });
+    }
+
+    function downloadTemplate(templateId) {
+        XNAT
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: "Download template",
+                content: `
+                    <h2 class="edit_header1" style="">Fitting Your Data To This Template</h2>
+                    <p>The "Rad Read Template 1" CSV file will contain just a header row with one attribute in each column header. When fitting your data to this template, you can either reorder your own data to fit this format, or you can reorder the column headers to fit your data. </p>
+                    <div class="info">
+                        Note: If you leave the ID column blank, a new experiment will be created. 
+                    </div>`,
+                buttons: [
+                    {
+                        label: "Download",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            const downloadUrl = XNAT
+                                .url
+                                .restUrl('/xapi/csv/templates/download/' + templateId)
+                            window.open(downloadUrl)
+                            obj.close()
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ]
+            });
+    }
+
     function deleteTemplate(templateId) {
         XNAT
-            .xhr
-            .delete({
-                url: XNAT
-                    .url
-                    .restUrl('/xapi/csv/templates/' + templateId),
-                success: function () {
-                    console.log("Template deleted successfully")
-                    renderTemplatesTable()
-                }
-            })
+            .dialog
+            .open({
+                width: 600,
+                speed: 200,
+                esc: true,
+                enter: false,
+                title: "Delete Template?",
+                content: `
+                    <p>Are you sure you want to delete this template? This action cannot be undone.</p>`,
+                buttons: [
+                    {
+                        label: "Delete",
+                        close: false,
+                        isDefault: true,
+                        action: function (obj) {
+                            XNAT
+                                .xhr
+                                .delete({
+                                    url: XNAT
+                                        .url
+                                        .restUrl('/xapi/csv/templates/' + templateId),
+                                    success: function () {
+                                        console.log("Template deleted successfully")
+                                        obj.close()
+                                        renderTemplatesTable()
+                                    }
+                                })
+
+                        }
+                    }, {
+                        label: "Cancel",
+                        close: true
+                    }
+                ]
+            });
     }
 
     function selectDatatype() {
@@ -341,22 +436,25 @@
                         close: false,
                         isDefault: true,
                         action: function (obj) {
-                            console.log(obj)
-                            const rootDataType = obj
+                            rootDataType = obj
                                 .$dialog
                                 .find('#root_data_type')[0]
                                 .value
-                            renderAttributes(rootDataType)
-                            obj.close()
+                            if (rootDataType) {
+                                renderAttributes()
+                                obj.close()
+                            } else {
+                                openErrorModal("Please select a data type.")
+                            }
                         }
                     }, {
                         label: "Cancel",
-                        close: true
+                        close: true,
+                        action: function () {
+                            clearNewTemplateData()
+                        }
                     }
                 ],
-                onClose: function (obj) {
-                    console.log(obj)
-                },
                 afterShow: function () {
                     var elements = new Array();
                     #foreach($gwe in $elements)
@@ -370,7 +468,7 @@
                         return 0;
                     });
                     var selectBox = document.getElementById('root_data_type');
-                    selectBox.options[0] = new Option("(SELECT)", "BAD");
+                    selectBox.options[0] = new Option("(SELECT)", "");
 
                     for (var i = 0; i < elements.length; i++) {
                         selectBox.options[i + 1] = new Option(elements[i], elements[i]);
@@ -379,7 +477,7 @@
             });
     }
 
-    function renderAttributes(rootDataType) {
+    function renderAttributes() {
         XNAT
             .xhr
             .get({
@@ -387,7 +485,6 @@
                     .url
                     .restUrl('/xapi/csv/templates/root/' + rootDataType),
                 success: function (data) {
-
                     function ElementFieldMapping(name) {
                         this.elementName = name;
                         this.fields = new Array();
@@ -419,14 +516,14 @@
                         }
                         allElements.push(mapping);
                     }
-                    console.log(allElements);
-                    openSelectAttributesModal(rootDataType, data)
+                    attributesList = data
+                    openSelectAttributesModal()
                 }
             })
     }
 
-    function openSelectAttributesModal(rootDataType, data) {
-        const content = selectAttributesContent(rootDataType, data)
+    function openSelectAttributesModal() {
+        const content = selectAttributesContent()
         XNAT
             .dialog
             .open({
@@ -442,39 +539,60 @@
                         close: false,
                         isDefault: true,
                         action: function (obj) {
-                            const selected = new Array()
+                            selectedAttributes = []
                             const ips = obj
                                 .$dialog
                                 .find('input')
                             for (let i = 0; i < ips.length; i++) {
                                 if (ips[i].checked) 
-                                    selected.push(ips[i].value)
+                                    selectedAttributes.push(ips[i].value)
                             }
-                            templateNameModal(rootDataType, selected)
-                            obj.close()
+                            if (selectedAttributes.length) {
+                                templateNameModal()
+                                obj.close()
+                            } else {
+                                openErrorModal("Please select template attributes.")
+                            }
                         }
                     }, {
                         label: "Cancel",
-                        close: true
+                        close: true,
+                        action: function () {
+                            clearNewTemplateData()
+                        }
                     }
                 ],
-                onClose: function (obj) {
-                    console.log(obj)
-                },
-                afterShow: function () {}
+                afterShow: function (obj) {
+                    checkSelectedAttributes()
+                }
             });
     }
 
-    function selectAttributesContent(rootDataType, data) {
-        const rootFields = data[rootDataType]
+    function checkSelectedAttributes() {
+        const modalId = $(this)
+            .closest('div.xnat-dialog')
+            .attr('data-dialog');
+        const obj = XNAT
+            .dialog
+            .getDialog(modalId)
+        const ips = obj
+            .$dialog
+            .find('input')
+        for (let i = 0; i < ips.length; i++) {
+            if (selectedAttributes.indexOf(ips[i].value) >= 0) 
+                ips[i].checked = true
+        }
+    }
+
+    function selectAttributesContent() {
+        const rootFields = attributesList[rootDataType]
         const fields = rootFields[0]
         const extensions = rootFields[1]
         const required = rootFields[2]
         let content = ` 
         <div id="rootDIV">
-            <div class="attributes-info-div"> 
-                <i class="fa fa-info-circle attributes-info-icon" aria-hidden="true"></i>
-                <p> Select all attributes you want to include in your template. Each attribute will correspond to a column in your comma-delimited template file. You can reorder columns as needed when fitting our data and uploading.</p>
+            <div class="info" style="margin-bottom: 10px;"> 
+                Select all attributes you want to include in your template. Each attribute will correspond to a column in your comma-delimited template file. You can reorder columns as needed when fitting our data and uploading.
             </div>
             <input type="checkbox" id="checkALL" onclick="checkAll();"/>
             Select All
@@ -517,11 +635,10 @@
             </div>`
         }
         content += `</div>`
-        console.log(content)
         return content;
     }
 
-    function templateNameModal(rootDataType, selected) {
+    function templateNameModal() {
         var formContainer$ = null
         XNAT
             .dialog
@@ -535,9 +652,7 @@
                     formContainer$ = $.spawn('div.new-user-form');
                     XNAT
                         .spawner
-                        .spawn({
-                            templateNameForm: saveTemplateContent(rootDataType, selected)
-                        })
+                        .spawn({templateNameForm: saveTemplateContent()})
                         .render(formContainer$)
                     return formContainer$[0];
                 },
@@ -547,7 +662,6 @@
                         close: false,
                         isDefault: true,
                         action: function (obj) {
-                            console.log(obj)
                             let templateName = obj
                                 .$dialog
                                 .find('input#template-name')[0]
@@ -556,25 +670,27 @@
                                 .$dialog
                                 .find('select#project-name')[0]
                                 .value
-                            createTemplate(rootDataType, selected, templateName, projectName)
-                            obj.close()
-                            renderTemplatesTable()
+                            if (templateName && projectName) {
+                                createTemplate(templateName, projectName)
+                                obj.close()
+                                renderTemplatesTable()
+                            } else {
+                                openErrorModal("Please enter template name and select project.")
+                            }
                         }
                     }, {
                         label: "Cancel",
-                        close: true
+                        close: true,
+                        action: function () {
+                            clearNewTemplateData()
+                        }
                     }
-                ],
-                onClose: function (obj) {
-                    console.log(obj)
-                },
-                afterShow: function () {}
+                ]
             });
     }
 
-    function saveTemplateContent(rootDataType, columns) {
-        console.log(rootDataType)
-        var rootDataTypeEsc = escapeHtml(rootDataType)
+    function saveTemplateContent() {
+
         return {
             kind: 'panel.form',
             name: 'saveTemplateForm',
@@ -605,20 +721,20 @@
                 rootDataType: {
                     kind: "panel.element",
                     label: "Datatype",
-                    content: {
+                    contents: {
                         description: {
                             tag: 'div.description',
-                            content: rootDataTypeEsc
+                            content: rootDataType
                         }
                     }
                 },
                 fieldsSelected: {
                     kind: "panel.element",
                     label: "Fields selected",
-                    content: {
+                    contents: {
                         description: {
                             tag: 'div.description',
-                            content: columns.length
+                            content: selectedAttributes.length
                         },
                         editLink: {
                             tag: 'a.link',
@@ -626,7 +742,17 @@
                                 href: '#!',
                                 title: 'edit',
                                 on: {
-                                    click: function (e) {}
+                                    click: function (e) {
+                                        e.preventDefault();
+                                        var modalId = $(this)
+                                            .closest('div.xnat-dialog')
+                                            .attr('data-dialog');
+                                        XNAT
+                                            .dialog
+                                            .getDialog(modalId)
+                                            .close();
+                                        openSelectAttributesModal()
+                                    }
                                 }
                             },
                             content: 'Edit'
@@ -638,12 +764,12 @@
         }
     }
 
-    function createTemplate(rootDataType, columns, label = "Example Template", project = "sample") {
+    function createTemplate(label, project) {
         const body = {
             label,
             xsiType: rootDataType,
             project,
-            template: [...columns]
+            template: [...selectedAttributes]
         }
 
         XNAT
@@ -655,52 +781,22 @@
                 data: JSON.stringify(body),
                 success: function () {
                     console.log("Template created successfully")
+                    clearNewTemplateData()
                     renderTemplatesTable()
                 }
             })
+    }
+
+    function clearNewTemplateData() {
+        rootDataType = ''
+        attributesList = []
+        selectedAttributes = []
     }
 
     function getElementFieldMapping(name) {
         for (var i = 0; i < allElements.length; i++) {
             if (allElements[i].elementName == name) {
                 return allElements[i];
-            }
-        }
-    }
-
-    function renderAdditionalFields(header, destinationDIV, selectBox) {
-        var dest = document.getElementById(destinationDIV);
-        while (dest.firstChild) {
-            dest.removeChild(dest.firstChild);
-        }
-
-        var checkAll = document.getElementById("checkALL");
-        if (selectBox.selectedIndex != 0) {
-            var foreignElementName = selectBox
-                .options[selectBox.selectedIndex]
-                .value;
-            var elementMapping = getElementFieldMapping(foreignElementName);
-            for (var i = 0; i < elementMapping.fields.length; i++) {
-                var field = elementMapping.fields[i];
-
-                var newDIV = document.createElement("DIV");
-                newDIV.className = "field rootField";
-
-                var inputBox = document.createElement("INPUT");
-                inputBox.type = "checkbox";
-                inputBox.name = "fields";
-                inputBox.checked = checkAll.checked;
-                inputBox.value = header + "[@xsi:type='" + foreignElementName + "']" + field.substring(
-                    field.indexOf("/")
-                );;
-
-                newDIV.appendChild(inputBox);
-
-                var labelTxt = document.createElement("LABEL");
-                labelTxt.innerHTML = header + field.substring(field.indexOf("/"));
-                newDIV.appendChild(labelTxt);
-
-                dest.appendChild(newDIV);
             }
         }
     }
@@ -725,12 +821,14 @@
                 newDIV.className = "field rootField";
 
                 var inputBox = document.createElement("INPUT");
+                const value = header + "[@xsi:type='" + foreignElementName + "']" + field.substring(
+                    field.indexOf("/")
+                );
                 inputBox.type = "checkbox";
                 inputBox.name = "fields";
+                inputBox.checked = selectedAttributes.indexOf(value) >= 0;
                 inputBox.checked = checkAll.checked;
-                inputBox.value = header + "[@xsi:type='" + foreignElementName + "']" + field.substring(
-                    field.indexOf("/")
-                );;
+                inputBox.value = value;
 
                 newDIV.appendChild(inputBox);
 
