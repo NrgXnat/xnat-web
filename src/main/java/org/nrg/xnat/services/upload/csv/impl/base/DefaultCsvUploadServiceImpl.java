@@ -6,31 +6,53 @@ package org.nrg.xnat.services.upload.csv.impl.base;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
 import javax.transaction.Transactional;
 
+import org.apache.turbine.util.RunData;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
+import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
+import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
-import org.nrg.xdat.turbine.utils.TurbineUtils;
+import org.nrg.xft.ItemI;
+import org.nrg.xft.XFT;
+import org.nrg.xft.XFTItem;
+import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.db.ViewManager;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.FieldNotFoundException;
+import org.nrg.xft.exception.InvalidValueException;
+import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperField;
 import org.nrg.xft.schema.design.SchemaElementI;
+import org.nrg.xft.search.CriteriaCollection;
+import org.nrg.xft.search.ItemSearch;
+import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xft.utils.FileUtils;
+import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.daos.CsvTemplateDAO;
 import org.nrg.xnat.dto.DataToUpload;
+import org.nrg.xnat.dto.ErrorDto;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
 import org.nrg.xnat.dto.ValidationResult;
@@ -226,15 +248,18 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		ValidationResult result = new ValidationResult();
 
 		List<DataToUpload> dataToUploads = new ArrayList<>();
+		List<ErrorDto> errorsDto = new ArrayList<ErrorDto>();
+		ErrorDto dto = new ErrorDto();
+
 		List<String> headers = new ArrayList<>();
+		int lineCount = 0;
+		int columnNumber = 0;
+		result.setValidData(true);
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
 
 			if (file != null) {
-				int lineCount = 0;
-				int columnNumber = 0;
-				result.setValidData(true);
 
 				List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
 				for (List<String> row : rows) {
@@ -264,10 +289,19 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 //			deleting the temporary file
 			file.delete();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			result.setValidData(false);
+
+			List<String> errors = new ArrayList<String>();
+			errors.add(e.getMessage());
+
+			dto.setRow(lineCount + 1);
+			dto.setErrorsFound(errors);
+
+			errorsDto.add(dto);
+
 		}
 
+		result.setErrors(errorsDto);
 		result.setDataToUpload(dataToUploads);
 
 		return result;
@@ -281,22 +315,31 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	}
 
 	@Override
-	public String submitData(String projectId, List<DataToUpload> dataToUpload) {
-		CSVUpload2 upload2 = new CSVUpload2();
+	public List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload) {
+//		CSVUpload2 upload2 = new CSVUpload2();
+
+		List<CsvTemplate> templates = getDao().findByProperty("_project", projectId);
+
+		List<List<String>> rows = convertDataToUploadListToGrid(dataToUpload);
+
+		String project = projectId;
+//		 ArrayList displaySummary = new ArrayList();
+		List fields = rows;
+		try {
+//			String rootElementName = fm.getElementName();
+			doStore(templates, rows, project, fields);
 
 //			upload2.doStore(dataToUpload, );
 
-		return String.format(" Project Id passed is %s", projectId);
+//			return String.format(" Project Id passed is %s", projectId);
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rows;
 	}
 
-	/*
-	 * @Override public FieldMapping getRoot(String root) { FieldMapping fm = new
-	 * FieldMapping(); fm.setElementName(root);
-	 * 
-	 * 
-	 * return fm; }
-	 */
 	public Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
+
 		Hashtable<String, ArrayList<Object>> all = new Hashtable<String, ArrayList<Object>>();
 		Hashtable<String, ArrayList<String>> extendable = new Hashtable<String, ArrayList<String>>();
 		ArrayList<String> cleaned = new ArrayList<String>();
@@ -433,13 +476,13 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	@Override
 	public File downloadTemplate(TemplateDto templateDto) {
 
-		File file =  new File(System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType());
+		File file = new File(System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType());
 
 		try {
-			String	templateString =  convertListToCommaSeperatedString(templateDto) ;
-			
-			log.info("string is "+ templateString);
-			
+			String templateString = convertListToCommaSeperatedString(templateDto);
+
+			log.info("string is " + templateString);
+
 			FileWriter writer = new FileWriter(file);
 			writer.append(templateString);
 			writer.close();
@@ -462,8 +505,242 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				sb.append(", ");
 			sb.append(xmlPath.substring(xmlPath.lastIndexOf("/") + 1));
 		}
-		
+
 		return sb.toString();
+	}
+
+	private List<List<String>> convertDataToUploadListToGrid(List<DataToUpload> dataToUploads) {
+
+		/*
+		 * List<List<String>> rows = new ArrayList<List<String>>(); List<String> row =
+		 * new ArrayList<String>();
+		 */
+
+		List<Map<String, String>> rows = new ArrayList<>();
+		Map<String, String> map = new Hashtable<String, String>();
+
+		Set<String> headers = new HashSet<String>();
+		List<String> tuple = new ArrayList<String>();
+
+		for (DataToUpload dataToUpload : dataToUploads) {
+			headers.add(dataToUpload.getAttribute());
+//			data.add(dataToUpload.getValue());
+		}
+		int columnCount = 0;
+		for (DataToUpload dataToUpload : dataToUploads) {
+			if (columnCount >= headers.size()) {
+				rows.add(map);
+				columnCount = 0;
+				map = new Hashtable<String, String>();
+				System.out.println(String.format("Row number %d is %s. ", rows.size(), map.toString()));
+
+			}
+			map.put(dataToUpload.getAttribute(), dataToUpload.getValue());
+			columnCount++;
+		}
+
+		List<List<String>> grid = new ArrayList<List<String>>();
+
+		for (Map<String, String> row : rows) {
+			for (String header : headers) {
+				tuple.add(row.get(header));
+			}
+			grid.add(tuple);
+		}
+
+		/*
+		 * for (String datum : data) {
+		 * 
+		 * if(columnCount < headers.size()) { row.add(datum); } else { rows.add(row);
+		 * System.out.println(String.format("Row number &d is %s. ", rows.size(),
+		 * row.toString())); columnCount = 0; row = new ArrayList<String>();
+		 * row.add(datum); } columnCount++; }
+		 */
+
+		return grid;
+
+	}
+
+	private void doStore(List<CsvTemplate> templates, List<List<String>> rows, String project, List fields)
+			throws XFTInitException, ElementNotFoundException, JustificationAbsent, ActionNameAbsent, IDAbsent,
+			Exception {
+		String rootElementName = templates.get(0).getXsiType();
+		GenericWrapperElement.GetElement(rootElementName);
+
+		UserI user = XDAT.getUserDetails();
+		Iterator iter = rows.iterator();
+		while (iter.hasNext()) {
+			ArrayList row = (ArrayList) iter.next();
+			ArrayList rowSummary = new ArrayList();
+			XFTItem item = XFTItem.NewItem(rootElementName, user);
+			Iterator iter2 = row.iterator();
+			int columnIndex = 0;
+			while (iter2.hasNext()) {
+				String column = (String) iter2.next();
+				String xmlPath = (String) fields.get(columnIndex);
+
+				if (!column.equals("")) {
+					rowSummary.add(column);
+
+					GenericWrapperField gwf = null;
+					try {
+						gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+					} catch (FieldNotFoundException ignored) {
+					}
+
+					if (gwf != null && gwf.getBaseElement() != null && !gwf.getBaseElement().equals("")) {
+						try {
+							ItemSearch search = ItemSearch.GetItemSearch(gwf.getBaseElement(), user);
+							SchemaElement se = SchemaElement.GetElement(gwf.getBaseElement());
+							if ((project != null && !project.equals(""))
+									&& se.hasField(se.getFullXMLName() + "/sharing/share/project")) {
+								CriteriaCollection cc = new CriteriaCollection("OR");
+								cc.addClause(se.getFullXMLName() + "/" + gwf.getBaseCol(), column);
+
+								CriteriaCollection sub = new CriteriaCollection("AND");
+								sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+								sub.addClause(se.getFullXMLName() + "/sharing/share/label", column);
+								cc.add(sub);
+
+								sub = new CriteriaCollection("AND");
+								sub.addClause(se.getFullXMLName() + "/project", project);
+								sub.addClause(se.getFullXMLName() + "/label", column);
+								cc.add(sub);
+
+								search.add(cc);
+							} else {
+								search.addCriteria(se.getFullXMLName() + "/" + gwf.getBaseCol(), column);
+							}
+
+							ItemCollection items = search.exec(false);
+
+							if (items.size() == 1) {
+								item.setProperty(xmlPath, items.getFirst().getProperty("ID"));
+								columnIndex++;
+								continue;
+							}
+						} catch (Exception ignored) {
+						}
+
+					}
+
+					try {
+						item.setProperty(xmlPath, column);
+					} catch (FieldNotFoundException e) {
+						log.error("", e);
+					} catch (InvalidValueException e) {
+						log.error("", e);
+					}
+				}
+				columnIndex++;
+			}
+
+			if (project != null && !project.equals("")) {
+				SchemaElement se = SchemaElement.GetElement(rootElementName);
+
+				if (se.hasField(rootElementName + "/sharing/share/project")
+						&& se.hasField(rootElementName + "/sharing/share/label")) {
+					try {
+						String id = item.getStringProperty("ID");
+						if (item.getStringProperty("project") == null) {
+							item.setProperty(rootElementName + "/project", project);
+							if (item.getStringProperty("label") == null) {
+								item.setProperty(rootElementName + "/label", id);
+							}
+						} else {
+							if (item.getStringProperty("project").equals(project)) {
+								if (item.getStringProperty("label") == null) {
+									item.setProperty(rootElementName + "/label", id);
+								}
+							} else {
+								item.setProperty(rootElementName + "/sharing/share/project", project);
+								item.setProperty(rootElementName + "/sharing/share/label", id);
+							}
+						}
+
+						ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
+						CriteriaCollection cc = new CriteriaCollection("OR");
+						cc.addClause(se.getFullXMLName() + "/ID", id);
+
+						CriteriaCollection sub = new CriteriaCollection("AND");
+						sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+						sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
+						cc.add(sub);
+
+						sub = new CriteriaCollection("AND");
+						sub.addClause(se.getFullXMLName() + "/project", project);
+						sub.addClause(se.getFullXMLName() + "/label", id);
+						cc.add(sub);
+
+						search.add(cc);
+						ItemCollection items = search.exec(false);
+
+						if (items.size() > 0) {
+							item.setProperty("ID", items.getFirst().getProperty("ID"));
+						} else {
+							if (item.getStringProperty("label") != null
+									&& item.getStringProperty("label").equals(item.getStringProperty("ID"))) {
+								ItemI om = BaseElement.GetGeneratedItem(item);
+								Class c = om.getClass();
+								Object[] intArgs = new Object[] {};
+								Class[] intArgsClass = new Class[] {};
+
+								String newID = null;
+								try {
+									Method m = c.getMethod("CreateNewID", intArgsClass);
+									if (m != null) {
+										try {
+											try {
+												newID = (String) m.invoke(null, intArgs);
+											} catch (RuntimeException e3) {
+												log.error("", e3);
+											}
+										} catch (IllegalArgumentException e2) {
+											log.error("", e2);
+										} catch (InvocationTargetException e2) {
+											log.error("", e2);
+										}
+									}
+								} catch (SecurityException e1) {
+									log.error("", e1);
+								} catch (NoSuchMethodException e1) {
+									log.error("", e1);
+								}
+
+								if (newID != null) {
+									item.setProperty("ID", newID);
+								} else {
+									item.setProperty("ID",
+											XFT.CreateIDFromBase(XDAT.getSiteConfigPreferences().getSiteId(), 5, "ID",
+													se.getSQLName(), null, null));
+								}
+							}
+						}
+					} catch (FieldNotFoundException e) {
+						log.error("", e);
+					} catch (InvalidValueException e) {
+						log.error("", e);
+					} catch (Exception e) {
+						log.error("", e);
+					}
+				}
+			}
+
+			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, item,
+					CSVUpload2.newEventInstance((RunData) rows, EventUtils.CATEGORY.DATA, "Upload Spreadsheet"));
+
+			try {
+				SaveItemHelper.unauthorizedSave(item, user, false, false, wrk.buildEvent());
+				PersistentWorkflowUtils.complete(wrk, wrk.buildEvent());
+				rowSummary.add("<font color='black'><b>Successful</b></font>");
+			} catch (Throwable e1) {
+				log.error("", e1);
+				PersistentWorkflowUtils.fail(wrk, wrk.buildEvent());
+				rowSummary.add("<font color='red'><b>Error</b>&nbsp;" + e1.getMessage() + "</font>");
+			}
+
+//	                displaySummary.add(rowSummary);
+		}
 	}
 
 }

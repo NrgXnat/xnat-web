@@ -62,7 +62,7 @@ public interface CsvUploadService {
 	 * @param dataToUpload data to be uploaded in JSON format
 	 * @return
 	 */
-	String submitData(String projectId, List<DataToUpload> dataToUpload);
+	List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload);
 
 	/**
 	 * @param id id of template to be updated

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NotFoundException;
@@ -193,7 +194,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param projectId ID of project whose CSV data is to be submitted.
 	 */
 	@XapiRequestMapping(value = "/upload/projects/{projectId}/submit", method = RequestMethod.POST, restrictTo = Admin)
-	public ResponseEntity<String> submitCsvData(
+	public ResponseEntity<List<List<String>>> submitCsvData(
 			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true) @PathVariable("projectId") @Project final String projectId,
 			@RequestBody List<DataToUpload> dataToUpload) {
 //		return new ResponseEntity<>("submitCsvData sucessful", HttpStatus.OK);
