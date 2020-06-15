@@ -287,7 +287,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			}
 
 //			deleting the temporary file
-			file.delete();
+//			file.delete();
 		} catch (Exception e) {
 			result.setValidData(false);
 
@@ -327,7 +327,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		List fields = rows;
 		try {
 //			String rootElementName = fm.getElementName();
-			doStore(templates, rows, project, fields);
+//			doStore(templates, rows, project, fields);
 
 //			upload2.doStore(dataToUpload, );
 
@@ -561,17 +561,17 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	}
 
-	private void doStore(List<CsvTemplate> templates, List<List<String>> rows, String project, List fields)
+	private void doStore(CsvTemplate template, List<List<String>> rows, String project, List fields)
 			throws XFTInitException, ElementNotFoundException, JustificationAbsent, ActionNameAbsent, IDAbsent,
 			Exception {
-		String rootElementName = templates.get(0).getXsiType();
+		String rootElementName = template.getXsiType();
 		GenericWrapperElement.GetElement(rootElementName);
 
 		UserI user = XDAT.getUserDetails();
 		Iterator iter = rows.iterator();
 		while (iter.hasNext()) {
 			ArrayList row = (ArrayList) iter.next();
-			ArrayList rowSummary = new ArrayList();
+//			ArrayList rowSummary = new ArrayList();
 			XFTItem item = XFTItem.NewItem(rootElementName, user);
 			Iterator iter2 = row.iterator();
 			int columnIndex = 0;
@@ -580,7 +580,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				String xmlPath = (String) fields.get(columnIndex);
 
 				if (!column.equals("")) {
-					rowSummary.add(column);
+//					rowSummary.add(column);
 
 					GenericWrapperField gwf = null;
 					try {
@@ -732,15 +732,44 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			try {
 				SaveItemHelper.unauthorizedSave(item, user, false, false, wrk.buildEvent());
 				PersistentWorkflowUtils.complete(wrk, wrk.buildEvent());
-				rowSummary.add("<font color='black'><b>Successful</b></font>");
+//				rowSummary.add("<font color='black'><b>Successful</b></font>");
 			} catch (Throwable e1) {
 				log.error("", e1);
 				PersistentWorkflowUtils.fail(wrk, wrk.buildEvent());
-				rowSummary.add("<font color='red'><b>Error</b>&nbsp;" + e1.getMessage() + "</font>");
+//				rowSummary.add("<font color='red'><b>Error</b>&nbsp;" + e1.getMessage() + "</font>");
 			}
 
 //	                displaySummary.add(rowSummary);
 		}
+	}
+
+	@Override
+	public List<List<String>> submitData(String id, String projectId, MultipartFile multipartFile) {
+
+//		List<CsvTemplate> templates = getDao().findByProperty("_project", projectId);
+
+		Long templateId = Long.parseLong(id);
+		;
+
+		CsvTemplate template = getDao().findTemplateById(templateId);
+
+		List<List<String>> rows = null;
+
+		try {
+			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
+
+			if (file != null) {
+				rows = FileUtils.CSVFileToArrayList(file);
+				List<String> fields = rows.get(0);
+
+				doStore(template, rows, projectId, fields);
+
+				System.out.println(String.format(" Project Id passed is %s", projectId));
+			}
+		} catch (Exception e) {
+			// TODO: handle exception
+		}
+		return rows;
 	}
 
 }

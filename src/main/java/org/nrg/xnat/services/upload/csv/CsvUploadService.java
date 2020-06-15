@@ -82,5 +82,7 @@ public interface CsvUploadService {
 	 * @throws Exception
 	 */
 	Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
+
+	List<List<String>> submitData(String id, String projectId, MultipartFile file);
 	
 }
