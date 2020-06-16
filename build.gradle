@@ -138,7 +138,7 @@ dependencies {
 
     // NRG dependencies first.
     api "org.nrg.xdat:core"
-    api "org.nrg.xnat:xnat-data-models:dcmWebApi-1.0-SNAPSHOT"
+    api "org.nrg.xnat:xnat-data-models"
     api "org.nrg:framework"
     api "org.springframework.security:spring-security-ldap"
     api "org.springframework.security.oauth:spring-security-oauth2"
