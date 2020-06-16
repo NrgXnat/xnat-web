@@ -31,6 +31,7 @@ import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.db.ViewManager;
+import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
@@ -585,7 +586,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					GenericWrapperField gwf = null;
 					try {
 						gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
-					} catch (FieldNotFoundException ignored) {
+					} catch (Exception ignored) {
 					}
 
 					if (gwf != null && gwf.getBaseElement() != null && !gwf.getBaseElement().equals("")) {
@@ -726,8 +727,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				}
 			}
 
-			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, item,
-					CSVUpload2.newEventInstance((RunData) rows, EventUtils.CATEGORY.DATA, "Upload Spreadsheet"));
+			EventDetails eventDetails = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_FORM, "Upload Spreadsheet", null, null);
+//			  CSVUpload2.newEventInstance((RunData) rows, EventUtils.CATEGORY.DATA, "Upload Spreadsheet")
+			
+			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, item, eventDetails);
 
 			try {
 				SaveItemHelper.unauthorizedSave(item, user, false, false, wrk.buildEvent());
@@ -749,7 +752,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 //		List<CsvTemplate> templates = getDao().findByProperty("_project", projectId);
 
 		Long templateId = Long.parseLong(id);
-		;
 
 		CsvTemplate template = getDao().findTemplateById(templateId);
 
@@ -760,13 +762,13 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 			if (file != null) {
 				rows = FileUtils.CSVFileToArrayList(file);
-				List<String> fields = rows.get(0);
-
+				List<String> fields = template.getTemplate();
 				doStore(template, rows, projectId, fields);
 
 				System.out.println(String.format(" Project Id passed is %s", projectId));
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			// TODO: handle exception
 		}
 		return rows;
