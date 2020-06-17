@@ -68,9 +68,9 @@ public class JdbcSearchEngine implements SearchEngineI {
                     } catch (BaseXnatExperimentdata.UnknownPrimaryProjectException e) {
 // throw 500?
                     }
-                    CatCatalogBean catalog = CatalogUtils.getCatalog(catFile);
+                    CatCatalogBean catalog = CatalogUtils.getCatalog(catFile, null);
                     if (catalog.getEntries_entry().size() > 0) {
-                        File file = CatalogUtils.getFile(catalog.getEntries_entry().get(0), catFile.getParentFile().getAbsolutePath());
+                        File file = CatalogUtils.getFile(catalog.getEntries_entry().get(0), catFile.getParentFile().getAbsolutePath(), null);
                         dcmFiles.add(DicomObjectFactory.create(file));
                     }
                 }
