@@ -398,14 +398,14 @@ public class XftSearchEngine implements SearchEngineI {
             if( XnatResourcecatalog.class.isInstance( resourceI)) {
                 XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
                 if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
-                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource);
+                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
                     File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
                     String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
                     if( CatDcmcatalogBean.class.isInstance( catalog1)) {
                         CatDcmcatalogBean dcmcatalog = (CatDcmcatalogBean) catalog1;
                         CatDcmentryI dcmEntry = CatalogUtils.getDCMEntryByUID( dcmcatalog, sopInstanceUID);
                         if( dcmEntry != null) {
-                            file = CatalogUtils.getFile( dcmEntry, scanRootPath);
+                            file = CatalogUtils.getFile( dcmEntry, scanRootPath, null);
                             break;
                         }
                     }
@@ -421,7 +421,7 @@ public class XftSearchEngine implements SearchEngineI {
             if( XnatResourcecatalog.class.isInstance( resourceI)) {
                 XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
                 if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
-                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource);
+                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
                     File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
                     String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
                     if( CatDcmcatalogBean.class.isInstance( catalog1)) {
@@ -434,7 +434,7 @@ public class XftSearchEngine implements SearchEngineI {
                         })) {
                             CatDcmentryI dcmentry = (CatDcmentryI) entry;
                             if( dcmentry != null) {
-                                File file = CatalogUtils.getFile( dcmentry, scanRootPath);
+                                File file = CatalogUtils.getFile( dcmentry, scanRootPath, null);
                                 if( file != null) {
                                     instances.add( DicomObjectFactory.create(file));
                                 }
@@ -454,7 +454,7 @@ public class XftSearchEngine implements SearchEngineI {
             if( XnatResourcecatalog.class.isInstance( resourceI)) {
                 XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
                 if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
-                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource);
+                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
                     File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
                     String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
                     if( CatDcmcatalogBean.class.isInstance( catalog1)) {
