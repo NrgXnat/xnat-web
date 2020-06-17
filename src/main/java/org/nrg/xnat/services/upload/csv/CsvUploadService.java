@@ -9,7 +9,6 @@ import java.util.Hashtable;
 import java.util.List;
 
 import org.nrg.xft.utils.FieldMapping;
-import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
 import org.nrg.xnat.dto.ValidationResult;
@@ -22,19 +21,19 @@ import org.springframework.web.multipart.MultipartFile;
  */
 public interface CsvUploadService {
 
-	
 	/**
 	 * @return list of all templates
 	 */
 	List<TemplateData> getTemplates();
 
 	/**
-	 * @param templateDefination JSON containing attributes for creating new template
+	 * @param templateDefination JSON containing attributes for creating new
+	 *                           template
 	 */
 	void addTemplate(CsvTemplate templateDefination);
 
 	/**
-	 * @param projectId Id of project  
+	 * @param projectId Id of project
 	 * @return list of templates associated with projectId passed
 	 */
 	List<TemplateData> getTemplatesByProjectId(String projectId);
@@ -51,38 +50,38 @@ public interface CsvUploadService {
 	void deleteTemplate(String id);
 
 	/**
-	 * @param projectId id of project
+	 * @param projectId     id of project
 	 * @param multipartFile file containing the data to be uploaded as a csv file
 	 * @return
 	 */
 	ValidationResult validateData(String projectId, MultipartFile multipartFile);
 
-	/**
-	 * @param projectId id of project
-	 * @param dataToUpload data to be uploaded in JSON format
-	 * @return
-	 */
-	List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload);
+//	List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload);
 
 	/**
-	 * @param id id of template to be updated
+	 * @param id       id of template to be updated
 	 * @param template JSON containing attributes to be updated
 	 */
 	void updateTemplate(String id, CsvTemplate template);
 
 	/**
-	 * @param template template which is to be download 
+	 * @param template template which is to be download
 	 * @return File file containing template
 	 */
 	File downloadTemplate(TemplateDto template);
-	
+
 	/**
 	 * @param fm FieldMapping containing root data type as element name
 	 * @return all attributes for a root type passed
 	 * @throws Exception
 	 */
-	Hashtable<String,ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
+	Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
 
+	/**
+	 * @param projectId    id of project
+	 * @param dataToUpload data to be uploaded in JSON format
+	 * @return
+	 */
 	List<List<String>> submitData(String id, String projectId, MultipartFile file);
-	
+
 }

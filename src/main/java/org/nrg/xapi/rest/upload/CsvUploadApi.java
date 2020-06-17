@@ -196,8 +196,6 @@ public class CsvUploadApi extends AbstractXapiRestController {
 			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
 			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true)@PathVariable ("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
-//		@RequestBody List<DataToUpload> dataToUpload) {
-//		return new ResponseEntity<>("submitCsvData sucessful", HttpStatus.OK);
 		return new ResponseEntity<>(_uploadService.submitData(id, projectId, file), HttpStatus.OK);
 	}
 

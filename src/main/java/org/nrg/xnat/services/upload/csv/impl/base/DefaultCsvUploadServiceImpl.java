@@ -20,12 +20,10 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
-import org.apache.turbine.util.RunData;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.schema.SchemaElement;
-import org.nrg.xdat.turbine.modules.actions.CSVUpload2;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
@@ -108,7 +106,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		for (CsvTemplate csvTemplate : templates) {
 			TemplateData templateData = new TemplateData();
-//			BeanUtils.copyProperties(csvTemplate, templateData);
 
 			if (Objects.nonNull(csvTemplate)) {
 				if (Objects.nonNull(csvTemplate.getId())) {
@@ -137,9 +134,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return templateDatas;
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public TemplateDto getTemplateById(String id) {
 		log.info("id passed is " + id);
@@ -160,9 +154,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	private TemplateDto convertCsvTemplateToTemplateDto(CsvTemplate csvTemplate) {
 
 		TemplateDto templateDto = new TemplateDto();
-
-//			TemplateData templateData = new TemplateData();
-//			BeanUtils.copyProperties(csvTemplate, templateData);
 
 		if (Objects.nonNull(csvTemplate)) {
 			if (Objects.nonNull(csvTemplate.getId())) {
@@ -188,9 +179,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return templateDto;
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public void updateTemplate(String id, CsvTemplate template) {
 		log.info("id passed is " + id);
@@ -223,12 +211,8 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		getDao().update(updatedTemplate);
 
-//		return String.format(" Template Id passed of template to be updated is %l", id);
 	}
 
-	/**
-	 *
-	 */
 	@Override
 	public void deleteTemplate(String id) {
 		log.info("id passed is " + id);
@@ -270,10 +254,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					} else {
 						for (String value : row) {
 							DataToUpload dataToUpload = new DataToUpload();
-							// some validation
-							if (true) {
-							}
-
 							dataToUpload.setAttribute(headers.get(columnNumber));
 							dataToUpload.setValue(value);
 							dataToUpload.setDescription(String.format("The value for key %s for column %d is %s ",
@@ -288,7 +268,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			}
 
 //			deleting the temporary file
-//			file.delete();
+			file.delete();
 		} catch (Exception e) {
 			result.setValidData(false);
 
@@ -315,29 +295,17 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return convFile;
 	}
 
-	@Override
-	public List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload) {
-//		CSVUpload2 upload2 = new CSVUpload2();
-
-		List<CsvTemplate> templates = getDao().findByProperty("_project", projectId);
-
-		List<List<String>> rows = convertDataToUploadListToGrid(dataToUpload);
-
-		String project = projectId;
-//		 ArrayList displaySummary = new ArrayList();
-		List fields = rows;
-		try {
-//			String rootElementName = fm.getElementName();
-//			doStore(templates, rows, project, fields);
-
-//			upload2.doStore(dataToUpload, );
-
-//			return String.format(" Project Id passed is %s", projectId);
-		} catch (Exception e) {
-			// TODO: handle exception
-		}
-		return rows;
-	}
+	/*
+	 * @Override public List<List<String>> submitData(String projectId,
+	 * List<DataToUpload> dataToUpload) { List<CsvTemplate> templates =
+	 * getDao().findByProperty("_project", projectId); List<List<String>> rows =
+	 * convertDataToUploadListToGrid(dataToUpload); String project = projectId; //
+	 * ArrayList displaySummary = new ArrayList(); List fields = rows; try { //
+	 * String rootElementName = fm.getElementName(); // doStore(templates, rows,
+	 * project, fields); // upload2.doStore(dataToUpload, ); // return
+	 * String.format(" Project Id passed is %s", projectId); } catch (Exception e) {
+	 * // TODO: handle exception } return rows; }
+	 */
 
 	public Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
 
@@ -346,7 +314,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		ArrayList<String> cleaned = new ArrayList<String>();
 		ArrayList<String> required = new ArrayList<String>();
 
-		String fm_id = fm.getID();
 		String root = fm.getElementName();
 
 		GenericWrapperElement gwe = GenericWrapperElement.GetElement(root);
@@ -510,78 +477,57 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return sb.toString();
 	}
 
-	private List<List<String>> convertDataToUploadListToGrid(List<DataToUpload> dataToUploads) {
+	/*
+	 * private List<List<String>> convertDataToUploadListToGrid(List<DataToUpload>
+	 * dataToUploads) {
+	 * 
+	 * List<Map<String, String>> rows = new ArrayList<>(); Map<String, String> map =
+	 * new Hashtable<String, String>();
+	 * 
+	 * Set<String> headers = new HashSet<String>(); List<String> tuple = new
+	 * ArrayList<String>();
+	 * 
+	 * for (DataToUpload dataToUpload : dataToUploads) {
+	 * headers.add(dataToUpload.getAttribute()); } int columnCount = 0; for
+	 * (DataToUpload dataToUpload : dataToUploads) { if (columnCount >=
+	 * headers.size()) { rows.add(map); columnCount = 0; map = new Hashtable<String,
+	 * String>(); System.out.println(String.format("Row number %d is %s. ",
+	 * rows.size(), map.toString()));
+	 * 
+	 * } map.put(dataToUpload.getAttribute(), dataToUpload.getValue());
+	 * columnCount++; }
+	 * 
+	 * List<List<String>> grid = new ArrayList<List<String>>();
+	 * 
+	 * for (Map<String, String> row : rows) { for (String header : headers) {
+	 * tuple.add(row.get(header)); } grid.add(tuple); }
+	 * 
+	 * return grid;
+	 * 
+	 * }
+	 */
 
-		/*
-		 * List<List<String>> rows = new ArrayList<List<String>>(); List<String> row =
-		 * new ArrayList<String>();
-		 */
-
-		List<Map<String, String>> rows = new ArrayList<>();
-		Map<String, String> map = new Hashtable<String, String>();
-
-		Set<String> headers = new HashSet<String>();
-		List<String> tuple = new ArrayList<String>();
-
-		for (DataToUpload dataToUpload : dataToUploads) {
-			headers.add(dataToUpload.getAttribute());
-//			data.add(dataToUpload.getValue());
-		}
-		int columnCount = 0;
-		for (DataToUpload dataToUpload : dataToUploads) {
-			if (columnCount >= headers.size()) {
-				rows.add(map);
-				columnCount = 0;
-				map = new Hashtable<String, String>();
-				System.out.println(String.format("Row number %d is %s. ", rows.size(), map.toString()));
-
-			}
-			map.put(dataToUpload.getAttribute(), dataToUpload.getValue());
-			columnCount++;
-		}
-
-		List<List<String>> grid = new ArrayList<List<String>>();
-
-		for (Map<String, String> row : rows) {
-			for (String header : headers) {
-				tuple.add(row.get(header));
-			}
-			grid.add(tuple);
-		}
-
-		/*
-		 * for (String datum : data) {
-		 * 
-		 * if(columnCount < headers.size()) { row.add(datum); } else { rows.add(row);
-		 * System.out.println(String.format("Row number &d is %s. ", rows.size(),
-		 * row.toString())); columnCount = 0; row = new ArrayList<String>();
-		 * row.add(datum); } columnCount++; }
-		 */
-
-		return grid;
-
-	}
-
-	private void doStore(CsvTemplate template, List<List<String>> rows, String project, List fields)
+	private List<List<String>> doStore(CsvTemplate template, List<List<String>> rows, String project, List<String> fields)
 			throws XFTInitException, ElementNotFoundException, JustificationAbsent, ActionNameAbsent, IDAbsent,
 			Exception {
 		String rootElementName = template.getXsiType();
 		GenericWrapperElement.GetElement(rootElementName);
+		List<List<String>> displaySummary = new ArrayList<>();
 
 		UserI user = XDAT.getUserDetails();
-		Iterator iter = rows.iterator();
+		Iterator<List<String>> iter = rows.iterator();
 		while (iter.hasNext()) {
-			ArrayList row = (ArrayList) iter.next();
-//			ArrayList rowSummary = new ArrayList();
+			List<String> rowSummary = new ArrayList<>();
+			List<String> row =  iter.next();
 			XFTItem item = XFTItem.NewItem(rootElementName, user);
-			Iterator iter2 = row.iterator();
+			Iterator<String> iter2 = row.iterator();
 			int columnIndex = 0;
 			while (iter2.hasNext()) {
 				String column = (String) iter2.next();
 				String xmlPath = (String) fields.get(columnIndex);
 
 				if (!column.equals("")) {
-//					rowSummary.add(column);
+					rowSummary.add(column);
 
 					GenericWrapperField gwf = null;
 					try {
@@ -639,8 +585,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			if (project != null && !project.equals("")) {
 				SchemaElement se = SchemaElement.GetElement(rootElementName);
 
-				if (se.hasField(rootElementName + "/sharing/share/project")
-						&& se.hasField(rootElementName + "/sharing/share/label")) {
 					try {
 						String id = item.getStringProperty("ID");
 						if (item.getStringProperty("project") == null) {
@@ -724,54 +668,51 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					} catch (Exception e) {
 						log.error("", e);
 					}
-				}
 			}
 
-			EventDetails eventDetails = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_FORM, "Upload Spreadsheet", null, null);
-//			  CSVUpload2.newEventInstance((RunData) rows, EventUtils.CATEGORY.DATA, "Upload Spreadsheet")
-			
+			EventDetails eventDetails = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_FORM,
+					"Upload Spreadsheet", null, null);
+
 			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, item, eventDetails);
 
 			try {
 				SaveItemHelper.unauthorizedSave(item, user, false, false, wrk.buildEvent());
 				PersistentWorkflowUtils.complete(wrk, wrk.buildEvent());
-//				rowSummary.add("<font color='black'><b>Successful</b></font>");
+				rowSummary.add("Successful");
 			} catch (Throwable e1) {
 				log.error("", e1);
 				PersistentWorkflowUtils.fail(wrk, wrk.buildEvent());
-//				rowSummary.add("<font color='red'><b>Error</b>&nbsp;" + e1.getMessage() + "</font>");
+				rowSummary.add(e1.getMessage());
 			}
 
-//	                displaySummary.add(rowSummary);
+			displaySummary.add(rowSummary);
 		}
+		return displaySummary;
 	}
 
 	@Override
 	public List<List<String>> submitData(String id, String projectId, MultipartFile multipartFile) {
-
-//		List<CsvTemplate> templates = getDao().findByProperty("_project", projectId);
 
 		Long templateId = Long.parseLong(id);
 
 		CsvTemplate template = getDao().findTemplateById(templateId);
 
 		List<List<String>> rows = null;
+		List<List<String>> summary = null;
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
 
 			if (file != null) {
 				rows = FileUtils.CSVFileToArrayList(file);
+				rows.remove(0);
 				List<String> fields = template.getTemplate();
-				doStore(template, rows, projectId, fields);
-
-				System.out.println(String.format(" Project Id passed is %s", projectId));
+				summary = doStore(template, rows, projectId, fields);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			// TODO: handle exception
 		}
-		return rows;
+		return summary;
 	}
 
 }
