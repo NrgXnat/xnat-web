@@ -693,9 +693,12 @@
     function saveTemplateContent() {
 
 	#set($all_project=$data.getSession().getAttribute("userHelper").getCachedItems("xnat:projectData",null,false))
-	let projects = {};
-	 #foreach($project in $all_project)
-	 projects.$project.getId() =  "$esc.javascript($!project.getName())";
+	let projects = [];
+     #foreach($project in $all_project)
+    projects.push({
+      value:"$project.getId()",
+      label:"$esc.javascript($!project.getName())"
+    })
 	#end
 
         return {
