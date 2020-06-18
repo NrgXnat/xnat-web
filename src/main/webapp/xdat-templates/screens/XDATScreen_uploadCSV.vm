@@ -33,6 +33,7 @@
         display: none;
     }
 </style>
+<script type="text/javascript" src="$content.getURI("scripts/xnat_projectData.js")"></script>
 <script language="javascript">
     var all_elements = new Array();
 
@@ -691,6 +692,12 @@
 
     function saveTemplateContent() {
 
+	#set($all_project=$data.getSession().getAttribute("userHelper").getCachedItems("xnat:projectData",null,false))
+	let projects = {};
+	 #foreach($project in $all_project)
+	 projects.$project.getId() =  "$esc.javascript($!project.getName())";
+	#end
+
         return {
             kind: 'panel.form',
             name: 'saveTemplateForm',
@@ -712,11 +719,7 @@
                 projectName: {
                     kind: "panel.select.single",
                     label: "Select Project",
-                    options: {
-                        "sample 1": "Sample 1",
-                        "sample 2": "Sample 2",
-                        "sample 3": "Sample 3"
-                    }
+                    options: projects
                 },
                 rootDataType: {
                     kind: "panel.element",
