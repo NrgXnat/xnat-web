@@ -35,6 +35,7 @@
 </style>
 <script type="text/javascript" src="$content.getURI("scripts/xnat_projectData.js")"></script>
 <script language="javascript">
+
     var all_elements = new Array();
 
     #foreach($gwe in $all_elements)
@@ -295,6 +296,62 @@
             });
     }
 
+    function uploadDataContent() {
+    let projects = getProjects();
+
+    return {
+       
+            kind: 'panel.form',
+            name: 'uploadDataForm',
+            id: 'upload-Data-form',
+            footer: false,
+            header: false,
+            element: {
+                autocomplete: 'off'
+            },
+            contents: {
+                headerName:{
+                    tag: "h2",
+                    kind: "panel.element",
+                    classes: "edit_header1",
+                    content:`Uploading Data`
+                },
+                para:{
+                    tag:  "p",
+                    kind: "panel.element",
+                    content:`Select a CSV file that follows your template. One experiment will be added or  for each row of data.`   
+                },
+                templateId: {
+                    kind: 'panel.input.text',
+                    label: "CSV Template Id",
+                    element: {
+                        placeholder: 'Enter a unique name',
+                        autocomplete: 'off'
+                    }
+                },
+                projectName: {
+                    kind: "panel.select.single",
+                    label: "Upload To Project",
+                    classes: "selectProject",
+                    options: projects
+                },
+                fileUpload: {
+                    kind: "panel.element",
+                    label: "File",
+                    contents: {
+                        uploadButton: {
+                            kind: "html",
+                            content: '<input type="file" id="csvFile" name="csv_to_store"/>'
+
+                        }
+                    }
+                }
+
+            }
+        }
+
+    }
+
     function uploadData(templateId) {
         XNAT
             .dialog
@@ -304,29 +361,92 @@
                 esc: true,
                 enter: false,
                 title: "Upload Data File Using Template",
-                content: `
-                    <h2 class="edit_header1" style="">Uploading Data</h2>
-                    <p> Select a CSV file that follows your template. One experiment will be added or modified for each row of data. </p>
-                    <div id="csv-upload-container">
-                    </div>`,
+                content: function () {
+                    formContainer$ = $.spawn('csv-upload-container');
+                    XNAT
+                        .spawner
+                        .spawn({templateNameForm: uploadDataContent()})
+                        .render(formContainer$)
+                    return formContainer$[0];
+                },
                 buttons: [
                     {
+                        id:"upload-btn" ,
                         label: "Upload",
                         close: false,
                         isDefault: true,
                         action: function (obj) {
-                            const projectID = ''
-                            const uploadUrl = XNAT
-                                .url
-                                .restUrl(`/xapi/csv/upload/projects/${projectID}/validate`)
+                            const projectID = obj.$dialog
+                                .find('.selectProject')[0]
+                                .value;
+                            let templateId = obj
+                                .$dialog
+                                .find('input#template-id')[0]
+                                .value;
 
+                            const file = obj.$dialog.find('#csvFile')[0].files[0];
+                            var formData = new FormData();
+                            formData.append('file',file);
+                            const uploadUrl = XNAT.url
+                                .restUrl(`/xapi/csv/upload/projects/${projectID}/validate`)
+                            const submitUrl = XNAT.url
+                                .restUrl(`/xapi/csv/upload/projects/${projectID}/submit/${templateId}`)    
+                            return XNAT.xhr.post({
+                                url :uploadUrl,
+                                data: formData,
+                                enctype: 'multipart/form-data',
+                                processData: false,  // Important!
+                                contentType: false,
+                                cache: false,
+                                fail: function(e){
+                                    console.log(e);
+                                            
+                                },
+                                success: function(data){
+                                    if(Array.isArray(data.error) && data.error.length){
+                                        generateTable(data.error);
+                                    }
+                                    else{
+                                        return XNAT.xhr.post({
+                                            url :submitUrl,
+                                            data: formData,
+                                            enctype: 'multipart/form-data',
+                                            processData: false,  // Important!
+                                            contentType: false,
+                                            cache: false,
+                                            fail: function(e){
+                                                console.log(e);
+                                             },
+                                            success: function(data){
+                                                
+                                                if(Array.isArray(data) && data.length){           
+                                                    generateTable(data)
+                                                }                                     
+                                            }
+                                        })
+                                    }
+                                }
+                            })
                         }
-                    }, {
+                    } ,{
                         label: "Cancel",
                         close: true
-                    }
-                ]
+                    }]
             });
+    }
+
+    function generateTable(value){
+         let table = document.createElement('table');
+         
+         for (let row of value) {
+         table.insertRow();
+            for (let cell of row) {
+            let newCell = table.rows[table.rows.length - 1].insertCell();
+            newCell.textContent = cell;
+            }
+         }
+         $('#upload-Data-form').html(table);
+         console.log(value);
     }
 
     function downloadTemplate(templateId) {
@@ -692,14 +812,8 @@
 
     function saveTemplateContent() {
 
-	#set($all_project=$data.getSession().getAttribute("userHelper").getCachedItems("xnat:projectData",null,false))
-	let projects = [];
-     #foreach($project in $all_project)
-    projects.push({
-      value:"$project.getId()",
-      label:"$esc.javascript($!project.getName())"
-    })
-	#end
+	let projects = getProjects();
+
 
         return {
             kind: 'panel.form',
@@ -892,4 +1006,21 @@
             }
         }
     }
+
+    function getProjects(){
+
+    #set($all_project=$data.getSession().getAttribute("userHelper").getCachedItems("xnat:projectData",null,false))
+	
+    let projects = [];
+     #foreach($project in $all_project)
+    projects.push({
+      value:"$project.getId()",
+      label:"$esc.javascript($!project.getName())"
+    })
+	#end
+
+    return projects;
+
+    }
+
 </script>
