@@ -23,6 +23,6 @@ public class ValidationResult {
 
 	private List<ErrorDto> errors;
 
-	private List<DataToUpload> dataToUpload;
+	private List<List<String>> dataToUpload;
 
 }

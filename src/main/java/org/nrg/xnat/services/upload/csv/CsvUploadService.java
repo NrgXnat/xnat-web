@@ -50,11 +50,13 @@ public interface CsvUploadService {
 	void deleteTemplate(String id);
 
 	/**
+	 * @param id	id of CsvTemplate
 	 * @param projectId     id of project
-	 * @param multipartFile file containing the data to be uploaded as a csv file
+	 * @param multipartFile	file containing the data to be uploaded as a csv file
 	 * @return
 	 */
-	ValidationResult validateData(String projectId, MultipartFile multipartFile);
+	ValidationResult validateData(String id, String projectId, MultipartFile multipartFile);
+//	ValidationResult validateData(String projectId, MultipartFile multipartFile);
 
 //	List<List<String>> submitData(String projectId, List<DataToUpload> dataToUpload);
 
@@ -83,5 +85,6 @@ public interface CsvUploadService {
 	 * @return
 	 */
 	List<List<String>> submitData(String id, String projectId, MultipartFile file);
+
 
 }

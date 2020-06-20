@@ -176,11 +176,12 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return JSON containing validity status of data and errors found in the file.
 	 * 
 	 */
-	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate", method = RequestMethod.POST, restrictTo = Admin)
+	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate/{id}", method = RequestMethod.POST, restrictTo = Admin)
 	public ResponseEntity<ValidationResult> validateCsvData(
+			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
 			@ApiParam(value = "Indicates the ID of the project whose template is to be validated.", required = true) @PathVariable("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
-		return new ResponseEntity<ValidationResult>(_uploadService.validateData(projectId, file), HttpStatus.OK);
+		return new ResponseEntity<ValidationResult>(_uploadService.validateData(id,projectId, file), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Submits validated CSV data")

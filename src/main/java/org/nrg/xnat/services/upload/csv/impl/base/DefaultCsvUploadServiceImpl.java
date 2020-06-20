@@ -20,14 +20,19 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
+import org.apache.turbine.util.RunData;
+import org.apache.velocity.context.Context;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.schema.SchemaElement;
+import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.collections.ItemCollection;
+import org.nrg.xft.db.DBAction;
 import org.nrg.xft.db.ViewManager;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
@@ -49,6 +54,9 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xft.utils.FileUtils;
 import org.nrg.xft.utils.SaveItemHelper;
+import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xft.utils.ValidationUtils.ValidationResults;
+import org.nrg.xft.utils.ValidationUtils.XFTValidator;
 import org.nrg.xnat.daos.CsvTemplateDAO;
 import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.ErrorDto;
@@ -83,6 +91,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	@Override
 	public void addTemplate(CsvTemplate templateDefination) {
+
+		UserI user = XDAT.getUserDetails();
+		templateDefination.setUser(user.getUsername());
 		log.info("templateDefination is " + templateDefination.toString());
 		getDao().create(templateDefination);
 
@@ -227,61 +238,52 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	}
 
 	@Override
-	public ValidationResult validateData(String projectId, MultipartFile multipartFile) {
+	public ValidationResult validateData(String id, String projectId, MultipartFile multipartFile) {
 
 		log.info("Project Id passed is " + projectId);
 		ValidationResult result = new ValidationResult();
 
-		List<DataToUpload> dataToUploads = new ArrayList<>();
+		List<List<String>> dataToUploads = new ArrayList<>();
 		List<ErrorDto> errorsDto = new ArrayList<ErrorDto>();
-		ErrorDto dto = new ErrorDto();
+//		ErrorDto dto = new ErrorDto();
+		List<List<String>> response = new ArrayList<>();
+		
+		Long templateId = Long.parseLong(id);
 
-		List<String> headers = new ArrayList<>();
-		int lineCount = 0;
-		int columnNumber = 0;
+		CsvTemplate template = getDao().findTemplateById(templateId);
+
+		/*
+		 * List<String> headers = new ArrayList<>(); int lineCount = 0; int columnNumber
+		 * = 0;
+		 */
 		result.setValidData(true);
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
-
 			if (file != null) {
-
 				List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
-				for (List<String> row : rows) {
-					columnNumber = 0;
-					if (lineCount < 1) {
-						headers = row;
-					} else {
-						for (String value : row) {
-							DataToUpload dataToUpload = new DataToUpload();
-							dataToUpload.setAttribute(headers.get(columnNumber));
-							dataToUpload.setValue(value);
-							dataToUpload.setDescription(String.format("The value for key %s for column %d is %s ",
-									dataToUpload.getAttribute(), columnNumber + 1, dataToUpload.getValue()));
-							columnNumber++;
-							dataToUploads.add(dataToUpload);
-						}
-					}
-
-					lineCount++;
-				}
+				
+				response = validation(template, rows, projectId, template.getTemplate());
+				dataToUploads = response;
+				
+//			deleting the temporary file
+				file.delete();
 			}
 
-//			deleting the temporary file
-			file.delete();
 		} catch (Exception e) {
-			result.setValidData(false);
-
-			List<String> errors = new ArrayList<String>();
-			errors.add(e.getMessage());
-
-			dto.setRow(lineCount + 1);
-			dto.setErrorsFound(errors);
-
-			errorsDto.add(dto);
+//			result.setValidData(false);
+//
+//			List<String> errors = new ArrayList<String>();
+//			errors.add(e.getMessage());
+//
+//			dto.setRow(lineCount + 1);
+//			dto.setErrorsFound(errors);
+//
+//			errorsDto.add(dto);
 
 		}
 
+		
 		result.setErrors(errorsDto);
 		result.setDataToUpload(dataToUploads);
 
@@ -432,7 +434,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 					temp = new ArrayList<Object>();
 					temp.add(cleaned);
 					temp.add(extendable);
-					temp.add(new ArrayList());
+//					temp.add(new ArrayList());
 					all.put(root, temp);
 				}
 			}
@@ -477,35 +479,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return sb.toString();
 	}
 
-	/*
-	 * private List<List<String>> convertDataToUploadListToGrid(List<DataToUpload>
-	 * dataToUploads) {
-	 * 
-	 * List<Map<String, String>> rows = new ArrayList<>(); Map<String, String> map =
-	 * new Hashtable<String, String>();
-	 * 
-	 * Set<String> headers = new HashSet<String>(); List<String> tuple = new
-	 * ArrayList<String>();
-	 * 
-	 * for (DataToUpload dataToUpload : dataToUploads) {
-	 * headers.add(dataToUpload.getAttribute()); } int columnCount = 0; for
-	 * (DataToUpload dataToUpload : dataToUploads) { if (columnCount >=
-	 * headers.size()) { rows.add(map); columnCount = 0; map = new Hashtable<String,
-	 * String>(); System.out.println(String.format("Row number %d is %s. ",
-	 * rows.size(), map.toString()));
-	 * 
-	 * } map.put(dataToUpload.getAttribute(), dataToUpload.getValue());
-	 * columnCount++; }
-	 * 
-	 * List<List<String>> grid = new ArrayList<List<String>>();
-	 * 
-	 * for (Map<String, String> row : rows) { for (String header : headers) {
-	 * tuple.add(row.get(header)); } grid.add(tuple); }
-	 * 
-	 * return grid;
-	 * 
-	 * }
-	 */
 
 	private List<List<String>> doStore(CsvTemplate template, List<List<String>> rows, String project, List<String> fields)
 			throws XFTInitException, ElementNotFoundException, JustificationAbsent, ActionNameAbsent, IDAbsent,
@@ -715,4 +688,251 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return summary;
 	}
 
+	private List<List<String>> validation(CsvTemplate csvTemplate, List<List<String>> rows, String project, List<String> fields)  {
+		List<List<String>> displaySummary = new ArrayList<>();
+		rows.remove(0);
+        try {
+            String rootElementName = csvTemplate.getXsiType();
+
+            UserI user = XDAT.getUserDetails();
+            Iterator<List<String>> iter = rows.iterator();
+            while(iter.hasNext())
+            {
+                List<String> row = iter.next();
+                XFTItem item = XFTItem.NewItem(rootElementName, user);
+                Iterator<String> iter2 = row.iterator();
+                int columnIndex = 0;
+                while (iter2.hasNext())
+                {
+                    String column = (String)iter2.next();
+                    String xmlPath = (String)fields.get(columnIndex);
+                    if (!column.equals("")){
+                        try {
+                            item.setProperty(xmlPath, column);
+                        } catch (FieldNotFoundException e) {
+                            log.error("", e);
+                        } catch (InvalidValueException e) {
+                            log.error("", e);
+                        }
+                    }
+                    columnIndex++;
+                }
+                XFTItem dbVersion =null;
+                boolean matchedPK=false;
+                if (project!=null && !project.equals("")){
+                    SchemaElement se = SchemaElement.GetElement(rootElementName);
+
+//                    if (se.hasField(rootElementName +"/sharing/share/project") && se.hasField(rootElementName +"/sharing/share/label")){
+                        try {
+                            String id = item.getStringProperty("ID");
+
+                            ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
+                            CriteriaCollection cc = new CriteriaCollection("OR");
+                            cc.addClause(se.getFullXMLName() + "/ID", id);
+
+                            CriteriaCollection sub = new CriteriaCollection("AND");
+                            sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+                            sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
+                            cc.add(sub);
+                            
+                            sub = new CriteriaCollection("AND");
+                            sub.addClause(se.getFullXMLName() + "/project", project);
+                            sub.addClause(se.getFullXMLName() + "/label", id);
+                            cc.add(sub);
+                            
+                            search.add(cc);
+                            ItemCollection items =search.exec(false);
+
+                            if (items.size()>0){
+                                dbVersion= (XFTItem)items.getFirst();
+                                matchedPK=true;
+                            }
+                        } catch (FieldNotFoundException e) {
+                            log.error("", e);
+                        } catch (InvalidValueException e) {
+                            log.error("", e);
+                        } catch (Exception e) {
+                            log.error("", e);
+                        }
+						/*
+						 * }else{ dbVersion = item.getCurrentDBVersion(false); }
+						 */
+                }else{
+                    dbVersion = item.getCurrentDBVersion(false);
+                }
+
+                List<String> rowSummary= new ArrayList<>();
+
+                if (dbVersion==null)
+                {
+                    Iterator<String> fieldIter = fields.iterator();
+                    while(fieldIter.hasNext()){
+
+                        String xmlPath = (String)fieldIter.next();
+                        GenericWrapperField gwf =null;
+                        StringBuffer sb = new StringBuffer();
+                        try {
+                            Object nValue = item.getProperty(xmlPath);
+                            try {
+                                gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+
+                            } catch (FieldNotFoundException e) {
+                            }
+
+                            if (gwf!=null && gwf.getBaseElement()!=null && !gwf.getBaseElement().equals("")){
+                                try {
+                                    ItemSearch search = ItemSearch.GetItemSearch(gwf.getBaseElement(), user);
+                                    SchemaElement se =SchemaElement.GetElement(gwf.getBaseElement());
+                                    if ((project!=null && !project.equals("")) && se.hasField(se.getFullXMLName() + "/sharing/share/project")){
+                                        CriteriaCollection cc = new CriteriaCollection("OR");
+                                        cc.addClause(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
+                                        cc.addClause(se.getFullXMLName() + "/label", nValue);
+
+                                        CriteriaCollection sub = new CriteriaCollection("AND");
+                                        sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+                                        sub.addClause(se.getFullXMLName() + "/sharing/share/label", nValue);
+
+                                        cc.add(sub);
+
+                                        search.add(cc);
+                                    }else{
+                                        search.addCriteria(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
+                                    }
+
+                                    ItemCollection items =search.exec(false);
+
+                                    if (items.size()>0){
+                                        sb.append(nValue);
+                                        rowSummary.add(sb.toString());
+                                    }else{
+                                        sb.append("Value does not match an existing " +gwf.getBaseElement() + "/" + gwf.getBaseCol() +".\" "+ nValue );
+                                        rowSummary.add(sb.toString());
+                                    }
+                                } catch (Exception e) {
+                                    log.error("", e);
+                                    sb.append( nValue );
+                                    rowSummary.add(sb.toString());
+                                }
+
+                            }else{
+                                if (gwf!=null){
+                                    ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf, xmlPath, gwf.getParentElement().getGenericXFTElement());
+                                    if (!vr.isValid()){
+                                        sb.append( vr.getResults().get(0)[1] +" "+ nValue);
+                                        rowSummary.add(sb.toString());
+                                        continue;
+                                    }
+                                }
+
+                                sb.append(nValue);
+                                rowSummary.add(sb.toString());
+                            }
+                        } catch (FieldNotFoundException e) {
+                            log.error("", e);
+                            sb.append("Unknown field: " + xmlPath +"ERROR");
+                            rowSummary.add(sb.toString());
+                        }
+                    }
+                    rowSummary.add("NEW");
+                }else{
+                    boolean modified = false;
+                    Iterator<String> fieldIter = fields.iterator();
+                    while(fieldIter.hasNext()){
+
+                        String xmlPath = (String)fieldIter.next();
+                        GenericWrapperField gwf =null;
+                        StringBuffer sb = new StringBuffer();
+                        Object oValue =null;
+                        Object nValue=null;
+                        try {
+                            gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+                        } catch (FieldNotFoundException e) {
+                        }
+
+                        try {
+                            oValue = dbVersion.getProperty(xmlPath);
+                            nValue = item.getProperty(xmlPath);
+                        } catch (FieldNotFoundException e) {
+                            log.error("", e);
+                            sb.append( xmlPath + nValue );
+                            rowSummary.add(sb.toString());
+                            continue;
+                        }
+
+
+                        if (gwf!=null){
+                            ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf, xmlPath, gwf.getParentElement().getGenericXFTElement());
+                            if (!vr.isValid()){
+                                sb.append(vr.getResults().get(0)[1]).append(nValue);
+                                rowSummary.add(sb.toString());
+                                continue;
+                            }
+                        }
+
+                        if (oValue==null || oValue.equals(""))
+                        {
+                            if (nValue!=null){
+                                sb.append(nValue);
+                                modified=true;
+                                rowSummary.add(sb.toString());
+                                continue;
+                            }else{
+                                 rowSummary.add("");
+                                 continue;
+                            }
+                        }else if (nValue == null || nValue.equals("")){
+                            if (oValue !=null && !oValue.equals(""))
+                            {
+                                sb.append(oValue);
+                                modified=true;
+                                rowSummary.add(sb.toString());
+                                continue;
+                            }
+                        }
+                        try {
+							String newValue = DBAction.ValueParser(nValue,gwf,false);
+							String oldValue = DBAction.ValueParser(oValue,gwf,false);
+							String type = null;
+							if (gwf !=null)
+							{
+							    type = gwf.getXMLType().getLocalType();
+							}
+
+
+							if (!matchedPK || !xmlPath.equals(rootElementName +"/ID")){
+							    if (DBAction.IsNewValue(type, oldValue, newValue)){
+							        sb.append(nValue).append(oValue);
+							        modified=true;
+							    }else{
+							        sb.append(nValue);
+							    }
+							}else{
+							    sb.append(nValue).append(oValue);
+							}
+							rowSummary.add(sb.toString());
+						} catch (InvalidValueException e) {
+							log.error("", e);
+						}
+                    }
+                    if (modified)
+                        rowSummary.add("MODIFIED");
+                    else
+                        rowSummary.add("NO CHANGE");
+                }
+
+                displaySummary.add(rowSummary);
+            }
+
+//            context.put("summary", displaySummary);
+
+//            data.setScreenTemplate("XDATScreen_uploadCSV3.vm");
+        } catch (XFTInitException e) {
+            log.error("", e);
+//            data.setScreenTemplate("XDATScreen_uploadCSV2.vm");
+        } catch (ElementNotFoundException e) {
+            log.error("", e);
+//            data.setScreenTemplate("XDATScreen_uploadCSV2.vm");
+        }
+		return displaySummary;
+    }
 }
