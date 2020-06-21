@@ -87,10 +87,10 @@
         <button onclick="createNewTemplate()" class="btn-install-new-template" type="button">
             Install New Template
         </button>
-        <button onclick="createNewTemplate()" class="btn-cancel-upload hide" type="button">
+        <button class="btn-cancel-upload" type="button">
             Cancel Upload
         </button>
-        <button onclick="saveToProject()" class="btn-save-to-project hide" type="button">
+        <button onclick="saveToProject()" class="btn-save-to-project" type="button">
             Save to Project
         </button>
     </div>
@@ -105,8 +105,12 @@
     var rootDataType = ''
     var selectedAttributes = []
     var attributesList = []
+    let submitUrl = '';
+    let formData;
 
     function renderTemplatesTable() {
+        $('.btn-cancel-upload').hide();
+        $('.btn-save-to-project').hide();
         var container = $(templatesTableContainer);
         if (container.length) {
             setTimeout(function () {
@@ -383,11 +387,11 @@
                                 .find('.selectProject')[0]
                                 .value;
                             const file = obj.$dialog.find('#csvFile')[0].files[0];
-                            var formData = new FormData();
+                            formData = new FormData();
                             formData.append('file',file);
                             const uploadUrl = XNAT.url
                                 .restUrl(`/xapi/csv/upload/projects/${projectID}/validate/${templateId}`)
-                            const submitUrl = XNAT.url
+                            submitUrl = XNAT.url
                                 .restUrl(`/xapi/csv/upload/projects/${projectID}/submit/${templateId}`)    
                             return XNAT.xhr.post({
                                 url :uploadUrl,
@@ -406,8 +410,7 @@
                                     }
                                     else{
                                         obj.close();
-                                        dataConfirmation(data);
-                                            
+                                        showValidated(data.dataToUpload);    
                                     }
                                 }
                             })
@@ -419,191 +422,39 @@
             });
     }
 
-    function dataConfirmation(data){
+    function showValidated(data){
 
         $('.installed-template-box-title').text('Identified Experiment Data');
         $('.btn-install-new-template').hide();
         $('.btn-cancel-upload').show();
         $('.btn-save-to-project').show();
         if(Array.isArray(data) && data.length){           
-        generateTable(data, 'installed-template-table-container')
-        }   
+        var container = $(templatesTableContainer);
+        container.empty()
+        var table = generateTable(data)
+        container.html(table);
+        }
+          
     }
     function saveToProject(){
 
+    return XNAT.xhr.post({
+            url : submitUrl,
+            data: formData,
+            enctype: 'multipart/form-data',
+            processData: false,  // Important!
+            contentType: false,
+            cache: false,
+            fail: function(e){
+                console.log(e);
+            },
+            success: function(data){
+                console.log("Submit successful")
+            }
+        })
     }
 
-    function generateTable(){
-
-                        XNAT
-                        .spawner
-                        .spawn({
-                            templateTable: {
-                                kind: 'table.dataTable',
-                                name: 'templates',
-                                id: 'templates',
-                                load: XNAT
-                                    .url
-                                    .restUrl('/xapi/csv/templates'),
-                                items: {
-                                    templateName: {
-                                        label: 'Template Name',
-                                        filter: true,
-                                        apply: function () {
-                                            return spawn('p', {
-                                                title: this.label,
-                                                html: escapeHtml(this.label)
-                                            });
-                                        }
-                                    },
-                                    dataType: {
-                                        label: 'Datatype',
-                                        filter: true,
-                                        apply: function () {
-                                            return spawn('p', {
-                                                title: this.xsiType,
-                                                html: escapeHtml(this.xsiType)
-                                            });
-                                        }
-                                    },
-                                    lastModified: {
-                                        label: 'Last Modified',
-                                        filter: function (table) {
-                                            var MIN = 60 * 1000;
-                                            var HOUR = MIN * 60;
-                                            var X8HRS = HOUR * 8;
-                                            var X24HRS = HOUR * 24;
-                                            var X7DAYS = X24HRS * 7;
-                                            var X30DAYS = X24HRS * 30;
-                                            return spawn('div.center', [
-                                                XNAT
-                                                    .ui
-                                                    .select
-                                                    .menu({
-                                                        value: 0,
-                                                        options: {
-                                                            all: {
-                                                                label: 'All',
-                                                                value: 0,
-                                                                selected: true
-                                                            },
-                                                            lastHour: {
-                                                                label: 'Last Hour',
-                                                                value: HOUR
-                                                            },
-                                                            last8hours: {
-                                                                label: 'Last 8 Hrs',
-                                                                value: X8HRS
-                                                            },
-                                                            last24hours: {
-                                                                label: 'Last 24 Hrs',
-                                                                value: X24HRS
-                                                            },
-                                                            lastWeek: {
-                                                                label: 'Last Week',
-                                                                value: X7DAYS
-                                                            },
-                                                            last30days: {
-                                                                label: 'Last 30 days',
-                                                                value: X30DAYS
-                                                            }
-                                                        },
-                                                        element: {
-                                                            id: 'template-filter-select-last-modified',
-                                                            on: {
-                                                                change: function () {
-                                                                    var FILTERCLASS = 'filter-last-modified';
-                                                                    var selectedValue = parseInt(this.value, 10);
-                                                                    var currentTime = Date.now();
-                                                                    $dataRows = $dataRows.length
-                                                                        ? $dataRows
-                                                                        : $$(table)
-                                                                            .find('tbody')
-                                                                            .find('tr');
-                                                                    if (selectedValue === 0) {
-                                                                        $dataRows.removeClass(FILTERCLASS);
-                                                                    } else {
-                                                                        $dataRows
-                                                                            .addClass(FILTERCLASS)
-                                                                            .filter(function () {
-                                                                                var timestamp = this.querySelector('input.timestamp');
-                                                                                var lastLogin = +(timestamp.value);
-                                                                                return selectedValue === lastLogin - 1 || selectedValue > (currentTime - lastLogin);
-                                                                            })
-                                                                            .removeClass(FILTERCLASS);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    })
-                                                    .element
-                                            ])
-                                        },
-                                        apply: function () {
-                                            return spawn('!', [
-                                                [
-                                                    'input.hidden.timestamp.filtering|type=hidden', {
-                                                        value: (new Date(this.updateOn)).getTime()
-                                                    }
-                                                ],
-                                                [
-                                                    'span.date-time',
-                                                    (
-                                                        this.updateOn
-                                                            ? (new Date(this.updateOn)).toLocaleString()
-                                                            : ''
-                                                    )
-                                                ]
-                                            ])
-                                        }
-                                    },
-                                    project: {
-                                        label: 'Project',
-                                        filter: true,
-                                        apply: function () {
-                                            return spawn('p', {
-                                                title: this.project,
-                                                html: escapeHtml(this.project)
-                                            });
-                                        }
-                                    },
-                                    actions: {
-                                        label: 'Actions',
-                                        filter: false,
-                                        apply: function () {
-                                            let downloadURL = XNAT
-                                                .url
-                                                .restUrl('/xapi/csv/templates/download/' + this.id)
-                                            return spawn(
-                                                'p',
-                                                {html: `
-                                                    <div style="justify-content: space-evenly; display: flex;">
-                                                        <button type="button" class="btn btn-sm" onclick="uploadData(${this.id})"> 
-                                                            Upload Data 
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm" onclick="downloadTemplate(${this.id})"> 
-                                                            <i class="fa fa-file-excel-o" aria-hidden="true"></i> 
-                                                        </button>
-                                                        <button type="button" class="btn btn-sm" onClick="deleteTemplate(${this.id})"> 
-                                                            <i class="fa fa-trash-o" aria-hidden="true"></i> 
-                                                        </button>
-                                                    </div>`}
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-                        })
-                        .render(container.empty(), function () {
-                            XNAT
-                                .dialog
-                                .loadingBar
-                                .hide();
-                        });
-
-    }
-
-    function generateTable1(value, element){
+    function generateTable(value){
          let table = document.createElement('table');
          
          for (let row of value) {
@@ -613,8 +464,8 @@
             newCell.textContent = cell;
             }
          }
+         return table
          
-         $('#'+ element).html(table);
          console.log(value);
     }
 

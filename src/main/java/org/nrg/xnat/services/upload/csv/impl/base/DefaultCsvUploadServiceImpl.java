@@ -690,6 +690,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	private List<List<String>> validation(CsvTemplate csvTemplate, List<List<String>> rows, String project, List<String> fields)  {
 		List<List<String>> displaySummary = new ArrayList<>();
+		displaySummary.add(rows.get(0));
 		rows.remove(0);
         try {
             String rootElementName = csvTemplate.getXsiType();
