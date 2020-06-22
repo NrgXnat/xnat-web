@@ -436,7 +436,12 @@
         if(Array.isArray(data) && data.length){           
         var container = $(templatesTableContainer);
         container.empty()
-        var table = generateTable(data)
+        var table = XNAT.table.dataTable(data, {
+            kind: 'table.dataTable',
+            name: 'templates',
+            id: 'templates',
+            header: true,
+                     });
         container.html(table);
         }
           
