@@ -20,14 +20,10 @@ import java.util.Set;
 
 import javax.transaction.Transactional;
 
-import org.apache.turbine.util.RunData;
-import org.apache.velocity.context.Context;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.schema.SchemaElement;
-import org.nrg.xdat.security.helpers.Users;
-import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
@@ -54,11 +50,9 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xft.utils.FileUtils;
 import org.nrg.xft.utils.SaveItemHelper;
-import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xft.utils.ValidationUtils.XFTValidator;
 import org.nrg.xnat.daos.CsvTemplateDAO;
-import org.nrg.xnat.dto.DataToUpload;
 import org.nrg.xnat.dto.ErrorDto;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
@@ -94,6 +88,11 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		UserI user = XDAT.getUserDetails();
 		templateDefination.setUser(user.getUsername());
+
+		if (templateDefination.getTemplate().contains("on")) {
+			templateDefination.getTemplate().remove("on");
+		}
+
 		log.info("templateDefination is " + templateDefination.toString());
 		getDao().create(templateDefination);
 
@@ -243,11 +242,11 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		log.info("Project Id passed is " + projectId);
 		ValidationResult result = new ValidationResult();
 
-		List<List<String>> dataToUploads = new ArrayList<>();
-		List<ErrorDto> errorsDto = new ArrayList<ErrorDto>();
-//		ErrorDto dto = new ErrorDto();
-		List<List<String>> response = new ArrayList<>();
-		
+		/*
+		 * List<List<String>> dataToUploads = new ArrayList<>(); List<ErrorDto>
+		 * errorsDto = new ArrayList<ErrorDto>(); // ErrorDto dto = new ErrorDto();
+		 * List<List<String>> response = new ArrayList<>();
+		 */
 		Long templateId = Long.parseLong(id);
 
 		CsvTemplate template = getDao().findTemplateById(templateId);
@@ -262,10 +261,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
 			if (file != null) {
 				List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
-				
-				response = validation(template, rows, projectId, template.getTemplate());
-				dataToUploads = response;
-				
+
+				result = validation(template, rows, projectId, template.getTemplate());
+//				dataToUploads = response;
+
 //			deleting the temporary file
 				file.delete();
 			}
@@ -283,9 +282,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		}
 
-		
-		result.setErrors(errorsDto);
-		result.setDataToUpload(dataToUploads);
+		/*
+		 * result.setErrors(errorsDto); result.setDataToUpload(dataToUploads);
+		 */
 
 		return result;
 	}
@@ -296,18 +295,6 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		multipart.transferTo(convFile);
 		return convFile;
 	}
-
-	/*
-	 * @Override public List<List<String>> submitData(String projectId,
-	 * List<DataToUpload> dataToUpload) { List<CsvTemplate> templates =
-	 * getDao().findByProperty("_project", projectId); List<List<String>> rows =
-	 * convertDataToUploadListToGrid(dataToUpload); String project = projectId; //
-	 * ArrayList displaySummary = new ArrayList(); List fields = rows; try { //
-	 * String rootElementName = fm.getElementName(); // doStore(templates, rows,
-	 * project, fields); // upload2.doStore(dataToUpload, ); // return
-	 * String.format(" Project Id passed is %s", projectId); } catch (Exception e) {
-	 * // TODO: handle exception } return rows; }
-	 */
 
 	public Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
 
@@ -479,19 +466,20 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return sb.toString();
 	}
 
-
-	private List<List<String>> doStore(CsvTemplate template, List<List<String>> rows, String project, List<String> fields)
-			throws XFTInitException, ElementNotFoundException, JustificationAbsent, ActionNameAbsent, IDAbsent,
-			Exception {
+	private List<List<String>> doStore(CsvTemplate template, List<List<String>> rows, String project,
+			List<String> fields) throws XFTInitException, ElementNotFoundException, JustificationAbsent,
+			ActionNameAbsent, IDAbsent, Exception {
 		String rootElementName = template.getXsiType();
 		GenericWrapperElement.GetElement(rootElementName);
 		List<List<String>> displaySummary = new ArrayList<>();
-
+		rows.get(0).add("Status");
+		displaySummary.add(rows.get(0));
+		rows.remove(0);
 		UserI user = XDAT.getUserDetails();
 		Iterator<List<String>> iter = rows.iterator();
 		while (iter.hasNext()) {
 			List<String> rowSummary = new ArrayList<>();
-			List<String> row =  iter.next();
+			List<String> row = iter.next();
 			XFTItem item = XFTItem.NewItem(rootElementName, user);
 			Iterator<String> iter2 = row.iterator();
 			int columnIndex = 0;
@@ -558,89 +546,88 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			if (project != null && !project.equals("")) {
 				SchemaElement se = SchemaElement.GetElement(rootElementName);
 
-					try {
-						String id = item.getStringProperty("ID");
-						if (item.getStringProperty("project") == null) {
-							item.setProperty(rootElementName + "/project", project);
+				try {
+					String id = item.getStringProperty("ID");
+					if (item.getStringProperty("project") == null) {
+						item.setProperty(rootElementName + "/project", project);
+						if (item.getStringProperty("label") == null) {
+							item.setProperty(rootElementName + "/label", id);
+						}
+					} else {
+						if (item.getStringProperty("project").equals(project)) {
 							if (item.getStringProperty("label") == null) {
 								item.setProperty(rootElementName + "/label", id);
 							}
 						} else {
-							if (item.getStringProperty("project").equals(project)) {
-								if (item.getStringProperty("label") == null) {
-									item.setProperty(rootElementName + "/label", id);
-								}
-							} else {
-								item.setProperty(rootElementName + "/sharing/share/project", project);
-								item.setProperty(rootElementName + "/sharing/share/label", id);
-							}
+							item.setProperty(rootElementName + "/sharing/share/project", project);
+							item.setProperty(rootElementName + "/sharing/share/label", id);
 						}
-
-						ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
-						CriteriaCollection cc = new CriteriaCollection("OR");
-						cc.addClause(se.getFullXMLName() + "/ID", id);
-
-						CriteriaCollection sub = new CriteriaCollection("AND");
-						sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
-						sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
-						cc.add(sub);
-
-						sub = new CriteriaCollection("AND");
-						sub.addClause(se.getFullXMLName() + "/project", project);
-						sub.addClause(se.getFullXMLName() + "/label", id);
-						cc.add(sub);
-
-						search.add(cc);
-						ItemCollection items = search.exec(false);
-
-						if (items.size() > 0) {
-							item.setProperty("ID", items.getFirst().getProperty("ID"));
-						} else {
-							if (item.getStringProperty("label") != null
-									&& item.getStringProperty("label").equals(item.getStringProperty("ID"))) {
-								ItemI om = BaseElement.GetGeneratedItem(item);
-								Class c = om.getClass();
-								Object[] intArgs = new Object[] {};
-								Class[] intArgsClass = new Class[] {};
-
-								String newID = null;
-								try {
-									Method m = c.getMethod("CreateNewID", intArgsClass);
-									if (m != null) {
-										try {
-											try {
-												newID = (String) m.invoke(null, intArgs);
-											} catch (RuntimeException e3) {
-												log.error("", e3);
-											}
-										} catch (IllegalArgumentException e2) {
-											log.error("", e2);
-										} catch (InvocationTargetException e2) {
-											log.error("", e2);
-										}
-									}
-								} catch (SecurityException e1) {
-									log.error("", e1);
-								} catch (NoSuchMethodException e1) {
-									log.error("", e1);
-								}
-
-								if (newID != null) {
-									item.setProperty("ID", newID);
-								} else {
-									item.setProperty("ID",
-											XFT.CreateIDFromBase(XDAT.getSiteConfigPreferences().getSiteId(), 5, "ID",
-													se.getSQLName(), null, null));
-								}
-							}
-						}
-					} catch (FieldNotFoundException e) {
-						log.error("", e);
-					} catch (InvalidValueException e) {
-						log.error("", e);
-					} catch (Exception e) {
-						log.error("", e);
 					}
+
+					ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
+					CriteriaCollection cc = new CriteriaCollection("OR");
+					cc.addClause(se.getFullXMLName() + "/ID", id);
+
+					CriteriaCollection sub = new CriteriaCollection("AND");
+					sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+					sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
+					cc.add(sub);
+
+					sub = new CriteriaCollection("AND");
+					sub.addClause(se.getFullXMLName() + "/project", project);
+					sub.addClause(se.getFullXMLName() + "/label", id);
+					cc.add(sub);
+
+					search.add(cc);
+					ItemCollection items = search.exec(false);
+
+					if (items.size() > 0) {
+						item.setProperty("ID", items.getFirst().getProperty("ID"));
+					} else {
+						if (item.getStringProperty("label") != null
+								&& item.getStringProperty("label").equals(item.getStringProperty("ID"))) {
+							ItemI om = BaseElement.GetGeneratedItem(item);
+							Class c = om.getClass();
+							Object[] intArgs = new Object[] {};
+							Class[] intArgsClass = new Class[] {};
+
+							String newID = null;
+							try {
+								Method m = c.getMethod("CreateNewID", intArgsClass);
+								if (m != null) {
+									try {
+										try {
+											newID = (String) m.invoke(null, intArgs);
+										} catch (RuntimeException e3) {
+											log.error("", e3);
+										}
+									} catch (IllegalArgumentException e2) {
+										log.error("", e2);
+									} catch (InvocationTargetException e2) {
+										log.error("", e2);
+									}
+								}
+							} catch (SecurityException e1) {
+								log.error("", e1);
+							} catch (NoSuchMethodException e1) {
+								log.error("", e1);
+							}
+
+							if (newID != null) {
+								item.setProperty("ID", newID);
+							} else {
+								item.setProperty("ID", XFT.CreateIDFromBase(XDAT.getSiteConfigPreferences().getSiteId(),
+										5, "ID", se.getSQLName(), null, null));
+							}
+						}
+					}
+				} catch (FieldNotFoundException e) {
+					log.error("", e);
+				} catch (InvalidValueException e) {
+					log.error("", e);
+				} catch (Exception e) {
+					log.error("", e);
+				}
 			}
 
 			EventDetails eventDetails = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_FORM,
@@ -678,7 +665,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 			if (file != null) {
 				rows = FileUtils.CSVFileToArrayList(file);
-				rows.remove(0);
+
 				List<String> fields = template.getTemplate();
 				summary = doStore(template, rows, projectId, fields);
 			}
@@ -688,252 +675,271 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		return summary;
 	}
 
-	private List<List<String>> validation(CsvTemplate csvTemplate, List<List<String>> rows, String project, List<String> fields)  {
+	private ValidationResult validation(CsvTemplate csvTemplate, List<List<String>> rows, String project,
+			List<String> fields) {
+
+		ValidationResult result = new ValidationResult();
+		List<List<String>> dataToUploads;
+		List<ErrorDto> errorsDto = new ArrayList<ErrorDto>(); 
+		List<List<String>> response = new ArrayList<>();
+		int rowNumber = 0;
+		List<String> errors = new ArrayList<>();
+
 		List<List<String>> displaySummary = new ArrayList<>();
+		rows.get(0).add("Status");
 		displaySummary.add(rows.get(0));
 		rows.remove(0);
-        try {
-            String rootElementName = csvTemplate.getXsiType();
+		try {
+			String rootElementName = csvTemplate.getXsiType();
 
-            UserI user = XDAT.getUserDetails();
-            Iterator<List<String>> iter = rows.iterator();
-            while(iter.hasNext())
-            {
-                List<String> row = iter.next();
-                XFTItem item = XFTItem.NewItem(rootElementName, user);
-                Iterator<String> iter2 = row.iterator();
-                int columnIndex = 0;
-                while (iter2.hasNext())
-                {
-                    String column = (String)iter2.next();
-                    String xmlPath = (String)fields.get(columnIndex);
-                    if (!column.equals("")){
-                        try {
-                            item.setProperty(xmlPath, column);
-                        } catch (FieldNotFoundException e) {
-                            log.error("", e);
-                        } catch (InvalidValueException e) {
-                            log.error("", e);
-                        }
-                    }
-                    columnIndex++;
-                }
-                XFTItem dbVersion =null;
-                boolean matchedPK=false;
-                if (project!=null && !project.equals("")){
-                    SchemaElement se = SchemaElement.GetElement(rootElementName);
+			UserI user = XDAT.getUserDetails();
+			Iterator<List<String>> iter = rows.iterator();
+			while (iter.hasNext()) {
+				ErrorDto dto = new ErrorDto();
+				
+				List<String> row = iter.next();
+				XFTItem item = XFTItem.NewItem(rootElementName, user);
+				Iterator<String> iter2 = row.iterator();
+				int columnIndex = 0;
+				while (iter2.hasNext()) {
+					String column = (String) iter2.next();
+					String xmlPath = (String) fields.get(columnIndex);
+					if (!column.equals("")) {
+						try {
+							item.setProperty(xmlPath, column);
+						} catch (FieldNotFoundException e) {
+							log.error("", e);
+							errors.add("Field Not Found");
+						} catch (InvalidValueException e) {
+							log.error("", e);
+							errors.add("Invalid Value");
+						}
+					}
+					columnIndex++;
+				}
+				XFTItem dbVersion = null;
+				boolean matchedPK = false;
+				if (project != null && !project.equals("")) {
+					SchemaElement se = SchemaElement.GetElement(rootElementName);
 
-//                    if (se.hasField(rootElementName +"/sharing/share/project") && se.hasField(rootElementName +"/sharing/share/label")){
-                        try {
-                            String id = item.getStringProperty("ID");
+					try {
+						String id = item.getStringProperty("ID");
 
-                            ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
-                            CriteriaCollection cc = new CriteriaCollection("OR");
-                            cc.addClause(se.getFullXMLName() + "/ID", id);
+						ItemSearch search = ItemSearch.GetItemSearch(rootElementName, user);
+						CriteriaCollection cc = new CriteriaCollection("OR");
+						cc.addClause(se.getFullXMLName() + "/ID", id);
 
-                            CriteriaCollection sub = new CriteriaCollection("AND");
-                            sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
-                            sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
-                            cc.add(sub);
-                            
-                            sub = new CriteriaCollection("AND");
-                            sub.addClause(se.getFullXMLName() + "/project", project);
-                            sub.addClause(se.getFullXMLName() + "/label", id);
-                            cc.add(sub);
-                            
-                            search.add(cc);
-                            ItemCollection items =search.exec(false);
+						CriteriaCollection sub = new CriteriaCollection("AND");
+						sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+						sub.addClause(se.getFullXMLName() + "/sharing/share/label", id);
+						cc.add(sub);
 
-                            if (items.size()>0){
-                                dbVersion= (XFTItem)items.getFirst();
-                                matchedPK=true;
-                            }
-                        } catch (FieldNotFoundException e) {
-                            log.error("", e);
-                        } catch (InvalidValueException e) {
-                            log.error("", e);
-                        } catch (Exception e) {
-                            log.error("", e);
-                        }
-						/*
-						 * }else{ dbVersion = item.getCurrentDBVersion(false); }
-						 */
-                }else{
-                    dbVersion = item.getCurrentDBVersion(false);
-                }
+						sub = new CriteriaCollection("AND");
+						sub.addClause(se.getFullXMLName() + "/project", project);
+						sub.addClause(se.getFullXMLName() + "/label", id);
+						cc.add(sub);
 
-                List<String> rowSummary= new ArrayList<>();
+						search.add(cc);
+						ItemCollection items = search.exec(false);
 
-                if (dbVersion==null)
-                {
-                    Iterator<String> fieldIter = fields.iterator();
-                    while(fieldIter.hasNext()){
+						if (items.size() > 0) {
+							dbVersion = (XFTItem) items.getFirst();
+							matchedPK = true;
+						}
+					} catch (FieldNotFoundException e) {
+						log.error("", e);
+						errors.add("Field Not Found");
+					} catch (InvalidValueException e) {
+						log.error("", e);
+						errors.add("Invalid Value");
+					} catch (Exception e) {
+						log.error("", e);
+						errors.add(e.toString());
+					}
+				} else {
+					dbVersion = item.getCurrentDBVersion(false);
+				}
 
-                        String xmlPath = (String)fieldIter.next();
-                        GenericWrapperField gwf =null;
-                        StringBuffer sb = new StringBuffer();
-                        try {
-                            Object nValue = item.getProperty(xmlPath);
-                            try {
-                                gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+				List<String> rowSummary = new ArrayList<>();
 
-                            } catch (FieldNotFoundException e) {
-                            }
+				if (dbVersion == null) {
+					Iterator<String> fieldIter = fields.iterator();
+					while (fieldIter.hasNext()) {
 
-                            if (gwf!=null && gwf.getBaseElement()!=null && !gwf.getBaseElement().equals("")){
-                                try {
-                                    ItemSearch search = ItemSearch.GetItemSearch(gwf.getBaseElement(), user);
-                                    SchemaElement se =SchemaElement.GetElement(gwf.getBaseElement());
-                                    if ((project!=null && !project.equals("")) && se.hasField(se.getFullXMLName() + "/sharing/share/project")){
-                                        CriteriaCollection cc = new CriteriaCollection("OR");
-                                        cc.addClause(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
-                                        cc.addClause(se.getFullXMLName() + "/label", nValue);
+						String xmlPath = (String) fieldIter.next();
+						GenericWrapperField gwf = null;
+						StringBuffer sb = new StringBuffer();
+						try {
+							Object nValue = item.getProperty(xmlPath);
+							try {
+								gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
 
-                                        CriteriaCollection sub = new CriteriaCollection("AND");
-                                        sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
-                                        sub.addClause(se.getFullXMLName() + "/sharing/share/label", nValue);
-
-                                        cc.add(sub);
-
-                                        search.add(cc);
-                                    }else{
-                                        search.addCriteria(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
-                                    }
-
-                                    ItemCollection items =search.exec(false);
-
-                                    if (items.size()>0){
-                                        sb.append(nValue);
-                                        rowSummary.add(sb.toString());
-                                    }else{
-                                        sb.append("Value does not match an existing " +gwf.getBaseElement() + "/" + gwf.getBaseCol() +".\" "+ nValue );
-                                        rowSummary.add(sb.toString());
-                                    }
-                                } catch (Exception e) {
-                                    log.error("", e);
-                                    sb.append( nValue );
-                                    rowSummary.add(sb.toString());
-                                }
-
-                            }else{
-                                if (gwf!=null){
-                                    ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf, xmlPath, gwf.getParentElement().getGenericXFTElement());
-                                    if (!vr.isValid()){
-                                        sb.append( vr.getResults().get(0)[1] +" "+ nValue);
-                                        rowSummary.add(sb.toString());
-                                        continue;
-                                    }
-                                }
-
-                                sb.append(nValue);
-                                rowSummary.add(sb.toString());
-                            }
-                        } catch (FieldNotFoundException e) {
-                            log.error("", e);
-                            sb.append("Unknown field: " + xmlPath +"ERROR");
-                            rowSummary.add(sb.toString());
-                        }
-                    }
-                    rowSummary.add("NEW");
-                }else{
-                    boolean modified = false;
-                    Iterator<String> fieldIter = fields.iterator();
-                    while(fieldIter.hasNext()){
-
-                        String xmlPath = (String)fieldIter.next();
-                        GenericWrapperField gwf =null;
-                        StringBuffer sb = new StringBuffer();
-                        Object oValue =null;
-                        Object nValue=null;
-                        try {
-                            gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
-                        } catch (FieldNotFoundException e) {
-                        }
-
-                        try {
-                            oValue = dbVersion.getProperty(xmlPath);
-                            nValue = item.getProperty(xmlPath);
-                        } catch (FieldNotFoundException e) {
-                            log.error("", e);
-                            sb.append( xmlPath + nValue );
-                            rowSummary.add(sb.toString());
-                            continue;
-                        }
-
-
-                        if (gwf!=null){
-                            ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf, xmlPath, gwf.getParentElement().getGenericXFTElement());
-                            if (!vr.isValid()){
-                                sb.append(vr.getResults().get(0)[1]).append(nValue);
-                                rowSummary.add(sb.toString());
-                                continue;
-                            }
-                        }
-
-                        if (oValue==null || oValue.equals(""))
-                        {
-                            if (nValue!=null){
-                                sb.append(nValue);
-                                modified=true;
-                                rowSummary.add(sb.toString());
-                                continue;
-                            }else{
-                                 rowSummary.add("");
-                                 continue;
-                            }
-                        }else if (nValue == null || nValue.equals("")){
-                            if (oValue !=null && !oValue.equals(""))
-                            {
-                                sb.append(oValue);
-                                modified=true;
-                                rowSummary.add(sb.toString());
-                                continue;
-                            }
-                        }
-                        try {
-							String newValue = DBAction.ValueParser(nValue,gwf,false);
-							String oldValue = DBAction.ValueParser(oValue,gwf,false);
-							String type = null;
-							if (gwf !=null)
-							{
-							    type = gwf.getXMLType().getLocalType();
+							} catch (FieldNotFoundException e) {
 							}
 
+							if (gwf != null && gwf.getBaseElement() != null && !gwf.getBaseElement().equals("")) {
+								try {
+									ItemSearch search = ItemSearch.GetItemSearch(gwf.getBaseElement(), user);
+									SchemaElement se = SchemaElement.GetElement(gwf.getBaseElement());
+									if ((project != null && !project.equals(""))
+											&& se.hasField(se.getFullXMLName() + "/sharing/share/project")) {
+										CriteriaCollection cc = new CriteriaCollection("OR");
+										cc.addClause(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
+										cc.addClause(se.getFullXMLName() + "/label", nValue);
 
-							if (!matchedPK || !xmlPath.equals(rootElementName +"/ID")){
-							    if (DBAction.IsNewValue(type, oldValue, newValue)){
-							        sb.append(nValue).append(oValue);
-							        modified=true;
-							    }else{
-							        sb.append(nValue);
-							    }
-							}else{
-							    sb.append(nValue).append(oValue);
+										CriteriaCollection sub = new CriteriaCollection("AND");
+										sub.addClause(se.getFullXMLName() + "/sharing/share/project", project);
+										sub.addClause(se.getFullXMLName() + "/sharing/share/label", nValue);
+
+										cc.add(sub);
+
+										search.add(cc);
+									} else {
+										search.addCriteria(se.getFullXMLName() + "/" + gwf.getBaseCol(), nValue);
+									}
+
+									ItemCollection items = search.exec(false);
+
+									if (items.size() > 0) {
+										sb.append(nValue);
+										rowSummary.add(sb.toString());
+									} else {
+										sb.append("Value does not match an existing " + gwf.getBaseElement() + "/"
+												+ gwf.getBaseCol() + ".\" " + nValue);
+										rowSummary.add(sb.toString());
+									}
+								} catch (Exception e) {
+									log.error("", e);
+									sb.append(nValue);
+									errors.add(sb.toString());
+								}
+
+							} else {
+								if (gwf != null) {
+									ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf,
+											xmlPath, gwf.getParentElement().getGenericXFTElement());
+									if (!vr.isValid()) {
+										sb.append(vr.getResults().get(0)[1] + " " + nValue);
+										errors.add(sb.toString());
+										continue;
+									}
+								}
+
+								sb.append(nValue);
+								rowSummary.add(sb.toString());
+							}
+						} catch (FieldNotFoundException e) {
+							log.error("", e);
+							sb.append("Unknown field: " + xmlPath + "ERROR");
+							errors.add(sb.toString());
+						}
+					}
+					rowSummary.add("NEW");
+				} else {
+					boolean modified = false;
+					Iterator<String> fieldIter = fields.iterator();
+					while (fieldIter.hasNext()) {
+
+						String xmlPath = (String) fieldIter.next();
+						GenericWrapperField gwf = null;
+						StringBuffer sb = new StringBuffer();
+						Object oValue = null;
+						Object nValue = null;
+						try {
+							gwf = GenericWrapperElement.GetFieldForXMLPath(xmlPath);
+						} catch (FieldNotFoundException e) {
+						}
+
+						try {
+							oValue = dbVersion.getProperty(xmlPath);
+							nValue = item.getProperty(xmlPath);
+						} catch (FieldNotFoundException e) {
+							log.error("", e);
+							sb.append(xmlPath + nValue);
+							errors.add(sb.toString());
+							continue;
+						}
+
+						if (gwf != null) {
+							ValidationResults vr = XFTValidator.ValidateValue(nValue, gwf.getRules(), "xs", gwf,
+									xmlPath, gwf.getParentElement().getGenericXFTElement());
+							if (!vr.isValid()) {
+								sb.append(vr.getResults().get(0)[1]).append(nValue);
+								errors.add(sb.toString());
+								continue;
+							}
+						}
+
+						if (oValue == null || oValue.equals("")) {
+							if (nValue != null) {
+								sb.append(nValue);
+								modified = true;
+								rowSummary.add(sb.toString());
+								continue;
+							} else {
+								rowSummary.add("");
+								continue;
+							}
+						} else if (nValue == null || nValue.equals("")) {
+							if (oValue != null && !oValue.equals("")) {
+								sb.append(oValue);
+								modified = true;
+								rowSummary.add(sb.toString());
+								continue;
+							}
+						}
+						try {
+							String newValue = DBAction.ValueParser(nValue, gwf, false);
+							String oldValue = DBAction.ValueParser(oValue, gwf, false);
+							String type = null;
+							if (gwf != null) {
+								type = gwf.getXMLType().getLocalType();
+							}
+
+							if (!matchedPK || !xmlPath.equals(rootElementName + "/ID")) {
+								if (DBAction.IsNewValue(type, oldValue, newValue)) {
+									sb.append(nValue).append(oValue);
+									modified = true;
+								} else {
+									sb.append(nValue);
+								}
+							} else {
+								sb.append(nValue).append(oValue);
 							}
 							rowSummary.add(sb.toString());
 						} catch (InvalidValueException e) {
 							log.error("", e);
+							errors.add("invalid value");
 						}
-                    }
-                    if (modified)
-                        rowSummary.add("MODIFIED");
-                    else
-                        rowSummary.add("NO CHANGE");
-                }
+					}
+					if (modified)
+						rowSummary.add("MODIFIED");
+					else
+						rowSummary.add("NO CHANGE");
+				}
 
-                displaySummary.add(rowSummary);
-            }
+				if(!errors.isEmpty()) {
+					dto.setErrorsFound(errors);
+					dto.setRow(rowNumber+1);
+					
+					errorsDto.add(dto);
+				}
+				
+				displaySummary.add(rowSummary);
+				rowNumber++;
+			}
 
-//            context.put("summary", displaySummary);
-
-//            data.setScreenTemplate("XDATScreen_uploadCSV3.vm");
-        } catch (XFTInitException e) {
-            log.error("", e);
-//            data.setScreenTemplate("XDATScreen_uploadCSV2.vm");
-        } catch (ElementNotFoundException e) {
-            log.error("", e);
-//            data.setScreenTemplate("XDATScreen_uploadCSV2.vm");
-        }
-		return displaySummary;
-    }
+		} catch (XFTInitException e) {
+			log.error("", e);
+		} catch (ElementNotFoundException e) {
+			log.error("", e);
+			
+		}
+		dataToUploads = displaySummary;
+		
+		result.setErrors(errorsDto);
+		result.setDataToUpload(dataToUploads);
+		
+		return result;
+	}
 }

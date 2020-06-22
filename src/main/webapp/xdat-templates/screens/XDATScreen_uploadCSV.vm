@@ -29,7 +29,12 @@
         align-self: center;
         margin-right: 20px;
     }
+    .btn-cancel-upload{
+        height: fit-content;
+        align-self: center;
+        margin-right: 20px;
 
+    }
     .table-template-list {
         width: 100%;
     }
@@ -87,7 +92,7 @@
         <button onclick="createNewTemplate()" class="btn-install-new-template" type="button">
             Install New Template
         </button>
-        <button class="btn-cancel-upload" type="button">
+        <button onclick="cancelUpload()" class="btn-cancel-upload" type="button">
             Cancel Upload
         </button>
         <button onclick="saveToProject()" class="btn-save-to-project" type="button">
@@ -436,6 +441,20 @@
         }
           
     }
+
+    function submitCompleted(data){
+      $('.installed-template-box-title').text('Uploaded Entries has been stored.');
+        $('.btn-install-new-template').hide();
+        $('.btn-cancel-upload').hide();
+        $('.btn-save-to-project').hide();
+        if(Array.isArray(data) && data.length){           
+        var container = $(templatesTableContainer);
+        container.empty()
+        var table = generateTable(data)
+        container.html(table);
+        }  
+    }
+
     function saveToProject(){
 
     return XNAT.xhr.post({
@@ -449,10 +468,15 @@
                 console.log(e);
             },
             success: function(data){
+                submitCompleted(data);
                 console.log("Submit successful")
             }
         })
     }
+    function cancelUpload(){
+        window.location.reload();
+    }
+
 
     function generateTable(value){
          let table = document.createElement('table');
@@ -641,9 +665,12 @@
                         mapping
                             .fields
                             .push(...fields);
+                        if(required != undefined){
                         mapping
                             .required
                             .push(...required);
+                        }
+
                         var count = 0
                         for (var e in extensions) {
                             mapping.extensionPaths[count] = e;
