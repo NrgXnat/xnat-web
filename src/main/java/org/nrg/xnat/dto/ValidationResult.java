@@ -9,6 +9,7 @@
 package org.nrg.xnat.dto;
 
 import java.util.List;
+import java.util.Map;
 
 import lombok.Data;
 
@@ -21,8 +22,8 @@ public class ValidationResult {
 
 	private boolean validData;
 
-	private List<ErrorDto> errors;
+	private Map<Integer, List<String>> errors;
 
-	private List<List<String>> dataToUpload;
+	private List<Map<String, String>> dataToUpload;
 
 }

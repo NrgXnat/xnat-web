@@ -410,13 +410,8 @@
                                             
                                 },
                                 success: function(data){
-                                    if(Array.isArray(data.error) && data.error.length){
-                                        generateTable(data.error, 'upload-Data-form');
-                                    }
-                                    else{
-                                        obj.close();
-                                        showValidated(data.dataToUpload);    
-                                    }
+                                    obj.close();
+                                    showValidated(data);    
                                 }
                             })
                         }
@@ -427,38 +422,29 @@
             });
     }
 
-    function showValidated(data){
+    function showValidated(validatedData){
 
         $('.installed-template-box-title').text('Identified Experiment Data');
         $('.btn-install-new-template').hide();
         $('.btn-cancel-upload').show();
         $('.btn-save-to-project').show();
-        if(Array.isArray(data) && data.length){           
+
+        if(!validatedData.validData){
+            $('.btn-save-to-project').attr('disabled', true);
+        }
+
+        if(Array.isArray(validatedData.dataToUpload) && validatedData.dataToUpload.length){           
         var container = $(templatesTableContainer);
         container.empty()
-        var table = XNAT.table.dataTable(data, {
-            kind: 'table.dataTable',
-            name: 'templates',
-            id: 'templates',
-            header: true,
-                     });
-        container.html(table);
+        var validationTable = XNAT.table.dataTable(validatedData.dataToUpload, {
+            data: validatedData.dataToUpload
+        }).element;
+        container.append(validationTable);
         }
           
     }
 
-    function submitCompleted(data){
-      $('.installed-template-box-title').text('Uploaded Entries has been stored.');
-        $('.btn-install-new-template').hide();
-        $('.btn-cancel-upload').hide();
-        $('.btn-save-to-project').hide();
-        if(Array.isArray(data) && data.length){           
-        var container = $(templatesTableContainer);
-        container.empty()
-        var table = generateTable(data)
-        container.html(table);
-        }  
-    }
+   
 
     function saveToProject(){
 
@@ -482,6 +468,20 @@
         window.location.reload();
     }
 
+    function submitCompleted(submitData){
+      $('.installed-template-box-title').text('Uploaded Entries has been stored.');
+        $('.btn-install-new-template').hide();
+        $('.btn-cancel-upload').hide();
+        $('.btn-save-to-project').hide();
+        if(Array.isArray(submitData) && submitData.length){           
+        var container = $(templatesTableContainer);
+        container.empty()
+        var submitTable = XNAT.table.dataTable(submitData, {
+            data: submitData
+        }).element;
+        container.append(submitTable);
+        }  
+    }
 
     function generateTable(value){
          let table = document.createElement('table');

@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NotFoundException;
@@ -210,11 +211,11 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return List of Attributes
 	 */
 	@XapiRequestMapping(value = "/templates/root/{rootDataType}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-	public ResponseEntity<Hashtable<String, ArrayList<Object>>> getAtrributesBasedOnRootDataType(
+	public ResponseEntity<Map<String, ArrayList<Object>>> getAtrributesBasedOnRootDataType(
 			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootDataType") final String rootDataType) {
 		log.info("getRoot called");
 
-		Hashtable<String, ArrayList<Object>> attributes = new Hashtable<>();
+		Map<String, ArrayList<Object>> attributes = new Hashtable<>();
 		String id = "" + Calendar.getInstance().getTimeInMillis();
 		FieldMapping fm = new FieldMapping();
 		fm.setElementName(rootDataType);
@@ -225,7 +226,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return new ResponseEntity<Hashtable<String, ArrayList<Object>>>(attributes, HttpStatus.OK);
+		return new ResponseEntity<Map<String, ArrayList<Object>>>(attributes, HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "download template for a root")

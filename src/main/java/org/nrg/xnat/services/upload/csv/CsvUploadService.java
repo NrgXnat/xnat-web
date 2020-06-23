@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Map;
 
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xnat.dto.TemplateData;
@@ -77,7 +78,7 @@ public interface CsvUploadService {
 	 * @return all attributes for a root type passed
 	 * @throws Exception
 	 */
-	Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
+	Map<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception;
 
 	/**
 	 * @param projectId    id of project

@@ -1087,6 +1087,8 @@ var XNAT = getObject(XNAT);
                             }
                             hidden = HIDDENREGEX.test(cellObj.label);
                         }
+                    } else {
+                        cellContent = itemVal;
                     }
 
                     // addDataAttrs(_tr, dataAttrs);

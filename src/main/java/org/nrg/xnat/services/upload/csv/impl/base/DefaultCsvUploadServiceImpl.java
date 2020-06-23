@@ -9,10 +9,12 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -53,7 +55,6 @@ import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xft.utils.ValidationUtils.XFTValidator;
 import org.nrg.xnat.daos.CsvTemplateDAO;
-import org.nrg.xnat.dto.ErrorDto;
 import org.nrg.xnat.dto.TemplateData;
 import org.nrg.xnat.dto.TemplateDto;
 import org.nrg.xnat.dto.ValidationResult;
@@ -78,9 +79,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	public List<TemplateData> getTemplates() {
 		Set<CsvTemplate> templates = new HashSet<>(getDao().findAll());
 
-		List<TemplateData> templateDatas = convertCsvTemplateToTemplateData(templates);
-
-		return templateDatas;
+		return convertCsvTemplateToTemplateData(templates);
 	}
 
 	@Override
@@ -105,14 +104,12 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		Set<CsvTemplate> templates = new HashSet<>(getDao().findByProperty("_project", id));
 		log.info("Templates returned are " + templates.toString());
 
-		List<TemplateData> templateDatas = convertCsvTemplateToTemplateData(templates);
-
-		return templateDatas;
+		return convertCsvTemplateToTemplateData(templates);
 	}
 
 	private List<TemplateData> convertCsvTemplateToTemplateData(Set<CsvTemplate> templates) {
 
-		List<TemplateData> templateDatas = new ArrayList<TemplateData>();
+		List<TemplateData> templateDatas = new ArrayList<>();
 
 		for (CsvTemplate csvTemplate : templates) {
 			TemplateData templateData = new TemplateData();
@@ -242,66 +239,38 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		log.info("Project Id passed is " + projectId);
 		ValidationResult result = new ValidationResult();
 
-		/*
-		 * List<List<String>> dataToUploads = new ArrayList<>(); List<ErrorDto>
-		 * errorsDto = new ArrayList<ErrorDto>(); // ErrorDto dto = new ErrorDto();
-		 * List<List<String>> response = new ArrayList<>();
-		 */
 		Long templateId = Long.parseLong(id);
 
 		CsvTemplate template = getDao().findTemplateById(templateId);
-
-		/*
-		 * List<String> headers = new ArrayList<>(); int lineCount = 0; int columnNumber
-		 * = 0;
-		 */
 		result.setValidData(true);
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
-			if (file != null) {
-				List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
-
-				result = validation(template, rows, projectId, template.getTemplate());
-//				dataToUploads = response;
+			List<List<String>> rows = FileUtils.CSVFileToArrayList(file);
+			result = validation(template, rows, projectId, template.getTemplate());
 
 //			deleting the temporary file
-				file.delete();
-			}
+			file.delete();
 
 		} catch (Exception e) {
-//			result.setValidData(false);
-//
-//			List<String> errors = new ArrayList<String>();
-//			errors.add(e.getMessage());
-//
-//			dto.setRow(lineCount + 1);
-//			dto.setErrorsFound(errors);
-//
-//			errorsDto.add(dto);
-
+			e.printStackTrace();
 		}
-
-		/*
-		 * result.setErrors(errorsDto); result.setDataToUpload(dataToUploads);
-		 */
 
 		return result;
 	}
 
-	public static File multipartToFile(MultipartFile multipart, String fileName)
-			throws IllegalStateException, IOException {
+	public static File multipartToFile(MultipartFile multipart, String fileName) throws IOException {
 		File convFile = new File(System.getProperty("java.io.tmpdir") + "/" + fileName);
 		multipart.transferTo(convFile);
 		return convFile;
 	}
 
-	public Hashtable<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
+	public Map<String, ArrayList<Object>> getAttributes(FieldMapping fm) throws Exception {
 
-		Hashtable<String, ArrayList<Object>> all = new Hashtable<String, ArrayList<Object>>();
-		Hashtable<String, ArrayList<String>> extendable = new Hashtable<String, ArrayList<String>>();
-		ArrayList<String> cleaned = new ArrayList<String>();
-		ArrayList<String> required = new ArrayList<String>();
+		Hashtable<String, ArrayList<Object>> all = new Hashtable<>();
+		Hashtable<String, ArrayList<String>> extendable = new Hashtable<>();
+		ArrayList<String> cleaned = new ArrayList<>();
+		ArrayList<String> required = new ArrayList<>();
 
 		String root = fm.getElementName();
 
@@ -345,7 +314,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			}
 		}
 
-		ArrayList<String> toRemove = new ArrayList<String>();
+		ArrayList<String> toRemove = new ArrayList<>();
 		for (String key : extendable.keySet()) {
 			for (String value : cleaned) {
 				if (value.startsWith(key)) {
@@ -358,7 +327,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			cleaned.remove(key);
 		}
 
-		ArrayList<Object> temp = new ArrayList<Object>();
+		ArrayList<Object> temp = new ArrayList<>();
 		temp.add(cleaned);
 		temp.add(extendable);
 		temp.add(required);
@@ -369,8 +338,8 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				root = relation;
 				if (!all.containsKey(root)) {
 					gwe = GenericWrapperElement.GetElement(root);
-					cleaned = new ArrayList<String>();
-					extendable = new Hashtable<String, ArrayList<String>>();
+					cleaned = new ArrayList<>();
+					extendable = new Hashtable<>();
 
 					for (String s : ViewManager.GetFieldNames(gwe, ViewManager.ACTIVE, false, true)) {
 						s = root + "/" + GenericWrapperElement.GetCompactXMLPath(s);
@@ -405,7 +374,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 						}
 					}
 
-					toRemove = new ArrayList<String>();
+					toRemove = new ArrayList<>();
 					for (String key : extendable.keySet()) {
 						for (String value : cleaned) {
 							if (value.startsWith(key)) {
@@ -418,10 +387,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 						cleaned.remove(key);
 					}
 
-					temp = new ArrayList<Object>();
+					temp = new ArrayList<>();
 					temp.add(cleaned);
 					temp.add(extendable);
-//					temp.add(new ArrayList());
 					all.put(root, temp);
 				}
 			}
@@ -435,14 +403,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		File file = new File(System.getProperty("java.io.tmpdir") + "/" + templateDto.getXsiType());
 
-		try {
+		try (FileWriter writer = new FileWriter(file);) {
 			String templateString = convertListToCommaSeperatedString(templateDto);
-
 			log.info("string is " + templateString);
-
-			FileWriter writer = new FileWriter(file);
 			writer.append(templateString);
-			writer.close();
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -534,9 +498,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 					try {
 						item.setProperty(xmlPath, column);
-					} catch (FieldNotFoundException e) {
-						log.error("", e);
-					} catch (InvalidValueException e) {
+					} catch (FieldNotFoundException | InvalidValueException e) {
 						log.error("", e);
 					}
 				}
@@ -601,15 +563,11 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 										} catch (RuntimeException e3) {
 											log.error("", e3);
 										}
-									} catch (IllegalArgumentException e2) {
-										log.error("", e2);
-									} catch (InvocationTargetException e2) {
+									} catch (IllegalArgumentException | InvocationTargetException e2) {
 										log.error("", e2);
 									}
 								}
-							} catch (SecurityException e1) {
-								log.error("", e1);
-							} catch (NoSuchMethodException e1) {
+							} catch (SecurityException | NoSuchMethodException e1) {
 								log.error("", e1);
 							}
 
@@ -621,11 +579,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 							}
 						}
 					}
-				} catch (FieldNotFoundException e) {
+				} catch (FieldNotFoundException | InvalidValueException  e) {
 					log.error("", e);
-				} catch (InvalidValueException e) {
-					log.error("", e);
-				} catch (Exception e) {
+				}catch(Exception e) {
 					log.error("", e);
 				}
 			}
@@ -662,13 +618,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
+			rows = FileUtils.CSVFileToArrayList(file);
 
-			if (file != null) {
-				rows = FileUtils.CSVFileToArrayList(file);
-
-				List<String> fields = template.getTemplate();
-				summary = doStore(template, rows, projectId, fields);
-			}
+			List<String> fields = template.getTemplate();
+			summary = doStore(template, rows, projectId, fields);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -678,10 +631,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	private ValidationResult validation(CsvTemplate csvTemplate, List<List<String>> rows, String project,
 			List<String> fields) {
 
-		ValidationResult result = new ValidationResult();
-		List<List<String>> dataToUploads;
-		List<ErrorDto> errorsDto = new ArrayList<ErrorDto>(); 
-		List<List<String>> response = new ArrayList<>();
+		Map<Integer, List<String>> errorsDto = new Hashtable<>();
 		int rowNumber = 0;
 		List<String> errors = new ArrayList<>();
 
@@ -695,8 +645,8 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			UserI user = XDAT.getUserDetails();
 			Iterator<List<String>> iter = rows.iterator();
 			while (iter.hasNext()) {
-				ErrorDto dto = new ErrorDto();
-				
+//				ErrorDto dto = new ErrorDto();
+
 				List<String> row = iter.next();
 				XFTItem item = XFTItem.NewItem(rootElementName, user);
 				Iterator<String> iter2 = row.iterator();
@@ -918,28 +868,51 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 						rowSummary.add("NO CHANGE");
 				}
 
-				if(!errors.isEmpty()) {
-					dto.setErrorsFound(errors);
-					dto.setRow(rowNumber+1);
-					
-					errorsDto.add(dto);
+				if (!errors.isEmpty()) {
+					errorsDto.put(rowNumber + 1, errors);
 				}
-				
 				displaySummary.add(rowSummary);
 				rowNumber++;
 			}
-
-		} catch (XFTInitException e) {
+		} catch (XFTInitException | ElementNotFoundException e) {
 			log.error("", e);
-		} catch (ElementNotFoundException e) {
-			log.error("", e);
-			
 		}
-		dataToUploads = displaySummary;
-		
+
+		return convertToJSONArray(displaySummary, errorsDto);
+	}
+
+	private ValidationResult convertToJSONArray(List<List<String>> rows, Map<Integer, List<String>> errorsDto) {
+		ValidationResult result = new ValidationResult();
+		if(errorsDto.isEmpty()) {
+			result.setValidData(true);
+		}
+		List<Map<String, String>> maps = new ArrayList<>();
+		List<String> header = rows.get(0);
+		rows.remove(0);
+		List<String> statTypes = Arrays.asList("NEW", "MODIFIED");
+		int rowNumber = 1;
+
+		for (List<String> row : rows) {
+			Map<String, String> data = new LinkedHashMap<>();
+			int columnNumber = 0;
+			for (String datum : row) {
+				List<String> errors;
+				data.putIfAbsent(header.get(columnNumber), datum);
+				columnNumber++;
+				if (columnNumber == header.size() && !statTypes.contains(data.get("Status"))) {
+					result.setValidData(false);
+					errors = errorsDto.get(rowNumber);
+					errors.add(data.get("Status"));
+					errorsDto.put(rowNumber, errors);
+
+				}
+			}
+			maps.add(data);
+			rowNumber++;
+		}
+		result.setDataToUpload(maps);
 		result.setErrors(errorsDto);
-		result.setDataToUpload(dataToUploads);
-		
+
 		return result;
 	}
 }
