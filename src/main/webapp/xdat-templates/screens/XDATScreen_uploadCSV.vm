@@ -1067,7 +1067,7 @@
      #foreach($project in $all_project)
     projects.push({
       value:"$project.getId()",
-      label:"$esc.javascript($!project.getName())"
+      label:"$esc.javascript($!project.getSecondaryId())"
     })
 	#end
 

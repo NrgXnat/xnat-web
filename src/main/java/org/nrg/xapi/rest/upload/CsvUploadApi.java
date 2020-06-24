@@ -182,7 +182,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
 			@ApiParam(value = "Indicates the ID of the project whose template is to be validated.", required = true) @PathVariable("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
-		return new ResponseEntity<ValidationResult>(_uploadService.validateData(id,projectId, file), HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.validateData(id,projectId, file), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Submits validated CSV data")
@@ -194,7 +194,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param projectId ID of project whose CSV data is to be submitted.
 	 */
 	@XapiRequestMapping(value = "/upload/projects/{projectId}/submit/{id}", method = RequestMethod.POST, restrictTo = Admin)
-	public ResponseEntity<List<List<String>>> submitCsvData(
+	public ResponseEntity<List<Map<String,String>>> submitCsvData(
 			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
 			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true)@PathVariable ("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
@@ -226,7 +226,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return new ResponseEntity<Map<String, ArrayList<Object>>>(attributes, HttpStatus.OK);
+		return new ResponseEntity<>(attributes, HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "download template for a root")

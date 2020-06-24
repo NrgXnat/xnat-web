@@ -5,7 +5,6 @@ package org.nrg.xnat.services.upload.csv;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
@@ -85,7 +84,7 @@ public interface CsvUploadService {
 	 * @param dataToUpload data to be uploaded in JSON format
 	 * @return
 	 */
-	List<List<String>> submitData(String id, String projectId, MultipartFile file);
+	List<Map<String, String>> submitData(String id, String projectId, MultipartFile file);
 
 
 }

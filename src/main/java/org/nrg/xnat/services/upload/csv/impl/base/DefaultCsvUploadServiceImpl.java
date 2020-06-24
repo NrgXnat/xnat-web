@@ -607,24 +607,39 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 	}
 
 	@Override
-	public List<List<String>> submitData(String id, String projectId, MultipartFile multipartFile) {
+	public List<Map<String, String>> submitData(String id, String projectId, MultipartFile multipartFile) {
 
 		Long templateId = Long.parseLong(id);
 
 		CsvTemplate template = getDao().findTemplateById(templateId);
 
 		List<List<String>> rows = null;
-		List<List<String>> summary = null;
+		List<Map<String, String>> summary = new ArrayList<>();
 
 		try {
 			File file = multipartToFile(multipartFile, multipartFile.getOriginalFilename());
 			rows = FileUtils.CSVFileToArrayList(file);
 
 			List<String> fields = template.getTemplate();
-			summary = doStore(template, rows, projectId, fields);
+			rows = doStore(template, rows, projectId, fields);
+			List<String> header = rows.get(0);
+			rows.remove(0);
+			
+			for (List<String> row : rows) {
+				Map<String, String> data = new LinkedHashMap<>();
+				int columnNumber = 0;
+				for (String datum : row) {
+					data.putIfAbsent(header.get(columnNumber), datum);
+					columnNumber++;
+				}
+				summary.add(data);
+			}
+
+
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		
 		return summary;
 	}
 
@@ -645,15 +660,14 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			UserI user = XDAT.getUserDetails();
 			Iterator<List<String>> iter = rows.iterator();
 			while (iter.hasNext()) {
-//				ErrorDto dto = new ErrorDto();
 
 				List<String> row = iter.next();
 				XFTItem item = XFTItem.NewItem(rootElementName, user);
 				Iterator<String> iter2 = row.iterator();
 				int columnIndex = 0;
 				while (iter2.hasNext()) {
-					String column = (String) iter2.next();
-					String xmlPath = (String) fields.get(columnIndex);
+					String column =  iter2.next();
+					String xmlPath = fields.get(columnIndex);
 					if (!column.equals("")) {
 						try {
 							item.setProperty(xmlPath, column);
