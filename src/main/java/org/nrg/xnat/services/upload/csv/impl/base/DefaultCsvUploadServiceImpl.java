@@ -579,9 +579,9 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 							}
 						}
 					}
-				} catch (FieldNotFoundException | InvalidValueException  e) {
+				} catch (FieldNotFoundException | InvalidValueException e) {
 					log.error("", e);
-				}catch(Exception e) {
+				} catch (Exception e) {
 					log.error("", e);
 				}
 			}
@@ -624,7 +624,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			rows = doStore(template, rows, projectId, fields);
 			List<String> header = rows.get(0);
 			rows.remove(0);
-			
+
 			for (List<String> row : rows) {
 				Map<String, String> data = new LinkedHashMap<>();
 				int columnNumber = 0;
@@ -635,11 +635,10 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				summary.add(data);
 			}
 
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		
+
 		return summary;
 	}
 
@@ -666,7 +665,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				Iterator<String> iter2 = row.iterator();
 				int columnIndex = 0;
 				while (iter2.hasNext()) {
-					String column =  iter2.next();
+					String column = iter2.next();
 					String xmlPath = fields.get(columnIndex);
 					if (!column.equals("")) {
 						try {
@@ -867,7 +866,11 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 								} else {
 									sb.append(nValue);
 								}
-							} else {
+							} else if (oValue.equals(nValue)) {
+								sb.append(oValue);
+							}
+
+							else {
 								sb.append(nValue).append(oValue);
 							}
 							rowSummary.add(sb.toString());
@@ -897,7 +900,7 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 
 	private ValidationResult convertToJSONArray(List<List<String>> rows, Map<Integer, List<String>> errorsDto) {
 		ValidationResult result = new ValidationResult();
-		if(errorsDto.isEmpty()) {
+		if (errorsDto.isEmpty()) {
 			result.setValidData(true);
 		}
 		List<Map<String, String>> maps = new ArrayList<>();
@@ -916,6 +919,8 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 				if (columnNumber == header.size() && !statTypes.contains(data.get("Status"))) {
 					result.setValidData(false);
 					errors = errorsDto.get(rowNumber);
+					if (errors == null)
+						errors = new ArrayList<>();
 					errors.add(data.get("Status"));
 					errorsDto.put(rowNumber, errors);
 

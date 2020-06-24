@@ -3,7 +3,7 @@
  */
 package org.nrg.xapi.rest.upload;
 
-import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
+import static org.nrg.xdat.security.helpers.AccessLevel.Authenticated;
 
 import java.io.File;
 import java.io.IOException;
@@ -69,7 +69,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * 
 	 * @return List of templates
 	 */
-	@XapiRequestMapping(value = "/templates", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Authenticated)
 	public ResponseEntity<List<TemplateData>> getAllTemplates() {
 		log.info("getAllTemplates called");
 		return new ResponseEntity<>(_uploadService.getTemplates(), HttpStatus.OK);
@@ -85,7 +85,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param templateDefination JSON containing template object DTO
 	 * 
 	 */
-	@XapiRequestMapping(value = "/templates", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST, restrictTo = Authenticated)
 	public ResponseEntity<Object> addNewTemplate(
 			@ApiParam(value = "Template to be added in JSON format.", required = true) @RequestBody final CsvTemplate templateDefination) {
 		log.info("add new Template called");
@@ -102,7 +102,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param projectId ID of project whose related templates are to be returned
 	 * @return List of templates
 	 */
-	@XapiRequestMapping(value = "/templates/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Authenticated)
 	public ResponseEntity<List<TemplateData>> getAllTemplatesForProject(
 			@ApiParam(value = "Indicates the ID of the project whose templates are to be retrieved.", required = true) @PathVariable("projectId") @Project final String projectId) {
 		log.info("getAllTemplatesByProjectId called");
@@ -118,7 +118,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param Id of template be returned
 	 * @return Template
 	 */
-	@XapiRequestMapping(value = "/templates/{id}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/{id}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Authenticated)
 	public ResponseEntity<TemplateDto> getTemplateById(
 			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id)
 			throws NotFoundException {
@@ -138,7 +138,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * 
 	 * @param Id of template be modified
 	 */
-	@XapiRequestMapping(value = "/templates/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/{id}", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT, restrictTo = Authenticated)
 	public ResponseEntity<Object> updateExistingTemplateById(
 			@ApiParam(value = "Indicates the ID of templates that is to be modified.", required = true) @PathVariable("id") @Project final String id,
 			@ApiParam(value = "Template to be update in JSON format.", required = true) @RequestBody final CsvTemplate templateDefination) {
@@ -156,7 +156,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * 
 	 * @param Id of template be removed
 	 */
-	@XapiRequestMapping(value = "/templates/{id}", method = RequestMethod.DELETE, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/{id}", method = RequestMethod.DELETE, restrictTo = Authenticated)
 	public ResponseEntity<Object> deleteExistingTemplateById(
 			@ApiParam(value = "Indicates the ID of templates that is to be removed.", required = true) @PathVariable("id") @Project final String id) {
 		log.info("deleteExistingTemplateById called");
@@ -177,12 +177,12 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @return JSON containing validity status of data and errors found in the file.
 	 * 
 	 */
-	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate/{id}", method = RequestMethod.POST, restrictTo = Admin)
+	@XapiRequestMapping(value = "/upload/projects/{projectId}/validate/{id}", method = RequestMethod.POST, restrictTo = Authenticated)
 	public ResponseEntity<ValidationResult> validateCsvData(
-			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
+			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id,
 			@ApiParam(value = "Indicates the ID of the project whose template is to be validated.", required = true) @PathVariable("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
-		return new ResponseEntity<>(_uploadService.validateData(id,projectId, file), HttpStatus.OK);
+		return new ResponseEntity<>(_uploadService.validateData(id, projectId, file), HttpStatus.OK);
 	}
 
 	@ApiOperation(value = "Submits validated CSV data")
@@ -193,10 +193,10 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * 
 	 * @param projectId ID of project whose CSV data is to be submitted.
 	 */
-	@XapiRequestMapping(value = "/upload/projects/{projectId}/submit/{id}", method = RequestMethod.POST, restrictTo = Admin)
-	public ResponseEntity<List<Map<String,String>>> submitCsvData(
-			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id, 
-			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true)@PathVariable ("projectId") @Project final String projectId,
+	@XapiRequestMapping(value = "/upload/projects/{projectId}/submit/{id}", method = RequestMethod.POST, restrictTo = Authenticated)
+	public ResponseEntity<List<Map<String, String>>> submitCsvData(
+			@ApiParam(value = "Indicates the ID templates that is to be retrieved.", required = true) @PathVariable("id") @Project final String id,
+			@ApiParam(value = "Indicates the ID of the project whose validated template is to be submitted.", required = true) @PathVariable("projectId") @Project final String projectId,
 			@RequestParam("file") MultipartFile file) {
 		return new ResponseEntity<>(_uploadService.submitData(id, projectId, file), HttpStatus.OK);
 	}
@@ -210,7 +210,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param rootName whose related attribute are to be returned
 	 * @return List of Attributes
 	 */
-	@XapiRequestMapping(value = "/templates/root/{rootDataType}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/root/{rootDataType}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Authenticated)
 	public ResponseEntity<Map<String, ArrayList<Object>>> getAtrributesBasedOnRootDataType(
 			@ApiParam(value = "Indicates the name of root whose attributes are to be retrieved.", required = true) @PathVariable("rootDataType") final String rootDataType) {
 		log.info("getRoot called");
@@ -238,7 +238,7 @@ public class CsvUploadApi extends AbstractXapiRestController {
 	 * @param id Indicates the id of template to be downloaded.
 	 * @return File
 	 */
-	@XapiRequestMapping(value = "/templates/download/{id}", produces = "text/csv", method = RequestMethod.GET, restrictTo = Admin)
+	@XapiRequestMapping(value = "/templates/download/{id}", produces = "text/csv", method = RequestMethod.GET, restrictTo = Authenticated)
 	public ResponseEntity<FileSystemResource> downloadTemplate(
 			@ApiParam(value = "Indicates the id of template that is to be downloaded.", required = true) @PathVariable("id") final String id)
 			throws IOException {
