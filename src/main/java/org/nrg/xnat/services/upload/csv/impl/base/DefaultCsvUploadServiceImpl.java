@@ -895,28 +895,44 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 			log.error("", e);
 		}
 
-		return convertToJSONArray(displaySummary, errorsDto);
+		return convertToJSONArray(displaySummary, errorsDto, fields);
 	}
 
-	private ValidationResult convertToJSONArray(List<List<String>> rows, Map<Integer, List<String>> errorsDto) {
+	private ValidationResult convertToJSONArray(List<List<String>> rows, Map<Integer, List<String>> errorsDto,
+			List<String> fields) {
 		ValidationResult result = new ValidationResult();
 		if (errorsDto.isEmpty()) {
 			result.setValidData(true);
 		}
 		List<Map<String, String>> maps = new ArrayList<>();
-		List<String> header = rows.get(0);
+		List<String> headers = rows.get(0);
 		rows.remove(0);
 		List<String> statTypes = Arrays.asList("NEW", "MODIFIED");
 		int rowNumber = 1;
+		Set<String> store = new HashSet<>();
+		Set<String> duplicateValues = new HashSet<>();
+
+		for (String header : headers) {
+			if (!store.add(header)) {
+				duplicateValues.add(header);
+			}
+		}
 
 		for (List<String> row : rows) {
 			Map<String, String> data = new LinkedHashMap<>();
+			String key;
 			int columnNumber = 0;
 			for (String datum : row) {
 				List<String> errors;
-				data.putIfAbsent(header.get(columnNumber), datum);
+
+				key = headers.get(columnNumber);
+				if (duplicateValues.contains(key)) {
+					key = getFieldName(fields, columnNumber);
+				}
+
+				data.put(key, datum);
 				columnNumber++;
-				if (columnNumber == header.size() && !statTypes.contains(data.get("Status"))) {
+				if (columnNumber == headers.size() && !statTypes.contains(data.get("Status"))) {
 					result.setValidData(false);
 					errors = errorsDto.get(rowNumber);
 					if (errors == null)
@@ -933,5 +949,15 @@ public class DefaultCsvUploadServiceImpl extends AbstractHibernateEntityService<
 		result.setErrors(errorsDto);
 
 		return result;
+	}
+
+	private String getFieldName(List<String> fields, int columnNumber) {
+		String key;
+		List<String> strings = new ArrayList<>(Arrays.asList(fields.get(columnNumber).split("/")));
+		List<String> listForRemoval = strings.subList(0, strings.size() - 2);
+		
+		strings.removeAll(listForRemoval);
+		key = String.join(" ", strings);
+		return key;
 	}
 }

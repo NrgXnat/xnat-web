@@ -103,6 +103,7 @@
 </div>
 
 <script>
+    var selectedProject;
     var templatesTableContainer = 'div#installed-template-table-container'
     renderTemplatesTable();
     var allElements = new Array();
@@ -268,7 +269,7 @@
                                                 'p',
                                                 {html: `
                                                     <div style="justify-content: space-evenly; display: flex;">
-                                                        <button type="button" class="btn btn-sm" onclick="uploadData(${this.id})"> 
+                                                        <button type="button" class="btn btn-sm" onclick="uploadData(${this.id}, \'${this.project}\')"> 
                                                             Upload Data 
                                                         </button>
                                                         <button type="button" class="btn btn-sm" onclick="downloadTemplate(${this.id})"> 
@@ -318,6 +319,8 @@
 
     function uploadDataContent() {
     let projects = getProjects();
+    let defaultProject = projects.filter(project => project.value == selectedProject).pop()
+    defaultProject.selected = true;
 
     return {
        
@@ -364,7 +367,8 @@
 
     }
 
-    function uploadData(templateId) {
+    function uploadData(templateId, projectId) {
+        selectedProject = projectId;
         XNAT
             .dialog
             .open({
@@ -1064,12 +1068,12 @@
     #set($all_project=$data.getSession().getAttribute("userHelper").getCachedItems("xnat:projectData",null,false))
 	
     let projects = [];
-     #foreach($project in $all_project)
-    projects.push({
-      value:"$project.getId()",
-      label:"$esc.javascript($!project.getSecondaryId())"
-    })
-	#end
+        #foreach($project in $all_project)
+            projects.push({
+            value:"$project.getId()",
+            label:"$esc.javascript($!project.getSecondaryId())"
+            })
+        #end
 
     return projects;
 
