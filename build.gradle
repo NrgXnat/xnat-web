@@ -28,7 +28,7 @@ buildscript {
 }
 
 group "org.nrg.xnat"
-version = vXnat
+version = "1.7.7-ACTIVE-SNAPSHOT-EXPORT"
 
 apply plugin: "eclipse"
 apply plugin: "groovy"
@@ -199,6 +199,7 @@ dependencies {
     api "org.springframework:spring-context"
     api "org.springframework:spring-core"
 
+   
     implementation "org.nrg.xnat:spawner"
     implementation "org.nrg:transaction"
     implementation "org.nrg:prefs"
@@ -256,6 +257,7 @@ dependencies {
     implementation "org.springframework.security:spring-security-taglibs"
     implementation "org.springframework.ldap:spring-ldap-core"
 
+    implementation "org.apache.activemq:activemq-core"
     implementation "org.hibernate:hibernate-core"
     implementation "org.hibernate:hibernate-ehcache"
     implementation "org.hibernate:hibernate-validator"
@@ -330,7 +332,7 @@ dependencies {
     providedCompile "org.kohsuke.metainf-services:metainf-services"
 
     runtimeOnly "org.nrg.xnatx.plugins:ximgview-plugin"
-    runtimeOnly "org.apache.activemq:activemq-core"
+    //runtimeOnly "org.apache.activemq:activemq-core"
     runtimeOnly "org.apache.ant:ant"
     runtimeOnly "axis:axis-ant"
     runtimeOnly "axis:axis-schema"
