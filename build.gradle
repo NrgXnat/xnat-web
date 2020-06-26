@@ -151,6 +151,7 @@ dependencies {
     api "org.springframework:spring-context"
     api "org.springframework:spring-core"
 
+   
     implementation "org.nrg.xnat:spawner"
     implementation "org.nrg.xdat:core"
     implementation "org.nrg:framework"
@@ -215,6 +216,7 @@ dependencies {
     implementation "org.springframework.security:spring-security-taglibs"
     implementation "org.springframework.ldap:spring-ldap-core"
 
+    implementation "org.apache.activemq:activemq-core"
     implementation "org.hibernate:hibernate-core"
     implementation "org.hibernate:hibernate-ehcache"
     implementation "org.hibernate:hibernate-validator"
@@ -297,6 +299,9 @@ dependencies {
     providedCompile "javax.servlet:javax.servlet-api"
     providedCompile "org.jetbrains:annotations"
     providedCompile "org.kohsuke.metainf-services:metainf-services"
+
+    runtimeOnly "org.nrg.xnatx.plugins:ximgview-plugin"
+    //runtimeOnly "org.apache.activemq:activemq-core"
 
     runtimeOnly "org.apache.ant:ant"
     runtimeOnly "axis:axis-ant"
