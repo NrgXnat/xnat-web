@@ -15,6 +15,7 @@ import java.net.URL;
 import java.nio.charset.Charset;
 
 import org.apache.commons.httpclient.HttpStatus;
+import org.nrg.xnat.export.interfaces.TransformerI;
 
 /**
  * @author Mohana Ramaratnam
@@ -38,9 +39,11 @@ public class XMIRCContentFileUploader {
         outputStream = httpConn.getOutputStream();
     }
 
-	public HTTPResponseHolder exportToDestination(File fileToExport) throws Exception {
+	public HTTPResponseHolder exportToDestination(File fileToExport, final TransformerI transformer) throws Exception {
 	    try {
 	    	httpConn.connect();
+	    	//Call the Transformer
+	    	FileInputStream inFile = new FileInputStream(fileToExport);
 	    	long bytesSent = streamFile(fileToExport);
 		    //TODO handle response code
 		    int responseCode = httpConn.getResponseCode();

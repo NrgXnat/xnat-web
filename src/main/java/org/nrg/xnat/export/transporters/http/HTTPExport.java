@@ -1,21 +1,15 @@
 package org.nrg.xnat.export.transporters.http;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.net.MalformedURLException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpStatus;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xnat.export.interfaces.TransformerI;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,10 +44,10 @@ public class HTTPExport {
 	}
 
 	
-	public HTTPResponseHolder send(XnatAbstractresourceI a, final String projectRootPath) throws MalformedURLException, IOException {
+	public HTTPResponseHolder send(XnatAbstractresourceI a, final String projectRootPath, final TransformerI transformer) throws MalformedURLException, IOException {
 		try {
 			setUrl();
-			HTTPResponseHolder aggregatedResponse = exportToDestination(a, projectRootPath);
+			HTTPResponseHolder aggregatedResponse = exportToDestination(a, projectRootPath, transformer);
 			return aggregatedResponse;
 		}catch(Exception e) {
 			log.error(e.getMessage());
@@ -68,7 +62,7 @@ public class HTTPExport {
 		}
 	}
 
-	private HTTPResponseHolder exportToDestination(XnatAbstractresourceI abs,  final String projectRootPath) throws IOException {
+	private HTTPResponseHolder exportToDestination(XnatAbstractresourceI abs,  final String projectRootPath, final TransformerI transformer) throws IOException {
 		List<HTTPResponseHolder> httpResponses = new ArrayList<HTTPResponseHolder>();
 		int fileCount = 0;
 		long fileSize = 0;
@@ -79,7 +73,7 @@ public class HTTPExport {
 					File f = (File)files.get(i);
 					if (f.exists() && f.isFile() && f.length() > 0) {
 						try {
-							HTTPResponseHolder response = exportToDestination(f);
+							HTTPResponseHolder response = exportToDestination(f, transformer);
 							if (response.getFilesSentSize() > 0) {
 								fileCount += response.getFilesSentCount();
 								fileSize += response.getFilesSentSize();
@@ -105,9 +99,9 @@ public class HTTPExport {
 	
 	
 	
-	  private HTTPResponseHolder exportToDestination(File fileToExport) throws Exception { 
+	  private HTTPResponseHolder exportToDestination(File fileToExport, final TransformerI transformer) throws Exception { 
 		  XMIRCContentFileUploader uploader = new XMIRCContentFileUploader(requestURL);
-		  return uploader.exportToDestination(fileToExport);
+		  return uploader.exportToDestination(fileToExport, transformer);
 		  
 	  }
 	
