@@ -49,7 +49,14 @@ var XNAT = getObject(XNAT);
         setMinimized(activities[minimized]);
     };
 
-    activityTab.start = function(title, statusListenerId, callbackPath = 'XNAT.app.activityTab.populateArchivalDetails', timeout = 1) {
+    activityTab.start = function (title, statusListenerId, callbackPath, timeout) {
+        if (!callbackPath) {
+            callbackPath = 'XNAT.app.activityTab.populateArchivalDetails';
+        }
+        if (!timeout) {
+            timeout = 1;
+        }
+
         let activities = getActivities(),
             key = (new Date()).toISOString().replace(/[^\w]/gi, '');
         const item = {
@@ -68,9 +75,12 @@ var XNAT = getObject(XNAT);
     activityTab.startPoll = function(item, key) {
         let $tab = $('#activity-tab');
         createEntry(item, key, $tab);
-        activityTab.pollers[key] = true;
-        checkProgress(item, key, 0);
-        $tab.css('visibility', 'visible');
+        // details div is not in the DOM yet, see XNAT-6387
+        waitForElement(200, item.detailsTag, function(){
+            activityTab.pollers[key] = true;
+            checkProgress(item, key, 0);
+            $tab.css('visibility', 'visible');
+        });
     };
 
     activityTab.stopPoll = function(key, succeeded) {
@@ -134,7 +144,10 @@ var XNAT = getObject(XNAT);
         });
     }
 
-    function checkProgress(item, key, errCnt, lastProgressIdx = -1) {
+    function checkProgress(item, key, errCnt, lastProgressIdx) {
+        if (!lastProgressIdx) {
+            lastProgressIdx = -1;
+        }
         if (! (activityTab.pollers.hasOwnProperty(key) && activityTab.pollers[key])) {
             return;
         }
@@ -147,7 +160,9 @@ var XNAT = getObject(XNAT);
                 var succeeded = null;
                 try {
                     const callback = getCallbackForItem(item);
-                    [succeeded, lastProgressIdx] = callback(itemDivId, detailsTag, respDat, lastProgressIdx);
+                    const rtn = callback(itemDivId, detailsTag, respDat, lastProgressIdx);
+                    succeeded = rtn.succeeded;
+                    lastProgressIdx = rtn.lastProgressIdx;
                 } catch (e) {
                     console.log(e);
                     processError(item, key, errCnt, e.name + ' (js): ' + e.message, lastProgressIdx);
@@ -220,12 +235,12 @@ var XNAT = getObject(XNAT);
         if (messages) {
             $(detailsTag).append(messages);
         }
-        return [succeeded, lastProgressIdx];
+        return {succeeded: succeeded, lastProgressIdx: lastProgressIdx};
     };
 
     function parseFinalMessage(message, succeeded) {
         const prearchiveLink = '<a target="_blank" href="' +
-            XNAT.url.fullUrl('/app/template/XDATScreen_prearchives.vm') +
+            XNAT.url.rootUrl('/app/template/XDATScreen_prearchives.vm') +
             '">prearchive</a>';
 
         if (succeeded) {
@@ -237,7 +252,7 @@ var XNAT = getObject(XNAT);
             } else {
                 urlsHtml = $.map(urls, function (url) {
                     var id = url.replace(/.*\//, '');
-                    return '<a target="_blank" href="/data' + url + '">' + id + '</a>'
+                    return '<a target="_blank" href="' + XNAT.url.rootUrl('/data' + url) + '">' + id + '</a>'
                 }).join(', ');
             }
             return '<div class="prog success">' + urls.length +
@@ -258,7 +273,7 @@ var XNAT = getObject(XNAT);
         return callback;
     }
 
-    function setMinimized(isMinimized, updateCookie = false) {
+    function setMinimized(isMinimized, updateCookie) {
         let activities = getActivities();
         if (updateCookie) {
             activities[minimized] = isMinimized;
@@ -277,19 +292,19 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    // don't init until the page is finished loading
-    $(window).on('load', function(){
+    $(document).on('click', '#activity-tab a.activity-min', function() {
+        setMinimized(true, true);
+    });
+    $(document).on('click', '#activity-tab a.activity-max', function() {
+        setMinimized(false, true);
+    });
+    $(document).on('click', '#activity-tab a.activity-close', function() {
+        activityTab.pollers = {};
+        activityTab.cancel();
+    });
+
+    $(document).ready(function(){
         activityTab.init();
-        $(document).on('click', '#activity-tab a.activity-min', function() {
-            setMinimized(true, true);
-        });
-        $(document).on('click', '#activity-tab a.activity-max', function() {
-            setMinimized(false, true);
-        });
-        $(document).on('click', '#activity-tab a.activity-close', function() {
-            activityTab.pollers = {};
-            activityTab.cancel();
-        });
     });
 
     return XNAT.app.activityTab = activityTab;
