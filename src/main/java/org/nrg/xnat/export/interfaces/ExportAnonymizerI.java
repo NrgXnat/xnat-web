@@ -13,4 +13,5 @@ import org.nrg.xft.security.UserI;
  */
 public interface ExportAnonymizerI {
 	boolean anonymize(XnatAbstractresourceI absRsc, final InputStream anonIs, File outDir);
+
 }

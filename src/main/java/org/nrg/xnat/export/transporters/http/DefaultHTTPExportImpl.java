@@ -15,6 +15,7 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.export.event.ExportEvent;
 import org.nrg.xnat.export.event.ProjectEvent;
+import org.nrg.xnat.export.interfaces.TransformerI;
 import org.nrg.xnat.export.manifest.DataDescendantManifest;
 import org.nrg.xnat.export.manifest.TransportManifest;
 import org.nrg.xnat.export.utils.ExportConstants;
@@ -37,10 +38,17 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 
 	String destinationUrl = null;
 	String destinationPort = null;
-
+	TransformerI transformer = null;
+	
 
 	public DefaultHTTPExportImpl(final TransportManifest transportManifest) {
 		_transportManifest = transportManifest;
+	}
+
+	
+	public DefaultHTTPExportImpl(final TransportManifest transportManifest, final TransformerI transformer) {
+		this(transportManifest);
+		this.transformer = transformer;
 	}
 
 
@@ -139,7 +147,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 			for (XnatAbstractresourceI a: resources) {
 				dataDescendantManifest.setResourceLabel(a.getLabel());
 				fireStartOfExportEvent(a, dataDescendantManifest);
-				HTTPResponseHolder aggregatedResponse = httpExport.send(a, projectRootPath);
+				HTTPResponseHolder aggregatedResponse = httpExport.send(a, projectRootPath, transformer);
 				this.fileCounter += aggregatedResponse.getFilesSentCount();
 				this.fileSize += aggregatedResponse.getFilesSentSize();
 				fireExportEvent(a, aggregatedResponse, dataDescendantManifest);

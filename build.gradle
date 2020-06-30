@@ -207,7 +207,7 @@ dependencies {
     implementation "org.nrg:automation"
     implementation "org.nrg:dicomtools"
     implementation "org.nrg.dicom:dicom-edit4"
-    implementation "org.nrg.dicom:dicom-edit6"
+    implementation "org.nrg.dicom:dicom-edit6:1.0.8"
     implementation "org.nrg:mail"
     implementation "org.nrg:notify"
 
