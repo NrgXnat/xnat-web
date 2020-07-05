@@ -13,6 +13,8 @@ public class ExportConstants {
     public static final String TOOL_ID = "export-service";
     public static final String URL_PROP_NAME = "url";
     public static final String URL_PROP_PORT = "port";
+    public static final String TRANSFORMER_HANDLER = "transformer-handler";
+    
     
     public enum ExportType {
     	Project,Project_Resource,Subject,Subject_Resource,Experiment, Experiment_Resource, Scan_Resource;

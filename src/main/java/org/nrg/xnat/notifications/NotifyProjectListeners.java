@@ -37,7 +37,7 @@ import java.util.concurrent.Callable;
 
 @Slf4j
 public class NotifyProjectListeners implements Callable<Boolean> {
-	private static final String NOTIFICATIONS = "notifications";
+	protected static final String NOTIFICATIONS = "notifications";
 	private final XnatExperimentdata _expt;
 	private final String _template,_subject,_action;
 	private final UserI _user;
@@ -115,10 +115,10 @@ public class NotifyProjectListeners implements Callable<Boolean> {
 			final String fileName=action;
 
 			List<String> names=Lists.newArrayList();
+			names.add(fileName);
 			try {
-				names.add(expt.getItem().getGenericSchemaElement().getSQLName()+"_"+ fileName);
-				names.add(expt.getItem().getGenericSchemaElement().getXSIType()+"_"+ fileName);
-				names.add(fileName);
+					names.add(expt.getItem().getGenericSchemaElement().getSQLName()+"_"+ fileName);
+					names.add(expt.getItem().getGenericSchemaElement().getXSIType()+"_"+ fileName);
 			} catch (ElementNotFoundException e) {	}
 
 

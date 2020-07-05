@@ -15,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  */
 
-@Entity
 public class EndpointXsiType implements Serializable{
 	
 
@@ -24,24 +23,6 @@ public class EndpointXsiType implements Serializable{
 	 */
 	private static final long serialVersionUID = 5044082363398634600L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the id
-	 */
-	public Integer getId() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setId(Integer id) {
-		this.pKey = id;
-	}
 
 	@JsonProperty("xsi_type")
 	private String xsiType;

@@ -7,9 +7,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpStatus;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatResourcecatalog;
-import org.nrg.xnat.export.interfaces.TransformerI;
+import org.nrg.xnat.export.exception.ByteExporterNotFoundException;
+import org.nrg.xnat.export.exception.ExportManagerNotFoundException;
+import org.nrg.xnat.export.interfaces.ByteExporterI;
+import org.nrg.xnat.export.interfaces.ExportManagerI;
+import org.nrg.xnat.export.transformers.TransformerHelper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,40 +34,35 @@ public class HTTPExport {
 	
 	String requestURL = null;
 	final String charset = "UTF-8";
+	TransformerHelper transformerHelper;
 	
-	
-
-	public HTTPExport(final String url, final String port) {
+	public HTTPExport(String url, String port, TransformerHelper transformerHelper) {
 		destinationUrl = url;
 		destinationPort = port;
+		this.transformerHelper = transformerHelper;
 	}
 
-	public HTTPExport(String url, String port, String uName, String pWord) {
-		this(url,port);
+
+	public HTTPExport(String url, String port, String uName, String pWord, TransformerHelper transformerHelper) {
+		this(url,port, transformerHelper);
 		username = uName;
 		password = pWord;
 	}
 
+
 	
-	public HTTPResponseHolder send(XnatAbstractresourceI a, final String projectRootPath, final TransformerI transformer) throws MalformedURLException, IOException {
+	public HTTPResponseHolder send(XnatAbstractresourceI a, final String projectRootPath) throws MalformedURLException, IOException {
 		try {
-			setUrl();
-			HTTPResponseHolder aggregatedResponse = exportToDestination(a, projectRootPath, transformer);
+			HTTPResponseHolder aggregatedResponse = exportToDestination(a, projectRootPath);
 			return aggregatedResponse;
 		}catch(Exception e) {
 			log.error(e.getMessage());
 			throw e;
 		}
 	}
-	
-	private void setUrl() throws MalformedURLException{
-		requestURL = this.destinationUrl;
-		if (this.destinationPort != null) {
-			requestURL += ":" + this.destinationPort;
-		}
-	}
 
-	private HTTPResponseHolder exportToDestination(XnatAbstractresourceI abs,  final String projectRootPath, final TransformerI transformer) throws IOException {
+	
+	private HTTPResponseHolder exportToDestination(XnatAbstractresourceI abs,  final String projectRootPath) throws IOException {
 		List<HTTPResponseHolder> httpResponses = new ArrayList<HTTPResponseHolder>();
 		int fileCount = 0;
 		long fileSize = 0;
@@ -73,7 +73,7 @@ public class HTTPExport {
 					File f = (File)files.get(i);
 					if (f.exists() && f.isFile() && f.length() > 0) {
 						try {
-							HTTPResponseHolder response = exportToDestination(f, transformer);
+							HTTPResponseHolder response = exportToDestination(projectRootPath, f);
 							if (response.getFilesSentSize() > 0) {
 								fileCount += response.getFilesSentCount();
 								fileSize += response.getFilesSentSize();
@@ -99,11 +99,26 @@ public class HTTPExport {
 	
 	
 	
-	  private HTTPResponseHolder exportToDestination(File fileToExport, final TransformerI transformer) throws Exception { 
-		  XMIRCContentFileUploader uploader = new XMIRCContentFileUploader(requestURL);
-		  return uploader.exportToDestination(fileToExport, transformer);
-		  
+	  private HTTPResponseHolder exportToDestination(String projectRootPath, File fileToExport) throws Exception { 
+		  // TCIA would send using XMIRCContentFileUploader 
+		  ByteExporterI uploader = getByteExporter();
+		  uploader.setup(transformerHelper.getTransformerSettings());
+		  return uploader.exportToDestination(projectRootPath, fileToExport, transformerHelper);
 	  }
+	  
+	 private ByteExporterI getByteExporter() throws ExportManagerNotFoundException, ByteExporterNotFoundException{
+		 ByteExporterI byteExporter = null;
+		 ExportManagerI exportManager = XDAT.getContextService().getBeanSafely(ExportManagerI.class);
+		 if (exportManager == null) {
+			throw new ExportManagerNotFoundException("Unable to load the export manager object");
+		}
+		String byteExportHandler =  transformerHelper.getByteExporterHandler();
+		byteExporter = exportManager.getByteExporterByAnnotation(byteExportHandler);
+		if (byteExporter == null) {
+			throw new ByteExporterNotFoundException("Unable to load byte exporter object from annotation " + transformerHelper.getByteExporterHandler());
+		}
+		return byteExporter;
+	 }
 	
 	private HTTPResponseHolder  extractSingleResponse(List<HTTPResponseHolder> httpResponses) {
 		HTTPResponseHolder aggregatedResponse = new HTTPResponseHolder(-2,"");

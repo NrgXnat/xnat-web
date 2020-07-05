@@ -34,6 +34,20 @@ group "org.nrg.xnat"
 version vXnat
 description "XNAT is an open-source imaging informatics software platform dedicated to helping you perform imaging-based research. XNAT’s core functions manage importing, archiving, processing and securely distributing imaging and related study data. But its extended uses continue to evolve."
 
+apply plugin: "eclipse"
+apply plugin: "groovy"
+apply plugin: "idea"
+apply plugin: "jacoco"
+apply plugin: "java-library"
+apply plugin: "maven-publish"
+apply plugin: "war"
+apply plugin: "com.bmuschko.cargo"
+apply plugin: "com.bmuschko.tomcat"
+apply plugin: "com.palantir.git-version"
+apply plugin: "io.franzbecker.gradle-lombok"
+apply plugin: "io.spring.dependency-management"
+>>>>>>> Added Notification
+
 repositories {
     mavenLocal()
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }

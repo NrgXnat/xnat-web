@@ -17,7 +17,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 public class EndpointExportedData implements Serializable {
 
 	/**
@@ -25,24 +24,6 @@ public class EndpointExportedData implements Serializable {
 	 */
 	private static final long serialVersionUID = -9018412439679995267L;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the pKey
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the pKey to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 
 	@JsonProperty("project_resources")

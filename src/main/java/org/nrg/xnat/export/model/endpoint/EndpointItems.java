@@ -16,7 +16,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  *
  */
 
-@Entity
 public  class EndpointItems implements Serializable{
 
 	
@@ -29,24 +28,6 @@ public  class EndpointItems implements Serializable{
 		
 	}
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the pKey
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the pKey to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 	/**
 	 * @return the items

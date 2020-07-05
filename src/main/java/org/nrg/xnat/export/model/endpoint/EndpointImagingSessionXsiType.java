@@ -16,7 +16,6 @@ import com.google.gson.annotations.SerializedName;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 
 public class EndpointImagingSessionXsiType extends EndpointXsiType implements Serializable{
 	
@@ -26,24 +25,6 @@ public class EndpointImagingSessionXsiType extends EndpointXsiType implements Se
 	private static final long serialVersionUID = -2405597157915412147L;
 
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the pKey
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the pKey to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 	
 	@JsonProperty("session_assessors")
