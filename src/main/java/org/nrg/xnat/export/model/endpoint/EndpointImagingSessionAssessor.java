@@ -15,7 +15,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 
 public class EndpointImagingSessionAssessor implements Serializable {
 
@@ -27,24 +26,6 @@ public class EndpointImagingSessionAssessor implements Serializable {
 	@JsonProperty("xsi_types")
 	private List<EndpointImagingSessionAssessorXsiType> xsiTypes;
 	
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the pKey
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the pKey to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 
 	/**

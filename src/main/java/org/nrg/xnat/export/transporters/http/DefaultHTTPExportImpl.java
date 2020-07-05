@@ -1,6 +1,9 @@
 package org.nrg.xnat.export.transporters.http;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import org.nrg.action.ServerException;
@@ -15,9 +18,9 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.export.event.ExportEvent;
 import org.nrg.xnat.export.event.ProjectEvent;
-import org.nrg.xnat.export.interfaces.TransformerI;
 import org.nrg.xnat.export.manifest.DataDescendantManifest;
 import org.nrg.xnat.export.manifest.TransportManifest;
+import org.nrg.xnat.export.notifications.NotifyProjectExportListeners;
 import org.nrg.xnat.export.utils.ExportConstants;
 import org.restlet.data.Status;
 
@@ -31,26 +34,13 @@ import lombok.extern.slf4j.Slf4j;
 public class DefaultHTTPExportImpl  implements Callable<String>  {
 	TransportManifest _transportManifest;
 	XnatProjectdata project = null;
-	String projectRootPath = null;
 
 	long fileCounter = 0;
 	long fileSize = 0;
 
-	String destinationUrl = null;
-	String destinationPort = null;
-	TransformerI transformer = null;
-	
-
 	public DefaultHTTPExportImpl(final TransportManifest transportManifest) {
 		_transportManifest = transportManifest;
 	}
-
-	
-	public DefaultHTTPExportImpl(final TransportManifest transportManifest, final TransformerI transformer) {
-		this(transportManifest);
-		this.transformer = transformer;
-	}
-
 
 
     @Override
@@ -61,18 +51,11 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 
 
     	try {
-    		
- 			if (projectRootPath == null || project == null) {
+ 			if (project == null) {
 				project = _transportManifest.getProject();
-				projectRootPath = project.getArchiveRootPath();
-			}
-			dataDesManifest.setProjectId(project.getId());
-	   		if (destinationUrl == null) {
-				destinationUrl = _transportManifest.getExportManifest().getEndpointDefinition().getExportSettingValueForProp(ExportConstants.URL_PROP_NAME);
-			}
-			if (destinationPort == null) {
-				destinationPort = _transportManifest.getExportManifest().getEndpointDefinition().getExportSettingValueForProp(ExportConstants.URL_PROP_PORT);
-			}
+ 			}
+ 
+ 			dataDesManifest.setProjectId(project.getId());
 
 			
 			XDAT.triggerEvent(ProjectEvent.initial(_transportManifest.getExportEventId(), authorizedBy.getID()));
@@ -143,11 +126,14 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		boolean somethingWasExported = false;
 		if (resources != null && resources.size() > 0) {
 			somethingWasExported = true;
-			HTTPExport httpExport = new HTTPExport(destinationUrl, destinationPort);
+			String destinationUrl = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_NAME);
+			String destinationPort = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_PORT);
+
+			HTTPExport httpExport = new HTTPExport(destinationUrl, destinationPort,_transportManifest.getTransformerHelper());
 			for (XnatAbstractresourceI a: resources) {
 				dataDescendantManifest.setResourceLabel(a.getLabel());
 				fireStartOfExportEvent(a, dataDescendantManifest);
-				HTTPResponseHolder aggregatedResponse = httpExport.send(a, projectRootPath, transformer);
+				HTTPResponseHolder aggregatedResponse = httpExport.send(a, _transportManifest.getTransformerHelper().getProjectRootPath());
 				this.fileCounter += aggregatedResponse.getFilesSentCount();
 				this.fileSize += aggregatedResponse.getFilesSentSize();
 				fireExportEvent(a, aggregatedResponse, dataDescendantManifest);
@@ -168,6 +154,26 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		exportEvent.setFileSize(fileSize);
 		exportEvent.setNumberOfFiles(fileCounter);
 		XDAT.triggerEvent(exportEvent);
+		try {
+			Map<String,Object> params = new HashMap<String, Object>();
+			params.put("Destination", _transportManifest.getExportManifest().getEndpointDefinition().getExportHandler());
+			params.put("Export Start Date", _transportManifest.getExportStartDate());
+			params.put("Export Complete Date", _transportManifest.getExportComplete());
+			params.put("Total Number of Files exported", fileCounter);
+			params.put("Total data exported (b)", fileSize);
+			List<String> emails = new ArrayList<String>();
+			String notification = _transportManifest.getExportManifest().getEndpointDefinition().getNotificationEmails();
+			if (notification != null) {
+				String[] emailStrArr = notification.split(",");
+				for (String e:emailStrArr) {
+					emails.add(e);
+				}
+			}
+			new NotifyProjectExportListeners(project, "email/Export_Success.vm", _transportManifest.getAuthorizedBy(), params, "export.lst", emails, "success").send();
+		} catch (Exception e1) {
+			log.error(e1.getMessage());
+		}
+
 	}
 
 	private void fireExportFailed(DataDescendantManifest dataDescendantManifest, String msg) {

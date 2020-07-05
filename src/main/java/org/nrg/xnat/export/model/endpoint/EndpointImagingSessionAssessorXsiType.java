@@ -14,7 +14,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 
 public class EndpointImagingSessionAssessorXsiType extends EndpointXsiType implements Serializable {
 	
@@ -25,24 +24,6 @@ public class EndpointImagingSessionAssessorXsiType extends EndpointXsiType imple
 
 	private List<String> ids;
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the pKey
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the pKey to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 
 	/**

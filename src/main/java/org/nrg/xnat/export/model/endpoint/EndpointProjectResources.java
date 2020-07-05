@@ -13,7 +13,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 
 public class EndpointProjectResources extends EndpointItems implements Serializable {
 	
@@ -26,24 +25,6 @@ public class EndpointProjectResources extends EndpointItems implements Serializa
 		super();
 	}
 	
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the id
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 
 }

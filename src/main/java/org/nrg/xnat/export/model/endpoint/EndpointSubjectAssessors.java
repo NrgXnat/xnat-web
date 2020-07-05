@@ -15,31 +15,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * @author Mohana Ramaratnam
  *
  */
-@Entity
 public class EndpointSubjectAssessors implements Serializable{
 	
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1655755593968231433L;
-	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE)
-	@JsonIgnore
-	private Integer pKey;
-	
-	/**
-	 * @return the id
-	 */
-	public Integer getpKey() {
-		return pKey;
-	}
-
-	/**
-	 * @param id the id to set
-	 */
-	public void setpKey(Integer id) {
-		this.pKey = id;
-	}
 
 
 	@JsonProperty("xsi_types")

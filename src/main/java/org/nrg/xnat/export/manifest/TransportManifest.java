@@ -15,6 +15,7 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.om.base.BaseXnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.export.manifest.serializer.TransportManifestSerializer;
+import org.nrg.xnat.export.transformers.TransformerHelper;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -48,7 +49,10 @@ public class TransportManifest implements Serializable {
 
  	 XnatProjectdata project;
  	 
+ 	 
  	 List<XnatSubjectdata> subjects;
+ 	 
+ 	 TransformerHelper transformerHelper;
 
  	 long estimatedFileCountToBeExported = 0;
  	 long estimatedAmountofDataToBeExported = 0;
@@ -199,6 +203,22 @@ public class TransportManifest implements Serializable {
 		this.exportEventId = exportEventId;
 	}
 
+	/**
+	 * @return the transformerHelper
+	 */
+	public TransformerHelper getTransformerHelper() {
+		return transformerHelper;
+	}
+
+	/**
+	 * @param transformerHelper the transformerHelper to set
+	 */
+	public void setTransformerHelper(TransformerHelper transformerHelper) {
+		this.transformerHelper = transformerHelper;
+	}
+
+
+	
 	
 
 }

@@ -5,14 +5,13 @@ import java.util.List;
 
 import org.nrg.xnat.export.exception.ExportSettingNotFoundException;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * @author Mohana Ramaratnam
  *
  */
-//@Entity
-//public class EndpointDefinition extends AbstractHibernateEntity {
 public class EndpointDefinition implements Serializable {
 	  
 	private static final long serialVersionUID = -1294611492056871173L;
@@ -137,6 +136,8 @@ public class EndpointDefinition implements Serializable {
 	public void setInputs(List<EndpointSettingItem> inputs) {
 		this.inputs = inputs;
 	}
+	
+	
 	/**
 	 * @return the exportedData
 	 */
@@ -151,6 +152,7 @@ public class EndpointDefinition implements Serializable {
 	}
 
 	
+	@JsonIgnore
 	public EndpointSettingItem getExportSettingForProp(String prop) throws ExportSettingNotFoundException{
 		EndpointSettingItem setting = null;
 		if (prop == null) {
@@ -165,6 +167,7 @@ public class EndpointDefinition implements Serializable {
 		return setting;
 	}
 	  
+	@JsonIgnore
 	public String getExportSettingValueForProp(String prop) throws ExportSettingNotFoundException{
 		String value = null;
 		if (prop == null) {
@@ -178,5 +181,20 @@ public class EndpointDefinition implements Serializable {
 		}
 		return value;
 	}
-	
+
+	@JsonIgnore
+	public String getInputSettingValueForProp(String prop) throws ExportSettingNotFoundException{
+		String value = null;
+		if (prop == null) {
+			throw new ExportSettingNotFoundException("Prop not found in input setting", new IllegalArgumentException());
+		}
+		for (EndpointSettingItem i : getInputs()) {
+			if (i.getName().equals(prop)) {
+				value = i.getValue();
+				break;
+			}
+		}
+		return value;
+	}
+
 }
