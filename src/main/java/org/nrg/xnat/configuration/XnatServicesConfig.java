@@ -38,7 +38,8 @@ import static org.nrg.xft.identifier.IDGeneratorFactory.*;
                 "org.nrg.xnat.services.system.impl.hibernate",
                 "org.nrg.xnat.services.validation",
                 "org.nrg.xnat.services.triage",
-                "org.nrg.xft.identifier"})
+                "org.nrg.xft.identifier",
+		"org.nrg.xnat.snapshot.services.impl"})
 public class XnatServicesConfig {
     @Bean
     public PermissionsServiceI permissionsService(final DataTypeAwareEventService eventService, final NamedParameterJdbcTemplate template) {
