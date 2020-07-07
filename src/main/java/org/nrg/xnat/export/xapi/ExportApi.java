@@ -88,7 +88,7 @@ public class ExportApi extends AbstractXapiProjectRestController {
 			        }
 				ObjectMapper objectMapper = new ObjectMapper();	
 			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
-			 	_configService.replaceConfig(user.getUsername(), "User Added to Project", ExportConstants.TOOL_ID, endPointDefinition.getExportHandler(),true, jsonbody, Scope.Project, projectId);
+			 	_configService.replaceConfig(user.getUsername(), "Export Endpoint Added to Project", ExportConstants.TOOL_ID, endPointDefinition.getExportHandler(),true, jsonbody, Scope.Project, projectId);
 			 }catch(Exception e) {
 				   log.error("Possibly invalid json ", e);
 		           return new ResponseEntity<>("Probably incorrect JSON",HttpStatus.BAD_REQUEST);
@@ -143,7 +143,8 @@ public class ExportApi extends AbstractXapiProjectRestController {
 		        }
 				ObjectMapper objectMapper = new ObjectMapper();	
 			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
-				ExportManifest exportManifest = new ExportManifest();
+
+			 	ExportManifest exportManifest = new ExportManifest();
 				exportManifest.setAuthorizedBy(user);
 				exportManifest.setEndpointDefinition(endPointDefinition);
 				exportManifest.setProjectId(projectId);

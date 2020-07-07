@@ -1,0 +1,10 @@
+Project $projectId was exported to $params.get("Destination")
+<br>
+<br>Export Start Date: $params.get("Export Start Date")
+<br>Export Complete Date: $params.get("Export Complete Date")
+<br>Total Number of Files exported: $params.get("Total Number of Files exported")
+<br> Total data exported: $params.get()
+<br><br>
+Additional details for this export are available at <a href='$server/data/experiments/$expt.getId()?format=html'>here</a>. 
+<br><br>
+$system Team.

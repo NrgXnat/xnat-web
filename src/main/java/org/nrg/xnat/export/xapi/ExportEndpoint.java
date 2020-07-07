@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -80,14 +81,13 @@ public class ExportEndpoint extends AbstractXapiRestController{
 		 //TODO: Is the JSON valid as per schema
 		 //Add to the Site
 		 try {
-			 Gson gson = new GsonBuilder()
-					 		.setExclusionStrategies(new ExportExclusionStrategy(null)) 
-					 		.create();
-		 	 EndpointDefinition endPointDefinition = gson.fromJson(jsonbody, EndpointDefinition.class);
+				ObjectMapper objectMapper = new ObjectMapper();	
+			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
+
 		 	 //Save the json to the export tool
 		 	 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID, endPointDefinition.getExportHandler());
 		 	 if (configurationForToolAndExportHandler == null) {
-		 		 _configService.replaceConfig(user.getUsername(), "User Added", ExportConstants.TOOL_ID, endPointDefinition.getExportHandler(), true, gson.toJson(endPointDefinition));
+		 		 _configService.replaceConfig(user.getUsername(), "User Added", ExportConstants.TOOL_ID, endPointDefinition.getExportHandler(), true,objectMapper.writeValueAsString(endPointDefinition) );
 		 	 }else {
 		           return new ResponseEntity<>("Delete existing export handler",HttpStatus.BAD_REQUEST);
 		 	 }
@@ -140,7 +140,8 @@ public class ExportEndpoint extends AbstractXapiRestController{
 		else
 			return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
     }
-    
+
+
 	private final ConfigService              _configService;
 	private final SerializerService          _serializer;
 	private final NamedParameterJdbcTemplate _jdbcTemplate;
