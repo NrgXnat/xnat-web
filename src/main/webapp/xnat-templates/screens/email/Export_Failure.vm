@@ -1,0 +1,7 @@
+Project $projectId failed to export to $params.get("Destination")
+<br>
+<br>Export Start Date: $params.get("Export Start Date")
+<br><br>
+Additional details for this export are available at <a href='$server/data/experiments/$expt.getId()?format=html'>here</a>. 
+<br><br>
+$system Team.

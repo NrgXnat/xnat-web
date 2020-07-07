@@ -17,7 +17,7 @@ public class EndpointDefinition implements Serializable {
 	private static final long serialVersionUID = -1294611492056871173L;
 
 
-	@JsonProperty("export-handler")
+	  @JsonProperty("export-handler")
 	  private String export_handler;
 	  
 	  
