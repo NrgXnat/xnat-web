@@ -3,6 +3,7 @@ package org.nrg.xnat.export.interfaces;
 import java.io.File;
 import java.util.Map;
 
+import org.nrg.xft.security.UserI;
 import org.nrg.xnat.export.transformers.TransformerHelper;
 import org.nrg.xnat.export.transporters.http.HTTPResponseHolder;
 

@@ -157,13 +157,15 @@ public class XnatProviderManager extends ProviderManager {
         return buildUPToken(findAuthenticationProviderByProviderName(providerName), username, password);
     }
 
+
+
     public String retrieveAuthMethod(final String username) {
         if (CACHED_AUTH_METHODS.containsKey(username)) {
             return CACHED_AUTH_METHODS.get(username);
         } else {
             final String authMethod;
             try {
-                final List<XdatUserAuth> userAuthMethods = _userAuthService.getUsersByName(username);
+            	List<XdatUserAuth> userAuthMethods = _userAuthService.getUsersByName(username);
                 if (userAuthMethods.size() == 1) {
                     authMethod = userAuthMethods.get(0).getAuthMethod();
                     // The list may contain localdb auth method even when password is empty and some other authentication method is used (MRH)

@@ -2132,6 +2132,27 @@ uiShowPrearchiveFileActions:
 #    id: checksumsPropertyChangedListener
 #    name: checksums.property.changed.listener
 #    label: Checksums Property Changed Listener
+exportEndpoint:
+    kind: panel
+    name: exportEndpoint
+    label: Manage Export Endpoint
+    footer: false
+    contents:
+        exportEndpointManager:
+            tag: "div#export-endpoint-manager"
+        exportEndpointManagerScript:
+            tag: script|src="~/scripts/xnat/admin/exportEndpointManager.js"
+
+exportEndpointAnonymization:
+    kind: panel
+    name: exportEndpointAnonymization
+    label: Manage Export Anonymization Scripts
+    footer: false
+    contents:
+        exportEndpointManagerAnon:
+            tag: "div#export-endpoint-anon-manager"
+        exportEndpointManagerAnonScript:
+            tag: script|src="~/scripts/xnat/admin/exportEndpointManagerAnon.js"
 
 fileSystem:
     kind: panel.form
@@ -2727,6 +2748,13 @@ root:
             contents:
                 ${dicomScpReceiversGlobal}
                 ${dicomScpReceivers}
+        exportEndpointTab:
+            kind: tab
+            label: Export Endpoints
+            group: advanced
+            contents:
+                ${exportEndpoint}
+                ${exportEndpointAnonymization}
         fileSystemTab:
             kind: tab
             label: File System

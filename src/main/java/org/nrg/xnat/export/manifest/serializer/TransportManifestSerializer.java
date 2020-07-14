@@ -38,6 +38,7 @@ public class TransportManifestSerializer extends StdSerializer<TransportManifest
 	  
 	        jgen.writeStartObject();
 	        jgen.writeStringField("project", tManifest.getExportManifest().getProjectId());
+	        jgen.writeStringField("label", tManifest.getExportManifest().getEndpointDefinition().getLabel());
 	        jgen.writeStringField("export-handler", tManifest.getExportManifest().getEndpointDefinition().getExportHandler());
 	        jgen.writeStringField("authorized_by", tManifest.getAuthorizedBy().getUsername());
 	        jgen.writeNumberField("estimatedFileCount", tManifest.getEstimatedFileCountToBeExported());

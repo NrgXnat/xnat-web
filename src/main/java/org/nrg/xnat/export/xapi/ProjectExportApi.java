@@ -3,6 +3,7 @@ package org.nrg.xnat.export.xapi;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.nrg.config.entities.Configuration;
@@ -25,6 +26,8 @@ import org.nrg.xnat.export.manifest.ExportManifest;
 import org.nrg.xnat.export.manifest.TransportManifest;
 import org.nrg.xnat.export.model.endpoint.EndpointDefinition;
 import org.nrg.xnat.export.utils.ExportConstants;
+import org.nrg.xnat.tracking.entities.EventTrackingData;
+import org.nrg.xnat.tracking.services.EventTrackingDataHibernateService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,6 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -53,21 +57,26 @@ import lombok.extern.slf4j.Slf4j;
  * Class which handles REST calls to export
  */
 
-public class ExportApi extends AbstractXapiProjectRestController {
+public class ProjectExportApi extends AbstractXapiProjectRestController {
 	    
 	    private final ExportManagerI _exportManager;
+		private final ConfigService              _configService;
+		private final SerializerService          _serializerService;
+		private final EventTrackingDataHibernateService	 _eventTrackingDataHibernateService;
 
 	    @Autowired
-	    public ExportApi(final ExportManagerI exportManager,
+	    public ProjectExportApi(final ExportManagerI exportManager,
 	                     final UserManagementServiceI userManagementService,
 	                     final RoleHolder roleHolder,
 	                     final ConfigService configService,
-	                     final SerializerService serializerService
+	                     final SerializerService serializerService,
+	                     final EventTrackingDataHibernateService eventTrackingDataHibernateService
 	                     ) {
 	        super(userManagementService, roleHolder);
 	        this._exportManager = exportManager;
 	        this._configService = configService;
 	        this._serializerService = serializerService;
+	        this._eventTrackingDataHibernateService = eventTrackingDataHibernateService;
 	    }
 	    
 	    
@@ -88,7 +97,7 @@ public class ExportApi extends AbstractXapiProjectRestController {
 			        }
 				ObjectMapper objectMapper = new ObjectMapper();	
 			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
-			 	_configService.replaceConfig(user.getUsername(), "Export Endpoint Added to Project", ExportConstants.TOOL_ID, endPointDefinition.getExportHandler(),true, jsonbody, Scope.Project, projectId);
+			 	_configService.replaceConfig(user.getUsername(), "Export Endpoint Added to Project", ExportConstants.TOOL_ID, endPointDefinition.getLabel(),true, jsonbody, Scope.Project, projectId);
 			 }catch(Exception e) {
 				   log.error("Possibly invalid json ", e);
 		           return new ResponseEntity<>("Probably incorrect JSON",HttpStatus.BAD_REQUEST);
@@ -148,12 +157,12 @@ public class ExportApi extends AbstractXapiProjectRestController {
 				exportManifest.setAuthorizedBy(user);
 				exportManifest.setEndpointDefinition(endPointDefinition);
 				exportManifest.setProjectId(projectId);
-			 	String exportHandler = endPointDefinition.getExportHandler();
+			 	String label = endPointDefinition.getLabel();
 				
 				ExportRequest request = new ExportRequest(exportManifest);
 				//TODO - Need to extract the credentails
 				XDAT.sendJmsRequest(request);
-				return  new ResponseEntity<>("Export Request for Project "+  projectId + " to  "+ exportHandler +" has been queued", HttpStatus.OK);
+				return  new ResponseEntity<>("Export Request for Project "+  projectId + " to  "+ label +" has been queued", HttpStatus.OK);
 			}catch(ExporterNotFoundException enfe) {
 				return  new ResponseEntity<>("No exporter found ", HttpStatus.BAD_REQUEST);
 			}catch(Exception enfe) {
@@ -203,7 +212,36 @@ public class ExportApi extends AbstractXapiProjectRestController {
 			}
 	    }
 
-		private final ConfigService              _configService;
-		private final SerializerService          _serializerService;
+	    @ApiOperation(value = "Get History for the project ")
+	    @ApiResponses({
+	    	    @ApiResponse(code = 200, message = "Success"),
+	            @ApiResponse(code = 400, message = "Invalid parameters"),
+	            @ApiResponse(code = 500, message = "Unexpected error")})
+	    @XapiRequestMapping(value = "/history/projects/{projectId}",  method = GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	    public ResponseEntity<List<EventTrackingData>> getHistory(@PathVariable("projectId") String projectId) {
+			 try {
+					HttpStatus status = canDeleteProject(projectId);
+					if (status != null) {
+			            return new ResponseEntity<>(null,status);
+			        }
+					List<EventTrackingData> required = new ArrayList<EventTrackingData>();
+					List<EventTrackingData> events = _eventTrackingDataHibernateService.getAll();
+					for (EventTrackingData e : events) {
+						if (e.getKey().startsWith(ExportConstants.EXPORT_TRACKING_KEY_PREFIX +"/" + projectId)) {
+							required.add(e);
+						}
+					}
+					if (required != null && required.size() > 0)
+						return  new ResponseEntity<>(required, HttpStatus.OK);
+					else
+						return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+			 }catch(Exception e) {
+				   log.error("Possibly invalid json ", e);
+		           return new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
+			 }
+	    }
+	    
+	   
+	    
 	    
 }

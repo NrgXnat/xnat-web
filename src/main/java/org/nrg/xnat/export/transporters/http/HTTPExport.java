@@ -10,11 +10,15 @@ import org.apache.http.HttpStatus;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xft.security.UserI;
+import org.nrg.xnat.export.event.ExportFileTransportEvent;
+import org.nrg.xnat.export.event.publisher.ExportEventPublisher;
 import org.nrg.xnat.export.exception.ByteExporterNotFoundException;
 import org.nrg.xnat.export.exception.ExportManagerNotFoundException;
 import org.nrg.xnat.export.interfaces.ByteExporterI;
 import org.nrg.xnat.export.interfaces.ExportManagerI;
 import org.nrg.xnat.export.transformers.TransformerHelper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,15 +40,25 @@ public class HTTPExport {
 	final String charset = "UTF-8";
 	TransformerHelper transformerHelper;
 	
-	public HTTPExport(String url, String port, TransformerHelper transformerHelper) {
+	String eventTrackingId ;
+	UserI authorizedBy ;
+	String projectId ;
+
+	
+
+	
+	public HTTPExport(String eTrackingId, String project, UserI user, String url, String port, TransformerHelper transformerHelper) {
+		this.eventTrackingId = eTrackingId;
+		this.projectId = project;
+		this.authorizedBy = user;
 		destinationUrl = url;
 		destinationPort = port;
 		this.transformerHelper = transformerHelper;
 	}
 
 
-	public HTTPExport(String url, String port, String uName, String pWord, TransformerHelper transformerHelper) {
-		this(url,port, transformerHelper);
+	public HTTPExport(String eTrackingId, String project, UserI user,String url, String port, String uName, String pWord, TransformerHelper transformerHelper) {
+		this(eTrackingId, project, user,url,port, transformerHelper);
 		username = uName;
 		password = pWord;
 	}
@@ -53,7 +67,13 @@ public class HTTPExport {
 	
 	public HTTPResponseHolder send(XnatAbstractresourceI a, final String projectRootPath) throws MalformedURLException, IOException {
 		try {
+			publish("BEGIN Resource: " + a.getLabel()  + " export.");
 			HTTPResponseHolder aggregatedResponse = exportToDestination(a, projectRootPath);
+			String msg = "END Resource: " + a.getLabel()  + " export. ";
+			if (aggregatedResponse.getStatusCode() != 200) {
+				msg += "Atleast one file failed to export successfully.";
+			}
+			publish(msg);
 			return aggregatedResponse;
 		}catch(Exception e) {
 			log.error(e.getMessage());
@@ -74,6 +94,7 @@ public class HTTPExport {
 					if (f.exists() && f.isFile() && f.length() > 0) {
 						try {
 							HTTPResponseHolder response = exportToDestination(projectRootPath, f);
+							publish("Resource(" + abs.getLabel() + ") - File: " + f.getAbsolutePath() + " Response Code: " + response.getStatusCode() + " Message: " + response.getStatusMessage() );
 							if (response.getFilesSentSize() > 0) {
 								fileCount += response.getFilesSentCount();
 								fileSize += response.getFilesSentSize();
@@ -100,7 +121,6 @@ public class HTTPExport {
 	
 	
 	  private HTTPResponseHolder exportToDestination(String projectRootPath, File fileToExport) throws Exception { 
-		  // TCIA would send using XMIRCContentFileUploader 
 		  ByteExporterI uploader = getByteExporter();
 		  uploader.setup(transformerHelper.getTransformerSettings());
 		  return uploader.exportToDestination(projectRootPath, fileToExport, transformerHelper);
@@ -137,6 +157,13 @@ public class HTTPExport {
 		
 		return aggregatedResponse;
 	}
+	
+	private void publish(String msg) {
+		ExportFileTransportEvent exportEvent = new ExportFileTransportEvent(authorizedBy, projectId, eventTrackingId, msg);
+		ExportEventPublisher publisher = XDAT.getContextService().getBeanSafely(ExportEventPublisher.class);
+		if (publisher != null) publisher.publishEvent(exportEvent);
+	}
+
 
 
 }
