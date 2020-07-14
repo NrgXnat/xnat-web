@@ -16,6 +16,7 @@ public class EndpointDefinition implements Serializable {
 	  
 	private static final long serialVersionUID = -1294611492056871173L;
 
+	  private String label;
 
 	  @JsonProperty("export-handler")
 	  private String export_handler;
@@ -40,6 +41,20 @@ public class EndpointDefinition implements Serializable {
 	  
 	  @JsonProperty("exported_data")
 	  private EndpointExportedData exportedData;
+	  
+	  
+	/**
+	 * @return the label
+	 */
+	public String getLabel() {
+		return label;
+	}
+	/**
+	 * @param label the label to set
+	 */
+	public void setLabel(String label) {
+		this.label = label;
+	}
 	/**
 	 * @return the export_handler
 	 */

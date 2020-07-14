@@ -1,0 +1,54 @@
+#######################################################
+####  Root Project Settings Spawner Config Object  ####
+#######################################################
+
+
+projectExportConfigsPanel:
+    kind: panel
+    name: projectExportConfigsPanel
+    label: Project Export Configurations
+    footer: false
+    contents:
+        projExportConfigDescription:
+            tag: div.message
+            contents:
+                "This panel lists all enabled export endpoints  and allows project owners to define a custom configuration for each export endpoint. This configuration will be used by default by all users in this project, but users can override certain parameters."
+        projExportConfigListContainer:
+            tag: "div#proj-export-config-list-container"
+        projExportConfigListContainerScript:
+           tag: script|src="/scripts/exportService/exportProjectEndpointManager.js"
+
+
+projectExportHistoryPanel:
+    kind: panel
+    label: Project Export History
+    contents:
+        projectExportHistoryTableContainer:
+            tag: "div#export-history-container"
+        projectExportHistoryTableContainerScript:
+           tag: script|src="/scripts/exportService/exportProjectHistory.js"
+
+
+projectSettings:
+    kind: tabs
+    name: projectSettingsPage
+    label: Project Settings for Export Service
+    meta:
+        tabGroups:
+            exportServiceProjectTabGroup: Export Service
+    contains: tabs
+    tabs:
+        projectExportConfigurationTab:
+            kind: tab
+            label: Export Configuration
+            group: exportServiceProjectTabGroup
+            active: true
+            contents:
+                ${projectExportConfigsPanel}
+        projectExportHistoryTab:
+            kind: tab
+            label: Project Export History
+            group: exportServiceProjectTabGroup
+            active: false
+            contents:
+                ${projectExportHistoryPanel}

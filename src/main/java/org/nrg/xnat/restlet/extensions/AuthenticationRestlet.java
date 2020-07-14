@@ -24,6 +24,8 @@ import org.restlet.resource.Variant;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.servlet.http.HttpServletRequest;
@@ -91,14 +93,13 @@ public class AuthenticationRestlet extends Resource {
                 throw new BadCredentialsException("Missing login method parameter.");
             }
         }
-
         UsernamePasswordAuthenticationToken authRequest = manager.buildUPTokenForAuthMethod(_authMethod, _username, _password);
         Authentication authentication = manager.authenticate(authRequest);
         if (authentication.isAuthenticated()) {
             succeed(authentication);
             getResponse().setEntity(ServletCall.getRequest(getRequest()).getSession().getId(), MediaType.TEXT_PLAIN);
         } else {
-            fail();
+            	fail();
         }
     }
 

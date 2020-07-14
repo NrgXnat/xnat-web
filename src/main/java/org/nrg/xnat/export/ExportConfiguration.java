@@ -7,9 +7,11 @@ import javax.jms.JMSException;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.nrg.mail.services.MailService;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
+import org.nrg.xnat.export.event.publisher.ExportEventPublisher;
 import org.nrg.xnat.export.jms.errors.ExportJmsErrorHandler;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jms.annotation.EnableJms;
@@ -64,5 +66,9 @@ public class ExportConfiguration {
     }
 
 
+    @Bean
+    public ExportEventPublisher exportEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+        return new ExportEventPublisher(applicationEventPublisher);
+    }
 
 }

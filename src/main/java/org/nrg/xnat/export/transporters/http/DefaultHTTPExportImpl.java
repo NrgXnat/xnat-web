@@ -17,12 +17,15 @@ import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.export.event.ExportEvent;
+import org.nrg.xnat.export.event.ExportFileTransportEvent;
 import org.nrg.xnat.export.event.ProjectEvent;
+import org.nrg.xnat.export.event.publisher.ExportEventPublisher;
 import org.nrg.xnat.export.manifest.DataDescendantManifest;
 import org.nrg.xnat.export.manifest.TransportManifest;
 import org.nrg.xnat.export.notifications.NotifyProjectExportListeners;
 import org.nrg.xnat.export.utils.ExportConstants;
 import org.restlet.data.Status;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,6 +40,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 
 	long fileCounter = 0;
 	long fileSize = 0;
+
 
 	public DefaultHTTPExportImpl(final TransportManifest transportManifest) {
 		_transportManifest = transportManifest;
@@ -57,8 +61,8 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
  
  			dataDesManifest.setProjectId(project.getId());
 
+ 			fireProjectExportStarted();
 			
-			XDAT.triggerEvent(ProjectEvent.initial(_transportManifest.getExportEventId(), authorizedBy.getID()));
 			//TODO - Credentials
 			//ExportCredentialsI credentials = _transportManifest.getExportManifest().getCredentials();
 			//Authenticator.setDefault(new BasicAuthenticator(credentials.getUsername(), credentials.getPassword()));
@@ -115,10 +119,13 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 			fireProjectExportComplete(dataDesManifest);
 			String msg = "Exported project  " + project.getId() + " successfully. Total Files exported " + fileCounter + ". Total bytes exported " + fileSize;
 			log.debug(msg);
+			publish(msg);
 			return msg;
     	}catch(Exception e) {
-			fireExportFailed(dataDesManifest, e.getMessage());
-            throw new ServerException(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+			String msg = "Project  " + project.getId() + " export failed possibly partially. Total Files exported " + fileCounter + ". Total bytes exported " + fileSize;
+    		fireExportFailed(dataDesManifest, e.getMessage());
+			publish(msg);
+			throw new ServerException(Status.SERVER_ERROR_INTERNAL, e.getMessage());
 		}
     }
 
@@ -129,7 +136,10 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 			String destinationUrl = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_NAME);
 			String destinationPort = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_PORT);
 
-			HTTPExport httpExport = new HTTPExport(destinationUrl, destinationPort,_transportManifest.getTransformerHelper());
+			HTTPExport httpExport = new HTTPExport(
+					_transportManifest.getExportEventId(),_transportManifest.getProject().getId() , 
+					_transportManifest.getAuthorizedBy(), 
+					destinationUrl, destinationPort,_transportManifest.getTransformerHelper());
 			for (XnatAbstractresourceI a: resources) {
 				dataDescendantManifest.setResourceLabel(a.getLabel());
 				fireStartOfExportEvent(a, dataDescendantManifest);
@@ -142,8 +152,23 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		return somethingWasExported;
 	}
 
-
+	private void fireProjectExportStarted() {
+		final String projectId = _transportManifest.getProject().getId();
+		publish("Project " + projectId + " export started.");
+		XDAT.triggerEvent(ProjectEvent.initial(_transportManifest.getExportEventId(), _transportManifest.getAuthorizedBy().getID()));
+	}
+	
+	private void publish(String msg) {
+		final String eventTrackingId = _transportManifest.getExportEventId();
+		final UserI authorizedBy = _transportManifest.getAuthorizedBy();
+		final String projectId = _transportManifest.getProject().getId();
+		ExportFileTransportEvent exportEvent = new ExportFileTransportEvent(authorizedBy, projectId, eventTrackingId, msg);
+		ExportEventPublisher publisher = XDAT.getContextService().getBeanSafely(ExportEventPublisher.class);
+		if (publisher != null) publisher.publishEvent(exportEvent);
+	}
+	
 	private void fireProjectExportComplete(DataDescendantManifest dataDescendantManifest) {
+
 		final String eventTrackingId = _transportManifest.getExportEventId();
 		final UserI authorizedBy = _transportManifest.getAuthorizedBy();
 
@@ -156,7 +181,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		XDAT.triggerEvent(exportEvent);
 		try {
 			Map<String,Object> params = new HashMap<String, Object>();
-			params.put("Destination", _transportManifest.getExportManifest().getEndpointDefinition().getExportHandler());
+			params.put("Destination", _transportManifest.getExportManifest().getEndpointDefinition().getLabel());
 			params.put("Export Start Date", _transportManifest.getExportStartDate());
 			params.put("Export Complete Date", _transportManifest.getExportComplete());
 			params.put("Total Number of Files exported", fileCounter);
@@ -170,6 +195,8 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 				}
 			}
 			new NotifyProjectExportListeners(project, "email/Export_Success.vm", _transportManifest.getAuthorizedBy(), params, "export.lst", emails, "success").send();
+			final String projectId = _transportManifest.getProject().getId();
+			publish("Project " + projectId + " export complete. Total Number of Files exported: "+ fileCounter + ". Total data exported (b):" + fileSize );
 		} catch (Exception e1) {
 			log.error(e1.getMessage());
 		}
@@ -190,7 +217,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		exportEvent.setNumberOfFiles(fileCounter);
 		XDAT.triggerEvent(exportEvent);
 		log.debug(exportEvent.toString());
-		System.out.println(exportEvent.toString());
+		publish(exportEvent.toString());
 	}
 
 
@@ -209,7 +236,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		}catch(Exception e) {e.printStackTrace();}
 		exportEvent.setNumberOfFiles(a.getFileCount());
 		XDAT.triggerEvent(exportEvent);
-		System.out.println(exportEvent.toString());
+		publish(exportEvent.toString());
 	}
 
 
@@ -232,7 +259,7 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		}catch(Exception e) {e.printStackTrace();}
 		exportEvent.setNumberOfFiles(a.getFileCount());
 		XDAT.triggerEvent(exportEvent);
-		System.out.println(exportEvent.toString());
+		publish(exportEvent.toString());
 	}
 
 

@@ -1,7 +1,5 @@
 package org.nrg.xnat.export.utils;
 
-import org.nrg.framework.status.StatusMessage;
-
 /**
  * @author Mohana Ramaratnam
  *
@@ -14,6 +12,12 @@ public class ExportConstants {
     public static final String URL_PROP_NAME = "url";
     public static final String URL_PROP_PORT = "port";
     public static final String TRANSFORMER_HANDLER = "transformer-handler";
+    public static final String EXPORT_LOGS = "export_logs";
+    public static final String EXPORT_TRACKING_KEY_PREFIX = "EXPORT_TRACKING_EVENT";
+    
+    public static final String EXPORT_USER_KEY = "user";
+    public static final String EXPORT_PROJECTID_KEY = "projectId";
+    public static final String EXPORT_TRACKING_EVENT_ID_KEY = "eventTrackingId";
     
     
     public enum ExportType {

@@ -1410,6 +1410,29 @@ dicomScpReceivers:
         dicomScpManagerScript:
             tag: script|src="~/scripts/xnat/admin/dicomScpManager.js"
 
+exportEndpoint:
+    kind: panel
+    name: exportEndpoint
+    label: Manage Export Endpoint
+    footer: false
+    contents:
+        exportEndpointManager:
+            tag: "div#export-endpoint-manager"
+        exportEndpointManagerScript:
+            tag: script|src="~/scripts/xnat/admin/exportEndpointManager.js"
+
+exportEndpointAnonymization:
+    kind: panel
+    name: exportEndpointAnonymization
+    label: Manage Export Anonymization Scripts
+    footer: false
+    contents:
+        exportEndpointManagerAnon:
+            tag: "div#export-endpoint-anon-manager"
+        exportEndpointManagerAnonScript:
+            tag: script|src="~/scripts/xnat/admin/exportEndpointManagerAnon.js"
+
+
 fileSystem:
     kind: panel.form
     name: fileSystem
@@ -1694,6 +1717,13 @@ root:
             group: advanced
             contents:
                 ${dicomScpReceivers}
+        exportEndpointTab:
+            kind: tab
+            label: Export Endpoints
+            group: advanced
+            contents:
+                ${exportEndpoint}
+                ${exportEndpointAnonymization}
         fileSystemTab:
             kind: tab
             label: File System
