@@ -9,6 +9,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -315,9 +317,16 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 							required.add(e);
 						}
 					}
-					if (required != null && required.size() > 0)
+					Comparator<EventTrackingData> compareByDate = new Comparator<EventTrackingData>() {
+					    @Override
+					    public int compare(EventTrackingData o1, EventTrackingData o2) {
+					        return o1.getCreated().compareTo(o2.getCreated());
+					    }
+					};
+					if (required != null && required.size() > 0) {
+						Collections.sort(required, compareByDate.reversed());
 						return  new ResponseEntity<>(required, HttpStatus.OK);
-					else
+					}else
 						return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
 			 }catch(Exception e) {
 				   log.error("Possibly invalid json ", e);
