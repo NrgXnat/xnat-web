@@ -23,6 +23,10 @@ projectExportHistoryPanel:
     kind: panel
     label: Project Export History
     contents:
+        projExportHistoryTableDescription:
+            tag: div.message
+            contents:
+                "This panel lists all export history for project."
         projectExportHistoryTableContainer:
             tag: "div#export-history-container"
         projectExportHistoryTableContainerScript:

@@ -101,11 +101,13 @@ var XNAT = getObject(XNAT || {});
 
 	function convertToDate(timestamp) {
 		var dateObj = new Date(timestamp);
-	    return dateObj.toUTCString();
+	    //return dateObj.toUTCString();
+	    return dateObj.toLocaleString();
 	}
 
-	function displayStatus(status) {
-		return (status === true ? "Completed" : "Failed");
+	function displayStatus(item) {
+		var status = item['succeeded'];
+		return (status === true ? "Completed" : "In Progress/Failed");
 	}
 
 	function getLogFileName(trackingId) {
@@ -248,7 +250,7 @@ var XNAT = getObject(XNAT || {});
                         .td([convertToDate(item.created)]).addClass('created')
                         .td([['div.mono.center', item['finalMessage']]]).addClass('finalMessage')
                         .td([['div.mono.center', convertToDate(item['timestamp'])]]).addClass('timestamp')
-                        .td([['div.mono.center', displayStatus(item['succeeded'])]]).addClass('status')
+                        .td([['div.mono.center', displayStatus(item)]]).addClass('status')
                         .td([['div.center', [viewPayload(item), spacer(10), getLogFileButton(item)]]]);
             });
             if (container) {

@@ -1,5 +1,6 @@
 package org.nrg.xnat.export.jms.listeners;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.nrg.xdat.XDAT;
@@ -55,6 +56,15 @@ public class ExportRequestListener {
 		String exportHandler = exportManifest.getEndpointDefinition().getExportHandler();
 		String projectId = exportManifest.getProjectId();
 		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		List<String> emails = new ArrayList<String>();
+		String notification = exportManifest.getEndpointDefinition().getNotificationEmails();
+		if (notification != null) {
+			String[] emailStrArr = notification.split(",");
+			for (String e:emailStrArr) {
+				emails.add(e);
+			}
+		}
+
 		try {
 			createExportLogResource(project,user);
 			ExporterI exporter = _exportManager.getExporterByExportHandlerAnnotation(exportHandler);
@@ -62,7 +72,7 @@ public class ExportRequestListener {
 		}catch(Exception e) {
 			log.error(e.getMessage());
 			try {
-				new NotifyProjectExportListeners(project, "export_failure.vm", user, null, "export.lst", null, "failure").send();
+				new NotifyProjectExportListeners(project, "email/Export_Failure.vm", user, null, "export.lst", emails, "failure").send();
 			} catch (Exception e1) {
 				log.error(e1.getMessage());
 			}

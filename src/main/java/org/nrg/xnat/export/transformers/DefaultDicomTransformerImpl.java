@@ -5,6 +5,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,7 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Component
-@TransformerHandler(handler = "XNAT-DICOM-ANONYMIZER")
+@TransformerHandler(handler = "XNAT-TCIA-DICOM-ANONYMIZER")
 @Slf4j
 public class DefaultDicomTransformerImpl implements TransformerI {
 
@@ -34,10 +36,32 @@ public class DefaultDicomTransformerImpl implements TransformerI {
     List<DE6Script> scripts = new ArrayList<>();
 	
     public void init(Map<String, Object> params) {
-    	File scriptFile = (File)params.get("SCRIPT_FILE");
-    	File lookUpTable = (File)params.get("LOOKUP_TABLE");
-    	if (scriptFile != null && lookUpTable != null ) {
+    	Object scriptObj = params.get("SCRIPT_FILE");
+    	Object lookupObj = params.get("LOOKUP_TABLE");
+    	File scriptFile = null;
+    	File lookUpTable = null;
+    	String scriptStr = null;
+    	String lookUpTableStr = null;
+    	if (scriptObj != null) { 
+    		if (scriptObj instanceof File) {
+    			scriptFile = (File)scriptObj;
+    		}else if (scriptObj instanceof String) {
+    			scriptStr = (String)scriptObj;
+    		}
+    	}
+    	if (lookupObj != null) {
+    		if (lookupObj instanceof File) {
+    			lookUpTable = (File)lookupObj;
+    		}else if (lookupObj instanceof String) {
+    			lookUpTableStr = (String)lookupObj;
+    		}
+    	}
+    	if (scriptFile != null ) {
     		AnonymizeHelper aHelper = new AnonymizeHelper(scriptFile, lookUpTable);
+    		anonymizeFileSequence = new ArrayList<AnonymizeHelper>();
+    		anonymizeFileSequence.add(aHelper);
+    	}else if (scriptStr != null ) {
+    		AnonymizeHelper aHelper = new AnonymizeHelper(scriptStr, lookUpTableStr);
     		anonymizeFileSequence = new ArrayList<AnonymizeHelper>();
     		anonymizeFileSequence.add(aHelper);
     	}
@@ -50,10 +74,22 @@ public class DefaultDicomTransformerImpl implements TransformerI {
         }else {
 	        try {
 	        	for (AnonymizeHelper anon : anonymizeFileSequence) {
-	                FileReader scriptReader = new FileReader( anon.getAnonymizeScriptFile());
+	        		Reader scriptReader = null, lookupReader = null;
+	                File anonFile = anon.getAnonymizeScriptFile();
 	                File lookupTableFile = anon.getLookUpTable();
-	                FileReader lookupFileReader = (lookupTableFile != null)? new FileReader( lookupTableFile): null;
-	                scripts.add( new DE6Script( scriptReader, lookupFileReader));
+	                String anonStr = anon.getAnonStr();
+	                String lookUpStr = anon.getLookupStr();
+	                if (anonFile != null) {
+		        		scriptReader = new FileReader( anonFile);
+	                }else if (anonStr != null) {
+		        		scriptReader = new StringReader( anonStr);
+	                }
+	                if (lookupTableFile != null) {
+		               lookupReader = new FileReader( lookupTableFile);
+	                }else if (lookUpStr != null) {
+			           lookupReader = new StringReader( lookUpStr);
+	                }
+	                scripts.add( new DE6Script( scriptReader, lookupReader));
 	        	}
 	            SerialScriptAnonymizer anonymizer = new SerialScriptAnonymizer( scripts, Paths.get(inFile.getAbsolutePath()), Paths.get(outD.getAbsolutePath()));
 	            anonymizer.anon();
