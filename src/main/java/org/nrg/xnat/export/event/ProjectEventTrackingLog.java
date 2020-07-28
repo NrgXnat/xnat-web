@@ -46,7 +46,7 @@ public class ProjectEventTrackingLog {
 	    }
 
 	    public long getTotalDataSize() {
-	        return totalFiles;
+	        return totalDataSize;
 	    }
 
 	    public void setTotalDataSize(long total) {

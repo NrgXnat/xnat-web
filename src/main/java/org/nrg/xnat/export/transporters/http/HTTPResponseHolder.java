@@ -10,8 +10,8 @@ public class HTTPResponseHolder {
 
 	private String statusMessage;
 	
-	private int filesSentCount;
-	private long filesSentSize;
+	private int filesSentCount = 0;
+	private long filesSentSize = 0;
 	
 	public HTTPResponseHolder(final int code, final String msg) {
 		statusCode = code;
