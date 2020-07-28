@@ -8,14 +8,21 @@ import java.io.File;
  */
 public class AnonymizeHelper {
 
-	File anonymizeScriptFile;
-	File lookUpTable;
-
+	File anonymizeScriptFile = null;
+	File lookUpTable = null;
+	String anonStr = null;
+	String lookupStr = null;
+	
 	public AnonymizeHelper(File a, File l) {
 		this.anonymizeScriptFile = a;
 		this.lookUpTable = l;
 	}
-	
+
+	public AnonymizeHelper(String a, String l) {
+		this.anonStr = a;
+		this.lookupStr = l;
+	}
+
 	
 	
 	/**
@@ -31,6 +38,21 @@ public class AnonymizeHelper {
 	public File getLookUpTable() {
 		return lookUpTable;
 	}
+
+	/**
+	 * @return the anonStr
+	 */
+	public String getAnonStr() {
+		return anonStr;
+	}
+
+	/**
+	 * @return the lookupStr
+	 */
+	public String getLookupStr() {
+		return lookupStr;
+	}
+
 
 	
 }

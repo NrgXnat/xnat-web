@@ -134,7 +134,7 @@ var XNAT = getObject(XNAT || {});
                     action: function(){
                         var editorContent = _editor.getValue().code;
 
-                        var url = endpointUrl('/add?overwrite=true');
+                        var url = endpointUrl('add?overwrite=true');
 
                         XNAT.xhr.post({
                             url: url,
@@ -192,7 +192,7 @@ var XNAT = getObject(XNAT || {});
                         action: function(){
                             var editorContent = _editor.getValue().code;
 
-                            var url = endpointUrl('/add');
+                            var url = endpointUrl('add?overwrite=true');
 
                             XNAT.xhr.post({
                                 url: url,
@@ -240,29 +240,31 @@ var XNAT = getObject(XNAT || {});
         // TODO: move event listeners to parent elements - events will bubble up
         // ^-- this will reduce the number of event listeners
         function enabledCheckbox(item){
-            var enabled = !!item.enabled;
+			var itemObj = JSON.parse(item.contents);
+            var enabled = item.status === 'enabled' ;
             var ckbox = spawn('input.export-endpoint-enabled', {
                 type: 'checkbox',
                 checked: enabled,
                 value: enabled,
-                data: { label: item.label},
+                data: { label: itemObj.label},
                 onchange: function(){
                     // save the status when clicked
                     var checkbox = this;
                     enabled = checkbox.checked;
-                    XNAT.xhr.put({
-                        url: endpointUrl(item.label + '/enabled/' + enabled),
+
+                    XNAT.xhr.post({
+                        url: endpointUrl('enable?label='+itemObj.label + '&enabled=' + enabled),
                         success: function(){
                             var status = (enabled ? ' enabled' : ' disabled');
                             checkbox.value = enabled;
-                            XNAT.ui.banner.top(1000, '<b>' + item.label + '</b> ' + status, 'success');
+                            XNAT.ui.banner.top(1000, '<b>' + itemObj.label + '</b> ' + status, 'success');
                             console.log(item.label + status)
                         }
                     });
                 }
             });
             return spawn('div.center', [
-                ['label.switchbox|title=' + item.label, [
+                ['label.switchbox|title=' + itemObj.label, [
                     ckbox,
                     ['span.switchbox-outer', [['span.switchbox-inner']]]
                 ]]
@@ -319,7 +321,7 @@ var XNAT = getObject(XNAT || {});
                         okAction: function(){
                             console.log('delete label ' + itemObj.label);
                             XNAT.xhr.delete({
-                                url: endpointUrl(itemObj.label),
+                                url: endpointUrl('delete?label='+itemObj.label),
                                 success: function(){
                                     console.log('"' + itemObj.label + '" deleted');
                                     XNAT.ui.banner.top(1000, '<b>"' + itemObj.label + '"</b> deleted.', 'success');
@@ -338,10 +340,12 @@ var XNAT = getObject(XNAT || {});
                 var identifierLabel = itemObj.label || 'exportEndpointObjectLabel';
                 identifierLabel += (identifierLabel === 'exportEndpointObjectLabel') ? ' (Default)' : '';
                 exportEndpointTable.tr({ title: itemObj.label, data: { label: itemObj.label, handler: itemObj['export-handler'] } })
-                        .td([editLink(item, itemObj.label)]).addClass('label')
+                        //.td([editLink(item, itemObj.label)]).addClass('label')
+                        .td([itemObj.label]).addClass('label')
                         .td([['div.mono.center', itemObj['export-handler']]]).addClass('exportHandler')
                         .td([enabledCheckbox(item)]).addClass('status')
-                        .td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
+                        //.td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
+                        .td([['div.center', [editButton(item)]]]);
             });
             if (container) {
                 $$(container).append(exportEndpointTable.table);
@@ -359,17 +363,18 @@ var XNAT = getObject(XNAT || {});
     };
 
     exportEndpointManager.init = function(container){
+           var $manager = $$(container || 'div#export-endpoint-manager');
+
+            exportEndpointManager.$container = $manager;
+
+
+
 
         exportEndpointManager.getEndpoints().done(function(data){
 
             exportEndpointManager.labels = data;
 
-            var $manager = $$(container || 'div#export-endpoint-manager');
-
-            exportEndpointManager.$container = $manager;
-
             $manager.append(exportEndpointManager.table());
-
             var newEndpoint = spawn('button.new-export-endpoint.btn.btn-sm.submit', {
                 html: 'Add New Export Endpoint',
                 onclick: function(){
@@ -382,6 +387,7 @@ var XNAT = getObject(XNAT || {});
                 newEndpoint,
                 ['div.clear.clearfix']
             ]));
+
 
             return {
                 element: $manager[0],
@@ -396,7 +402,9 @@ var XNAT = getObject(XNAT || {});
 
 
    exportEndpointManager.refresh = exportEndpointManager.refreshTable = function(){
-        exportEndpointManager.$table.remove();
+        if (typeof  exportEndpointManager.$table != "undefined") {
+			exportEndpointManager.$table.remove();
+		}
         exportEndpointManager.table(null, function(table){
             exportEndpointManager.$container.prepend(table);
         });

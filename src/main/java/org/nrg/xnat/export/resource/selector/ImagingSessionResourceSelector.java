@@ -8,8 +8,10 @@ import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImageassessordataI;
 import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.model.XnatImagesessiondataI;
+import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xnat.export.manifest.ExportManifest;
 import org.nrg.xnat.export.model.endpoint.EndpointExportedData;
+import org.nrg.xnat.export.model.endpoint.EndpointImagingSessionAssessor;
 import org.nrg.xnat.export.model.endpoint.EndpointImagingSessionAssessorXsiType;
 import org.nrg.xnat.export.model.endpoint.EndpointImagingSessionScanType;
 import org.nrg.xnat.export.model.endpoint.EndpointImagingSessionXsiType;
@@ -34,10 +36,15 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 
 		try {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-			final Hashtable<String,String> imageSessionResourceItemsHash = imagingSessionEndpointDefinition.getResources().toHash();
-			List<XnatAbstractresourceI> imageSessionResources = imageSession.getResources_resource();
-			
-			fileteredResources = extractSelectedResources(imageSessionResources, imageSessionResourceItemsHash);
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
+			if (imagingSessionEndpointDefinition != null) {
+				final Hashtable<String,String> imageSessionResourceItemsHash = imagingSessionEndpointDefinition.getResources().toHash();
+				List<XnatAbstractresourceI> imageSessionResources = imageSession.getResources_resource();
+				
+				fileteredResources = extractSelectedResources(imageSessionResources, imageSessionResourceItemsHash);
+			}
 		}catch(NullPointerException e) {
 			log.debug("Ecountered " +e.getMessage() + " while getting selected resources for the project");
 		}
@@ -48,30 +55,43 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 	public List<String>  getSelectedScanTypes(XnatImagesessiondataI imageSession) throws NullPointerException{
 		List<String> fileteredResources = new ArrayList<String>();
 		EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-		EndpointImagingSessionScanType scanTypeDef = imagingSessionEndpointDefinition.getScanTypes();
-		fileteredResources =  scanTypeDef.getItems();
-		
+		if (imagingSessionEndpointDefinition == null) {
+			imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+		}
+		if (imagingSessionEndpointDefinition != null) {
+			EndpointImagingSessionScanType scanTypeDef = imagingSessionEndpointDefinition.getScanTypes();
+			fileteredResources =  scanTypeDef.getItems();
+		}
 		return fileteredResources;
 	}
 	
 	public List<String>  getSelectedScanIds(XnatImagesessiondataI imageSession) throws NullPointerException{
 		List<String> fileteredResources = new ArrayList<String>();
 		EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-		EndpointImagingSessionScanType scanTypeDef = imagingSessionEndpointDefinition.getScanTypes();
-		fileteredResources =  scanTypeDef.getIds();
-		
+		if (imagingSessionEndpointDefinition == null) {
+			imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+		}
+		if (imagingSessionEndpointDefinition != null) {
+			EndpointImagingSessionScanType scanTypeDef = imagingSessionEndpointDefinition.getScanTypes();
+			fileteredResources =  scanTypeDef.getIds();
+		}
 		return fileteredResources;
 	}
 
 	public boolean  include(XnatImagesessiondataI imageSession) throws NullPointerException {
 		boolean includeSession = false;
 		EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-		List<String> ids  = imagingSessionEndpointDefinition.getIds();
-		if (null != ids && ids.size() > 0) {
-			for (String i: ids) {
-				if (imageSession.getId().equals(i)) {
-					includeSession = true;
-					break;
+		if (imagingSessionEndpointDefinition == null) {
+			imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+		}
+		if (imagingSessionEndpointDefinition != null) {
+			List<String> ids  = imagingSessionEndpointDefinition.getIds();
+			if (null != ids && ids.size() > 0) {
+				for (String i: ids) {
+					if (imageSession.getId().equals(i)) {
+						includeSession = true;
+						break;
+					}
 				}
 			}
 		}
@@ -85,6 +105,9 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 		EndpointExportedData exportData = _exportManifest.getEndpointDefinition().getExportedData();
 		if (null != exportData) {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition =	exportData.getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition =	exportData.getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
 			if (null != imagingSessionEndpointDefinition) {
 				EndpointImagingSessionScanType scanType = imagingSessionEndpointDefinition.getScanTypes();
 				if (null != scanType) {
@@ -121,11 +144,16 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 		List<XnatAbstractresourceI> fileteredResources = new ArrayList<XnatAbstractresourceI>();
 
 		EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-		final Hashtable<String,String> imageSessionScanResourceItemsHash = imagingSessionEndpointDefinition.getScanResources().toHash();
-		
-		List<XnatAbstractresourceI> imageScanResources = imageScan.getFile();
-		
-		fileteredResources = extractSelectedResources(imageScanResources, imageSessionScanResourceItemsHash);
+		if (imagingSessionEndpointDefinition == null) {
+			imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+		}
+		if (imagingSessionEndpointDefinition != null) {
+			final Hashtable<String,String> imageSessionScanResourceItemsHash = imagingSessionEndpointDefinition.getScanResources().toHash();
+			
+			List<XnatAbstractresourceI> imageScanResources = imageScan.getFile();
+			
+			fileteredResources = extractSelectedResources(imageScanResources, imageSessionScanResourceItemsHash);
+		}
 		
 		return fileteredResources;
 	}
@@ -138,12 +166,17 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 
 		try {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-			EndpointImagingSessionAssessorXsiType imagingSessionAssessorEndpointDefinition  = imagingSessionEndpointDefinition.getSessionAssessors().getExportedDataForImagingSessionAssessorByXsiType(imageAssessor.getXSIType());
-			final Hashtable<String,String> imageSessionAssessorResourceItemsHash = imagingSessionAssessorEndpointDefinition.getResources().toHash();
-			
-			List<XnatAbstractresourceI> imageSessionAssessorResources = imageAssessor.getResources_resource();
-			
-			fileteredResources = extractSelectedResources(imageSessionAssessorResources, imageSessionAssessorResourceItemsHash);
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
+			if (imagingSessionEndpointDefinition != null) {
+				EndpointImagingSessionAssessorXsiType imagingSessionAssessorEndpointDefinition  = imagingSessionEndpointDefinition.getSessionAssessors().getExportedDataForImagingSessionAssessorByXsiType(imageAssessor.getXSIType());
+				final Hashtable<String,String> imageSessionAssessorResourceItemsHash = imagingSessionAssessorEndpointDefinition.getResources().toHash();
+				
+				List<XnatAbstractresourceI> imageSessionAssessorResources = imageAssessor.getResources_resource();
+				
+				fileteredResources = extractSelectedResources(imageSessionAssessorResources, imageSessionAssessorResourceItemsHash);
+			}
 		}catch(NullPointerException e) {
 			log.debug("Ecountered " +e.getMessage() + " while getting selected resources for the project");
 		}
@@ -156,6 +189,15 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 		EndpointExportedData exportedData = _exportManifest.getEndpointDefinition().getExportedData();
 		if (exportedData != null) {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition = exportedData.getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
+			if (imagingSessionEndpointDefinition != null) {
+				EndpointImagingSessionAssessor assessor = imagingSessionEndpointDefinition.getSessionAssessors();
+				if (assessor == null) {
+					hasDefinition = true;
+				}
+			}
 		}else {
 			//everything needs to be sent.
 			hasDefinition = true;
@@ -168,7 +210,10 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 		EndpointExportedData exportedData = _exportManifest.getEndpointDefinition().getExportedData();
 		if (exportedData != null) {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition = exportedData.getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
-			if (imagingSessionEndpointDefinition.getScanTypes() != null) {
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition = exportedData.getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
+			if (imagingSessionEndpointDefinition != null && imagingSessionEndpointDefinition.getScanTypes() != null) {
 				hasDefinition = true;
 			}
 		}
@@ -180,6 +225,9 @@ public class ImagingSessionResourceSelector extends ResourceSelector {
 		boolean includeAssessor = false;
 		try {
 			EndpointImagingSessionXsiType imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(imageSession.getXSIType());
+			if (imagingSessionEndpointDefinition == null) {
+				imagingSessionEndpointDefinition = _exportManifest.getEndpointDefinition().getExportedData().getExportedDataForImagingSessionByXsiType(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
+			}
 			if (null != imagingSessionEndpointDefinition) {
 				EndpointImagingSessionAssessorXsiType imagingSessionAssessorEndpointDefinition  = imagingSessionEndpointDefinition.getSessionAssessors().getExportedDataForImagingSessionAssessorByXsiType(imageAssessor.getXSIType());
 				if (null != imagingSessionAssessorEndpointDefinition) {

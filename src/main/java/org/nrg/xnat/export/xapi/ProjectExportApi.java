@@ -1,12 +1,19 @@
 package org.nrg.xnat.export.xapi;
 
+import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.nrg.config.entities.Configuration;
+import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.config.services.ConfigService;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.constants.Scope;
@@ -37,6 +44,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.annotations.Api;
@@ -106,15 +114,13 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 			return  new ResponseEntity<>("Destination added", HttpStatus.OK);
 	    }
 
-	    @ApiOperation(value = "Setup Project preferences for a given Export Endpoint ")
+	    @ApiOperation(value = "List Export Endpoint configured for a project")
 	    @ApiResponses({
 	    	    @ApiResponse(code = 200, message = "Success"),
 	            @ApiResponse(code = 400, message = "Invalid parameters"),
 	            @ApiResponse(code = 500, message = "Unexpected error")})
 	    @XapiRequestMapping(value = "/endpoint/list/{projectId}",  method = GET, produces = MediaType.APPLICATION_JSON_VALUE)
 	    public ResponseEntity<List<Configuration>> list(@PathVariable("projectId") String projectId) {
-			//TODO: Is the JSON valid as per schema
-			 //Add to the Site
 			 try {
 					HttpStatus status = canDeleteProject(projectId);
 					if (status != null) {
@@ -124,7 +130,39 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 					List<Configuration> configs = _configService.getConfigsByTool(ExportConstants.TOOL_ID, Scope.Project, projectId);
 					if (configs != null && configs.size() > 0)
 						return  new ResponseEntity<>(configs, HttpStatus.OK);
-					else
+					else {
+						List<Configuration> emptyOne = new ArrayList<Configuration>();
+						return  new ResponseEntity<>(emptyOne, HttpStatus.OK);
+					}
+			 }catch(Exception e) {
+				   log.error("Possibly invalid json ", e);
+		           return new ResponseEntity<>(null,HttpStatus.BAD_REQUEST);
+			 }
+	    }
+
+	    @ApiOperation(value = "Get Export Endpoint configured for a project for a specific label")
+	    @ApiResponses({
+	    	    @ApiResponse(code = 200, message = "Success"),
+	            @ApiResponse(code = 400, message = "Invalid parameters"),
+	            @ApiResponse(code = 500, message = "Unexpected error")})
+	    @XapiRequestMapping(value = "/endpoint/get/{projectId}",  method = GET, produces = MediaType.APPLICATION_JSON_VALUE)
+	    public ResponseEntity<Configuration> getProjectSpecificEndpoint(@PathVariable("projectId") String projectId,@RequestParam(value = "label", required=true) final String label) {
+			 try {
+					HttpStatus status = canDeleteProject(projectId);
+					if (status != null) {
+			            return new ResponseEntity<>(null,status);
+			        }
+
+					List<Configuration> configs = _configService.getConfigsByTool(ExportConstants.TOOL_ID, Scope.Project, projectId);
+					boolean found = false;
+					if (configs != null && configs.size() > 0) {
+						for (Configuration c : configs) {
+							if (c.getPath().equals(label)) {
+								return  new ResponseEntity<>(c, HttpStatus.OK);
+							}
+						}
+						return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+					}else
 						return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
 			 }catch(Exception e) {
 				   log.error("Possibly invalid json ", e);
@@ -132,8 +170,35 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 			 }
 	    }
 
+	    @ApiOperation(value = "Enable a project export endpoint")
+	    @ApiResponses({
+	            @ApiResponse(code = 200, message = "Success"),
+	            @ApiResponse(code = 400, message = "Invalid parameters"),
+	            @ApiResponse(code = 500, message = "Unexpected error")})
+	    @XapiRequestMapping(value = "/endpoint/enable/{projectId}", method = POST,  restrictTo = Admin)
+	    public ResponseEntity<Configuration> enable(@PathVariable("projectId") String projectId, @RequestParam(value = "label", required=true) final String label, @RequestParam(value = "enabled", required=true) final String enabled) {
+			final UserI user = getSessionUser();
+			 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID,label, Scope.Project, projectId);
+			 boolean enabledBool = Boolean.parseBoolean(enabled);
+			 if (configurationForToolAndExportHandler != null) {
+				 try {
+					 if (enabledBool)
+						 _configService.enable(user.getUsername(), "User enabled", ExportConstants.TOOL_ID, label, Scope.Project, projectId);
+					 else 
+						 _configService.disable(user.getUsername(), "User disabled", ExportConstants.TOOL_ID, label, Scope.Project, projectId);
+					 return  new ResponseEntity<>(configurationForToolAndExportHandler, HttpStatus.OK);
+				 }catch(ConfigServiceException cse) {
+					 return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+				 }catch(Exception e) {
+					 return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+				 }
+			 }else {
+				 return  new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
+			 }
+	    }
+
 	    
-	    @ApiOperation(value = "Export given list of datatypes")
+	    @ApiOperation(value = "Export a project as per provided endpoint definition")
 	    @ApiResponses({
 	            @ApiResponse(code = 200, message = "Success"),
 	            @ApiResponse(code = 400, message = "Invalid parameters"),
@@ -151,6 +216,7 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 		            return new ResponseEntity<>("Either project " + projectId + " is not found or user does not have owner access to the project",status);
 		        }
 				ObjectMapper objectMapper = new ObjectMapper();	
+				objectMapper.setSerializationInclusion(Include.NON_NULL);
 			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
 
 			 	ExportManifest exportManifest = new ExportManifest();
@@ -160,7 +226,6 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 			 	String label = endPointDefinition.getLabel();
 				
 				ExportRequest request = new ExportRequest(exportManifest);
-				//TODO - Need to extract the credentails
 				XDAT.sendJmsRequest(request);
 				return  new ResponseEntity<>("Export Request for Project "+  projectId + " to  "+ label +" has been queued", HttpStatus.OK);
 			}catch(ExporterNotFoundException enfe) {
@@ -171,7 +236,7 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 	    }
 
 	    
-	    @ApiOperation(value = "Export given list of datatypes")
+	    @ApiOperation(value = "Dryrun a project as per the provided endpoint definition")
 	    @ApiResponses({
 	            @ApiResponse(code = 200, message = "Success"),
 	            @ApiResponse(code = 400, message = "Invalid parameters"),
@@ -211,6 +276,25 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 				return  new ResponseEntity<>( HttpStatus.BAD_REQUEST);
 			}
 	    }
+	    
+	    
+	    @ApiOperation(value = "Verify Connection to Export Endpoint")
+	    @ApiResponses({
+	            @ApiResponse(code = 200, message = "Success"),
+	            @ApiResponse(code = 400, message = "Invalid parameters"),
+	            @ApiResponse(code = 500, message = "Unexpected error")})
+	    @XapiRequestMapping(value = "endpoint/verify", method = POST,  produces = MediaType.TEXT_PLAIN_VALUE)
+	    public ResponseEntity<String> verify(@RequestParam(value = "destination", required=true) final String destination, @RequestParam(value = "username", required=true) final String username, @RequestParam(value = "password", required=true) final String password) {
+	    	try {
+		    	boolean connected = testExportDestination(destination, username, password);
+		    	if (connected) {
+					return  new ResponseEntity<>("Connection Established", HttpStatus.OK);
+				}else 
+					return  new ResponseEntity<>("Authorization Failed", HttpStatus.BAD_REQUEST);
+	    	}catch(IOException ioe) {
+				return  new ResponseEntity<>("Connection Failed. Is the Site " + destination+ " accessible", HttpStatus.BAD_REQUEST);
+	    	}
+	    }
 
 	    @ApiOperation(value = "Get History for the project ")
 	    @ApiResponses({
@@ -241,7 +325,39 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 			 }
 	    }
 	    
-	   
+	    private boolean testExportDestination(String requestURL,  String username, String password)  throws IOException {
+			boolean connectionSuccessFull = false;
+	        String charset = "UTF-8";
+
+            String uQuery = String.format("username=%s", URLEncoder.encode(username, charset));
+            String pQuery = String.format("password=%s", URLEncoder.encode(password, charset));
+            String urlQuery = "url=/";
+            String timestamp = "timeStamp=" + new Date().getTime();
+	        URL url = new URL(requestURL+"/login?" + uQuery +"&" + pQuery + "&" + urlQuery + "&" + timestamp);
+           
+	        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+	        httpConn.setUseCaches(false);
+	        httpConn.setRequestProperty("User-Agent", "XNAT Export Agent");
+
+/*			if (username != null && password != null) {
+				String encoding = Base64.getEncoder().encodeToString((username+":"+ password).getBytes());
+				String authHeader = "Basic " + encoding;
+				httpConn.setRequestProperty("Authorization", authHeader);
+				httpConn.setRequestProperty("RSNA", username+":"+password); 
+			} */
+			try {
+				httpConn.connect();
+                 System.out.println(httpConn.getResponseCode());
+                 System.out.println(httpConn.getResponseMessage());
+				connectionSuccessFull = true;
+			}catch(IOException ioe) {
+				log.debug("Could not establish connection");
+			}finally{
+				httpConn.disconnect();
+			}
+			return connectionSuccessFull;
+	    }
+
 	    
 	    
 }

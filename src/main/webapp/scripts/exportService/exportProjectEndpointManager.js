@@ -72,38 +72,109 @@ var XNAT = getObject(XNAT || {});
         });
     }
 
+     function getUrlParams(){
+	        var paramObj = {};
+
+	        // get the querystring param, redacting the '?', then convert to an array separating on '&'
+	        var urlParams = window.location.search.substr(1,window.location.search.length);
+	        urlParams = urlParams.split('&');
+
+	        urlParams.forEach(function(param){
+	            // iterate over every key=value pair, and add to the param object
+	            param = param.split('=');
+	            paramObj[param[0]] = param[1];
+	        });
+
+	        return paramObj;
+	    }
+
 	function getProjectId(){
-		return XNAT.data.context.projectID;
-	}
+	        if (XNAT.data.context.projectID.length > 0) return XNAT.data.context.projectID;
+	        return getUrlParams().id;
+    }
 
 
     function siteEndpointUrl(appended, cacheParam){
         appended = appended ? '/' + appended : '';
-        return restUrl('/xapi/exportendpoint' + appended, '', cacheParam || false);
+        return restUrl('/xapi/exportendpoint' + appended, {format:'json'}, cacheParam || false);
     }
 
-    function projectEndpointUrl(appended, cacheParam){
+    function projectEndpointUrl(appended, format, cacheParam){
         appended = appended ? '/' + appended : '';
-        return restUrl('/xapi/export/endpoint' + appended, '', cacheParam || false);
+        return restUrl('/xapi/export/endpoint' +   appended, format, cacheParam || false);
     }
 
 
     // keep track of used labels to help prevent label conflicts
-    exportEndpointManager.labels = [];
+    exportEndpointManager.projectlabels = [];
+    exportEndpointManager.sitelabels = [];
+    exportEndpointManager.sitedefinitions = [];
+    exportEndpointManager.siteNotInProjectdefinitions = [];
+    exportEndpointManager.projectdefinitions = [];
 
-    // get the list of Export Endpoints
-    exportEndpointManager.getEndpoints = exportEndpointManager.getAll = function(callback){
+    // get the list of Site wide Export Endpoints
+    exportEndpointManager.setEndpoints = exportEndpointManager.setAll = function(callback){
         callback = isFunction(callback) ? callback : function(){};
-        exportEndpointManager.labels = [];
+		XNAT.ui.banner.top(2000, 'Loading data....', 'please wait');
+
+        exportEndpointManager.sitedefinitions = [];
+        exportEndpointManager.siteNotInProjectdefinitions = [];
+        exportEndpointManager.projectdefinitions = [];
+        exportEndpointManager.getSiteAll();
+        exportEndpointManager.getProjectAll();
+		xmodal.closeAll();
+
+		for (var i = 0; i < exportEndpointManager.sitedefinitions.length; i++) {
+		  var isInProject = false;
+		  for (var j = 0; j < exportEndpointManager.projectdefinitions.length; j++) {
+			  if (exportEndpointManager.projectdefinitions[j].path === exportEndpointManager.sitedefinitions[i].path) {
+			    isInProject = true;
+			  }
+		  }
+		  if (!isInProject) {
+		    exportEndpointManager.siteNotInProjectdefinitions.push(exportEndpointManager.sitedefinitions[i]);
+		  }
+		}
+        exportEndpointManager.projectdefinitions = exportEndpointManager.projectdefinitions.concat(exportEndpointManager.siteNotInProjectdefinitions);
+        return;
+    };
+
+
+
+    // get the list of Site wide Export Endpoints
+    exportEndpointManager.getSiteEndpoints = exportEndpointManager.getSiteAll = function(callback){
+        callback = isFunction(callback) ? callback : function(){};
         return XNAT.xhr.get({
             url: siteEndpointUrl('list', true),
             dataType: 'json',
+            async: false,
             success: function(data){
-                exportEndpointManager.definitions = data;
-                // refresh the 'usedAeTitlesAndPorts' array every time this function is called
+                exportEndpointManager.sitedefinitions = [];
                 data.forEach(function(item){
-					var itemObj = JSON.parse(item.contents);
-                    exportEndpointManager.labels.push(itemObj.label);
+					if(item.status === 'enabled') {
+						var siteItem = item;
+						siteItem.isProject = false;
+						exportEndpointManager.sitedefinitions.push(siteItem);
+					}
+                });
+                callback.apply(this, arguments);
+            }
+        });
+    };
+
+    // get the list of Project Export Endpoints
+    exportEndpointManager.getProjectEndpoints = exportEndpointManager.getProjectAll = function(callback){
+        callback = isFunction(callback) ? callback : function(){};
+        return XNAT.xhr.get({
+            url: projectEndpointUrl('list/' + getProjectId(), {},true),
+            dataType: 'json',
+            async: false,
+            success: function(data){
+                exportEndpointManager.projectdefinitions = [];
+                data.forEach(function(item){
+					var projectItem = item;
+					projectItem.isProject = true;
+                    exportEndpointManager.projectdefinitions.push(projectItem);
                 });
                 callback.apply(this, arguments);
             }
@@ -115,7 +186,7 @@ var XNAT = getObject(XNAT || {});
         if (!label) return null;
         callback = isFunction(callback) ? callback : function(){};
         return XNAT.xhr.get({
-            url: projectEndpointUrl('get?label='+label, true),
+            url: projectEndpointUrl('get/'+getProjectId()+'?label='+label, true),
             dataType: 'json',
             success: callback
         });
@@ -144,7 +215,7 @@ var XNAT = getObject(XNAT || {});
                     action: function(){
                         var editorContent = _editor.getValue().code;
 
-                        var url = projectEndpointUrl('/add?overwrite=true');
+                        var url = projectEndpointUrl('projects/' + getProjectId());
 
                         XNAT.xhr.post({
                             url: url,
@@ -185,45 +256,6 @@ var XNAT = getObject(XNAT || {});
                     );
                 }
             });
-        } else {
-            _source = spawn('textarea', '{}');
-
-            _editor = XNAT.app.codeEditor.init(_source, {
-                language: 'json'
-            });
-
-            _editor.openEditor({
-                title: 'Add New Export Definition',
-                classes: 'plugin-json',
-                buttons: {
-                    create: {
-                        label: 'Save Command',
-                        isDefault: true,
-                        action: function(){
-                            var editorContent = _editor.getValue().code;
-
-                            var url = projectEndpointUrl('/add');
-
-                            XNAT.xhr.post({
-                                url: url,
-                                contentType: 'text/plain',
-                                data: editorContent,
-                                success: function(obj){
-                                    exportEndpointManager.refreshTable();
-                                    xmodal.close(obj.$modal);
-                                    XNAT.ui.banner.top(2000, 'Export endpoint definition created.', 'success');
-                                },
-                                fail: function(e){
-                                    errorHandler(e, 'Could Not Save', false);
-                                }
-                            });
-                        }
-                    },
-                    close: {
-                        label: 'Cancel'
-                    }
-                }
-            });
         }
     };
 
@@ -251,25 +283,43 @@ var XNAT = getObject(XNAT || {});
         // ^-- this will reduce the number of event listeners
         function enabledCheckbox(item){
 			var itemObj = JSON.parse(item.contents);
-            var enabled = !!item.enabled;
+            var enabled = item.isProject && item.status === 'enabled' ;
             var ckbox = spawn('input.export-endpoint-enabled', {
                 type: 'checkbox',
                 checked: enabled,
                 value: enabled,
-                data: { label: item.path},
                 onchange: function(){
-                    // save the status when clicked
+                    // save the endpoint definition when clicked
                     var checkbox = this;
                     enabled = checkbox.checked;
-                    XNAT.xhr.put({
-                        url: projectEndpointUrl(item.path + '/enabled/' + enabled),
-                        success: function(){
-                            var status = (enabled ? ' enabled' : ' disabled');
-                            checkbox.value = enabled;
-                            XNAT.ui.banner.top(1000, '<b>' + itemObj.label + '</b> ' + status, 'success');
-                            console.log(itemObj.label + status)
-                        }
-                    });
+                    if (!item.isProject) {
+						//Add to project
+	                    XNAT.xhr.post({
+	                        url: projectEndpointUrl('projects/' + getProjectId(),'', false),
+	                        data: item.contents,
+	                        contentType: 'text/plain',
+	                        success: function(){
+	                            var status = (enabled ? ' enabled' : ' disabled');
+	                            checkbox.value = enabled;
+	                            XNAT.ui.banner.top(1000, '<b>' + itemObj.label + '</b> ' + status, 'success');
+	                        },
+	                        failure: function(e) {
+								errorHandler(e);
+							}
+	                    });
+					}else {
+						//Already in project, set as per preference
+	                    XNAT.xhr.post({
+	                        url: projectEndpointUrl('enable/' + getProjectId() + '?label='+itemObj.label + '&enabled=' +enabled),
+	                        success: function(){
+	                            var status = (enabled ? ' enabled' : ' disabled');
+	                            checkbox.value = enabled;
+	                            XNAT.ui.banner.top(1000, '<b>' + itemObj.label + '</b> ' + status, 'success');
+	                        }
+	                    });
+					}
+					exportEndpointManager.refreshTable();
+
                 }
             });
             return spawn('div.center', [
@@ -299,19 +349,21 @@ var XNAT = getObject(XNAT || {});
 
         function editButton(item){
 			var itemObj = JSON.parse(item.contents);
-            return spawn('button.btn.sm.edit', {
-                onclick: function(e){
-                    e.preventDefault();
-                    if (itemObj && itemObj.label) {
-                        exportEndpointManager.getEndpoint(itemObj.label, function(data){
-                            exportEndpointManager.dialog(data, false);
-                        });
-                    }
-                    else {
-                        exportEndpointManager.dialog({}, false);
-                    }
-                }
-            }, 'Edit');
+			var disable = false;
+			if (item.status === 'disabled') {
+				disable = true;
+			}
+				return spawn('button.btn.sm.edit', {
+					disabled:disable,
+					onclick: function(e){
+						e.preventDefault();
+						if (itemObj &&   itemObj.label) {
+							exportEndpointManager.getEndpoint(itemObj.label, function(data){
+								exportEndpointManager.dialog(data, false);
+							});
+						}
+					}
+				}, 'Edit');
         }
 
         function deleteButton(item){
@@ -342,18 +394,19 @@ var XNAT = getObject(XNAT || {});
                 }
             }, 'Delete');
         }
-
-        exportEndpointManager.getAll().done(function(data){
-            data.forEach(function(item){
+		for (var k=0; k < exportEndpointManager.projectdefinitions.length; k++) {
+			    var item = exportEndpointManager.projectdefinitions[k];
 				var itemObj = JSON.parse(item.contents);
                 var identifierLabel = itemObj.label || 'exportEndpointObjectLabel';
                 identifierLabel += (identifierLabel === 'exportEndpointObjectLabel') ? ' (Default)' : '';
                 exportEndpointTable.tr({ title: itemObj.label, data: { label: itemObj.label, handler: itemObj['export-handler'] } })
-                        .td([editLink(item, itemObj.label)]).addClass('label')
+                        //.td([editLink(item, itemObj.label)]).addClass('label')
+                        .td([itemObj.label]).addClass('label')
                         .td([['div.mono.center', itemObj['export-handler']]]).addClass('exportHandler')
                         .td([enabledCheckbox(item)]).addClass('status')
-                        .td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
-            });
+                        //.td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
+                        .td([['div.center', [editButton(item)]]]);
+
             if (container) {
                 $$(container).append(exportEndpointTable.table);
             }
@@ -362,7 +415,8 @@ var XNAT = getObject(XNAT || {});
                 callback(exportEndpointTable.table);
             }
 
-        });
+
+		}
 
         exportEndpointManager.$table = $(exportEndpointTable.table);
 
@@ -371,31 +425,30 @@ var XNAT = getObject(XNAT || {});
 
     exportEndpointManager.init = function(container){
 
-        exportEndpointManager.getEndpoints().done(function(data){
-
-            exportEndpointManager.labels = data;
-
             var $manager = $$(container || 'div#proj-export-config-list-container');
 
             exportEndpointManager.$container = $manager;
 
-            $manager.append(exportEndpointManager.table());
+        	exportEndpointManager.setEndpoints();
+        	$manager.append(exportEndpointManager.table());
 
+				return {
+					element: $manager[0],
+					spawned: $manager[0],
+					get: function(){
+						return $manager[0]
+					}
+				};
 
-            return {
-                element: $manager[0],
-                spawned: $manager[0],
-                get: function(){
-                    return $manager[0]
-                }
-            };
-
-        });
     };
 
 
    exportEndpointManager.refresh = exportEndpointManager.refreshTable = function(){
-        exportEndpointManager.$table.remove();
+        exportEndpointManager.setEndpoints();
+		console.log("Crossed this");
+        if (typeof exportEndpointManager.$table != 'undefined') {
+        	exportEndpointManager.$table.remove();
+		}
         exportEndpointManager.table(null, function(table){
             exportEndpointManager.$container.prepend(table);
         });

@@ -216,7 +216,20 @@ public class ProjectTransportBuilder {
 			    while (xsiTypes.hasNext()) { 
 			    	String xsiType = xsiTypes.next();
 			    	//Find all experiments in this project of this xsiType
-			    	ArrayList experiments = project.getExperimentsByXSIType(xsiType);
+			    	ArrayList experiments = null;
+			    	if (xsiType.equals(XnatImagesessiondata.SCHEMA_ELEMENT_NAME)) {
+			    		experiments = new ArrayList();
+			    		ArrayList<XnatExperimentdata> imageSessionExperiments = project.getExperiments();
+			    		if (imageSessionExperiments != null && imageSessionExperiments.size() > 0) {
+				    		for (XnatExperimentdata e : imageSessionExperiments ) {
+				    			if (e instanceof XnatImagesessiondata) {
+				    				experiments.add((XnatExperimentdataI)e);
+				    			}
+				    		}
+			    		}
+			    	}else {
+			    		experiments = project.getExperimentsByXSIType(xsiType);
+			    	}
 			    	if (experiments != null && experiments.size() > 0) {
 			    		for (int i=0; i< experiments.size(); i++) {
 			    			XnatExperimentdataI exp = (XnatExperimentdataI)experiments.get(i);

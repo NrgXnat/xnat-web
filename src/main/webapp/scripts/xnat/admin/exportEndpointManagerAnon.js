@@ -74,8 +74,9 @@ var XNAT = getObject(XNAT || {});
 
     function anonEndpointUrl(appended, cacheParam){
         appended = appended ? '/' + appended : '';
-        return restUrl('/data/config/export-service-anon' + appended, {format: 'json'}, cacheParam || false);
+        return restUrl('/data/config/export-service-anon' + appended, '{format:json}', cacheParam || false, true);
     }
+
 
 
     // keep track of used labels to help prevent label conflicts
@@ -88,7 +89,7 @@ var XNAT = getObject(XNAT || {});
         return XNAT.xhr.get({
             url: anonEndpointUrl(null, true),
             success: function(data){
-                exportEndpointManagerAnon.definitions = data.ResultSet.Result;
+                exportEndpointManagerAnon.definitions = data;
                 data.ResultSet.Result.forEach(function(item){
                     exportEndpointManagerAnon.paths.push(item.path);
                 });
@@ -118,9 +119,10 @@ var XNAT = getObject(XNAT || {});
 
     // dialog to create/edit endpoint anonymization
    exportEndpointManagerAnon.dialog = function(endpointAnon,newCommand){
-        var _source,_editor;
+        var _source,_editor, _path;
          if (!newCommand) {
- 	        var path = endpointAnon.ResultSet.Result[0].path;
+			var endpointAnonObj = endpointAnon.ResultSet.Result[0];
+ 	        var path = endpointAnonObj.path;
 
  			path = path || {};
 
@@ -151,8 +153,7 @@ var XNAT = getObject(XNAT || {});
                 close: { label: 'Cancel' }
             };
 
-
-            _source = spawn ('textarea', endpointAnon.ResultSet.Result[0].contents);
+            _source = spawn ('textarea', endpointAnonObj.contents);
 			_editor = XNAT.app.codeEditor.init(_source, {
                 language: 'text'
             });
@@ -184,14 +185,41 @@ var XNAT = getObject(XNAT || {});
 	                _editor.openEditor({
 	                    title: 'Add New Export Anonymization',
 	                    classes: 'plugin-text',
+						afterShow: function(dialog, obj){
+							dialog.$modal.find('.body .inner').prepend(
+								spawn('div',  [
+											spawn('label.element-label', 'Path for export anonymization:'),
+											spawn('div.element-wrapper', [
+												spawn('label', [
+													spawn('input', { type: 'text',id:'path', name: 'path', value: ''})
+												])
+											])
+										])
+							);
+						},
 	                    buttons: {
 	                        create: {
 	                            label: 'Save',
 	                            isDefault: true,
 	                            action: function(){
 	                                var editorContent = _editor.getValue().code;
-
-	                                var url = anonEndpointUrl(null);
+									var pathElt = $('input#path');
+									var pathVal = pathElt.val();
+									if (pathVal === "") {
+											XNAT.dialog.open({
+												width: 450,
+												title: 'Error',
+												content: 'Please enter value for path to save this anon script to',
+												buttons: [
+													{
+														label: 'Close',
+														isDefault: true,
+														close: true
+													}
+												]
+											});
+									}
+	                                var url = anonEndpointUrl(pathVal+'?unversioned=true');
 
 	                                XNAT.xhr.put({
 	                                    url: url,
@@ -239,18 +267,19 @@ var XNAT = getObject(XNAT || {});
         // TODO: move event listeners to parent elements - events will bubble up
         // ^-- this will reduce the number of event listeners
         function enabledCheckbox(item){
-            var enabled = !!item.enabled;
+            var enabled = item.status === "enabled";
             var ckbox = spawn('input.export-endpoint-anon-enabled', {
                 type: 'checkbox',
                 checked: enabled,
                 value: enabled,
-                data: { path: item.label},
+                data: { path: item.path},
                 onchange: function(){
                     // save the status when clicked
                     var checkbox = this;
                     enabled = checkbox.checked;
+                    var enabledTxt =enabled?'enabled':'disabled'
                     XNAT.xhr.put({
-                        url: anonEndpointUrl(item.path + '/enabled/' + enabled),
+                        url: anonEndpointUrl(item.path + '?status=' + enabledTxt),
                         success: function(){
                             var status = (enabled ? ' enabled' : ' disabled');
                             checkbox.value = enabled;
@@ -272,7 +301,7 @@ var XNAT = getObject(XNAT || {});
             return spawn('a.link|href=#!', {
                 onclick: function(e){
                     e.preventDefault();
-                    if (item ) {
+                    if (item) {
                         exportEndpointManagerAnon.getAnon(item.path, function(data){
                             exportEndpointManagerAnon.dialog(data, false);
                         });
@@ -289,7 +318,7 @@ var XNAT = getObject(XNAT || {});
                 onclick: function(e){
                     e.preventDefault();
                     if (item) {
-                        exportEndpointManagerAnon.getAnon(item, function(data){
+                        exportEndpointManagerAnon.getAnon(item.path, function(data){
                             exportEndpointManagerAnon.dialog(data, false);
                         });
                     }
@@ -300,7 +329,7 @@ var XNAT = getObject(XNAT || {});
             }, 'Edit');
         }
 
-        function deleteButton(item){
+/*        function deleteButton(item){
             return spawn('button.btn.sm.delete', {
                 onclick: function(){
                     XNAT.dialog.confirm({
@@ -326,16 +355,17 @@ var XNAT = getObject(XNAT || {});
                     })
                 }
             }, 'Delete');
-        }
+        } */
 
         exportEndpointManagerAnon.getAll().done(function(data){
             data.ResultSet.Result.forEach(function(item){
                 var identifierLabel = item.path || 'exportEndpointAnonObjectLabel';
                 identifierLabel += (identifierLabel === 'exportEndpointAnonObjectLabel') ? ' (Default)' : '';
                 exportEndpointAnonTable.tr({ title: item.path, data: { path: item.path} })
-                        .td([editLink(item, item.path)]).addClass('path')
+                        .td([item.path]).addClass('path')
                         .td([enabledCheckbox(item)]).addClass('status')
-                        .td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
+                       // .td([['div.center', [editButton(item), spacer(10), deleteButton(item)]]]);
+                        .td([['div.center', [editButton(item)]]]);
             });
             if (container) {
                 $$(container).append(exportEndpointAnonTable.table);
@@ -353,16 +383,9 @@ var XNAT = getObject(XNAT || {});
     };
 
     exportEndpointManagerAnon.init = function(container){
-
-        exportEndpointManagerAnon.getAnonymizations().done(function(data){
-
-            exportEndpointManagerAnon.paths = data;
-
             var $manager = $$(container || 'div#export-endpoint-anon-manager');
 
             exportEndpointManagerAnon.$container = $manager;
-
-            $manager.append(exportEndpointManagerAnon.table());
 
             var newEndpoint = spawn('button.new-export-endpoint-anon.btn.btn-sm.submit', {
                 html: 'Add New Export Anonymization',
@@ -377,6 +400,12 @@ var XNAT = getObject(XNAT || {});
                 ['div.clear.clearfix']
             ]));
 
+        exportEndpointManagerAnon.getAnonymizations().done(function(data){
+
+            exportEndpointManagerAnon.paths = data;
+
+            $manager.append(exportEndpointManagerAnon.table());
+
             return {
                 element: $manager[0],
                 spawned: $manager[0],
@@ -386,11 +415,15 @@ var XNAT = getObject(XNAT || {});
             };
 
         });
+
+
     };
 
 
    exportEndpointManagerAnon.refresh = exportEndpointManagerAnon.refreshTable = function(){
-        exportEndpointManagerAnon.$table.remove();
+        if (typeof exportEndpointManagerAnon.$table != "undefined") {
+			exportEndpointManagerAnon.$table.remove();
+		}
         exportEndpointManagerAnon.table(null, function(table){
             exportEndpointManagerAnon.$container.prepend(table);
         });

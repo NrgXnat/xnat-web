@@ -37,9 +37,20 @@
     };
 
 
-  exporter.open = window.openExportDialog = function(eHandler){
-		alert("Camere " + eHandler);
-		//Load the
+  exporter.open = window.openExportDialog = function(exportEndpointJsonStr){
+	var exportEndpoint = JSON.parse(exportEndpointJsonStr);
+	var label = exportEndpoint.label;
+	var url = rootUrl("/scripts/exportService/"+ label  + "/" + label + ".js");
+	$.getScript( url )
+	  .done(function( script, textStatus ) {
+	    console.log( "Loaded JS file for " + label );
+	    var objName = label.replace(/-/g,'') + 'Exporter';
+		var obj = window[objName];
+		obj.openLaunchDialog(exportEndpoint);
+	  })
+	  .fail(function( jqxhr, settings, exception ) {
+	    $( "div.log" ).text( "Triggered ajaxError handler." );
+	});
   }
 
 
@@ -63,7 +74,7 @@
             var label = exportConfig.path ;
             exportMenuItems[0].submenu.itemdata.push({
                 text: label,
-                url: 'javascript:openExportDialog("'+ handlerObj +'")',
+                url: 'javascript:openExportDialog('+ JSON.stringify(exportConfig.contents) +')',
                 classname: 'enabled wrapped' // injects a custom classname onto the surrounding li element.
             });
         }
@@ -90,10 +101,16 @@
                    if (!availableExportHandlers.length) {
                        return false;
                    } else {
+					   var isAnyEnabled = false;
                        availableExportHandlers.forEach(function (exportHandler) {
-                           exporter.addYUIMenuItem(exportHandler);
+                           if (exportHandler.status === 'enabled') {
+                       		exporter.addYUIMenuItem(exportHandler);
+                       		isAnyEnabled = true;
+					   	   }
                        });
-                       exporter.createYUIMenu('actionsMenu');
+                       if (isAnyEnabled) {
+                         exporter.createYUIMenu('actionsMenu');
+				       }
                    }
 
                },
