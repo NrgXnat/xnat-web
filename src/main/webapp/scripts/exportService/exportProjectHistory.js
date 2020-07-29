@@ -1,7 +1,7 @@
 /*
  * web: exportProjectHistory.js
  * XNAT http://www.xnat.org
- * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
+ * Copyright (c) 2005-2020, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
  *
  * Released under the Simplified BSD.
@@ -206,7 +206,8 @@ var XNAT = getObject(XNAT || {});
             style: {
                 width: '100%',
                 marginTop: '15px',
-                marginBottom: '15px'
+                marginBottom: '15px',
+                'overflow-y': 'auto'
             }
         });
 
