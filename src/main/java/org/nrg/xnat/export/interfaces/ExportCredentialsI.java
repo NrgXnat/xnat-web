@@ -6,4 +6,6 @@ package org.nrg.xnat.export.interfaces;
  */
 public interface ExportCredentialsI {
 
+	String getUsername();
+	String getPassword();
 }

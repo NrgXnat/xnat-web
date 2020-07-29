@@ -20,12 +20,12 @@ import org.nrg.xnat.export.event.ExportEvent;
 import org.nrg.xnat.export.event.ExportFileTransportEvent;
 import org.nrg.xnat.export.event.ProjectEvent;
 import org.nrg.xnat.export.event.publisher.ExportEventPublisher;
+import org.nrg.xnat.export.interfaces.ExportCredentialsI;
 import org.nrg.xnat.export.manifest.DataDescendantManifest;
 import org.nrg.xnat.export.manifest.TransportManifest;
 import org.nrg.xnat.export.notifications.NotifyProjectExportListeners;
 import org.nrg.xnat.export.utils.ExportConstants;
 import org.restlet.data.Status;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -135,11 +135,19 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 			somethingWasExported = true;
 			String destinationUrl = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_NAME);
 			String destinationPort = (String)_transportManifest.getTransformerHelper().getTransformerSettingValue(ExportConstants.URL_PROP_PORT);
-
-			HTTPExport httpExport = new HTTPExport(
-					_transportManifest.getExportEventId(),_transportManifest.getProject().getId() , 
-					_transportManifest.getAuthorizedBy(), 
-					destinationUrl, destinationPort,_transportManifest.getTransformerHelper());
+			HTTPExport httpExport = null;
+			if (_transportManifest.getExportManifest().getEndpointDefinition().isCredentialsRequired()) {
+				ExportCredentialsI credentials = _transportManifest.getExportManifest().getCredentials();
+				httpExport = new HTTPExport(
+						_transportManifest.getExportEventId(),_transportManifest.getProject().getId() , 
+						_transportManifest.getAuthorizedBy(), 
+						destinationUrl, destinationPort,credentials.getUsername(), credentials.getPassword(),_transportManifest.getTransformerHelper());
+			}else {
+				httpExport = new HTTPExport(
+						_transportManifest.getExportEventId(),_transportManifest.getProject().getId() , 
+						_transportManifest.getAuthorizedBy(), 
+						destinationUrl, destinationPort,_transportManifest.getTransformerHelper());
+			}
 			for (XnatAbstractresourceI a: resources) {
 				dataDescendantManifest.setResourceLabel(a.getLabel());
 				fireStartOfExportEvent(a, dataDescendantManifest);

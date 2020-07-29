@@ -29,4 +29,12 @@ public class SiteCredentials extends ExportCredentialsA implements ExportCredent
 		return this;
 	}
 	
+	public String getUsername() {
+		return _username;
+	}
+
+	public String getPassword() {
+		return _password;
+	}
+
 }
