@@ -82,10 +82,10 @@ public class InitializeXNAT {
     }
 
     public static void main(String[] args) {
-        InitializeXNAT xnat = new InitializeXNAT( "http://xnat-latest", "Basic YWRtaW46YWRtaW4=");
+        InitializeXNAT xnat = new InitializeXNAT( "http://10.1.1.17", "Basic YWRtaW46YWRtaW4=");
 
-//        xnat.createProject("publicProject1", "Public Project 1");
-        xnat.createSubject("projectPut2", "subjectPut22", "male", "19600519");
+        xnat.createProject("publicProject11", "Public Project 1");
+        xnat.createSubject("publicProject11", "subject1", "male", "19600519");
     }
 
 }

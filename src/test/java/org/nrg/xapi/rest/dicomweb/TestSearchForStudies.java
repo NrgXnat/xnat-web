@@ -22,7 +22,7 @@ import static org.junit.Assert.*;
 @ContextConfiguration(classes = DicomWebTestConfig.class)
 public class TestSearchForStudies {
 
-    DicomWebSearchClient client = new DicomWebSearchClient("http://xnat-latest/xapi/dicomweb");
+    DicomWebSearchClient client = new DicomWebSearchClient("http://10.1.1.17/xapi/dicomweb");
     @Test
     public void byStudyDate() {
 
@@ -68,7 +68,7 @@ public class TestSearchForStudies {
 
         runTest("/studies",
                 "StudyDate=20170101",
-                "Basic dXNlcjI6dXNlcjI=",
+                "Basic YWRtaW46YWRtaW4=",
                 expectedResponses);
     }
 
@@ -285,8 +285,9 @@ public class TestSearchForStudies {
         expectedResponses.put(uid, p);
 
         runTest("/studies",
-                "StudyInstanceUID=1.3.6.1.4.1.14519.5.2.1.3344.2526.135741059622478367178432395189",
-                "Basic dXNlcjI6dXNlcjI=",
+//                "StudyInstanceUID=1.3.6.1.4.1.14519.5.2.1.3344.2526.135741059622478367178432395189",
+                "StudyInstanceUID=1.3.12.2.1107.5.2.32.35177.30000006121218324675000000034",
+                "Basic YWRtaW46YWRtaW4=",
                 expectedResponses);
     }
 
@@ -395,7 +396,7 @@ public class TestSearchForStudies {
 
         runTest("/studies",
                 "StudyID=333",
-                "Basic dXNlcjI6dXNlcjI=",
+                "Basic YWRtaW46YWRtaW4=",
                 expectedResponses);
     }
 
