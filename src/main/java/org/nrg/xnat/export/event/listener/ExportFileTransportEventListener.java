@@ -46,7 +46,7 @@ public class ExportFileTransportEventListener  {
 		final XnatProjectdata project=AutoXnatProjectdata.getXnatProjectdatasById(event.getProjectId(), event.getUser(), true);
 		final String trackingId = event.getTrackingId();   
 		writeToFile(project, trackingId, event.getMessage(), event.isComplete(), event.getUser());
-		System.out.println(event.getMessage());
+		log.info(event.getMessage());
 	}
 	
 	
