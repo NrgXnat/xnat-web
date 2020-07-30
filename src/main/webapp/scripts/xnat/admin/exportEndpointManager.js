@@ -187,7 +187,7 @@ var XNAT = getObject(XNAT || {});
                 classes: 'plugin-json',
                 buttons: {
                     create: {
-                        label: 'Save Command',
+                        label: 'Save Endpoint',
                         isDefault: true,
                         action: function(){
                             var editorContent = _editor.getValue().code;

@@ -288,11 +288,11 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 	    @XapiRequestMapping(value = "endpoint/verify", method = POST,  produces = MediaType.TEXT_PLAIN_VALUE)
 	    public ResponseEntity<String> verify(@RequestParam(value = "destination", required=true) final String destination, @RequestParam(value = "username", required=true) final String username, @RequestParam(value = "password", required=true) final String password) {
 	    	try {
-		    	boolean connected = testExportDestination(destination, username, password);
-		    	if (connected) {
-					return  new ResponseEntity<>("Connection Established", HttpStatus.OK);
+		    	int rCode = testExportDestination(destination, username, password);
+		    	if (rCode == 200) {
+					return  new ResponseEntity<>("Passed", HttpStatus.OK);
 				}else 
-					return  new ResponseEntity<>("Authorization Failed", HttpStatus.BAD_REQUEST);
+					return  new ResponseEntity<>("Failed", HttpStatus.FORBIDDEN);
 	    	}catch(IOException ioe) {
 				return  new ResponseEntity<>("Connection Failed. Is the Site " + destination+ " accessible", HttpStatus.BAD_REQUEST);
 	    	}
@@ -334,37 +334,27 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 			 }
 	    }
 	    
-	    private boolean testExportDestination(String requestURL,  String username, String password)  throws IOException {
-			boolean connectionSuccessFull = false;
+	    private int testExportDestination(String requestURL,  String username, String password)  throws IOException {
+			int rCode = 500;
 	        String charset = "UTF-8";
 
             String uQuery = String.format("username=%s", URLEncoder.encode(username, charset));
             String pQuery = String.format("password=%s", URLEncoder.encode(password, charset));
-            String urlQuery = "url=/";
-            String timestamp = "timeStamp=" + new Date().getTime();
-	        URL url = new URL(requestURL+"/login?" + uQuery +"&" + pQuery + "&" + urlQuery + "&" + timestamp);
+	        URL url = new URL(requestURL+"/login/ajax?" + uQuery +"&" + pQuery);
            
 	        HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
 	        httpConn.setUseCaches(false);
 	        httpConn.setRequestProperty("User-Agent", "XNAT Export Agent");
 
-/*			if (username != null && password != null) {
-				String encoding = Base64.getEncoder().encodeToString((username+":"+ password).getBytes());
-				String authHeader = "Basic " + encoding;
-				httpConn.setRequestProperty("Authorization", authHeader);
-				httpConn.setRequestProperty("RSNA", username+":"+password); 
-			} */
 			try {
 				httpConn.connect();
-                 System.out.println(httpConn.getResponseCode());
-                 System.out.println(httpConn.getResponseMessage());
-				connectionSuccessFull = true;
+                rCode = httpConn.getResponseCode();
 			}catch(IOException ioe) {
 				log.debug("Could not establish connection");
 			}finally{
 				httpConn.disconnect();
 			}
-			return connectionSuccessFull;
+			return rCode;
 	    }
 
 	    
