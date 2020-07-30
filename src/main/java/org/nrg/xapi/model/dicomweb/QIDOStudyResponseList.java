@@ -4,6 +4,13 @@ import java.util.*;
 
 public class QIDOStudyResponseList extends ArrayList<QIDOResponseStudy> {
 
+    /**
+     * Add the response to the list if it has a unique study instance uid. Merge the response into existing response
+     * if study instance UID matches.
+     *
+     * @param newResponse
+     * @return
+     */
     public boolean add(QIDOResponseStudy newResponse) {
         if( this.isEmpty()) {
             return super.add( newResponse);
