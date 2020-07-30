@@ -63,10 +63,6 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 
  			fireProjectExportStarted();
 			
-			//TODO - Credentials
-			//ExportCredentialsI credentials = _transportManifest.getExportManifest().getCredentials();
-			//Authenticator.setDefault(new BasicAuthenticator(credentials.getUsername(), credentials.getPassword()));
-
 			List<XnatAbstractresourceI> projectResources = _transportManifest.getProject().getResources_resource();
 
 			exportToDestination(projectResources, dataDesManifest);
@@ -119,12 +115,12 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 			fireProjectExportComplete(dataDesManifest);
 			String msg = "Exported project  " + project.getId() + " successfully. Total Files exported " + fileCounter + ". Total bytes exported " + fileSize;
 			log.debug(msg);
-			publish(msg);
+			publish(msg,true);
 			return msg;
     	}catch(Exception e) {
 			String msg = "Project  " + project.getId() + " export failed possibly partially. Total Files exported " + fileCounter + ". Total bytes exported " + fileSize;
     		fireExportFailed(dataDesManifest, e.getMessage());
-			publish(msg);
+			publish(msg, true);
 			throw new ServerException(Status.SERVER_ERROR_INTERNAL, e.getMessage());
 		}
     }
@@ -174,6 +170,20 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 		ExportEventPublisher publisher = XDAT.getContextService().getBeanSafely(ExportEventPublisher.class);
 		if (publisher != null) publisher.publishEvent(exportEvent);
 	}
+
+	private void publish(String msg, boolean exportComplete) {
+		if (exportComplete) {
+			final String eventTrackingId = _transportManifest.getExportEventId();
+			final UserI authorizedBy = _transportManifest.getAuthorizedBy();
+			final String projectId = _transportManifest.getProject().getId();
+			ExportFileTransportEvent exportEvent = new ExportFileTransportEvent(authorizedBy, projectId, eventTrackingId, msg, exportComplete);
+			ExportEventPublisher publisher = XDAT.getContextService().getBeanSafely(ExportEventPublisher.class);
+			if (publisher != null) publisher.publishEvent(exportEvent);
+		}else {
+			publish(msg);
+		}
+	}
+
 	
 	private void fireProjectExportComplete(DataDescendantManifest dataDescendantManifest) {
 
