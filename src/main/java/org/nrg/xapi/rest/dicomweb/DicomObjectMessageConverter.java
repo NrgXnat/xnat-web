@@ -16,7 +16,7 @@ public class DicomObjectMessageConverter extends AbstractHttpMessageConverter<Di
     private TransformerHandler transformerHandler = null;
 
     public DicomObjectMessageConverter() {
-        super(new MediaType("application","dicom+xml"));
+        super(new MediaType("application","dicom"));
     }
 
     @Override

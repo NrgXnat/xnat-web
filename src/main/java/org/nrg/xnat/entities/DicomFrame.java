@@ -1,6 +1,7 @@
 package org.nrg.xnat.entities;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.hibernate.annotations.Cache;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.envers.Audited;
@@ -22,23 +23,31 @@ import java.util.Set;
 public class DicomFrame extends AbstractHibernateEntity {
     private int frameNumber;
     private String imagePositionPatient;
-    private String ImageOrientationPatient;
-    private String PixelSpacing;
-    private String FrameOfReferenceUid;
+    private String imageOrientationPatient;
+    private String pixelSpacing;
+    private String frameOfReferenceUid;
 
     @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "instance_id")
     private DicomInstance dicomInstance;
 
     public DicomFrame() {
     }
 
-    public DicomFrame(int frameNumber, String imagePositionPatient, String ImageOrientationPatient, String PixelSpacing, String FrameOfReferenceUid) {
+    public DicomFrame( DicomInstance dicomInstance, int frameNumber, String imagePositionPatient, String ImageOrientationPatient, String PixelSpacing, String FrameOfReferenceUid) {
+        this.dicomInstance = dicomInstance;
         this.frameNumber = frameNumber;
         this.imagePositionPatient = imagePositionPatient;
-        this.ImageOrientationPatient = ImageOrientationPatient;
-        this.PixelSpacing = PixelSpacing;
-        this.FrameOfReferenceUid = FrameOfReferenceUid;
+        this.imageOrientationPatient = ImageOrientationPatient;
+        this.pixelSpacing = PixelSpacing;
+        this.frameOfReferenceUid = FrameOfReferenceUid;
+    }
+
+    public DicomInstance getDicomInstance() {
+        return dicomInstance;
+    }
+
+    public void setDicomInstance(DicomInstance dicomInstance) {
+        this.dicomInstance = dicomInstance;
     }
 
     public int getFrameNumber() {
@@ -58,26 +67,54 @@ public class DicomFrame extends AbstractHibernateEntity {
     }
 
     public String getImageOrientationPatient() {
-        return ImageOrientationPatient;
+        return imageOrientationPatient;
     }
 
     public void setImageOrientationPatient(String imageOrientationPatient) {
-        ImageOrientationPatient = imageOrientationPatient;
+        this.imageOrientationPatient = imageOrientationPatient;
     }
 
     public String getPixelSpacing() {
-        return PixelSpacing;
+        return pixelSpacing;
     }
 
     public void setPixelSpacing(String pixelSpacing) {
-        PixelSpacing = pixelSpacing;
+        this.pixelSpacing = pixelSpacing;
     }
 
     public String getFrameOfReferenceUid() {
-        return FrameOfReferenceUid;
+        return frameOfReferenceUid;
     }
 
     public void setFrameOfReferenceUid(String frameOfReferenceUid) {
-        FrameOfReferenceUid = frameOfReferenceUid;
+        this.frameOfReferenceUid = frameOfReferenceUid;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        boolean b = super.equals(o);
+        if( b == true) {
+            DicomFrame that = (DicomFrame) o;
+            b = frameNumber == that.getFrameNumber()
+                    && compareStrings( imagePositionPatient, that.getImagePositionPatient())
+                    && compareStrings( imageOrientationPatient, that.getImageOrientationPatient())
+                    && compareStrings( pixelSpacing, that.getPixelSpacing())
+                    && compareStrings( frameOfReferenceUid, that.getFrameOfReferenceUid());
+        }
+        return b;
+    }
+
+    private boolean compareStrings( String first, String second) {
+        // If they're both not null, we can just compare the times.
+        if (ObjectUtils.allNotNull(first, second)) {
+            return first.equals( second);
+        }
+        // If they're not both null, then they're not equal.
+        return !ObjectUtils.anyNotNull(first, second);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31;
     }
 }

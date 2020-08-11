@@ -1,27 +1,6 @@
 package org.nrg.xapi.model.dicomweb;
 
-import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.ElementDictionary;
-import org.dcm4che3.io.SAXWriter;
-import org.nrg.framework.annotations.XnatMixIn;
-import org.nrg.xapi.rest.dicomweb.QIDOResponseMixin;
-import org.xml.sax.SAXException;
-
-import javax.json.Json;
-import javax.json.stream.JsonGenerator;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.sax.SAXTransformerFactory;
-import javax.xml.transform.sax.TransformerHandler;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.text.SimpleDateFormat;
-import java.util.HashMap;
-import java.util.Map;
 
 public class QIDOResponseStudy extends QIDOResponse {
 

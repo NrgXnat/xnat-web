@@ -21,6 +21,8 @@ import org.nrg.xnat.utils.CatalogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -33,12 +35,14 @@ public class XftSearchEngine implements SearchEngineI {
 
     private UserI user;
     private UserManagementServiceI userManagementService;
+    private final NamedParameterJdbcTemplate _jdbcTemplate;
     private static final Logger _log = LoggerFactory.getLogger(XftSearchEngine.class);
 
     @Autowired
-    public XftSearchEngine(final UserManagementServiceI userManagementService) {
+    public XftSearchEngine(final UserManagementServiceI userManagementService, NamedParameterJdbcTemplate jdbcTemplate) {
 
         this.userManagementService = userManagementService;
+        this._jdbcTemplate = jdbcTemplate;
         // need to get the authenticated user here....
         try {
             this.user = userManagementService.getUser( "admin");
@@ -106,7 +110,7 @@ public class XftSearchEngine implements SearchEngineI {
             response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
-            response.setNumberOfSeriesRelatedInstances( scandata.getInstanceCount());
+            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
             responses.add( response);
         }
         return responses;
@@ -312,6 +316,19 @@ public class XftSearchEngine implements SearchEngineI {
         return count;
     }
 
+    private int countSeriesInstances( XnatImagescandata scandata) {
+        int count = 0;
+//        count = (scandata.getInstanceCount() != null)? scandata.getInstanceCount(): querySeriesInstanceCount( scandata);
+        count = scandata.getFrames();
+        return count;
+    }
+
+    private int querySeriesInstanceCount( XnatImagescandata scandata) {
+        int count = 0;
+        count = _jdbcTemplate.queryForObject(QUERY_GET_INSTANCE_COUNT_IN_SERIES, new MapSqlParameterSource("scandataId", scandata.getId()), Integer.class);
+        return count;
+    }
+
     private CriteriaCollection parseDateCriteria( String dateString) {
         return parseRangeCriteria( "xnat:experimentData/date", dateString);
     }
@@ -488,4 +505,7 @@ public class XftSearchEngine implements SearchEngineI {
 
         return studyUIDs;
     }
+
+    private static final String QUERY_GET_INSTANCE_COUNT_IN_SERIES         = "SELECT frame_count FROM xhbm_dicom_instance WHERE imagescandata_id = :scandataId";
+
 }
