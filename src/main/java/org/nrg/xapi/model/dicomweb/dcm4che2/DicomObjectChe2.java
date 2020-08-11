@@ -29,18 +29,6 @@ public class DicomObjectChe2 implements DicomObjectI {
         _dicomObject = dis.readDicomObject();
     }
 
-    public String getStudyInstanceUID() {
-        return null;
-    }
-
-    public String getSeriesInstanceUID() {
-        return null;
-    }
-
-    public String getSOPInstanceUID() {
-        return null;
-    }
-
     @Override
     public void write(OutputStream os) throws IOException {
         DicomOutputStream dos = new DicomOutputStream(os);
@@ -64,6 +52,78 @@ public class DicomObjectChe2 implements DicomObjectI {
 
     @Override
     public String getTransferSyntaxUID() {
+        return null;
+    }
+
+    public String getStudyInstanceUID() {
+        return null;
+    }
+
+    public String getSeriesInstanceUID() {
+        return null;
+    }
+
+    public String getSOPInstanceUID() {
+        return null;
+    }
+
+    @Override
+    public String getString(int tag) {
+        return null;
+    }
+
+    @Override
+    public String getSOPClassUID() {
+        return null;
+    }
+
+    @Override
+    public Integer getInstanceNumber() {
+        return null;
+    }
+
+    @Override
+    public Integer getRows() {
+        return null;
+    }
+
+    @Override
+    public Integer getColumns() {
+        return null;
+    }
+
+    @Override
+    public Integer getBitsAllocated() {
+        return null;
+    }
+
+    @Override
+    public Integer getNumberOfFrames() {
+        return null;
+    }
+
+    @Override
+    public Integer getFrameNumber() {
+        return null;
+    }
+
+    @Override
+    public String getImagePositionPatient() {
+        return null;
+    }
+
+    @Override
+    public String getImageOrientationPatient() {
+        return null;
+    }
+
+    @Override
+    public String getPixelSpacing() {
+        return null;
+    }
+
+    @Override
+    public String getFrameOfReferenceUid() {
         return null;
     }
 }

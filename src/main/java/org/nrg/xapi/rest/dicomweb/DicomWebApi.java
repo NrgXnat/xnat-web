@@ -22,6 +22,7 @@ import org.nrg.xapi.model.dicomweb.TransCoderException;
 import org.nrg.xapi.model.dicomweb.UnsupportedTransferSyntaxException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xapi.rest.dicomweb.populate.PopulatorI;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -34,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import java.text.MessageFormat;
@@ -51,14 +53,20 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
 
     private final SearchEngineI _searchEngine;
     private final SiteConfigPreferences _preferences;
+    private final PopulatorI _populator;
     private static final Logger _log = LoggerFactory.getLogger(DicomWebApi.class);
 
 
     @Autowired
-    public DicomWebApi( final UserManagementServiceI userManagementService, final RoleHolder roleHolder, SearchEngineI searchEngine, final SiteConfigPreferences preferences) {
+    public DicomWebApi( final UserManagementServiceI userManagementService,
+                        final RoleHolder roleHolder,
+                        final SearchEngineI searchEngine,
+                        final SiteConfigPreferences preferences,
+                        final PopulatorI populator) {
         super(userManagementService, roleHolder);
         _searchEngine = searchEngine;
         _preferences = preferences;
+        _populator = populator;
     }
 
     /**
@@ -197,14 +205,51 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         }
     }
 
+    @ApiOperation(value = "WADO-RS Retrieve Series Metadata.", response = QIDOResponse.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retieve Series metadata."),
+            @ApiResponse(code = 204, message = "No matches."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/metadata",
+            produces = {"application/dicom+json"},
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<List<DicomObjectI>> doRetrieveSeriesMetadata( @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                                                  @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                                                  @RequestParam final Map<String,String> allRequestParams,
+                                                                                  @RequestHeader MultiValueMap<String, String> headers) throws NrgServiceException {
+        UserI user = null;
+
+        QueryParameters dicomQueryParams = new QueryParameters( allRequestParams);
+        List<DicomObjectI> instances = new ArrayList<>();
+        try {
+            user = getUser();
+            instances.addAll( _searchEngine.retrieveSeries( studyInstanceUID, seriesInstanceUID, user));
+            if( instances.isEmpty()) {
+                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            }
+            return new ResponseEntity<>(instances, HttpStatus.OK );
+
+
+//        } catch (IllegalAccessException e) {
+//            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForSeries.", user);
+//            _log.warn(msg, e);
+//            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        } catch (Exception e) {
+//            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user, allRequestParams);
+//            _log.error(msg, e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     @ApiOperation(value = "WADO-RS Retrieve Instance.", response = DicomObjectI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve instance."),
             @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
-                        produces = {"multipart/related;type=\"application/dicom\""},
-                        method = RequestMethod.GET, restrictTo = Read)
+            produces = {"multipart/related;type=\"application/dicom\""},
+            method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
     public ResponseEntity<List<DicomObjectI>> doRetrieveInstance( @PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                   @PathVariable("seriesInstanceUID") String seriesInstanceUID,
@@ -226,6 +271,41 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         } catch (Exception e) {
             String msg = MessageFormat.format("An error occurred when user {0} tried to retrieve instance: studyUID={1}, seriesUID={2}, sopInstanceUID={3}", user, studyInstanceUID, seriesInstanceUID, sopInstanceUID);
+            _log.error(msg, e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @ApiOperation(value = "WADO-RS Retrieve Frame.", response = DicomObjectI.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve frame."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumber}",
+            produces = {"multipart/related; type=\"application/octet-stream\""},
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<List<DicomObjectI>> doRetrieveFrame( @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                               @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                               @PathVariable("sopInstanceUID") String sopInstanceUID,
+                                                               @PathVariable("frameNumber") int frameNumber,
+                                                               @RequestHeader MultiValueMap<String, String> headers) throws NrgServiceException, NoContentException {
+        List<DicomObjectI> instances = new ArrayList<>();
+        UserI user = null;
+        try {
+            user = getUser();
+            DicomObjectI instance = _searchEngine.retrieveInstance( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+            if( instance == null) {
+                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            }
+            instances.add(instance);
+            return new ResponseEntity<>(instances, HttpStatus.OK );
+
+        } catch (IllegalAccessException e) {
+            String msg = MessageFormat.format("Insufficient permission for user {0} to retrieve frame: studyUID={1}, seriesUID={2}, sopInstanceUID={3}, frame={4}", user, studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameNumber);
+            _log.warn(msg, e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        } catch (Exception e) {
+            String msg = MessageFormat.format("An error occurred when user {0} tried to retrieve instance: studyUID={1}, seriesUID={2}, sopInstanceUID={3}, frame={4}", user, studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameNumber);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -303,6 +383,33 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         } catch (Exception e) {
             String msg = MessageFormat.format("An error occurred when user {0} tried to retrieve study: studyUID={1}", user, studyInstanceUID);
+            _log.error(msg, e);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @ApiOperation(value = "Populate DB for pre-existing project.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed populate."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "populate/{project}", produces = {"application/text"}, method = RequestMethod.PUT, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<String> doPopulate(@PathVariable("project") String project) throws NrgServiceException, NoContentException {
+
+        UserI user = null;
+        try {
+            user = getUser();
+
+            _populator.populate( project);
+
+            return new ResponseEntity<>("Success", HttpStatus.OK );
+
+        } catch (IllegalAccessException e) {
+            String msg = MessageFormat.format("Insufficient permission for user {0} to populate project: project={1}", user, project);
+            _log.warn(msg, e);
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        } catch (Exception e) {
+            String msg = MessageFormat.format("An error occurred when user {0} tried to populate project: project={1}", user, project);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

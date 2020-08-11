@@ -24,6 +24,7 @@ public class DicomInstance extends AbstractHibernateEntity {
     private String sopinstanceuid;
     private String sopclassuid;
     private int instanceNumber;
+    private String filePath;
 
     // fk to imagescandata.
     @Column( nullable = false)
@@ -34,7 +35,7 @@ public class DicomInstance extends AbstractHibernateEntity {
     private int bits_allocated;
     private int frame_count;
 
-    @OneToMany(mappedBy = "dicomInstance_id")
+    @OneToMany(mappedBy = "dicomInstance", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<DicomFrame> frames = new HashSet<>();
 
     public DicomInstance(){}
@@ -106,10 +107,28 @@ public class DicomInstance extends AbstractHibernateEntity {
     }
 
     public int getFrame_count() {
-        return frame_count;
+        return frames.size();
     }
 
     public void setFrame_count(int frame_count) {
         this.frame_count = frame_count;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public void addFrame(DicomFrame frame) {
+        frames.add( frame);
+        frame.setDicomInstance( this);
+    }
+
+    public void removeFrame( DicomFrame frame) {
+        frames.remove( frame);
+        frame.setDicomInstance( null);
     }
 }

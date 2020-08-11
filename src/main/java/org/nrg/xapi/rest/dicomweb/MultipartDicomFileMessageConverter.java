@@ -46,6 +46,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     private final static MediaType MULTIPART_MIXED = new MediaType("multipart", "mixed");
     private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
     private final static MediaType APPLICATION_DICOM = new MediaType("application", "dicom");
+    private final static MediaType APPLICATION_OCTET_STREAM = new MediaType("application", "octet-stream");
     private final static MediaType APPLICATION_JPEG = new MediaType("application", "jpeg");
     private final static MediaType APPLICATION_DICOM_XML = new MediaType("application", "dicom+xml");
 
@@ -67,10 +68,6 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     protected void writeInternal( List<DicomObjectI> dicomParts, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
 
         try {
-
-//            IIORegistry.getDefaultInstance().registerServiceProvider( com.sun.media.imageioimpl.plugins.jpeg.CLibJPEGImageWriter.class., javax.imageio.spi.ImageWriterSpi.class);
-//            ImagingServiceProviderUtils.register();
-
             HttpHeaders defaultHeaders = outputMessage.getHeaders();
             MediaType defaultMediaType = MediaType.parseMediaType( defaultHeaders.getFirst("Content-Type"));
             String tsuid = defaultMediaType.getParameter("transfer-syntax");
@@ -141,28 +138,26 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
 
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-        if( MULTIPART_RELATED.isCompatibleWith(mediaType)) {
-            String type = mediaType.getParameter("type");
-            if( type != null) {
-                type = type.replaceAll("^\"|\"$", "");
-                MediaType partMediaType = MediaType.parseMediaType( type);
-                if( APPLICATION_DICOM.isCompatibleWith( partMediaType)) {
-                    // don't test the tsuid here. let it go so writer can return helpful error message.
-//                    String tsuid = mediaType.getParameter("transfer-syntax");
-//                    tsuid = (tsuid == null)? UID.ExplicitVRLittleEndian: tsuid;
-//
-//                    return transCoder.isSupportedTransferSyntax( tsuid);
-                    return true;
-                }
-            }
-        }
-        return false;
-//        return super.canWrite(clazz, mediaType);
+        MediaType partMediaType = getPartType( mediaType);
+        return APPLICATION_DICOM.isCompatibleWith( partMediaType)
+                || APPLICATION_OCTET_STREAM.isCompatibleWith( partMediaType);
     }
 
     @Override
     protected boolean canWrite(MediaType mediaType) {
         return MULTIPART_MIXED.isCompatibleWith(mediaType) || MULTIPART_RELATED.isCompatibleWith( mediaType);
+    }
+
+    private MediaType getPartType( MediaType mediaType) {
+        MediaType partType = null;
+        if( MULTIPART_RELATED.isCompatibleWith(mediaType)) {
+            String type = mediaType.getParameter("type");
+            if( type != null) {
+                type = type.replaceAll("^\"|\"$", "");
+                partType = MediaType.parseMediaType( type);
+            }
+        }
+        return partType;
     }
 
     private  String getBoundary() {
