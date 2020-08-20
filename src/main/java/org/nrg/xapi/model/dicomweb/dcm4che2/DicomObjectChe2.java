@@ -73,6 +73,16 @@ public class DicomObjectChe2 implements DicomObjectI {
     }
 
     @Override
+    public byte[] getBytes(int tag) {
+        return null;
+    }
+
+    @Override
+    public byte[] getPixels() {
+        return null;
+    }
+
+    @Override
     public String getSOPClassUID() {
         return null;
     }

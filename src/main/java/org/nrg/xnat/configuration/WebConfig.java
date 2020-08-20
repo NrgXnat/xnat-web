@@ -11,6 +11,7 @@ package org.nrg.xnat.configuration;
 
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.dcm4che3.TransCoderChe3;
+import org.nrg.xapi.rest.dicomweb.Dicom2OctetStreamMessageConverter;
 import org.nrg.xapi.rest.dicomweb.Dicom2XmlMessageConverter;
 import org.nrg.xapi.rest.dicomweb.MultipartDicomFileMessageConverter;
 import org.nrg.xapi.rest.dicomweb.MultipartDicomMessageConverter;
@@ -90,6 +91,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(stringHttpMessageConverter());
         converters.add(mappingJackson2HttpMessageConverter());
         converters.add(dicom2XmlMessageConverter());
+        converters.add(dicom2OctetStreamMessageConverter());
         converters.add(marshallingHttpMessageConverter());
         converters.add(resourceHttpMessageConverter());
         converters.add(xftBeanHttpMessageConverter());
@@ -169,6 +171,11 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Bean
     public HttpMessageConverter<?> dicom2XmlMessageConverter() {
         return new Dicom2XmlMessageConverter();
+    }
+
+    @Bean
+    public HttpMessageConverter<?> dicom2OctetStreamMessageConverter() {
+        return new Dicom2OctetStreamMessageConverter();
     }
 
     @Bean
