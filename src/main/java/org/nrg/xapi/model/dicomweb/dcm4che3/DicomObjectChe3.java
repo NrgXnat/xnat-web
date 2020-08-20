@@ -14,6 +14,7 @@ public class DicomObjectChe3 implements DicomObjectI{
 
     private final File file;
     private Attributes attributes = null;
+    private static int PIXEL_DATA = 0x7FE00010;
 
     public DicomObjectChe3(File file) throws IOException {
         this.file = file;
@@ -65,6 +66,23 @@ public class DicomObjectChe3 implements DicomObjectI{
     @Override
     public String getString( int tag) {
         return attributes.getString( tag);
+    }
+
+    @Override
+    public byte[] getBytes( int tag) throws IOException {
+        return attributes.getBytes( tag);
+    }
+
+    public byte[] getPixels() throws IOException {
+        byte[] pixels = getBytes( PIXEL_DATA);
+        if( pixels == null) {
+            try (DicomInputStream dis = new DicomInputStream( file)) {
+                Attributes dataSet = dis.readDataset( -1, -1);
+                attributes.setBytes( PIXEL_DATA, dataSet.getVR( PIXEL_DATA), dataSet.getBytes( PIXEL_DATA) );
+                pixels = getBytes( PIXEL_DATA);
+            }
+        }
+        return pixels;
     }
 
     private void readHeader() throws IOException {

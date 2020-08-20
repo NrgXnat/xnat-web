@@ -1,29 +1,28 @@
 package org.nrg.xapi.rest.dicomweb;
 
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.UID;
-import org.dcm4che3.imageio.codec.TransferSyntaxType;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.TransCoderException;
 import org.nrg.xapi.model.dicomweb.UnsupportedTransferSyntaxException;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
-import org.springframework.http.converter.*;
-import org.springframework.http.server.ServletServerHttpResponse;
+import org.springframework.http.converter.AbstractHttpMessageConverter;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
-import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.servlet.HandlerMapping;
 
-import javax.imageio.ImageIO;
-import javax.imageio.spi.IIORegistry;
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.text.MessageFormat;
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,6 +35,12 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
 
     public static final String DEFAULT_DICOM_TSUID = "1.2.840.10008.1.2.1";  // Explicit VR Little Endian.
 
+    @Autowired
+    HttpServletRequest request;
+    @Autowired
+    SiteConfigPreferences preferences;
+
+    @Autowired
     private List<HttpMessageConverter<?>> _converters;
     private final static Map<String, String> DICOM_XML_TYPE = createMediaTypes();
     private static Map<String, String> createMediaTypes() {
@@ -49,6 +54,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     private final static MediaType APPLICATION_OCTET_STREAM = new MediaType("application", "octet-stream");
     private final static MediaType APPLICATION_JPEG = new MediaType("application", "jpeg");
     private final static MediaType APPLICATION_DICOM_XML = new MediaType("application", "dicom+xml");
+    private static final Logger _log = LoggerFactory.getLogger(MultipartDicomFileMessageConverter.class);
 
     @Autowired
     private TransCoder transCoder;
@@ -70,6 +76,14 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
         try {
             HttpHeaders defaultHeaders = outputMessage.getHeaders();
             MediaType defaultMediaType = MediaType.parseMediaType( defaultHeaders.getFirst("Content-Type"));
+            MediaType partMediaType = getPartType( defaultMediaType);
+
+            if( partMediaType == null) {
+                String msg = String.format("Error finding root-part media type in multipart content: %s", defaultMediaType);
+                _log.error( msg);
+                throw new IOException(msg);
+            }
+
             String tsuid = defaultMediaType.getParameter("transfer-syntax");
             tsuid = (tsuid == null)? DEFAULT_DICOM_TSUID: tsuid;
 
@@ -84,30 +98,31 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
             MediaType mediaType = new MediaType( "multipart", "related", contentTypeArgs );
             headers.setContentType( mediaType);
 
-//            outputMessage.getBody().write( ("Content-Type: " + headers.getContentType().toString() + "\r\n").getBytes());
+            Integer frameNumber = getFrameNumber( request);
+            String contentLocation = getContentLocation( request);
 
-            // write preamble
-            outputMessage.getBody().write( "\r\n".getBytes());
+            // write preamble, just CRLF if empty.
+            // DICOM Part 18 seems to ignore this.
+            // outputMessage.getBody().write( "\r\n".getBytes());
 
             for ( DicomObjectI dicomPart: dicomParts) {
 
-                HttpMessageConverter converter = getConverter( dicomPart.getClass(), APPLICATION_DICOM);
+                HttpMessageConverter converter = getConverter( dicomPart.getClass(), partMediaType);
                 
                 if( converter == null) {
-                    handleNoConverterFound(dicomPart.getClass(), APPLICATION_DICOM);
+                    handleNoConverterFound(dicomPart.getClass(), partMediaType);
                 }
 
-//                outputMessage.getBody().write( ("\n--"+ boundary + "\n\n").getBytes());
+                outputMessage.getBody().write( ("--"+ boundary + "\r\n").getBytes());
+                outputMessage.getBody().write( ("Content-Location: " + contentLocation + "\r\n").getBytes());
 
-                outputMessage.getBody().write( ("\r\n--"+ boundary + "\r\n").getBytes());
-                outputMessage.getBody().write( ("Content-Type: application/dicom\r\n\r\n").getBytes());
+//                outputMessage.getBody().write( ("Content-Type: application/dicom\r\n\r\n").getBytes());
+//                transCoder.transcode( dicomPart, tsuid, outputMessage.getBody());
 
-//                converter.write( dicomPart, APPLICATION_DICOM, outputMessage);
-                transCoder.transcode( dicomPart, tsuid, outputMessage.getBody());
-//                transCoder.transcode( dicomPart, "1.2.840.10008.1.2.1", outputMessage.getBody());
+//                converter.write( dicomPart, MediaType.APPLICATION_OCTET_STREAM, outputMessage);
+                writeFrameToPart( dicomPart, frameNumber, outputMessage);
             }
             outputMessage.getBody().write( ("\r\n--"+ boundary + "--\r\n\r\n").getBytes());
-
 
         } catch (IOException e) {
             String msg = "Error streaming dicom.";
@@ -117,18 +132,29 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
         }
     }
 
+    private String getContentLocation(HttpServletRequest request) {
+        String host = preferences.getSiteUrl();
+        return host + request.getRequestURI();
+    }
+
+    private Integer getFrameNumber(HttpServletRequest request) {
+        final Map<String, String> pathVariables = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        String s = pathVariables.get("frameNumber");
+        return (s != null)? Integer.valueOf(s): null;
+    }
+
     private void handleNoConverterFound(Class<?> aClass, MediaType mediaType) {
     }
 
     private HttpMessageConverter<DicomObjectI> getConverter(Class<?> clazz, MediaType mediaType) {
-//        for( HttpMessageConverter converter: _converters) {
-//            if( converter.canWrite( clazz, mediaType)) {
-//                return converter;
-//            }
-//        }
-//        return null;
+        for( HttpMessageConverter converter: _converters) {
+            if( converter.canWrite( clazz, mediaType)) {
+                return converter;
+            }
+        }
+        return null;
 
-        return new DicomObjectMessageConverter();
+//        return new DicomObjectMessageConverter();
     }
 
     @Override
@@ -165,6 +191,18 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
         buf.append("Part_").append('_').append((new Object()).hashCode()).append('.').append(System.currentTimeMillis());
         return buf.toString();
     }
+
+    protected void writeFrameToPart(DicomObjectI dicomObject, int frameNumber, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
+
+        OutputStream os = httpOutputMessage.getBody();
+        byte[] pixels = dicomObject.getPixels();
+        os.write( ("Content-Type: application/octet-stream; transfer-syntax=1.2.840.10008.1.2.1\r\n").getBytes());
+        String contentLengthHeader = String.format("Content-Length: %s\r\n", pixels.length);
+        os.write( contentLengthHeader.getBytes());
+        os.write( ("\r\n").getBytes());
+        httpOutputMessage.getBody().write( dicomObject.getPixels());
+    }
+
 
     public static void main(String[] args) {
         MediaType type = MultipartDicomFileMessageConverter.MULTIPART_RELATED;
