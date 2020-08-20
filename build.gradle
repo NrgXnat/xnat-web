@@ -312,6 +312,8 @@ dependencies {
     runtimeOnly "axis:axis-schema"
     runtimeOnly "cglib:cglib"
     runtimeOnly "org.hsqldb:hsqldb"
+    runtimeOnly "org.codehaus.groovy.modules.http-builder:http-builder"
+    runtimeOnly "net.imagej:ij"
     runtimeOnly "com.sun.media:jai_imageio"
     runtimeOnly "net.bull.javamelody:javamelody-core"
     runtimeOnly "org.javassist:javassist"
