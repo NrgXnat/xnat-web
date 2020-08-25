@@ -83,6 +83,11 @@ public class DicomObjectChe2 implements DicomObjectI {
     }
 
     @Override
+    public byte[] getPixelsForFrame( int frameNumber) throws IOException {
+        return null;
+    }
+
+    @Override
     public String getSOPClassUID() {
         return null;
     }
