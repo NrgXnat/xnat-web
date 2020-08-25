@@ -1,14 +1,12 @@
 package org.nrg.xapi.model.dicomweb.dcm4che3;
 
 import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.DatasetWithFMI;
-import org.dcm4che3.data.Sequence;
 import org.dcm4che3.data.Tag;
-import org.dcm4che3.io.DicomInputHandler;
 import org.dcm4che3.io.DicomInputStream;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class DicomObjectChe3 implements DicomObjectI{
 
@@ -85,13 +83,33 @@ public class DicomObjectChe3 implements DicomObjectI{
         return pixels;
     }
 
+    /**
+     * Assumes the pixel data is uncompressed EVLE.
+     *
+     * @param frameNumber The frame to grab, counting from 1.
+     * @return byte array of uncompressed EVLE image data
+     * @throws IOException
+     */
+    public byte[] getPixelsForFrame( int frameNumber) throws IOException {
+        byte[] pixels = getPixels();
+        byte[] framePixels = null;
+        if( pixels != null) {
+            int rows = getRows();
+            int columns = getColumns();
+            int samplePerPixel = attributes.getInt(Tag.SamplesPerPixel, 1);
+            int bitsAllocated = attributes.getInt(Tag.BitsAllocated, 8);
+            int frameSizeInBytes = rows * columns * samplePerPixel * bitsAllocated / 8;
+            int from = (frameNumber - 1) * frameSizeInBytes;
+            int to = from + frameSizeInBytes;
+            framePixels = Arrays.copyOfRange( pixels, from, to);
+        }
+        return framePixels;
+    }
+
     private void readHeader() throws IOException {
         DicomInputStream dis = new DicomInputStream( file);
-//        attributes = dis.readDataset(-1, Tag.PixelData);
-        DatasetWithFMI data  = dis.readDatasetWithFMI(-1, Tag.PixelData);
-
-        attributes = data.getFileMetaInformation();
-        attributes.addAll( data.getDataset());
+        attributes = dis.getFileMetaInformation();
+        attributes.addAll( dis.readDataset( -1, Tag.PixelData));
     }
 
     @Override

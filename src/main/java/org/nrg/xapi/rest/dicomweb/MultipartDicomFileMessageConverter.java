@@ -195,12 +195,12 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     protected void writeFrameToPart(DicomObjectI dicomObject, int frameNumber, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
 
         OutputStream os = httpOutputMessage.getBody();
-        byte[] pixels = dicomObject.getPixels();
+        byte[] pixels = dicomObject.getPixelsForFrame( frameNumber);
         os.write( ("Content-Type: application/octet-stream; transfer-syntax=1.2.840.10008.1.2.1\r\n").getBytes());
         String contentLengthHeader = String.format("Content-Length: %s\r\n", pixels.length);
         os.write( contentLengthHeader.getBytes());
         os.write( ("\r\n").getBytes());
-        httpOutputMessage.getBody().write( dicomObject.getPixels());
+        httpOutputMessage.getBody().write( pixels);
     }
 
 
