@@ -21,6 +21,7 @@ public interface DicomObjectI {
     File getFile() ;
 
     String getString( int tag);
+    int getInt( int tag, int def);
     byte[] getBytes( int tag) throws IOException;
 
     byte[] getPixelsForFrame( int frameNumber) throws IOException;

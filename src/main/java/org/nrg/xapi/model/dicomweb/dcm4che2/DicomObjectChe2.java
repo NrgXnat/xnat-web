@@ -73,6 +73,11 @@ public class DicomObjectChe2 implements DicomObjectI {
     }
 
     @Override
+    public int getInt(int tag, int def) {
+        return 0;
+    }
+
+    @Override
     public byte[] getBytes(int tag) {
         return null;
     }

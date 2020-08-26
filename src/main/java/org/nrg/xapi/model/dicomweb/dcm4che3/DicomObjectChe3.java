@@ -4,9 +4,9 @@ import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomInputStream;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
+import org.nrg.xapi.model.dicomweb.FrameGrabber;
 
 import java.io.*;
-import java.util.Arrays;
 
 public class DicomObjectChe3 implements DicomObjectI{
 
@@ -14,9 +14,12 @@ public class DicomObjectChe3 implements DicomObjectI{
     private Attributes attributes = null;
     private static int PIXEL_DATA = 0x7FE00010;
 
-    public DicomObjectChe3(File file) throws IOException {
+    private final FrameGrabber frameGrabber;
+
+    public DicomObjectChe3(File file, FrameGrabber frameGrabber) throws IOException {
         this.file = file;
         readHeader();
+        this.frameGrabber = frameGrabber;
     }
 
     // TODO: leak attributes which is bad.  clean this up. Used as quick fix for json serializing these objects.
@@ -67,6 +70,11 @@ public class DicomObjectChe3 implements DicomObjectI{
     }
 
     @Override
+    public int getInt( int tag, int def) {
+        return attributes.getInt( tag, def);
+    }
+
+    @Override
     public byte[] getBytes( int tag) throws IOException {
         return attributes.getBytes( tag);
     }
@@ -84,26 +92,14 @@ public class DicomObjectChe3 implements DicomObjectI{
     }
 
     /**
-     * Assumes the pixel data is uncompressed EVLE.
+     * Delegate to the FrameGrabber.
      *
      * @param frameNumber The frame to grab, counting from 1.
      * @return byte array of uncompressed EVLE image data
      * @throws IOException
      */
     public byte[] getPixelsForFrame( int frameNumber) throws IOException {
-        byte[] pixels = getPixels();
-        byte[] framePixels = null;
-        if( pixels != null) {
-            int rows = getRows();
-            int columns = getColumns();
-            int samplePerPixel = attributes.getInt(Tag.SamplesPerPixel, 1);
-            int bitsAllocated = attributes.getInt(Tag.BitsAllocated, 8);
-            int frameSizeInBytes = rows * columns * samplePerPixel * bitsAllocated / 8;
-            int from = (frameNumber - 1) * frameSizeInBytes;
-            int to = from + frameSizeInBytes;
-            framePixels = Arrays.copyOfRange( pixels, from, to);
-        }
-        return framePixels;
+        return frameGrabber.getPixelsForFrame( this, frameNumber);
     }
 
     private void readHeader() throws IOException {

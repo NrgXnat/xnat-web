@@ -1,26 +1,26 @@
 package org.nrg.xapi.model.dicomweb;
 
-import org.nrg.xapi.model.dicomweb.dcm4che2.DicomObjectChe2;
 import org.nrg.xapi.model.dicomweb.dcm4che3.DicomObjectChe3;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 
 /**
  * Created by davidmaffitt on 7/9/17.
  */
+@Component
 public class DicomObjectFactory {
+    private static FrameGrabber frameGrabber;
 
-    public static DicomObjectI create(File f) throws IOException {
-        return new DicomObjectChe3(f);
+    @Autowired
+    public DicomObjectFactory( FrameGrabber frameGrabber) {
+        this.frameGrabber = frameGrabber;
     }
 
-//    public static DicomObjectI create( InputStream is) throws IOException {
-//        return new DicomObjectChe2( is);
-//    }
-//
-//    public static DicomObjectI create() {
-//        return null;
-//    }
+    public static DicomObjectI create(File f) throws IOException {
+        return new DicomObjectChe3(f, frameGrabber);
+    }
+
 }
