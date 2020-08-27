@@ -7,6 +7,7 @@ import java.util.*;
 
 /**
  * Translate parameter names between the DICOM and XNAT domains.
+ * Supports multiple occurrences of a parameter.
  *
  * A DICOM query param can be repeated.
  *
@@ -64,14 +65,8 @@ public abstract class BaseQueryParameters {
      * @return empty string if no values are mapped to the key.
      */
     public String getParamsString( String key) {
-        StringBuilder sb = new StringBuilder();
         List<String> values = normalizedMap.get( key);
-        for( int i = 0; i < values.size(); ) {
-            sb.append( values.get(i));
-            i++;
-            if( i < values.size()) sb.append(",");
-        }
-        return sb.toString();
+        return (values != null)? String.join(",", values): "";
     }
 
     public Map<String, List<String>> getParams() {

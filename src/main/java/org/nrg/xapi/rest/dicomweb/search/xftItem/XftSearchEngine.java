@@ -90,7 +90,9 @@ public class XftSearchEngine implements SearchEngineI {
             response.setNumberOfStudyRelatedInstances( countInstances( user, session));
             responses.add( response);
         }
-        return responses;
+        int from = Math.min( responses.size(), queryParameters.getOffset());
+        int to = Math.min( responses.size(), from + queryParameters.getLimit());
+        return responses.subList( from, to);
     }
 
     @Override
@@ -113,7 +115,9 @@ public class XftSearchEngine implements SearchEngineI {
             response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
             responses.add( response);
         }
-        return responses;
+        int from = Math.min( responses.size(), queryParameters.getOffset());
+        int to = Math.min( responses.size(), from + queryParameters.getLimit());
+        return responses.subList( from, to);
     }
 
     @Override
@@ -142,8 +146,9 @@ public class XftSearchEngine implements SearchEngineI {
         else {
             responses = new ArrayList<>();
         }
-
-        return responses;
+        int from = Math.min( responses.size(), queryParameters.getOffset());
+        int to = Math.min( responses.size(), from + queryParameters.getLimit());
+        return responses.subList( from, to);
     }
 
     @Override
