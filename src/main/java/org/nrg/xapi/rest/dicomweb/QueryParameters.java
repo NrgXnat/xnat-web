@@ -28,6 +28,9 @@ public class QueryParameters extends BaseQueryParameters {
     public static final String PERFORMED_PROCEDURE_STEP_STARTDATE = "PerformedProcedureStepStartDate";
     public static final String PERFORMED_PROCEDURE_STEP_STARTTIME = "PerformedProcedureStepStartTime";
 
+    public static final String LIMIT = "limit";
+    public static final String OFFSET = "offset";
+
     private static final Logger _log = LoggerFactory.getLogger(QueryParameters.class);
 
     public QueryParameters(Map<String, String> dicomRequestParams) {
@@ -105,6 +108,12 @@ public class QueryParameters extends BaseQueryParameters {
             case "00400245":
                 addParam( PERFORMED_PROCEDURE_STEP_STARTTIME, value);
                 break;
+            case "limit":
+                addParam( LIMIT, value);
+                break;
+            case "offset":
+                addParam( OFFSET, value);
+                break;
             default:
                 _log.warn("Ignoring unrecognized series/study-level query parameter: " + dicomParamName + " = " + value);
         }
@@ -140,6 +149,58 @@ public class QueryParameters extends BaseQueryParameters {
             }
         }
         return false;
+    }
+
+    /**
+     * Return the value of the Limit qyery parameter.
+     *
+     * @return the value of the limit qyery parameter, MAX-INT if limit is not present or empty.
+     * @throws IllegalArgumentException if limit parameter appears multiple times.
+     * @throws IllegalArgumentException if limit parameter is outside the range of 1 to MAX-INT.
+     * @throws NumberFormatException if value is not a parsable integer.
+     */
+    public int getLimit() {
+        int limit;
+        List<String> values = getParams( LIMIT);
+        if( values == null || values.isEmpty()) {
+            limit = Integer.MAX_VALUE;
+        }
+        else if( values.size() == 1) {
+            limit = Integer.parseInt( values.get(0));
+            if( limit < 1) {
+                throw new IllegalArgumentException("Limit is out of range: " + limit);
+            }
+        }
+        else {
+            throw new IllegalArgumentException("Limit parameter may not appear multiple times.");
+        }
+        return limit;
+    }
+
+    /**
+     * Return the value of the Offset qyery parameter.
+     *
+     * @return the value of the offset qyery parameter, 0 if limit is not present or empty.
+     * @throws IllegalArgumentException if offset parameter appears multiple times.
+     * @throws IllegalArgumentException if offset parameter is outside the range of 1 to MAX-INT.
+     * @throws NumberFormatException if value is not a parsable integer.
+     */
+    public int getOffset() {
+        int offset;
+        List<String> values = getParams( OFFSET);
+        if( values == null || values.isEmpty()) {
+            offset = 0;
+        }
+        else if( values.size() == 1) {
+            offset = Integer.parseInt( values.get(0));
+            if( offset < 0) {
+                throw new IllegalArgumentException("Offset is out of range: " + offset);
+            }
+        }
+        else {
+            throw new IllegalArgumentException("Offset parameter may not appear multiple times.");
+        }
+        return offset;
     }
 
 }
