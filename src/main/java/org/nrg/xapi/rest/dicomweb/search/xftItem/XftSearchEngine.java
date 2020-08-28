@@ -84,10 +84,11 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsName( session.getDcmpatientname());
             response.setModalitiesInStudy( getModalitiesInStudy( session));
             response.setPatientsSex( session.getSubjectData().getGender());
-            response.setPatientsBirthDate( session.getSubjectData().getDOBDisplay());
+            response.setPatientsBirthDate( session.getSubjectData().getDOB());
             response.setStudyID( session.getStudyId());
             response.setNumberOfStudyRelatedSeries( countSeries( user, session));
             response.setNumberOfStudyRelatedInstances( countInstances( user, session));
+            response.setReferringPhysiciansName("");
             responses.add( response);
         }
         int from = Math.min( responses.size(), queryParameters.getOffset());
@@ -152,7 +153,7 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws Exception {
+    public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws Exception {
 
         XnatImagesessiondata session = getSession( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
         XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);

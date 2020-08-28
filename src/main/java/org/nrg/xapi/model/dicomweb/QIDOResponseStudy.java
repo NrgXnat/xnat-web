@@ -2,6 +2,8 @@ package org.nrg.xapi.model.dicomweb;
 
 import org.dcm4che3.data.ElementDictionary;
 
+import java.util.Date;
+
 public class QIDOResponseStudy extends QIDOResponse {
 
     // TODO: All other Study Level DICOM Attributes passed as {attributeID} query keys that are supported by the service provider as matching or return attributes.
@@ -45,6 +47,9 @@ public class QIDOResponseStudy extends QIDOResponse {
     public void setPatientID(String value) { setString( 0x00100020, ElementDictionary.vrOf(0x00100020, null), value ); }
 
     public String getPatientsBirthDate() { return getString(0x00100030); }
+    public void setPatientsBirthDate(Date value) {
+        String v = (value != null)? dateFormat.format( value): null;
+        setString( 0x00100030, ElementDictionary.vrOf(0x00100030, null), v ); }
     public void setPatientsBirthDate(String value) { setString( 0x00100030, ElementDictionary.vrOf(0x00100030, null), value ); }
 
     public String getPatientsSex() { return getString(0x00100040); }
@@ -85,5 +90,9 @@ public class QIDOResponseStudy extends QIDOResponse {
     public int getNumberOfStudyRelatedInstances() { return getInt(0x00201208, 0); }
     public void setNumberOfStudyRelatedInstances(String value) { setString( 0x00201208, ElementDictionary.vrOf(0x00201208, null), value ); }
     public void setNumberOfStudyRelatedInstances(int intValue) { setInt( 0x00201208, ElementDictionary.vrOf(0x00201208, null), intValue ); }
+
+    public String getRetrieveURLRequestParams() {
+        return String.format( "studies/%s", getStudyInstanceUID());
+    }
 
 }

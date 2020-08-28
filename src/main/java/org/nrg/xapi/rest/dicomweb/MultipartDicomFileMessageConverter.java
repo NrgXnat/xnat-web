@@ -98,7 +98,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
             MediaType mediaType = new MediaType( "multipart", "related", contentTypeArgs );
             headers.setContentType( mediaType);
 
-            Integer frameNumber = getFrameNumber( request);
+            int frameNumber = getFrameNumber( request);
             String contentLocation = getContentLocation( request);
 
             // write preamble, just CRLF if empty.
@@ -137,10 +137,10 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
         return host + request.getRequestURI();
     }
 
-    private Integer getFrameNumber(HttpServletRequest request) {
+    private int getFrameNumber(HttpServletRequest request) {
         final Map<String, String> pathVariables = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
         String s = pathVariables.get("frameNumber");
-        return (s != null)? Integer.valueOf(s): null;
+        return (s != null)? Integer.parseInt(s): 1;
     }
 
     private void handleNoConverterFound(Class<?> aClass, MediaType mediaType) {

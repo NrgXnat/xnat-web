@@ -16,10 +16,7 @@ import io.swagger.annotations.ApiResponses;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NrgServiceException;
 import org.nrg.xapi.exceptions.NoContentException;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
-import org.nrg.xapi.model.dicomweb.QIDOResponse;
-import org.nrg.xapi.model.dicomweb.TransCoderException;
-import org.nrg.xapi.model.dicomweb.UnsupportedTransferSyntaxException;
+import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xapi.rest.dicomweb.populate.PopulatorI;
@@ -38,6 +35,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -115,6 +113,8 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             if( qidoResponses.isEmpty()) {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
+
+            qidoResponses.forEach( response -> setRetrieveURL( response));
             return new ResponseEntity<List<? extends QIDOResponse>>(qidoResponses, HttpStatus.OK );
 
         } catch (IllegalAccessException e) {
@@ -125,6 +125,13 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user, allRequestParams);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void setRetrieveURL(QIDOResponse response) {
+        if( response instanceof QIDOResponseStudy) {
+            QIDOResponseStudy responseStudy = (QIDOResponseStudy) response;
+            responseStudy.setRetrieveURL( _preferences.getSiteUrl() + "/dicomweb/" + responseStudy.getRetrieveURLRequestParams());
         }
     }
 
@@ -253,27 +260,9 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @ResponseBody
     public ResponseEntity<List<DicomObjectI>> doRetrieveInstance( @PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                   @PathVariable("seriesInstanceUID") String seriesInstanceUID,
-                                                                  @PathVariable("sopInstanceUID") String sopInstanceUID) throws NrgServiceException, NoContentException {
-        UserI user = null;
-        List<DicomObjectI> instances = new ArrayList<>();
-        try {
-            user = getUser();
-            DicomObjectI instance = _searchEngine.retrieveInstance( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
-            if( instance == null) {
-                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-            }
-            instances.add(instance);
-            return new ResponseEntity<>(instances, HttpStatus.OK );
-
-        } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to retrieve instance: studyUID={1}, seriesUID={2}, sopInstanceUID={3}", user, studyInstanceUID, seriesInstanceUID, sopInstanceUID);
-            _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried to retrieve instance: studyUID={1}, seriesUID={2}, sopInstanceUID={3}", user, studyInstanceUID, seriesInstanceUID, sopInstanceUID);
-            _log.error(msg, e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+                                                                  @PathVariable("sopInstanceUID") String sopInstanceUID,
+                                                                  @RequestHeader MultiValueMap<String, String> headers) throws NrgServiceException, NoContentException {
+        return doRetrieveFrame( studyInstanceUID, seriesInstanceUID, sopInstanceUID, 1, headers);
     }
 
     @ApiOperation(value = "WADO-RS Retrieve Frame.", response = DicomObjectI.class)
@@ -293,7 +282,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         UserI user = null;
         try {
             user = getUser();
-            DicomObjectI instance = _searchEngine.retrieveInstance( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+            DicomObjectI instance = _searchEngine.retrieveInstance( studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameNumber, user);
             if( instance == null) {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
