@@ -48,13 +48,12 @@ public class MultipartDicomMessageConverter extends AbstractHttpMessageConverter
         
         try {
 
-            HttpHeaders headers = new HttpHeaders();
             Map<String,String> contentTypeArgs = new HashMap<>(1);
-//            contentTypeArgs.put("type", "application/dicom+xml");
+            contentTypeArgs.put("type", "\"application/dicom+xml\"");
             String boundary = getBoundary();
             contentTypeArgs.put("boundary", boundary);
             MediaType mediaType = new MediaType( "multipart", "related", contentTypeArgs );
-            headers.setContentType( mediaType);
+            outputMessage.getHeaders().setContentType( mediaType);
 
             // write preamble
 //            outputMessage.getBody().write( ("Content-Type: " + headers.getContentType().toString() + "\r\n").getBytes());
