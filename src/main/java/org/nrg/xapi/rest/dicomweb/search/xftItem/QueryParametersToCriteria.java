@@ -11,6 +11,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
+/**
+ * Class to map DICOMweb query parameters into Critteria Collections used by ItemSearch to execute the query.
+ *
+ */
 public class QueryParametersToCriteria {
 
     private static final Logger _log = LoggerFactory.getLogger(XftSearchEngine.class);
@@ -56,7 +60,7 @@ public class QueryParametersToCriteria {
                     cc.addClause( parsePatientNameCriteria( params.getParams( paramName).get(0)));
                     break;
                 case QueryParameters.ACCESSION_NUMBER_NAME:
-                    cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "=" , params.getParams( paramName).get(0));
+                    cc.addClause( parseAccessionNumberCriteria( params.getParams( paramName).get(0)));
                     break;
                 case QueryParameters.MODALITIES_IN_STUDY_NAME:
                     List<String> modalities = getModalities( params.getParams( paramName).get(0));
@@ -117,6 +121,20 @@ public class QueryParametersToCriteria {
                     _log.warn("Ignoring query parameter: " + params.asString(paramName));
                     break;
             }
+        }
+        return cc;
+    }
+
+    private static CriteriaCollection parseAccessionNumberCriteria( String accessionNumberString) {
+        CriteriaCollection cc = new CriteriaCollection("AND");
+
+        if( accessionNumberString.contains("*") || accessionNumberString.contains("?")) {
+            String value = accessionNumberString.replaceAll( Pattern.quote( "*"), "%");
+            value = value.replaceAll( Pattern.quote( "?"), "_");
+            cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "LIKE" , value);
+        }
+        else {
+            cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "=" , accessionNumberString);
         }
         return cc;
     }
