@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class QueryParametersToCriteria {
 
@@ -133,21 +134,48 @@ public class QueryParametersToCriteria {
 
         if( value.contains("-")) {
             if( value.startsWith("-")) {
-                cc.addClause( xmlPath, "<=" , value);
+                cc.addClause( xmlPath, "<=" , normalizedTimeString( value.replaceAll("[- ]","")));
             }
             else if( value.endsWith("-")) {
-                cc.addClause( xmlPath, ">=" , value);
+                cc.addClause( xmlPath, ">=" , normalizedTimeString( value.replaceAll("[- ]","")));
             }
             else {
                 String[] dates = value.split("-");
-                cc.addClause( xmlPath, ">=" , dates[0]);
-                cc.addClause( xmlPath, "<=" , dates[1]);
+                cc.addClause( xmlPath, ">=" , normalizedTimeString( dates[0]));
+                cc.addClause( xmlPath, "<=" , normalizedTimeString( dates[1]));
             }
         }
         else {
             cc.addClause( xmlPath, "=" , value);
         }
         return cc;
+    }
+
+    /**
+     * Return Time String in format HHMMSS or HHMMSS.FFFFFF where fractional digits F are 1 to 6 in number.
+     *
+     * The DICOM Time VR is allowed to truncate MM, SS, or FFFFFF. This is ISO 8601 compliant but this can confuse downstream SQL in Criteria.
+     * Normalize the DICOM Time string to the more complete ISO 8601 time format by padding with zeros.
+     *
+     * @param dicomTimeString
+     * @return
+     */
+    public static String normalizedTimeString( String dicomTimeString) {
+        String time = "";
+        String fractionalSeconds = "";
+        if( dicomTimeString.contains(".")) {
+            String[] tokens = dicomTimeString.split( Pattern.quote("."));
+            time = tokens[0].trim();
+            fractionalSeconds = tokens[1].trim();
+        }
+        else {
+            time = dicomTimeString.trim();
+        }
+        String value = String.format("%1$-6s", time).replace(' ', '0');
+        if( ! fractionalSeconds.isEmpty()) {
+            value = value + "." + fractionalSeconds;
+        }
+        return value;
     }
 
     private static  CriteriaCollection parsePatientNameCriteria( String pName) {
