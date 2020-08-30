@@ -53,10 +53,9 @@ public class QueryParametersToCriteria {
                     _log.warn("Study-level query parameter ReferringPhysicianName is not supported.");
                     break;
                 case QueryParameters.PATIENT_ID_NAME:
-                    cc.addClause( "xnat:imagesessionData/dcmpatientid", "=" , params.getParams( paramName).get(0));
+                    cc.addClause( parsePatientIDCriteria( params.getParams( paramName).get(0)));
                     break;
                 case QueryParameters.PATIENT_NAME_NAME:
-//                    cc.addClause( "xnat:imagesessionData/dcmpatientname", "=" , queryParameters.getParams( paramName).get(0));
                     cc.addClause( parsePatientNameCriteria( params.getParams( paramName).get(0)));
                     break;
                 case QueryParameters.ACCESSION_NUMBER_NAME:
@@ -199,10 +198,25 @@ public class QueryParametersToCriteria {
     private static  CriteriaCollection parsePatientNameCriteria( String pName) {
         CriteriaCollection cc = new CriteriaCollection( "AND");
         if( pName.contains("*") || pName.contains("?")) {
-            cc.addClause( "xnat:imagesessionData/dcmpatientname", "LIKE", pName.replaceAll("[\\*\\?]", "%"));
+            String value = pName.replaceAll( Pattern.quote( "*"), "%");
+            value = value.replaceAll( Pattern.quote( "?"), "_");
+            cc.addClause( "xnat:imagesessionData/dcmpatientname", "LIKE" , value);
         }
         else {
             cc.addClause( "xnat:imagesessionData/dcmpatientname", "=", pName);
+        }
+        return cc;
+    }
+
+    private static  CriteriaCollection parsePatientIDCriteria( String pID) {
+        CriteriaCollection cc = new CriteriaCollection( "AND");
+        if( pID.contains("*") || pID.contains("?")) {
+            String value = pID.replaceAll( Pattern.quote( "*"), "%");
+            value = value.replaceAll( Pattern.quote( "?"), "_");
+            cc.addClause( "xnat:imagesessionData/dcmpatientid", "LIKE" , value);
+        }
+        else {
+            cc.addClause( "xnat:imagesessionData/dcmpatientid", "=", pID);
         }
         return cc;
     }
