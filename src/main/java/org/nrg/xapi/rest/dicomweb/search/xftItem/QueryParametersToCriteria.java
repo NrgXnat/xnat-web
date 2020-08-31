@@ -39,7 +39,10 @@ public class QueryParametersToCriteria {
                     cc.addClause( parseTimeCriteria( params.getParams( paramName).get(0)));
                     break;
                 case QueryParameters.STUDY_ID_NAME:
-                    cc.addClause( "xnat:imagesessionData/study_id", "=" , params.getParams( paramName).get(0));
+                    String value = params.getParams( paramName).get(0);
+                    if( ! ("*".equals( value) || "all".equals( value))) {
+                        cc.addClause("xnat:imagesessionData/study_id", "=", value);
+                    }
                     break;
                 case QueryParameters.STUDY_INSTANCE_UID_NAME:
                     List<String> uidListList = params.getParams( paramName);
@@ -57,29 +60,35 @@ public class QueryParametersToCriteria {
                     _log.warn("Study-level query parameter ReferringPhysicianName is not supported.");
                     break;
                 case QueryParameters.PATIENT_ID_NAME:
-                    cc.addClause( parsePatientIDCriteria( params.getParams( paramName).get(0)));
+                    value = params.getParams( paramName).get(0);
+                    if( ! ("*".equals( value) || "all".equals( value))) {
+                        cc.addClause(parsePatientIDCriteria( value));
+                    }
                     break;
                 case QueryParameters.PATIENT_NAME_NAME:
-                    cc.addClause( parsePatientNameCriteria( params.getParams( paramName).get(0)));
+                    value = params.getParams( paramName).get(0);
+                    if( ! ("*".equals( value) || "all".equals( value))) {
+                        cc.addClause(parsePatientNameCriteria(value));
+                    }
                     break;
                 case QueryParameters.ACCESSION_NUMBER_NAME:
-                    cc.addClause( parseAccessionNumberCriteria( params.getParams( paramName).get(0)));
+                    value = params.getParams( paramName).get(0);
+                    if( ! ("*".equals( value) || "all".equals( value))) {
+                        cc.addClause(parseAccessionNumberCriteria( value));
+                    }
                     break;
                 case QueryParameters.MODALITIES_IN_STUDY_NAME:
                     List<String> modalities = getModalities( params.getParams( paramName).get(0));
 
                     // Neither the straight AND or OR do the right thing.
 //                    CriteriaCollection cc_and = new CriteriaCollection("AND");
-//                    CriteriaCollection cc_or = new CriteriaCollection("OR");
-//                    for( String modality: modalities) {
-////                        cc_and.addClause( "xnat:imagescanData/modality", "=", modality);
-//                        cc_or.addClause( "xnat:imagescanData/modality", "=", modality);
-//                    }
-////                    cc.addClause( cc_and);
-//                    cc.addClause( cc_or);
-
-                    // Filter on the first of the values, for now.
-                    cc.addClause( "xnat:imagescanData/modality", "=", modalities.get(0));
+                    CriteriaCollection cc_or = new CriteriaCollection("OR");
+                    for( String modality: modalities) {
+//                        cc_and.addClause( "xnat:imagescanData/modality", "=", modality);
+                        cc_or.addClause( "xnat:imagescanData/modality", "=", modality);
+                    }
+//                    cc.addClause( cc_and);
+                    cc.addClause( cc_or);
                     break;
                 default:
                     _log.warn("Ignoring query parameter: " + params.asString(paramName));
