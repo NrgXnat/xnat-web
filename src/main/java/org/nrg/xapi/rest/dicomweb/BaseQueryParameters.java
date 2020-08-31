@@ -2,6 +2,7 @@ package org.nrg.xapi.rest.dicomweb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.MultiValueMap;
 
 import java.util.*;
 
@@ -21,7 +22,7 @@ public abstract class BaseQueryParameters {
         normalizedMap = new HashMap<>();
     }
 
-    public BaseQueryParameters(Map<String, String> dicomRequestParams) {
+    public BaseQueryParameters( MultiValueMap<String, String> dicomRequestParams) {
         this();
         for( String paramName: dicomRequestParams.keySet()) {
             addDicomParameter( paramName, dicomRequestParams.get(paramName));
@@ -34,7 +35,7 @@ public abstract class BaseQueryParameters {
      * @param dicomParamName
      * @param value
      */
-    public abstract void  addDicomParameter(String dicomParamName, String value) ;
+    public abstract void  addDicomParameter(String dicomParamName, List<String> value) ;
 
     public void addParam( String key, String value) {
         List<String> values;
@@ -78,7 +79,7 @@ public abstract class BaseQueryParameters {
     }
 
     public List<String> parseUIDs( String uids) {
-        return Arrays.asList( uids.split("\\\\"));
+        return Arrays.asList( uids.split(","));
     }
 
     public String asString(String paramName) {

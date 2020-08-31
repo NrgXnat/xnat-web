@@ -42,12 +42,16 @@ public class QueryParametersToCriteria {
                     cc.addClause( "xnat:imagesessionData/study_id", "=" , params.getParams( paramName).get(0));
                     break;
                 case QueryParameters.STUDY_INSTANCE_UID_NAME:
-                    List<String> uids = params.getParams(paramName);
+                    List<String> uidListList = params.getParams( paramName);
                     CriteriaCollection cc_or_uid = new CriteriaCollection("OR");
-                    for( String uid: uids) {
-                        cc_or_uid.addClause( "xnat:imagesessiondata/uid", "=", uid);
+                    for( String uidList: uidListList) {
+                        if (uidList != null) {
+                            for (String uid : uidList.split(",")) {
+                                cc_or_uid.addClause("xnat:imagesessiondata/uid", "=", uid.trim());
+                            }
+                            cc.addClause(cc_or_uid);
+                        }
                     }
-                    cc.addClause( cc_or_uid);
                     break;
                 case QueryParameters.REFERRING_PHYSICIAN_NAME_NAME:
                     _log.warn("Study-level query parameter ReferringPhysicianName is not supported.");

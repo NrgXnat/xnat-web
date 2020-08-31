@@ -95,7 +95,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "studies", produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<? extends QIDOResponse>> doSearchForStudies( @RequestParam final Map<String,String> allRequestParams) throws NrgServiceException {
+    public ResponseEntity<List<? extends QIDOResponse>> doSearchForStudies( @RequestParam final MultiValueMap<String,String> allRequestParams) throws NrgServiceException {
         Set<String> paramNames = allRequestParams.keySet();
 
         if (paramNames == null || paramNames.isEmpty()) {
@@ -143,7 +143,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "studies/{studyInstanceUID}/series", produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
     public ResponseEntity<List<? extends QIDOResponse>> doSearchForSeries( @PathVariable("studyInstanceUID") String studyInstanceUID,
-                                                                           @RequestParam final Map<String,String> allRequestParams) throws NrgServiceException {
+                                                                           @RequestParam final MultiValueMap<String,String> allRequestParams) throws NrgServiceException {
         Set<String> paramNames = allRequestParams.keySet();
 
         if (paramNames == null || paramNames.isEmpty()) {
@@ -181,7 +181,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "series", produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<? extends QIDOResponse>> doSearchForSeries( @RequestParam final Map<String,String> allRequestParams) throws NrgServiceException {
+    public ResponseEntity<List<? extends QIDOResponse>> doSearchForSeries( @RequestParam final MultiValueMap<String,String> allRequestParams) throws NrgServiceException {
         Set<String> paramNames = allRequestParams.keySet();
 
         if (paramNames == null || paramNames.isEmpty()) {
@@ -223,8 +223,8 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @ResponseBody
     public ResponseEntity<List<DicomObjectI>> doRetrieveSeriesMetadata( @PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                                   @PathVariable("seriesInstanceUID") String seriesInstanceUID,
-                                                                                  @RequestParam final Map<String,String> allRequestParams,
-                                                                                  @RequestHeader MultiValueMap<String, String> headers) throws NrgServiceException {
+                                                                                  @RequestParam final MultiValueMap<String,String> allRequestParams,
+                                                                                  @RequestHeader Map<String, String> headers) throws NrgServiceException {
         UserI user = null;
 
         QueryParameters dicomQueryParams = new QueryParameters( allRequestParams);

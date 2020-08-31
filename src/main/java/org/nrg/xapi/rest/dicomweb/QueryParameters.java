@@ -2,6 +2,7 @@ package org.nrg.xapi.rest.dicomweb;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.MultiValueMap;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ public class QueryParameters extends BaseQueryParameters {
 
     private static final Logger _log = LoggerFactory.getLogger(QueryParameters.class);
 
-    public QueryParameters(Map<String, String> dicomRequestParams) {
+    public QueryParameters( MultiValueMap<String, String> dicomRequestParams) {
         super(dicomRequestParams);
     }
 
@@ -43,76 +44,80 @@ public class QueryParameters extends BaseQueryParameters {
      * @param dicomParamName
      * @param value
      */
-    public void addDicomParameter(String dicomParamName, String value) {
+    public void addDicomParameter(String dicomParamName, List<String> value) {
         switch( dicomParamName.toLowerCase()) {
             case "studyinstanceuid":
             case "0020000d":
-                List<String> uids = parseUIDs( value);
-                for( String uid: uids) {
-                    addParam( STUDY_INSTANCE_UID_NAME, uid);
-                }
+                value.forEach( v -> {
+                    List<String> uids = parseUIDs(v);
+                    for (String uid : uids) {
+                        addParam(STUDY_INSTANCE_UID_NAME, uid);
+                    }
+                });
                 break;
             case "studydate":
             case "00080020":
-                addParam( STUDY_DATE_NAME, value);
+                value.forEach( v -> addParam( STUDY_DATE_NAME, v));
                 break;
             case "studytime":
             case "00080030":
-                addParam( STUDY_TIME_NAME, value);
+                value.forEach( v -> addParam( STUDY_TIME_NAME, v));
                 break;
             case "modalitiesinstudy":
             case "00080061":
-                addParam( MODALITIES_IN_STUDY_NAME, value);
+                value.forEach( v -> addParam( MODALITIES_IN_STUDY_NAME, v));
                 break;
             case "referringphysicianname":
             case "00080090":
-                addParam( REFERRING_PHYSICIAN_NAME_NAME, value);
+                value.forEach( v -> addParam( REFERRING_PHYSICIAN_NAME_NAME, v));
                 break;
             case "00100020":
             case "patientid":
-                addParam( PATIENT_ID_NAME, value);
+                value.forEach( v -> addParam( PATIENT_ID_NAME, v));
                 break;
             case "00100010":
             case "patientname":
-                addParam( PATIENT_NAME_NAME, value);
+                value.forEach( v -> addParam( PATIENT_NAME_NAME, v));
                 break;
             case "00080050":
             case "accessionnumber":
-                addParam( ACCESSION_NUMBER_NAME, value);
+                value.forEach( v -> addParam( ACCESSION_NUMBER_NAME, v));
                 break;
             case "00200010":
             case "studyid":
-                addParam( STUDY_ID_NAME, value);
+                value.forEach( v -> addParam( STUDY_ID_NAME, v));
                 break;
 
             case "seriesinstanceuid":
             case "0020000E":
-                uids = parseUIDs( value);
-                for( String uid: uids) {
-                    addParam( SERIES_INSTANCE_UID_NAME, uid);
-                }
+                value.forEach( v -> {
+                    List<String> uids = parseUIDs(v);
+                    for (String uid : uids) {
+                        addParam(SERIES_INSTANCE_UID_NAME, uid);
+                    }
+                });
                 break;
             case "modality":
             case "00080060":
-                addParam( MODALITY_NAME, value);
+                value.forEach( v -> addParam( MODALITY_NAME, v));
                 break;
             case "seriesnumber":
             case "00200011":
-                addParam( SERIES_NUMBER_NAME, value);
+                value.forEach( v -> addParam( SERIES_NUMBER_NAME, v));
                 break;
             case "performedprocedurestepstartdate":
             case "00400244":
-                addParam( PERFORMED_PROCEDURE_STEP_STARTDATE, value);
+                value.forEach( v -> addParam( PERFORMED_PROCEDURE_STEP_STARTDATE, v));
                 break;
             case "performedprocedurestepstarttime":
             case "00400245":
-                addParam( PERFORMED_PROCEDURE_STEP_STARTTIME, value);
+                value.forEach( v -> addParam( PERFORMED_PROCEDURE_STEP_STARTTIME, v));
                 break;
             case "limit":
-                addParam( LIMIT, value);
+                value.forEach( v -> addParam( LIMIT, v));
                 break;
             case "offset":
-                addParam( OFFSET, value);
+                value.forEach( v -> addParam( OFFSET, v));
                 break;
             default:
                 _log.warn("Ignoring unrecognized series/study-level query parameter: " + dicomParamName + " = " + value);
