@@ -16,6 +16,16 @@
         <appender name="logstash" class="ch.qos.logback.core.helpers.NOPAppender"/>
     -->
 
+    <appender name="dicomweb" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <append>true</append>
+        <file>${xnat.home}/logs/dicomweb.log</file>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/dicomweb.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
     <appender name="xdat" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>true</append>
         <file>${xnat.home}/logs/xdat.log</file>
@@ -329,6 +339,9 @@
     <root level="ERROR">
         <appender-ref ref="app"/>
     </root>
+    <logger name="dicomweb" additivity="false" level="DEBUG">
+        <appender-ref ref="dicomweb"/>
+    </logger>
     <logger name="org.nrg.xft.search" additivity="false" level="ERROR">
         <appender-ref ref="xdat"/>
     </logger>

@@ -2,6 +2,8 @@ package org.nrg.xapi.model.dicomweb;
 
 import org.dcm4che3.data.ElementDictionary;
 
+import java.util.Date;
+
 public class QIDOResponseStudySeries extends QIDOResponse {
 
     // Study
@@ -31,9 +33,6 @@ public class QIDOResponseStudySeries extends QIDOResponse {
     public String getTimezoneOffsetFromUTC() { return getString(0x00080201); }
     public void setTimezoneOffsetFromUTC(String value) { setString( 0x00080201, ElementDictionary.vrOf(0x00080201, null), value ); }
 
-    public String getRetrieveURL() { return getString(0x00081190); }
-    public void setRetrieveURL(String value) { setString( 0x00081190, ElementDictionary.vrOf(0x00081190, null), value ); }
-
     public String getPatientsName() { return getString(0x00100010); }
     public void setPatientsName(String value) { setString( 0x00100010, ElementDictionary.vrOf(0x00100010, null), value ); }
 
@@ -41,6 +40,9 @@ public class QIDOResponseStudySeries extends QIDOResponse {
     public void setPatientID(String value) { setString( 0x00100020, ElementDictionary.vrOf(0x00100020, null), value ); }
 
     public String getPatientsBirthDate() { return getString(0x00100030); }
+    public void setPatientsBirthDate(Date value) {
+        String v = (value != null)? dateFormat.format( value): null;
+        setString( 0x00100030, ElementDictionary.vrOf(0x00100030, null), v ); }
     public void setPatientsBirthDate(String value) { setString( 0x00100030, ElementDictionary.vrOf(0x00100030, null), value ); }
 
     public String getPatientsSex() { return getString(0x00100040); }
