@@ -97,7 +97,7 @@ public class QueryParametersToCriteria {
         }
 
         if( cc.size() == 0) {
-            cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "like" , "*");
+            cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "like" , "%");
         }
 
         return cc;

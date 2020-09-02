@@ -52,7 +52,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     private final SearchEngineI _searchEngine;
     private final SiteConfigPreferences _preferences;
     private final PopulatorI _populator;
-    private static final Logger _log = LoggerFactory.getLogger(DicomWebApi.class);
+    private static final Logger _log = LoggerFactory.getLogger("dicomweb");
 
 
     @Autowired
@@ -114,24 +114,17 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
 
-            qidoResponses.forEach( response -> setRetrieveURL( response));
+            qidoResponses.forEach( response -> response.setRetrieveURL( getRetrieveStudyURL( ((QIDOResponseStudy)response).getStudyInstanceUID())));
             return new ResponseEntity<List<? extends QIDOResponse>>(qidoResponses, HttpStatus.OK );
 
         } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForStudies.", user);
+            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForStudies.", user.getLogin());
             _log.warn(msg, e);
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user, allRequestParams);
+            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user.getLogin(), allRequestParams);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    private void setRetrieveURL(QIDOResponse response) {
-        if( response instanceof QIDOResponseStudy) {
-            QIDOResponseStudy responseStudy = (QIDOResponseStudy) response;
-            responseStudy.setRetrieveURL( _preferences.getSiteUrl() + "/dicomweb/" + responseStudy.getRetrieveURLRequestParams());
         }
     }
 
@@ -161,17 +154,27 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             if( qidoResponses.isEmpty()) {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
-            return new ResponseEntity<List<? extends QIDOResponse>>(qidoResponses, HttpStatus.OK );
+            qidoResponses.forEach( response -> response.setRetrieveURL( getRetrieveStudyURL( studyInstanceUID)));
+            return new ResponseEntity<List<? extends QIDOResponse>>( qidoResponses, HttpStatus.OK );
 
         } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForSeries.", user);
+            // Hide unauthorized content.
+            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForSeries, studyInstanceUID = {1}", user.getLogin(), studyInstanceUID);
             _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with studyInstanceUID={1} and params: {2}", user, studyInstanceUID, allRequestParams);
+            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with studyInstanceUID={1} and params: {2}", user.getLogin(), studyInstanceUID, allRequestParams);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private String getRetrieveStudyURL( String studyInstanceUID) {
+        return String.format( "%s/dicomweb/studies/%s", _preferences.getSiteUrl(), studyInstanceUID);
+    }
+
+    private String getRetrieveSeriesURL(String studyInstanceUID, String seriesInstanceUID) {
+        return String.format( "%s/dicomweb/studies/%s/series/%s", _preferences.getSiteUrl(), studyInstanceUID, seriesInstanceUID);
     }
 
     @ApiOperation(value = "QIDO-RS SearchForSeries without Study Instance UID.", response = QIDOResponse.class)
@@ -199,14 +202,15 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             if( qidoResponses.isEmpty()) {
                 return new ResponseEntity<>( HttpStatus.NO_CONTENT);
             }
+            qidoResponses.forEach( response -> response.setRetrieveURL( getRetrieveSeriesURL( ((QIDOResponseStudySeries)response).getStudyInstanceUID(), ((QIDOResponseStudySeries)response).getSeriesInstanceUID())));
             return new ResponseEntity<List<? extends QIDOResponse>>(qidoResponses, HttpStatus.OK );
 
         } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForSeries.", user);
+            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForSeries.", user.getLogin());
             _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user, allRequestParams);
+            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user.getLogin(), allRequestParams);
             _log.error(msg, e);
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

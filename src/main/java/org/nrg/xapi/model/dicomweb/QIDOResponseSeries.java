@@ -17,9 +17,6 @@ public class QIDOResponseSeries extends QIDOResponse {
     public String getTimezoneOffsetFromUTC() { return getString(0x00080201); }
     public void setTimezoneOffsetFromUTC(String value) { setString( 0x00080201, ElementDictionary.vrOf(0x00080201, null), value ); }
 
-    public String getRetrieveURL() { return getString(0x00081190); }
-    public void setRetrieveURL(String value) { setString( 0x00081190, ElementDictionary.vrOf(0x00081190, null), value ); }
-
     public String getSeriesInstanceUID() { return getString(0x0020000E); }
     public void setSeriesInstanceUID(String value) { setString( 0x0020000E, ElementDictionary.vrOf(0x0020000E, null), value ); }
 

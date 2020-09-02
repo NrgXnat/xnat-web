@@ -36,7 +36,7 @@ public class XftSearchEngine implements SearchEngineI {
     private UserI user;
     private UserManagementServiceI userManagementService;
     private final NamedParameterJdbcTemplate _jdbcTemplate;
-    private static final Logger _log = LoggerFactory.getLogger(XftSearchEngine.class);
+    private static final Logger _log = LoggerFactory.getLogger("dicomweb");
 
     @Autowired
     public XftSearchEngine(final UserManagementServiceI userManagementService, NamedParameterJdbcTemplate jdbcTemplate) {
@@ -67,7 +67,13 @@ public class XftSearchEngine implements SearchEngineI {
     public List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws Exception {
         CriteriaCollection cc = QueryParametersToCriteria.mapStudy( queryParameters);
 
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
+        ItemCollection ic;
+        if( cc.size() == 0) {
+            ic = ItemSearch.GetAllItems("xnat:imageSessionData", user, false);
+        }
+        else {
+            ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
+        }
 
         QIDOStudyResponseList responses = new QIDOStudyResponseList();
 //        List<QIDOResponse> responses = new ArrayList();
@@ -87,7 +93,7 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsBirthDate( session.getSubjectData().getDOB());
             response.setStudyID( session.getStudyId());
             response.setNumberOfStudyRelatedSeries( countSeries( user, session));
-            response.setNumberOfStudyRelatedInstances( countInstances( user, session));
+            response.setNumberOfStudyRelatedInstances( countStudyInstances( user, session));
             response.setReferringPhysiciansName("");
             responses.add( response);
         }
@@ -100,9 +106,14 @@ public class XftSearchEngine implements SearchEngineI {
     public List<? extends QIDOResponse> searchForSeries(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception {
         CriteriaCollection cc = QueryParametersToCriteria.mapSeries( studyInstanceUID, queryParameters);
 
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+        ItemCollection ic;
+        if( cc.size() == 0) {
+            ic = ItemSearch.GetAllItems( "xnat:imageScanData", user, false);
+        }
+        else {
+            ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+        }
 
-//        QIDOStudyResponseList responses = new QIDOStudyResponseList();
         List<QIDOResponse> responses = new ArrayList();
         for( ItemI item: ic.getItems()) {
             XnatImagescandata scandata = new XnatImagescandata(item);
@@ -113,7 +124,8 @@ public class XftSearchEngine implements SearchEngineI {
             response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
-            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
+//            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
+            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( getSession( studyInstanceUID, user).getArchiveRootPath(), scandata));
             responses.add( response);
         }
         int from = Math.min( responses.size(), queryParameters.getOffset());
@@ -155,7 +167,7 @@ public class XftSearchEngine implements SearchEngineI {
     @Override
     public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws Exception {
 
-        XnatImagesessiondata session = getSession( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+        XnatImagesessiondata session = getSession( studyInstanceUID, user);
         XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
         DicomObjectI instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
 
@@ -165,7 +177,7 @@ public class XftSearchEngine implements SearchEngineI {
     @Override
     public List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws Exception {
 
-        XnatImagesessiondata session = getSession( studyInstanceUID, null, null, user);
+        XnatImagesessiondata session = getSession( studyInstanceUID, user);
         XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
 
         List<DicomObjectI> instances = getInstances( session.getArchiveRootPath(), scan);
@@ -177,7 +189,7 @@ public class XftSearchEngine implements SearchEngineI {
     public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws Exception {
 
         List<DicomObjectI> instances = new ArrayList<>();
-        XnatImagesessiondata session = getSession( studyInstanceUID, null, null, user);
+        XnatImagesessiondata session = getSession( studyInstanceUID, user);
         for( XnatImagescandataI scan: session.getScans_scan()) {
             instances.addAll( getInstances( session.getArchiveRootPath(), scan));
         }
@@ -207,11 +219,14 @@ public class XftSearchEngine implements SearchEngineI {
 
     public List<? extends QIDOResponse> searchForStudySeriesByStudy( CriteriaCollection cc, UserI user) throws Exception {
         ItemCollection ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+        _log.debug("Found {} items.", ic.size());
 
 //        QIDOStudyResponseList responses = new QIDOStudyResponseList();
         List<QIDOResponseStudySeries> responses = new ArrayList();
         for( ItemI item: ic.getItems()) {
             XnatImagescandata scandata = new XnatImagescandata(item);
+            _log.debug("Item: {}", scandata);
+            _log.debug("Scandata's ImageSessionData: {}", scandata.getImageSessionData());
             QIDOResponseStudySeries response = new QIDOResponseStudySeries();
             response.setModality( scandata.getModality());
             response.setSeriesDescription( scandata.getSeriesDescription());
@@ -219,7 +234,8 @@ public class XftSearchEngine implements SearchEngineI {
             response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
-            response.setNumberOfSeriesRelatedInstances( scandata.getInstanceCount());
+            String archiveRootPath = scandata.getImageSessionData().getArchiveRootPath();
+            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( archiveRootPath, scandata));
 
             response.setStudyDate( scandata.getImageSessionData().getExperimentdata().getDate());
             response.setStudyTime( scandata.getImageSessionData().getExperimentdata().getTime());
@@ -230,10 +246,11 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsName( scandata.getImageSessionData().getDcmpatientname());
             response.setModalitiesInStudy( getModalitiesInStudy( scandata.getImageSessionData()));
             response.setPatientsSex( scandata.getImageSessionData().getSubjectData().getGender());
-            response.setPatientsBirthDate( scandata.getImageSessionData().getSubjectData().getDOBDisplay());
+            response.setPatientsBirthDate( scandata.getImageSessionData().getSubjectData().getDOB());
             response.setStudyID( scandata.getImageSessionData().getStudyId());
             response.setNumberOfStudyRelatedSeries( countSeries( user, scandata.getImageSessionData()));
-            response.setNumberOfStudyRelatedInstances( countInstances( user, scandata.getImageSessionData()));
+            response.setNumberOfStudyRelatedInstances( countStudyInstances( user, scandata.getImageSessionData()));
+            response.setReferringPhysiciansName("");
 
             responses.add( response);
         }
@@ -258,7 +275,7 @@ public class XftSearchEngine implements SearchEngineI {
                 response.setSeriesNumber((scan.getSeriesNumber() != null)? scan.getSeriesNumber().toString(): "");
                 response.setPerformedProcedureStepStartDate(scan.getStartDate());
                 response.setPerformedProcedureStepStartTime(scan.getStarttime());
-                response.setNumberOfSeriesRelatedInstances(scan.getInstanceCount());
+                response.setNumberOfSeriesRelatedInstances( countSeriesInstances( session.getArchiveRootPath(), scan));
 
                 response.setStudyDate(session.getExperimentdata().getDate());
                 response.setStudyTime(session.getExperimentdata().getTime());
@@ -272,7 +289,7 @@ public class XftSearchEngine implements SearchEngineI {
                 response.setPatientsBirthDate(session.getSubjectData().getDOBDisplay());
                 response.setStudyID(session.getStudyId());
                 response.setNumberOfStudyRelatedSeries(countSeries(user, session));
-                response.setNumberOfStudyRelatedInstances(countInstances(user, session));
+                response.setNumberOfStudyRelatedInstances(countStudyInstances(user, session));
 
                 responses.add(response);
             }
@@ -308,7 +325,7 @@ public class XftSearchEngine implements SearchEngineI {
      * @return number of instances in the session to which the user has access.
      * @throws Exception if error reading scan catalog.
      */
-    private int countInstances( UserI user, XnatImagesessiondata session) throws Exception {
+    private int countStudyInstances( UserI user, XnatImagesessiondata session) throws Exception {
         ArrayList<XnatImagescandata> imagescandata = XnatImagescandata.getXnatImagescandatasByField("xnat:imagescandata/image_session_id", session.getId(), user, false);
 
         int count = 0;
@@ -326,6 +343,35 @@ public class XftSearchEngine implements SearchEngineI {
         int count = 0;
 //        count = (scandata.getInstanceCount() != null)? scandata.getInstanceCount(): querySeriesInstanceCount( scandata);
         count = scandata.getFrames();
+        return count;
+    }
+
+    private int countSeriesInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {
+        int count = 0;
+        for( XnatAbstractresourceI resourceI: imageScanData.getFile()) {
+            if( XnatResourcecatalog.class.isInstance( resourceI)) {
+                XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
+                if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
+                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
+                    File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
+                    String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
+                    if( CatDcmcatalogBean.class.isInstance( catalog1)) {
+                        CatDcmcatalogBean dcmcatalog = (CatDcmcatalogBean) catalog1;
+                        for( CatEntryI entry: CatalogUtils.getEntriesByFilter(dcmcatalog, new CatalogUtils.CatEntryFilterI() {
+                            @Override
+                            public boolean accept(CatEntryI entry) {
+                                return true;
+                            }
+                        })) {
+                            CatDcmentryI dcmentry = (CatDcmentryI) entry;
+                            if( dcmentry != null) {
+                                count++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
         return count;
     }
 
@@ -376,25 +422,13 @@ public class XftSearchEngine implements SearchEngineI {
         return cc;
     }
 
-    private XnatImagesessiondata getSession(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws Exception {
+    private XnatImagesessiondata getSession(String studyInstanceUID, UserI user) throws Exception {
         CriteriaCollection cc = new CriteriaCollection("AND");
         cc.addClause( "xnat:imageSessionData/uid", "=" , studyInstanceUID);
 
         ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
 
-
         XnatImagesessiondata session = new XnatImagesessiondata(ic.getFirst());
-//        for( ItemI item: ic.getItems()) {
-//            XnatImagesessiondata session = new XnatImagesessiondata(item);
-//            QIDOResponse response = new QIDOResponse();
-//            response.setStudyDate( session.getExperimentdata().getDate());
-//            response.setStudyInstanceUID( session.getUid());
-//            response.setPatientID( session.getSubjectId());
-//            response.setPatientsName( session.getSubjectData().getLabel());
-//            response.setModalitiesInStudy( session.getModality());
-//            response.setPatientsSex( session.getSubjectData().getGender());
-//            responses.add( response);
-//        }
         return session;
     }
 

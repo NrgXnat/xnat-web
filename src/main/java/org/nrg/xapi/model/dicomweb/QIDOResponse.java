@@ -39,6 +39,8 @@ public class QIDOResponse extends Attributes {
     protected SimpleDateFormat dateFormat = new SimpleDateFormat( "yyyyMMdd");
     protected SimpleDateFormat timeFormat = new SimpleDateFormat( "HHmmss");
 
+    public String getRetrieveURL() { return getString(0x00081190); }
+    public void setRetrieveURL(String value) { setString( 0x00081190, ElementDictionary.vrOf(0x00081190, null), value ); }
 
     public static JsonGenerator createGenerator(OutputStream out) {
         boolean indent = true;
