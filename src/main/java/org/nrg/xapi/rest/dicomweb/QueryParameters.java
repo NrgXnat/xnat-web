@@ -142,6 +142,36 @@ public class QueryParameters extends BaseQueryParameters {
         return false;
     }
 
+    public boolean hasStudyDate() {
+        for( String key: keySet()) {
+            switch( key) {
+                case STUDY_DATE_NAME:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public String getStudyDateRange() {
+        List<String> params = getParams( STUDY_DATE_NAME);
+        return (params.isEmpty())? null: params.get(0);
+    }
+
+    public boolean hasStudyTime() {
+        for( String key: keySet()) {
+            switch( key) {
+                case STUDY_TIME_NAME:
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    public String getStudyTimeRange() {
+        List<String> params = getParams( STUDY_TIME_NAME);
+        return (params.isEmpty())? null: params.get(0);
+    }
+
     public boolean hasSeriesLevel() {
         for( String key: keySet()) {
             switch( key) {
