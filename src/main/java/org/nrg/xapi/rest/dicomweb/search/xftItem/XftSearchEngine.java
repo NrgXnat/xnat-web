@@ -10,8 +10,6 @@ import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xdat.security.user.exceptions.UserInitException;
-import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.search.CriteriaCollection;
@@ -27,30 +25,24 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
-import java.text.MessageFormat;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class XftSearchEngine implements SearchEngineI {
 
-    private UserI user;
-    private UserManagementServiceI userManagementService;
     private final NamedParameterJdbcTemplate _jdbcTemplate;
+    private final DateTimeService _dateTimeService;
+    private final QueryParamToCriteriaService _queryParamService;
     private static final Logger _log = LoggerFactory.getLogger("dicomweb");
 
     @Autowired
     public XftSearchEngine(final UserManagementServiceI userManagementService, NamedParameterJdbcTemplate jdbcTemplate) {
-
-        this.userManagementService = userManagementService;
+        this._dateTimeService = new DateTimeService();
+        this._queryParamService = new QueryParamToCriteriaService( _dateTimeService);
         this._jdbcTemplate = jdbcTemplate;
-        // need to get the authenticated user here....
-        try {
-            this.user = userManagementService.getUser( "admin");
-        } catch (UserNotFoundException e) {
-            e.printStackTrace();
-        } catch (UserInitException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -65,7 +57,7 @@ public class XftSearchEngine implements SearchEngineI {
 
     @Override
     public List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = QueryParametersToCriteria.mapStudy( queryParameters);
+        CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
 
         ItemCollection ic;
         if( cc.size() == 0) {
@@ -77,6 +69,7 @@ public class XftSearchEngine implements SearchEngineI {
 
         QIDOStudyResponseList responses = new QIDOStudyResponseList();
 //        List<QIDOResponse> responses = new ArrayList();
+
         for( ItemI item: ic.getItems()) {
             XnatImagesessiondata session = new XnatImagesessiondata(item);
             QIDOResponseStudy response = new QIDOResponseStudy();
@@ -97,6 +90,23 @@ public class XftSearchEngine implements SearchEngineI {
             response.setReferringPhysiciansName("");
             responses.add( response);
         }
+
+        // ItemSearch is not doing combined date-time search. ItemSearch searches by study date.
+        // Do combined date-time matching here by filtering responses.
+        if( queryParameters.hasStudyTime() && queryParameters.hasStudyDate()) {
+            ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
+            String studyDateRangeString = queryParameters.getStudyDateRange();
+            String studyTimeRangeString = queryParameters.getStudyTimeRange();
+            Interval queryInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings( studyDateRangeString, studyTimeRangeString, zoneOffset);
+            responses = responses.stream()
+                    .filter( response -> {
+                        String responseDateRangeString = response.getStudyDate();
+                        String responseTimeRangeString = response.getStudyTime();
+                        Interval responseInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings( responseDateRangeString, responseTimeRangeString, zoneOffset);
+                        return _dateTimeService.hasOverlap( responseInterval, queryInterval);})
+                    .collect(Collectors.toCollection( QIDOStudyResponseList::new));
+        }
+
         int from = Math.min( responses.size(), queryParameters.getOffset());
         int to = Math.min( responses.size(), from + queryParameters.getLimit());
         return responses.subList( from, to);
@@ -104,7 +114,7 @@ public class XftSearchEngine implements SearchEngineI {
 
     @Override
     public List<? extends QIDOResponse> searchForSeries(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = QueryParametersToCriteria.mapSeries( studyInstanceUID, queryParameters);
+        CriteriaCollection cc = _queryParamService.mapSeries( studyInstanceUID, queryParameters);
 
         ItemCollection ic;
         if( cc.size() == 0) {
@@ -198,21 +208,21 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     public List<? extends QIDOResponse> searchForStudySeriesByStudy( QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = QueryParametersToCriteria.mapStudy( queryParameters);
+        CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
     public List<? extends QIDOResponse> searchForStudySeriesBySeries( QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = QueryParametersToCriteria.mapSeries( queryParameters);
+        CriteriaCollection cc = _queryParamService.mapSeries( queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
     public List<? extends QIDOResponse> searchForStudySeriesByStudyUID(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception {
         CriteriaCollection cc ;
-        if( studyInstanceUID != null) cc = QueryParametersToCriteria.mapSeries( studyInstanceUID, queryParameters);
-        else  cc = QueryParametersToCriteria.mapSeries( queryParameters);
+        if( studyInstanceUID != null) cc = _queryParamService.mapSeries( studyInstanceUID, queryParameters);
+        else  cc = _queryParamService.mapSeries( queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
@@ -258,7 +268,7 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     public List<? extends QIDOResponse> searchForStudySeriesByStudyParams( QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = QueryParametersToCriteria.mapStudy( queryParameters);
+        CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
         ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
 
 //        QIDOStudyResponseList responses = new QIDOStudyResponseList();
@@ -528,22 +538,6 @@ public class XftSearchEngine implements SearchEngineI {
             }
         }
         return count;
-    }
-
-    public  List<String> getStudyUIDs(Map<String , String > params) throws Exception {
-        List<String> studyUIDs = new ArrayList<>();
-        CriteriaCollection cc = new CriteriaCollection("AND");
-        cc.addClause( "xnat:experimentData/date", ">" , params.get("date"));
-        for( String param: params.keySet()) {
-            switch( param) {
-                case QueryParameters.STUDY_INSTANCE_UID_NAME:
-                    cc.addClause( "xnat:experimentData/date", ">" , params.get( param));
-                    default:
-            }
-        }
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
-
-        return studyUIDs;
     }
 
     private static final String QUERY_GET_INSTANCE_COUNT_IN_SERIES         = "SELECT frame_count FROM xhbm_dicom_instance WHERE imagescandata_id = :scandataId";

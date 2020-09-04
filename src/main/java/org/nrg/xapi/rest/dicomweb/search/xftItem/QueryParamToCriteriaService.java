@@ -6,6 +6,8 @@ import org.nrg.xft.search.CriteriaCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -15,28 +17,39 @@ import java.util.regex.Pattern;
  * Class to map DICOMweb query parameters into Critteria Collections used by ItemSearch to execute the query.
  *
  */
-public class QueryParametersToCriteria {
+public class QueryParamToCriteriaService {
 
-    private static final Logger _log = LoggerFactory.getLogger(XftSearchEngine.class);
+    private DateTimeService _dateTimeService;
+    private static final Logger _log = LoggerFactory.getLogger( "dicomweb");
 
-    public static CriteriaCollection mapSeries( String studyInstanceUID, BaseQueryParameters params) {
+    public QueryParamToCriteriaService( DateTimeService dateTimeService) {
+        this._dateTimeService = dateTimeService;
+    }
+
+    public CriteriaCollection mapSeries( String studyInstanceUID, BaseQueryParameters params) {
         CriteriaCollection cc = mapSeries( params);
 
         cc.addClause("xnat:imagesessiondata/uid", studyInstanceUID);
         return cc;
     }
 
-    public static CriteriaCollection mapStudy(BaseQueryParameters params) {
+    public CriteriaCollection mapStudy(BaseQueryParameters params) {
         CriteriaCollection cc = new CriteriaCollection("AND");
+        ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
+
         for (String paramName: params.keySet() ) {
             switch( paramName) {
                 case QueryParameters.STUDY_DATE_NAME:
 //                    cc.addClause( "xnat:experimentData/date", "=" , queryParameters.getParams( paramName).get(0));
-                    cc.addClause( parseDateCriteria( params.getParams( paramName).get(0)));
+                    cc.addClause( parseDateCriteria( params.getParams( paramName).get(0), zoneOffset));
                     break;
                 case QueryParameters.STUDY_TIME_NAME:
 //                    cc.addClause( "xnat:experimentData/time", "=" , queryParameters.getParams( paramName).get(0));
-                    cc.addClause( parseTimeCriteria( params.getParams( paramName).get(0)));
+                    // Add criteria for times only if the query is not also for dates. We will do combined date-time matching
+                    // by filtering responses after the item search.
+                    if( params.getParams( QueryParameters.STUDY_DATE_NAME) == null) {
+                        cc.addClause( parseTimeCriteria( params.getParams( paramName).get(0), zoneOffset));
+                    }
                     break;
                 case QueryParameters.STUDY_ID_NAME:
                     String value = params.getParams( paramName).get(0);
@@ -103,17 +116,24 @@ public class QueryParametersToCriteria {
         return cc;
     }
 
-
-    public static CriteriaCollection mapSeries( BaseQueryParameters params) {
+    public CriteriaCollection mapSeries( BaseQueryParameters params) {
         CriteriaCollection cc = new CriteriaCollection("AND");
+
+        ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
 
         for (String paramName : params.keySet()) {
             switch (paramName) {
                 case QueryParameters.PERFORMED_PROCEDURE_STEP_STARTDATE:
-                    cc.addClause(parseRangeCriteria("xnat:imagescandata/start_date", params.getParams(paramName).get(0)));
+                    cc.addClause(parseDateRangeCriteria("xnat:imagescandata/start_date", params.getParams(paramName).get(0), zoneOffset));
                     break;
                 case QueryParameters.PERFORMED_PROCEDURE_STEP_STARTTIME:
-                    cc.addClause(parseRangeCriteria("xnat:imagescandata/starttime", params.getParams(paramName).get(0)));
+                    // Add criteria for times only if the query is not also for dates. We will do combined date-time matching
+                    // by filtering responses after the item search.
+                    if( params.getParams( QueryParameters.PERFORMED_PROCEDURE_STEP_STARTDATE) == null) {
+                        cc.addClause( parseTimeCriteria( params.getParams( paramName).get(0), zoneOffset));
+                    }
+                    // Don't add criteria for times. Filter responses after the item search.
+//                    cc.addClause(parseRangeCriteria("xnat:imagescandata/starttime", params.getParams(paramName).get(0)));
                     break;
                 case QueryParameters.SERIES_NUMBER_NAME:
                     cc.addClause("xnat:imagescanData/id", "=", params.getParams(paramName).get(0));
@@ -137,7 +157,7 @@ public class QueryParametersToCriteria {
         return cc;
     }
 
-    private static CriteriaCollection parseAccessionNumberCriteria( String accessionNumberString) {
+    private CriteriaCollection parseAccessionNumberCriteria( String accessionNumberString) {
         CriteriaCollection cc = new CriteriaCollection("AND");
 
         if( accessionNumberString.contains("*") || accessionNumberString.contains("?")) {
@@ -151,64 +171,55 @@ public class QueryParametersToCriteria {
         return cc;
     }
 
-    private static CriteriaCollection parseDateCriteria( String dateString) {
-        return parseRangeCriteria( "xnat:experimentData/date", dateString);
+    private CriteriaCollection parseDateCriteria(String dateString, ZoneOffset zoneOffset) {
+        return parseDateRangeCriteria( "xnat:experimentData/date", dateString, zoneOffset);
     }
 
-    private static CriteriaCollection parseTimeCriteria( String timeString) {
-        return parseRangeCriteria( "xnat:experimentData/time", timeString);
+    private CriteriaCollection parseTimeCriteria( String timeString, ZoneOffset zoneOffset) {
+        return parseTimeRangeCriteria( "xnat:experimentData/time", timeString, zoneOffset);
     }
 
-    private static CriteriaCollection parseRangeCriteria( String xmlPath, String value) {
+    private CriteriaCollection parseDateRangeCriteria( String xmlPath, String value, ZoneOffset zoneOffset) {
         CriteriaCollection cc = new CriteriaCollection("AND");
 
-        if( value.contains("-")) {
-            if( value.startsWith("-")) {
-                cc.addClause( xmlPath, "<=" , normalizedTimeString( value.replaceAll("[- ]","")));
-            }
-            else if( value.endsWith("-")) {
-                cc.addClause( xmlPath, ">=" , normalizedTimeString( value.replaceAll("[- ]","")));
-            }
-            else {
-                String[] dates = value.split("-");
-                cc.addClause( xmlPath, ">=" , normalizedTimeString( dates[0]));
-                cc.addClause( xmlPath, "<=" , normalizedTimeString( dates[1]));
-            }
+        Interval interval = _dateTimeService.parseDicomDateRangeString( value, zoneOffset);
+        if( interval.isZeroDuration()) {
+            cc.addClause( xmlPath, "=" , interval.getStartDateString());
         }
         else {
-            cc.addClause( xmlPath, "=" , value);
+            if (interval.isOpenStartDate()) {
+                cc.addClause(xmlPath, "<=", interval.getEndDateString());
+            } else if (interval.isOpenEndDate()) {
+                cc.addClause(xmlPath, ">=", interval.getStartDateString());
+            } else {
+                cc.addClause(xmlPath, ">=", interval.getStartDateString());
+                cc.addClause(xmlPath, "<=", interval.getEndDateString());
+            }
         }
         return cc;
     }
 
-    /**
-     * Return Time String in format HHMMSS or HHMMSS.FFFFFF where fractional digits F are 1 to 6 in number.
-     *
-     * The DICOM Time VR is allowed to truncate MM, SS, or FFFFFF. This is ISO 8601 compliant but this can confuse downstream SQL in Criteria.
-     * Normalize the DICOM Time string to the more complete ISO 8601 time format by padding with zeros.
-     *
-     * @param dicomTimeString
-     * @return
-     */
-    public static String normalizedTimeString( String dicomTimeString) {
-        String time = "";
-        String fractionalSeconds = "";
-        if( dicomTimeString.contains(".")) {
-            String[] tokens = dicomTimeString.split( Pattern.quote("."));
-            time = tokens[0].trim();
-            fractionalSeconds = tokens[1].trim();
+    private CriteriaCollection parseTimeRangeCriteria( String xmlPath, String value, ZoneOffset zoneOffset) {
+        CriteriaCollection cc = new CriteriaCollection("AND");
+
+        Interval interval = _dateTimeService.parseDicomTimeRangeString( value, zoneOffset);
+        if( interval.isZeroDuration()) {
+            cc.addClause( xmlPath, "=" , interval.getStartTimeString());
         }
         else {
-            time = dicomTimeString.trim();
+            if (interval.isOpenStartTime()) {
+                cc.addClause(xmlPath, "<=", interval.getEndTimeString());
+            } else if (interval.isOpenEndTime()) {
+                cc.addClause(xmlPath, ">=", interval.getStartTimeString());
+            } else {
+                cc.addClause(xmlPath, ">=", interval.getStartTimeString());
+                cc.addClause(xmlPath, "<=", interval.getEndTimeString());
+            }
         }
-        String value = String.format("%1$-6s", time).replace(' ', '0');
-        if( ! fractionalSeconds.isEmpty()) {
-            value = value + "." + fractionalSeconds;
-        }
-        return value;
+        return cc;
     }
 
-    private static  CriteriaCollection parsePatientNameCriteria( String pName) {
+    private CriteriaCollection parsePatientNameCriteria( String pName) {
         CriteriaCollection cc = new CriteriaCollection( "AND");
         if( pName.contains("*") || pName.contains("?")) {
             String value = pName.replaceAll( Pattern.quote( "*"), "%");
@@ -221,7 +232,7 @@ public class QueryParametersToCriteria {
         return cc;
     }
 
-    private static  CriteriaCollection parsePatientIDCriteria( String pID) {
+    private CriteriaCollection parsePatientIDCriteria( String pID) {
         CriteriaCollection cc = new CriteriaCollection( "AND");
         if( pID.contains("*") || pID.contains("?")) {
             String value = pID.replaceAll( Pattern.quote( "*"), "%");
@@ -234,14 +245,13 @@ public class QueryParametersToCriteria {
         return cc;
     }
 
-    private static List<String> getModalities( String modalitiesString) {
+    private List<String> getModalities( String modalitiesString) {
         List<String> modalities =  (modalitiesString != null)? parseMultivaluedValue( modalitiesString): new ArrayList<String>();
         return modalities;
     }
 
-    private static List<String> parseMultivaluedValue(String value) {
+    private List<String> parseMultivaluedValue(String value) {
         return Arrays.asList( value.split("\\\\"));
     }
-
 
 }
