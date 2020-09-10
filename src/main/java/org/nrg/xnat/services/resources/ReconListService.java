@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 
 public interface ReconListService {
 

@@ -8,7 +8,7 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.nrg.action.ClientException;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.resources.files.FileListService;
-import org.nrg.xnat.services.resources.files.XFTTable;
+import org.nrg.xft.XFTTable;
 import org.restlet.data.MediaType;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;

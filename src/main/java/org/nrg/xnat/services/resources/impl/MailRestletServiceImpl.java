@@ -1,0 +1,28 @@
+package org.nrg.xnat.services.resources.impl;
+
+import org.nrg.action.ClientException;
+import org.nrg.xnat.services.resources.MailRestletService;
+
+public class MailRestletServiceImpl implements MailRestletService{
+
+	@Override
+	public boolean allowGet() {
+		return false;
+	}
+
+	@Override
+	public boolean allowPost() {
+		return false;
+	}
+
+	@Override
+	public void handlePost() {
+		
+	}
+
+	@Override
+	public void handleParam(String key, Object value) throws ClientException {
+		
+	}
+
+}
