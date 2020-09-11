@@ -8,7 +8,7 @@ import org.restlet.resource.Variant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ScriptTriggerTemplateResourceServiceImpl implements ScriptTriggerTemplateResourceService {
+public class ScriptTriggerTemplateResourceServiceImpl extends BaseXapiServiceImpl implements ScriptTriggerTemplateResourceService {
 	
 	private static final Logger _log = LoggerFactory.getLogger(ScriptTriggerTemplateResourceServiceImpl.class);
 	
@@ -20,16 +20,6 @@ public class ScriptTriggerTemplateResourceServiceImpl implements ScriptTriggerTe
 	@Override
 	public String getResourceId() {
 		return "templateId";
-	}
-
-	@Override
-	public boolean allowPut() {
-		return true;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		return true;
 	}
 
 	@Override

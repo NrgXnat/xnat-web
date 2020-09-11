@@ -8,7 +8,7 @@ import org.restlet.resource.Variant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ScriptResourceServiceImpl implements ScriptResourceService {
+public class ScriptResourceServiceImpl extends BaseXapiServiceImpl implements ScriptResourceService {
 
 	private static final Logger _log = LoggerFactory.getLogger(ScriptResourceServiceImpl.class);
 	@Override
@@ -19,16 +19,6 @@ public class ScriptResourceServiceImpl implements ScriptResourceService {
 	@Override
 	public String getResourceId() {
 		return "scriptId";
-	}
-
-	@Override
-	public boolean allowPut() {
-		return true;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		return true;
 	}
 
 	@Override
