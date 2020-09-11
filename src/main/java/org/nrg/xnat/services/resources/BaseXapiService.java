@@ -16,31 +16,33 @@ import org.restlet.resource.Variant;
  */
 public interface BaseXapiService {
 
-	String getResourceType();
+	public String getResourceType();
 
-	String getResourceId();
+	public String getResourceId();
 
+	public boolean allowGet();
+	
+	public boolean allowPost();
+	
 	public boolean allowPut();
 
 	public boolean allowDelete();
-
-	public Representation represent(Variant variant) throws ResourceException;
+	
+	public void handlePost();
 
 	public void handlePut();
 
 	public void handleDelete();
+	
+	public void removeRepresentations();
+	
+	public String getDefaultElementName();
+	
+	public void acceptRepresentation(Representation entity);
 
-	public void handlePost();
-
-	void removeRepresentations();
-
-	void acceptRepresentation(Representation entity);
-
-	public boolean allowGet();
-
+	public Representation represent(Variant variant) throws ResourceException;
+	
 	public ArrayList<String> getDefaultFields(GenericWrapperElement e);
-
-	String getDefaultElementName();
 
 	public void handleParam(final String key, final Object value) throws ClientException;
 }
