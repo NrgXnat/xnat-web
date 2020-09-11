@@ -12,19 +12,7 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class UserSessionServiceImpl implements UserSessionService {
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class UserSessionServiceImpl extends BaseXapiServiceImpl implements UserSessionService {
 
 	@Override
 	public void removeRepresentations() {

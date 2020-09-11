@@ -1,28 +1,11 @@
 package org.nrg.xnat.services.resources.files.impl;
 
 import org.nrg.xnat.services.resources.files.CatalogResourceService;
+import org.nrg.xnat.services.resources.impl.BaseXapiServiceImpl;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class CatalogResourceServiceImpl implements CatalogResourceService {
-
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class CatalogResourceServiceImpl extends BaseXapiServiceImpl  implements CatalogResourceService {
 
 	@Override
 	public Representation represent(Variant variant) {

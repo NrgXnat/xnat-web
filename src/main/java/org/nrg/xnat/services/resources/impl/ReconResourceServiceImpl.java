@@ -4,24 +4,12 @@ import org.nrg.xnat.services.resources.ReconResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class ReconResourceServiceImpl implements ReconResourceService {
-
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class ReconResourceServiceImpl extends BaseXapiServiceImpl implements ReconResourceService {
 
 	@Override
 	public void handlePut() {
 		// TODO Auto-generated method stub
 
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override

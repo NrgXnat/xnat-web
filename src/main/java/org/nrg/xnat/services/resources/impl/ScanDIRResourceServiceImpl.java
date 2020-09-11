@@ -8,7 +8,6 @@ public class ScanDIRResourceServiceImpl implements ScanDIRResourceService {
 
 	@Override
 	public boolean allowPut() {
-		// TODO Auto-generated method stub
 		return false;
 	}
 

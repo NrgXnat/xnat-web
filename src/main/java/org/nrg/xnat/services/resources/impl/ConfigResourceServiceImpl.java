@@ -12,24 +12,12 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class ConfigResourceServiceImpl implements ConfigResourceService {
+public class ConfigResourceServiceImpl extends BaseXapiServiceImpl implements ConfigResourceService {
 
 	@Override
 	public Representation represent(Variant variant) throws ResourceException {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override

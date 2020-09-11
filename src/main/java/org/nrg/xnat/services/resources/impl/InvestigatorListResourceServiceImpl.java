@@ -4,13 +4,7 @@ import org.nrg.xnat.services.resources.InvestigatorListResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class InvestigatorListResourceServiceImpl implements InvestigatorListResourceService {
-
-	@Override
-	public boolean allowGet() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class InvestigatorListResourceServiceImpl extends BaseXapiServiceImpl implements InvestigatorListResourceService {
 
 	@Override
 	public Representation represent(Variant variant) {

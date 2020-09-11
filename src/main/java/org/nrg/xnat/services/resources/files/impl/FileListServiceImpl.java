@@ -8,30 +8,13 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.nrg.action.ClientException;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.resources.files.FileListService;
+import org.nrg.xnat.services.resources.impl.BaseXapiServiceImpl;
 import org.nrg.xft.XFTTable;
 import org.restlet.data.MediaType;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class FileListServiceImpl implements FileListService {
-
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class FileListServiceImpl extends BaseXapiServiceImpl implements FileListService {
 
 	@Override
 	public Representation represent(Variant variant) {

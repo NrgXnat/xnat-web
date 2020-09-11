@@ -7,13 +7,7 @@ import org.nrg.xnat.services.resources.ReconListService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class ReconListServiceImpl implements ReconListService {
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class ReconListServiceImpl extends BaseXapiServiceImpl implements ReconListService {
 
 	@Override
 	public void handlePost() {

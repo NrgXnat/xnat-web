@@ -14,13 +14,7 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class ScanListServiceImpl implements ScanListService {
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class ScanListServiceImpl extends BaseXapiServiceImpl implements ScanListService {
 
 	@Override
 	public void handlePost() {

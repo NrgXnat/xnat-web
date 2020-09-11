@@ -3,6 +3,9 @@
  */
 package org.nrg.xnat.services.resources.impl;
 
+import java.util.ArrayList;
+
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
@@ -11,13 +14,7 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class ProjectSubjectListServiceImpl implements ProjectSubjectListService {
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class ProjectSubjectListServiceImpl extends BaseXapiServiceImpl implements ProjectSubjectListService {
 
 	@Override
 	public void handlePost() {
@@ -33,6 +30,12 @@ public class ProjectSubjectListServiceImpl implements ProjectSubjectListService 
 
 	@Override
 	public Representation represent(Variant variant) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public ArrayList<String> getDefaultFields(GenericWrapperElement e) {
 		// TODO Auto-generated method stub
 		return null;
 	}

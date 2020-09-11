@@ -12,7 +12,7 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class ScriptTriggerResourceServiceImpl implements ScriptTriggerResourceService {
+public class ScriptTriggerResourceServiceImpl extends BaseXapiServiceImpl implements ScriptTriggerResourceService {
 
 	@Override
 	public String getResourceType() {
@@ -24,18 +24,6 @@ public class ScriptTriggerResourceServiceImpl implements ScriptTriggerResourceSe
 	public String getResourceId() {
 		// TODO Auto-generated method stub
 		return null;
-	}
-
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package org.nrg.xnat.services.resources;
 
+import org.nrg.xft.XFTItem;
 import org.restlet.data.MediaType;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
