@@ -5,12 +5,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class IpWhitelistServiceImpl implements IpWhitelistService {
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
+public class IpWhitelistServiceImpl extends BaseXapiServiceImpl implements IpWhitelistService {
 
 	@Override
 	public void handlePut() {

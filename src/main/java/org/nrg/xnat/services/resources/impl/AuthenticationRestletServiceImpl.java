@@ -9,22 +9,10 @@ import org.nrg.xnat.services.resources.AuthenticationRestletService;
  * @author afour
  *
  */
-public class AuthenticationRestletServiceImpl implements AuthenticationRestletService {
+public class AuthenticationRestletServiceImpl extends BaseXapiServiceImpl implements AuthenticationRestletService {
 
 	@Override
 	public boolean allowGet() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPut() {
 		// TODO Auto-generated method stub
 		return false;
 	}

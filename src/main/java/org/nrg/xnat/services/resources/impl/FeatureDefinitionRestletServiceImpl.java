@@ -5,12 +5,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class FeatureDefinitionRestletServiceImpl implements FeatureDefinitionRestletService {
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
+public class FeatureDefinitionRestletServiceImpl extends BaseXapiServiceImpl implements FeatureDefinitionRestletService {
 
 	@Override
 	public void handlePost() {

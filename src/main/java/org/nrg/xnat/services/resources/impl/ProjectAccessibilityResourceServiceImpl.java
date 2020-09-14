@@ -4,7 +4,7 @@ import org.nrg.xnat.services.resources.ProjectAccessibilityResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class ProjectAccessibilityResourceServiceImpl implements ProjectAccessibilityResourceService {
+public class ProjectAccessibilityResourceServiceImpl  extends BaseXapiServiceImpl implements ProjectAccessibilityResourceService {
 
 	@Override
 	public boolean allowGet() {

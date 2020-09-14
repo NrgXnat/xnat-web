@@ -4,17 +4,7 @@ import org.nrg.xnat.services.resources.ProjectResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class ProjectResourceServiceImpl implements ProjectResourceService {
-
-	@Override
-	public boolean allowDelete() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
+public class ProjectResourceServiceImpl extends BaseXapiServiceImpl implements ProjectResourceService {
 
 	@Override
 	public void handleDelete() {

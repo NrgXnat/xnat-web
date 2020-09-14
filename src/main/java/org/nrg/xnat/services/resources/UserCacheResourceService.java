@@ -3,14 +3,6 @@ package org.nrg.xnat.services.resources;
 import org.restlet.data.Status;
 
 public interface UserCacheResourceService {
-	
-	public boolean allowGet();
-
-	public boolean allowPut();
-
-	public boolean allowPost();
-
-	public boolean allowDelete();
 
 	public void handleGet();
 

@@ -5,10 +5,6 @@ import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
 public interface SQListenerRepresentationService {
-	
-	public boolean allowDelete();
-
-	public boolean allowPost();
 
 	public void removeRepresentations() throws ResourceException;
 

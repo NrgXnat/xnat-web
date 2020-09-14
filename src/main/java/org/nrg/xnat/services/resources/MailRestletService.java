@@ -4,8 +4,6 @@ import org.nrg.action.ClientException;
 
 public interface MailRestletService {
 	
-	public boolean allowGet();
-
 	public boolean allowPost();
 
 	public void handlePost();

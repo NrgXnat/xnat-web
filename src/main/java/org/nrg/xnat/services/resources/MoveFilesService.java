@@ -6,8 +6,6 @@ import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 
 public interface MoveFilesService {
 	
-	public boolean allowPost();
-
 	public void handlePost();
 
 	public void handleParam(final String key, final Object value) throws ClientException;

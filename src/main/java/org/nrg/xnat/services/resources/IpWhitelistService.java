@@ -6,8 +6,6 @@ import org.restlet.resource.Variant;
 
 public interface IpWhitelistService {
 	
-	public boolean allowPut();
-
 	public void handlePut();
 
 	public Representation represent(Variant variant) throws ResourceException;

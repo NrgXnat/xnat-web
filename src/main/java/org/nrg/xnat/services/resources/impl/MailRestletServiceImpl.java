@@ -3,12 +3,7 @@ package org.nrg.xnat.services.resources.impl;
 import org.nrg.action.ClientException;
 import org.nrg.xnat.services.resources.MailRestletService;
 
-public class MailRestletServiceImpl implements MailRestletService{
-
-	@Override
-	public boolean allowGet() {
-		return false;
-	}
+public class MailRestletServiceImpl extends BaseXapiServiceImpl implements MailRestletService{
 
 	@Override
 	public boolean allowPost() {

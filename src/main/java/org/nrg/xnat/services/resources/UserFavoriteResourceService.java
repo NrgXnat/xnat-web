@@ -5,10 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface UserFavoriteResourceService {
 	
-	public boolean allowDelete();
-
-	public boolean allowPut();
-
 	public boolean allowGet();
 
 	public void handlePut();

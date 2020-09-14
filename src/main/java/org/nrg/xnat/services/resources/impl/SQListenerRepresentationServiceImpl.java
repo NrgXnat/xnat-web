@@ -5,17 +5,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class SQListenerRepresentationServiceImpl implements SQListenerRepresentationService {
-
-	@Override
-	public boolean allowDelete() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
+public class SQListenerRepresentationServiceImpl extends BaseXapiServiceImpl implements SQListenerRepresentationService {
 
 	@Override
 	public void removeRepresentations() throws ResourceException {

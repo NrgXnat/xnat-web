@@ -7,27 +7,7 @@ import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.services.resources.TriageRestletService;
 import org.restlet.data.Status;
 
-public class TriageRestletServiceImpl implements TriageRestletService {
-
-	@Override
-	public boolean allowGet() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		return false;
-	}
+public class TriageRestletServiceImpl extends BaseXapiServiceImpl implements TriageRestletService {
 
 	@Override
 	public void handleGet() {

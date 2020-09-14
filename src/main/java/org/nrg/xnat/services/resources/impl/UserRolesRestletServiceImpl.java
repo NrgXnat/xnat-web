@@ -5,12 +5,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class UserRolesRestletServiceImpl implements UserRolesRestletService {
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
+public class UserRolesRestletServiceImpl extends BaseXapiServiceImpl implements UserRolesRestletService {
 
 	@Override
 	public void handlePost() {

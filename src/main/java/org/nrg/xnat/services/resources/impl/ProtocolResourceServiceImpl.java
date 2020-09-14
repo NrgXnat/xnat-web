@@ -5,17 +5,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class ProtocolResourceServiceImpl implements ProtocolResourceService{
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		return false;
-	}
+public class ProtocolResourceServiceImpl extends BaseXapiServiceImpl implements ProtocolResourceService{
 
 	@Override
 	public Representation represent(Variant variant) throws ResourceException {

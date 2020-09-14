@@ -11,19 +11,8 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class StudyRoutingRestletServiceImpl implements StudyRoutingRestletService {
+public class StudyRoutingRestletServiceImpl extends BaseXapiServiceImpl implements StudyRoutingRestletService {
 
-	@Override
-	public boolean allowPut() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowDelete() {
-		// TODO Auto-generated method stub
-		return false;
-	}
 
 	@Override
 	public Representation represent(Variant variant) {

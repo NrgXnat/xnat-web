@@ -5,10 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface ProjectAccessibilityResourceService {
 	
-	public boolean allowGet();
-
-	public boolean allowPut();
-
 	public void handlePut();
 
 	public Representation represent(final Variant variant);

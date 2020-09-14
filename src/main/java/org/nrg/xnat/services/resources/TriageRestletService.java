@@ -8,14 +8,6 @@ import org.restlet.data.Status;
 
 public interface TriageRestletService {
 	
-	public boolean allowGet();
-
-	public boolean allowPut();
-
-	public boolean allowPost();
-
-	public boolean allowDelete();
-
 	public void handleGet();
 
 	public void handleDelete();

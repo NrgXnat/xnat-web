@@ -11,8 +11,6 @@ public interface ImporterService {
 	
 	public boolean allowGet();
 
-	public boolean allowPost();
-
 	public void handlePost();
 
 	public boolean storeStatusList(final ImporterHandlerA importer);

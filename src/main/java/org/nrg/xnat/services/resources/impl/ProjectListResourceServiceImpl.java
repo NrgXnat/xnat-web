@@ -7,12 +7,7 @@ import org.nrg.xnat.services.resources.ProjectListResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class ProjectListResourceServiceImpl implements ProjectListResourceService {
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
+public class ProjectListResourceServiceImpl extends BaseXapiServiceImpl implements ProjectListResourceService {
 
 	@Override
 	public void handlePost() {
@@ -27,12 +22,6 @@ public class ProjectListResourceServiceImpl implements ProjectListResourceServic
 	@Override
 	public ArrayList<String> getDefaultFields(GenericWrapperElement e) {
 		return null;
-	}
-
-	@Override
-	public boolean allowGet() {
-		// TODO Auto-generated method stub
-		return false;
 	}
 
 	@Override

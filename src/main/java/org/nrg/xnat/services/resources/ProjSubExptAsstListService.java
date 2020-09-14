@@ -8,8 +8,6 @@ import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 
 public interface ProjSubExptAsstListService {
 
-	boolean allowPost();
-
 	void handlePost();
 
 	ArrayList<String> getDefaultFields(GenericWrapperElement e);

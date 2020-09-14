@@ -15,9 +15,5 @@ public interface DicomEditService {
 
 	public Representation represent(Variant variant) throws ResourceException;
 
-	public boolean allowGet();
-
-	public boolean allowPost();
-
 	public void handlePut();
 }

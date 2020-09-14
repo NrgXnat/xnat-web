@@ -5,10 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface ProjectResourceService {
 	
-	public boolean allowDelete();
-
-	public boolean allowPut();
-
 	public void handleDelete();
 
 	public void handlePut();

@@ -6,7 +6,7 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class DicomEditServiceImpl implements DicomEditService {
+public class DicomEditServiceImpl extends BaseXapiServiceImpl implements DicomEditService {
 
 	@Override
 	public String buildScriptPath(ResourceScope scope, Object identifier) {
@@ -26,17 +26,6 @@ public class DicomEditServiceImpl implements DicomEditService {
 	@Override
 	public Representation represent(Variant variant) throws ResourceException {
 		return null;
-	}
-
-	@Override
-	public boolean allowGet() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
-		return false;
 	}
 
 	@Override

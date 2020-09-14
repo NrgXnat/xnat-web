@@ -6,10 +6,6 @@ import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.services.triage.TriageService;
 
 public interface TriageApprovalRestletService {
-	
-	public boolean allowPost();
-
-	public boolean allowPut();
 
 	public void handlePut();
 

@@ -6,8 +6,6 @@ import org.restlet.resource.Variant;
 
 public interface UserRolesRestletService {
 	
-	public boolean allowPost();
-
 	public void handlePost();
 
 	public Representation represent(Variant variant) throws ResourceException;

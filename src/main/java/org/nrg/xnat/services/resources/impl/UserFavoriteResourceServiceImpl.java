@@ -4,17 +4,7 @@ import org.nrg.xnat.services.resources.UserFavoriteResourceService;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
-public class UserFavoriteResourceServiceImpl implements UserFavoriteResourceService {
-
-	@Override
-	public boolean allowDelete() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
+public class UserFavoriteResourceServiceImpl extends BaseXapiServiceImpl implements UserFavoriteResourceService {
 
 	@Override
 	public boolean allowGet() {

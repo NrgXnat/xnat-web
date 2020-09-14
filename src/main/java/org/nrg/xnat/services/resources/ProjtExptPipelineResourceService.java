@@ -5,8 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface ProjtExptPipelineResourceService {
 
-	public boolean allowPost();
-
 	public void handlePost();
 
 	public Representation represent(Variant variant);

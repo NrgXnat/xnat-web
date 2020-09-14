@@ -6,10 +6,6 @@ import org.restlet.resource.Variant;
 
 public interface ProtocolResourceService {
 	
-	public boolean allowPut();
-
-	public boolean allowDelete();
-
 	public Representation represent(final Variant variant) throws ResourceException;
 
 	public void handlePut();

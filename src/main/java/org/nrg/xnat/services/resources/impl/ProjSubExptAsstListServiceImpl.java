@@ -14,13 +14,7 @@ import org.restlet.resource.Variant;
  * @author afour
  *
  */
-public class ProjSubExptAsstListServiceImpl implements ProjSubExptAsstListService {
-
-	@Override
-	public boolean allowPost() {
-		// TODO Auto-generated method stub
-		return false;
-	}
+public class ProjSubExptAsstListServiceImpl extends BaseXapiServiceImpl implements ProjSubExptAsstListService {
 
 	@Override
 	public void handlePost() {

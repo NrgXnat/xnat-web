@@ -8,15 +8,10 @@ import org.restlet.resource.Representation;
 import org.restlet.resource.ResourceException;
 import org.restlet.resource.Variant;
 
-public class ImporterServiceImpl implements ImporterService {
+public class ImporterServiceImpl extends BaseXapiServiceImpl implements ImporterService {
 
 	@Override
 	public boolean allowGet() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPost() {
 		return false;
 	}
 

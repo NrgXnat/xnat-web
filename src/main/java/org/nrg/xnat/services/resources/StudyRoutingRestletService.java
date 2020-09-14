@@ -5,10 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface StudyRoutingRestletService {
 
-	boolean allowPut();
-
-	boolean allowDelete();
-
 	Representation represent(Variant variant);
 
 	void handlePut();

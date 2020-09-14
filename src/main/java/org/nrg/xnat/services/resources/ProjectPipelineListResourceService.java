@@ -5,10 +5,6 @@ import org.restlet.resource.Variant;
 
 public interface ProjectPipelineListResourceService {
 	
-	public boolean allowGet();
-
-	public boolean allowDelete();
-
 	public void handleDelete();
 
 	public Representation represent(Variant variant);

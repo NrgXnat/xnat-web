@@ -6,17 +6,7 @@ import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.services.resources.TriageApprovalRestletService;
 import org.nrg.xnat.services.triage.TriageService;
 
-public class TriageApprovalRestletServiceImpl implements TriageApprovalRestletService{
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
-
-	@Override
-	public boolean allowPut() {
-		return false;
-	}
+public class TriageApprovalRestletServiceImpl extends BaseXapiServiceImpl implements TriageApprovalRestletService{
 
 	@Override
 	public void handlePut() {

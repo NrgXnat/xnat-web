@@ -6,10 +6,6 @@ import org.restlet.resource.Variant;
 
 public interface PrearcSessionResourceService {
 	
-	public boolean allowPost();
-
-	public boolean allowDelete();
-
 	public void handlePost();
 
 	public void handleDelete();

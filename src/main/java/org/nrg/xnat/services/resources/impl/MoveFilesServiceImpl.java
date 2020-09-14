@@ -5,12 +5,7 @@ import org.nrg.xnat.helpers.uri.URIManager.UserCacheURI;
 import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.services.resources.MoveFilesService;
 
-public class MoveFilesServiceImpl implements MoveFilesService {
-
-	@Override
-	public boolean allowPost() {
-		return false;
-	}
+public class MoveFilesServiceImpl extends BaseXapiServiceImpl implements MoveFilesService {
 
 	@Override
 	public void handlePost() {
