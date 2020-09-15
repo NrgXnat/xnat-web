@@ -15,8 +15,6 @@ import io.swagger.annotations.ApiModelProperty;
 import org.nrg.xdat.entities.UserAuthI;
 import org.springframework.jdbc.core.RowMapper;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
 
@@ -29,26 +27,23 @@ import java.util.Date;
  */
 @ApiModel(description = "Contains the properties that define a user on the system.")
 public class User {
-    public static final RowMapper<User> Mapper = new RowMapper<User>() {
-        @Override
-        public User mapRow(final ResultSet resultSet, final int index) throws SQLException {
-            final Timestamp lastModified        = resultSet.getTimestamp("last_modified");
-            final Timestamp lastSuccessfulLogin = resultSet.getTimestamp("lastSuccessfulLogin");
-            return new User(resultSet.getInt("id"),
-                            resultSet.getString("username"),
-                            resultSet.getString("firstName"),
-                            resultSet.getString("lastName"),
-                            resultSet.getString("email"),
-                            null,
-                            null,
-                            null,
-                            true,
-                            lastModified != null ? new Date(lastModified.getTime()) : null,
-                            null,
-                            resultSet.getInt("enabled") == 1,
-                            resultSet.getInt("verified") == 1,
-                            lastSuccessfulLogin != null ? new Date(lastSuccessfulLogin.getTime()) : null);
-        }
+    public static final RowMapper<User> USER_ROW_MAPPER = (resultSet, index) -> {
+        final Timestamp lastModified        = resultSet.getTimestamp("last_modified");
+        final Timestamp lastSuccessfulLogin = resultSet.getTimestamp("lastSuccessfulLogin");
+        return new User(resultSet.getInt("id"),
+                        resultSet.getString("username"),
+                        resultSet.getString("firstName"),
+                        resultSet.getString("lastName"),
+                        resultSet.getString("email"),
+                        null,
+                        null,
+                        null,
+                        true,
+                        lastModified != null ? new Date(lastModified.getTime()) : null,
+                        null,
+                        resultSet.getInt("enabled") == 1,
+                        resultSet.getInt("verified") == 1,
+                        lastSuccessfulLogin != null ? new Date(lastSuccessfulLogin.getTime()) : null);
     };
 
     /**

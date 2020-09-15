@@ -10,11 +10,14 @@
 package org.nrg.xapi.rest;
 
 import org.jetbrains.annotations.Nullable;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.security.UserI;
 import org.springframework.http.HttpStatus;
+
+import javax.annotation.Nonnull;
 
 /**
  * Adds XNAT data-model-aware functions to the base XAPI REST controller.
@@ -49,5 +52,14 @@ public abstract class AbstractXapiProjectRestController extends AbstractXapiRest
         final UserI user = getSessionUser();
         final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
         return project == null ? HttpStatus.NOT_FOUND : !project.canDelete(user) ? HttpStatus.FORBIDDEN : null;
+    }
+
+    @Nonnull
+    protected String getItemId(final String projectId, final String subjectId, final String experimentId, final String assessedId, final String scanId, final String resourceType) throws NotFoundException {
+        return "";
+    }
+
+    protected int getResourceId(final String projectId, final String subjectId, final String experimentId, final String assessedId, final String scanId, final String resourceId, final String resourceType) throws NotFoundException {
+        return 0;
     }
 }
