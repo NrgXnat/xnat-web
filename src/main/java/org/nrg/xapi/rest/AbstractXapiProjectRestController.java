@@ -60,6 +60,6 @@ public abstract class AbstractXapiProjectRestController extends AbstractXapiRest
     }
 
     protected int getResourceId(final String projectId, final String subjectId, final String experimentId, final String assessedId, final String scanId, final String resourceId, final String resourceType) throws NotFoundException {
-        return 0;
+        return new Integer(resourceId);
     }
 }
