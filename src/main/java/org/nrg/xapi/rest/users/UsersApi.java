@@ -239,7 +239,7 @@ public class UsersApi extends AbstractXapiRestController {
             }
             return _factory.getUser(user);
         } catch (Exception e) {
-            throw new InitializationException("Error occurred creating user " + user.getLogin(), e);
+            throw new InitializationException("Error occurred creating user " + user.getLogin());
         }
     }
 
@@ -315,7 +315,7 @@ public class UsersApi extends AbstractXapiRestController {
             }
             return _factory.getUser(user);
         } catch (Exception e) {
-            throw new InitializationException("Error occurred modifying user '" + user.getUsername() + "'", e);
+            throw new InitializationException("Error occurred modifying user '" + e);
         }
     }
 
@@ -363,7 +363,7 @@ public class UsersApi extends AbstractXapiRestController {
             }
             return user.isEnabled();
         } catch (UserInitException e) {
-            throw new InitializationException("An error occurred initializing the user '" + username + "'", e);
+            throw new InitializationException("An error occurred initializing the user '" +  e);
         } catch (UserNotFoundException e) {
             throw new NotFoundException(XdatUser.SCHEMA_ELEMENT_NAME, username);
         }
@@ -615,7 +615,7 @@ public class UsersApi extends AbstractXapiRestController {
             }
             return user;
         } catch (UserInitException e) {
-            throw new InitializationException("An error occurred initializing the user " + username, e);
+            throw new InitializationException("An error occurred initializing the user " + e);
         } catch (UserNotFoundException e) {
             throw new NotFoundException(XdatUser.SCHEMA_ELEMENT_NAME, username);
         }
