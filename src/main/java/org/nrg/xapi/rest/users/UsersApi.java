@@ -434,7 +434,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
     public Collection<String> usersIdAddRoles(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
-                                              @ApiParam(value = "The user's new roles.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, PartialFailureException {
+                                              @ApiParam(value = "The user's new roles.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, Exception {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String role : roles) {
@@ -448,7 +448,7 @@ public class UsersApi extends AbstractXapiRestController {
         if (failed.isEmpty()) {
             Collections.emptyList();
         }
-        throw new PartialFailureException("The following roles were not added to user " + username + ": " + StringUtils.join(failed, ", "));
+        throw new Exception("The following roles were not added to user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
     @ApiOperation(value = "Adds a role to a user.", notes = "Assigns a new role to a user.", response = Boolean.class)
@@ -459,7 +459,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles/{role}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
     public Boolean usersIdAddRole(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
-                                  @ApiParam(value = "The user's new role.", required = true) @PathVariable("role") final String role) throws PartialFailureException, NotFoundException, InitializationException {
+                                  @ApiParam(value = "The user's new role.", required = true) @PathVariable("role") final String role) throws Exception, NotFoundException, InitializationException {
         return usersIdAddRoles(username, Collections.singletonList(role)).isEmpty();
     }
 
@@ -472,7 +472,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = Admin)
     public Collection<String> usersIdRemoveRoles(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
-                                                 @ApiParam(value = "The roles to be removed.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, PartialFailureException {
+                                                 @ApiParam(value = "The roles to be removed.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, Exception {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String role : roles) {
@@ -486,7 +486,7 @@ public class UsersApi extends AbstractXapiRestController {
         if (failed.isEmpty()) {
             Collections.emptyList();
         }
-        throw new PartialFailureException("The following roles were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
+        throw new Exception("The following roles were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
     @ApiOperation(value = "Remove a user's role.", notes = "Removes a user's role.", response = Boolean.class)
@@ -497,7 +497,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles/{role}", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = Admin)
     public Boolean usersIdRemoveRole(@ApiParam(value = "ID of the user to delete a role from", required = true) @PathVariable("username") @Username final String username,
-                                     @ApiParam(value = "The user role to delete.", required = true) @PathVariable("role") String role) throws PartialFailureException, NotFoundException, InitializationException {
+                                     @ApiParam(value = "The user role to delete.", required = true) @PathVariable("role") String role) throws Exception, NotFoundException, InitializationException {
         return usersIdRemoveRoles(username, Collections.singletonList(role)).isEmpty();
     }
 
@@ -522,7 +522,7 @@ public class UsersApi extends AbstractXapiRestController {
     @XapiRequestMapping(value = "{username}/groups", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Authorizer)
     @AuthDelegate(UserGroupXapiAuthorization.class)
     public Collection<String> usersIdAddGroups(@ApiParam(value = "ID of the user to add to the specified groups", required = true) @PathVariable("username") @Username final String username,
-                                               @ApiParam(value = "The groups to which the user should be added.", required = true) @UserGroup @RequestBody final List<String> groups) throws NotFoundException, InitializationException, PartialFailureException {
+                                               @ApiParam(value = "The groups to which the user should be added.", required = true) @UserGroup @RequestBody final List<String> groups) throws NotFoundException, InitializationException, Exception {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String group : groups) {
@@ -536,7 +536,7 @@ public class UsersApi extends AbstractXapiRestController {
         if (failed.isEmpty()) {
             return Collections.emptyList();
         }
-        throw new PartialFailureException("The following groups were not added to user " + username + ": " + StringUtils.join(failed, ", "));
+        throw new Exception("The following groups were not added to user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
     @ApiOperation(value = "Removes the user from one or more groups.", notes = "Removes the user from one or more groups.", response = String.class, responseContainer = "List")
@@ -548,7 +548,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = User)
     public Collection<String> usersIdRemoveGroups(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
-                                                  @ApiParam(value = "The groups from which the user should be removed.", required = true) @RequestBody final List<String> groups) throws NotFoundException, InitializationException, PartialFailureException {
+                                                  @ApiParam(value = "The groups from which the user should be removed.", required = true) @RequestBody final List<String> groups) throws NotFoundException, InitializationException, Exception {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String group : groups) {
@@ -562,7 +562,7 @@ public class UsersApi extends AbstractXapiRestController {
         if (failed.isEmpty()) {
             return Collections.emptyList();
         }
-        throw new PartialFailureException("The following groups were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
+        throw new Exception("The following groups were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
     @ApiOperation(value = "Adds a user to a group.", notes = "Assigns user to a group.", response = Boolean.class)
@@ -573,7 +573,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups/{group}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Authorizer)
     @AuthDelegate(UserGroupXapiAuthorization.class)
-    public Boolean usersIdAddGroup(@ApiParam(value = "ID of the user to add to a group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The user's new group.", required = true) @UserGroup @PathVariable("group") final String group) throws PartialFailureException, NotFoundException, InitializationException {
+    public Boolean usersIdAddGroup(@ApiParam(value = "ID of the user to add to a group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The user's new group.", required = true) @UserGroup @PathVariable("group") final String group) throws Exception, NotFoundException, InitializationException {
         return usersIdAddGroups(username, Collections.singletonList(group)).isEmpty();
     }
 
@@ -584,7 +584,7 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups/{group}", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = User)
-    public Boolean usersIdRemoveGroup(@ApiParam(value = "ID of the user to remove from group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The group to remove the user from.", required = true) @PathVariable("group") final String group) throws PartialFailureException, NotFoundException, InitializationException {
+    public Boolean usersIdRemoveGroup(@ApiParam(value = "ID of the user to remove from group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The group to remove the user from.", required = true) @PathVariable("group") final String group) throws Exception, NotFoundException, InitializationException {
         return usersIdRemoveGroups(username, Collections.singletonList(group)).isEmpty();
     }
 

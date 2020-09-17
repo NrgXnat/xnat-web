@@ -13,6 +13,7 @@ import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.archive.FileResourceService;
 import org.springframework.http.MediaType;
+import org.springframework.core.io.Resource
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -110,7 +111,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/experiments/{assessedId}/assessors/{experimentId}/files",
                                  "/experiments/{assessedId}/scans/{scanId}/files",
                                  "/subjects/{subjectId}/files"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<String> getResourceFiles(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+    public List<Resource> getResourceFiles(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
                                          @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
                                          @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
                                          @ApiParam(value = "The ID of the assessed experiment.") @PathVariable(required = false) final String assessedId,
