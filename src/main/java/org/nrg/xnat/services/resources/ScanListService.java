@@ -1,20 +1,11 @@
 package org.nrg.xnat.services.resources;
 
-import java.util.ArrayList;
-import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
-import org.restlet.resource.Representation;
-import org.restlet.resource.Variant;
+import java.io.IOException;
+
+import org.nrg.xft.security.UserI;
 
 public interface ScanListService {
 
-	boolean allowPost();
-
-	void handlePost();
-
-	ArrayList<String> getDefaultFields(GenericWrapperElement e);
-
-	String getDefaultElementName();
-
-	Representation getRepresentation(Variant variant);
+	String getScanResource(UserI userI, String accessedId) throws IOException;
 
 }

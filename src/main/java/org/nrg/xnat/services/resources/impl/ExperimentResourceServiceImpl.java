@@ -16,19 +16,28 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
+import org.nrg.action.ServerException;
 import org.nrg.framework.exceptions.NrgServiceError;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTTable;
+import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.restlet.representations.BeanRepresentation;
+import org.nrg.xnat.restlet.representations.ItemXMLRepresentation;
 import org.nrg.xnat.restlet.representations.JSONTableRepresentation;
 import org.nrg.xnat.services.resources.ExperimentResourceService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.restlet.data.MediaType;
+import org.restlet.data.Status;
 import org.restlet.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,9 +62,14 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 
 	private UserI _user;
 	private XnatExperimentdata expt = null;
-	private XFTTable table = null;
+	//private XFTTable table = null;
 	private String xmlPath = null;
-	ArrayList<XnatExperimentdata> expts = new ArrayList<>();
+	//List<String> resourceIds = new ArrayList<>();
+	
+	
+	private XFTTable catalogs = null;
+	private XnatProjectdata proj = null;
+	ItemI parent = null;
 
 	@Autowired
 	public ExperimentResourceServiceImpl() {
@@ -72,6 +86,7 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 	}
 
 	private String getExperimentById(String experimentId) throws IOException {
+		XFTTable table = null;
 		if (experimentId != null) {
 			expt = XnatExperimentdata.getXnatExperimentdatasById(experimentId, getUser(), false);
 		}
@@ -105,7 +120,50 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 	}
 
 	private String getExperimentResourceByIds(String experimentId, String resourceId) throws IOException {
-		// TODO Auto-generated method stub
+		List<String> resourceIds = new ArrayList<>();
+		List<XnatAbstractresource> resources = new ArrayList<>();
+		XFTTable table = null;
+		resourceIds.add(resourceId);
+		getAllMatches(resourceIds,resources);
+
+		if (experimentId != null) {
+			expt = XnatExperimentdata.getXnatExperimentdatasById(experimentId, getUser(), false);
+		}
+		if (expt != null) {
+			try {
+				table = loadCatalogs(resourceIds, false, true);// isQueryVariableTrue("all") -> true
+			} catch (Exception e) {
+				logger.error("", e);
+			}
+		}
+
+		if (resources.size() == 1) {
+			final XnatAbstractresource resource = resources.get(0);
+			try {
+				if (proj == null) {
+					if (parent.getItem().instanceOf("xnat:experimentData")) {
+						proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+					}
+				}
+
+				if (resource.getItem().instanceOf("xnat:resourceCatalog")) {
+					try {
+						CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(
+								proj.getRootArchivePath(), ((XnatResourcecatalog) resource),
+								false, proj.getId()); //isQueryVariableTrue("includeRootPath")
+						return new BeanRepresentation(catalogData.catBean, MediaType.TEXT_XML).getText();
+					} catch (ServerException e) {
+						getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND,
+								"Unable to find catalog file: " + e.getMessage());
+					}
+				} else {
+					return new ItemXMLRepresentation(resource.getItem(), MediaType.TEXT_XML).getText();
+				}
+			} catch (ElementNotFoundException e) {
+				log.error("", e);
+			}
+		}
+
 		return "input null";
 	}
 
@@ -124,10 +182,11 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll)
 			throws Exception {
 		// checkResourceIDs(resourceIds);
-
+		ArrayList<XnatExperimentdata> expts = new ArrayList<>();
 		final StringBuilder query = new StringBuilder();
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
-		//final boolean isInResource = StringUtils.equalsIgnoreCase("out", "in"); // type =out
+		// final boolean isInResource = StringUtils.equalsIgnoreCase("out", "in"); //
+		// type =out
 
 		final UserI user = getUser();
 
@@ -137,7 +196,7 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 
 		if (!expts.isEmpty()) {
 			// security = expts.get(0);
-			// parent = expts.get(0);
+			parent = expts.get(0);
 			final List<String> experimentIds = Lists.transform(expts, new Function<XnatExperimentdata, String>() {
 				@Override
 				public String apply(final XnatExperimentdata experiment) {
@@ -238,16 +297,16 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 		return XFTTable.Execute(completedQuery, user.getDBName(), user.getUsername());
 	}
 
-	protected String getResourceIdsWhereClause(final List<String> resourceIds) {
+	private String getResourceIdsWhereClause(final List<String> resourceIds) {
 		return getResourceIdsWhereClause(resourceIds, "map.xnat_abstractresource_xnat_abstractresource_id",
 				"abst.label");
 	}
 
-	protected String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey) {
+	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey) {
 		return getResourceIdsWhereClause(resourceIds, idKey, "abst.label");
 	}
 
-	protected String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
+	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
 			final String labelKey) {
 		// Numeric resource IDs are those that contain only digits.
 		final List<String> numericIds = Lists.newArrayList(Iterables.filter(resourceIds, new Predicate<String>() {
@@ -290,7 +349,7 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 	}
 
 	private static final String STARTER_FIELDS = "SELECT xnat_abstractresource_id, abst.label, xme.element_name ";
-	public static final String USER_ACCESSIBLE_ASSESSOR_IDS = "( SELECT * FROM xnat_imageassessordata WHERE id IN (SELECT id "
+	private static final String USER_ACCESSIBLE_ASSESSOR_IDS = "( SELECT * FROM xnat_imageassessordata WHERE id IN (SELECT id "
 			+ " FROM   (SELECT xea.element_name, " + "                xfm.field, " + "                xfm.field_value "
 			+ "         FROM   xdat_user u " + "                JOIN xdat_user_groupid map "
 			+ "                  ON u.xdat_user_id = map.groups_groupid_xdat_user_xdat_user_id "
@@ -356,4 +415,37 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 			+ " ORDER  BY element_name) )";
 
 	// end abstract class
+
+	private void getAllMatches(List<String> resourceIds, List<XnatAbstractresource> resources) {
+		resources.clear();
+		try {
+			catalogs = loadCatalogs(resourceIds, false, true);
+			// setCatalogs(loadCatalogs(resourceIds, false, true));
+		} catch (Exception e) {
+			log.error("An error occurred trying to load catalogs from the resource IDs: {}", resourceIds, e);
+		}
+		initializeResourcesFromIdsAndCatalogs(resourceIds,resources);
+	}
+
+	private void initializeResourcesFromIdsAndCatalogs(List<String> resourceIds, List<XnatAbstractresource> resources) {
+		if (catalogs != null && catalogs.size() > 0) {
+			for (final Object[] row : catalogs.rows()) {
+				final String id = Integer.toString((Integer) row[0]);
+				final String label = (String) row[1];
+				resources.addAll(
+						Lists.transform(Lists.newArrayList(Iterables.filter(resourceIds, new Predicate<String>() {
+							@Override
+							public boolean apply(@Nullable final String resourceId) {
+								return StringUtils.equalsAny(resourceId, id, label);
+							}
+						})), new Function<String, XnatAbstractresource>() {
+							@Override
+							public XnatAbstractresource apply(final String resourceId) {
+								return XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(row[0],
+										getUser(), false);
+							}
+						}));
+			}
+		}
+	}
 }
