@@ -14,6 +14,8 @@ import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ExperimentResourceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,7 +35,8 @@ import lombok.extern.slf4j.Slf4j;
 @ResponseBody
 @Slf4j
 public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
-
+	private static final Logger _log = LoggerFactory.getLogger(ExperimentResourceXapi.class);
+	
 	@Autowired
 	public ExperimentResourceXapi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
 			final ExperimentResourceService experimentService) {
@@ -54,9 +57,9 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId)
 			throws NotFoundException, IOException {
 		if (request != null) {
-			System.out.println("request1 --- " + request);
+			_log.debug("Controller getExperimentResources - Request content  {} " + request);
 		}
-		System.out.println("Controller Api called");
+		_log.debug("Controller getExperimentResources by experiment id , resource id ");
 		final String projectSubject = _experimentService.getExperimentResource(experimentId, resourceId);
 		if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");
@@ -75,9 +78,9 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId)
 			throws NotFoundException, IOException {
 		if (request != null) {
-			System.out.println("request2 --- " + request);
+			_log.debug("Controller getExperimentResources for xml - Request content {} " + request);
 		}
-		System.out.println("Controller2 Api called");
+		_log.debug("Controller getExperimentResources by experiment id and resource id -Xml response ");
 		final String projectSubject = _experimentService.getExperimentResource(experimentId, resourceId);
 		if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");

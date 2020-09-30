@@ -29,7 +29,6 @@ import org.nrg.xnat.restlet.representations.JSONTableRepresentation;
 import org.nrg.xnat.services.resources.files.FileListService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.restlet.data.MediaType;
-import org.restlet.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -39,15 +38,18 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
-public class FileListServiceImpl extends Resource  implements FileListService {
+@Slf4j
+public class FileListServiceImpl implements FileListService {
 	private final static Logger logger = LoggerFactory.getLogger(FileListServiceImpl.class);
 	private UserI _user;
 	private XnatProjectdata proj = null;
-	private ArrayList<XnatImagescandata> scans = null; //new ArrayList<>();
-	
+	private ArrayList<XnatImagescandata> scans = null;
 	private ItemI security = null;
 	private  String xmlPath = null;
+	
 	@Override
 	public String getResourceFiles(UserI sessionUser, String assessedId, String scanId) {
 		return null;
@@ -65,11 +67,9 @@ public class FileListServiceImpl extends Resource  implements FileListService {
 				if (assessed != null && (proj != null && !assessed.hasProject(proj.getId()))) {
 					assessed = null;
 				}
-
 				if (assessed == null && proj != null) {
 					assessed = XnatImagesessiondata.GetExptByProjectIdentifier(proj.getId(), s, user, false);
 				}
-
 				if (assessed != null) {
 					try {
 						if (assessed.canRead(user)) {
@@ -78,9 +78,7 @@ public class FileListServiceImpl extends Resource  implements FileListService {
 					} catch (Exception ignored) {
 					}
 				}
-
 			}
-
 		}
 
 		if (scanId != null && assesseds.size() > 0) {
@@ -189,8 +187,6 @@ public class FileListServiceImpl extends Resource  implements FileListService {
 
 		final UserI user = getUser();
 		if (!scans.isEmpty()) {
-		//	security = assesseds.get(0);
-			//parent = scans.get(0);
 			final List<Integer> scanIds = Lists.transform(scans, new Function<XnatImagescandata, Integer>() {
 				@Override
 				public Integer apply(final XnatImagescandata scan) {

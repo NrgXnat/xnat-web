@@ -13,6 +13,8 @@ import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
 import org.nrg.xnat.services.resources.files.FileListService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @ResponseBody
 @Slf4j
 public class FileResourceXapi extends AbstractXapiProjectRestController {
+	private static final Logger _log = LoggerFactory.getLogger(FileResourceXapi.class);
 	
 	@Autowired
 	public FileResourceXapi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
@@ -54,7 +57,7 @@ public class FileResourceXapi extends AbstractXapiProjectRestController {
 			)
 					
 			throws NotFoundException, IOException {
-		System.out.println("files Controller Api called");
+		_log.debug("Controller Api- ger ResourceFiles by project id or subject id");
 		final String projectSubject = _fileListService.getResourceFiles(getSessionUser(),assessedId, scanId);
 	    if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");
@@ -74,7 +77,7 @@ public class FileResourceXapi extends AbstractXapiProjectRestController {
 			 @ApiParam(value = "The ID of the scanId.") @PathVariable(required = false) final String scanId )
 					
 			throws NotFoundException, IOException {
-		System.out.println("resources Controller Api called");
+		_log.debug("Controller Api- ger Resources by resource id");
 		final String resource = _fileListService.getResources(getSessionUser(),assessedId, scanId);
 	    if (resource == null) {
 			throw new NotFoundException("No Project with ID was found.");

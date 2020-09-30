@@ -9,12 +9,15 @@ import javax.servlet.http.HttpServletRequest;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
+import org.nrg.xapi.rest.JsonYamlRestValidator;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ExperimentResourceService;
 import org.nrg.xnat.services.resources.ScanListService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -34,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @ResponseBody
 @Slf4j
 public class ScanListResourceXapi extends AbstractXapiProjectRestController {
+	 private static final Logger _log = LoggerFactory.getLogger(ScanListResourceXapi.class);
 
 	@Autowired
 	public ScanListResourceXapi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
@@ -50,7 +54,7 @@ public class ScanListResourceXapi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{assessedId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getResources(@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId)
 			throws NotFoundException, IOException {
-		System.out.println("Controller Api called");
+		_log.debug("Controller Api called");
 		String projectSubject = _scanListService.getScanResource(getSessionUser(),assessedId);
 		if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");

@@ -35,7 +35,7 @@ import org.nrg.xnat.restlet.representations.JSONTableRepresentation;
 import org.nrg.xnat.restlet.representations.TurbineScreenRepresentation;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
 import org.restlet.data.MediaType;
-import org.restlet.data.Status;
+//import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Resource;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,7 +45,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class ProjectSubjectListServiceImpl extends Resource implements ProjectSubjectListService {
+public class ProjectSubjectListServiceImpl implements ProjectSubjectListService {
 
 	private UserI _user;
 	private XnatProjectdata proj = null;
@@ -221,7 +221,7 @@ public class ProjectSubjectListServiceImpl extends Resource implements ProjectSu
         	};
         	representation = new JSONObjectRepresentation(MediaType.APPLICATION_JSON, (new ItemJSONBuilder()).call(item, history, false));
         	} catch (Exception e) {
-        		getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
+        	//	getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
         	    return null;
         	}
         if (representation != null && proj != null && representation instanceof TurbineScreenRepresentation && StringUtils.isNotBlank(proj.getId())) {

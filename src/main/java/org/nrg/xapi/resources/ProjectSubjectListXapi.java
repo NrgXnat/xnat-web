@@ -12,6 +12,8 @@ import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -31,7 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @ResponseBody
 @Slf4j
 public class ProjectSubjectListXapi extends AbstractXapiProjectRestController {
-
+	private static final Logger _log = LoggerFactory.getLogger(ProjectSubjectListXapi.class);
+	 
 	@Autowired
 	public ProjectSubjectListXapi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
 			final ProjectSubjectListService projectService) {
@@ -53,7 +56,7 @@ public class ProjectSubjectListXapi extends AbstractXapiProjectRestController {
 			)
 					
 			throws NotFoundException, IOException {
-		System.out.println("Controller Api called");
+		_log.debug("Controller Api- get Resources by subjectId");
 		final String projectSubject = _projectService.getProjectSubjectResource(projectId, subjectId);
 	    if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");

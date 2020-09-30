@@ -41,11 +41,14 @@ import org.restlet.data.MediaType;
 import org.restlet.data.Request;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
 /**
  * @author afour
  *
  */
 @Service
+@Slf4j
 public class ScanListServiceImpl implements ScanListService {
 
 	XnatProjectdata proj = null;
@@ -71,7 +74,7 @@ public class ScanListServiceImpl implements ScanListService {
 		} else {
 			XFTTable table;
 			try {
-				final String re = getRootElementName();  
+				final String re = getRootElementName();
 
 				final QueryOrganizer qo = new QueryOrganizer(re, user, ViewManager.ALL);
 
@@ -100,55 +103,54 @@ public class ScanListServiceImpl implements ScanListService {
 		}
 	}
 
-	
-	
-	public String getDefaultElementName(){
+	public String getDefaultElementName() {
 		return "xnat:imageScanData";
 	}
-	public String getRootElementName(){
+
+	public String getRootElementName() {
 		try {
-			GenericWrapperElement rootElementName=GenericWrapperElement.GetElement(getDefaultElementName());
-			if(this.getQueryVariable("xsiType")!=null && !getQueryVariable("xsiType").contains(",")){
+			GenericWrapperElement rootElementName = GenericWrapperElement.GetElement(getDefaultElementName());
+			if (this.getQueryVariable("xsiType") != null && !getQueryVariable("xsiType").contains(",")) {
 				return this.getQueryVariable("xsiType");
 			}
 
-			ArrayList<String> fields= new ArrayList<>();
-			
-			for(String key:getQueryVariableKeys()){
-				if(key.contains("/")){
+			ArrayList<String> fields = new ArrayList<>();
+
+			for (String key : getQueryVariableKeys()) {
+				if (key.contains("/")) {
 					fields.add(key);
-				}else if(this.fieldMapping.containsKey(key)){
+				} else if (this.fieldMapping.containsKey(key)) {
 					fields.add(this.fieldMapping.get(key));
-				}else if(key.equals("columns")){
-					for(String col:XftStringUtils.CommaDelimitedStringToArrayList(getQueryVariable("columns"))){
-						if(col.contains("/")){
+				} else if (key.equals("columns")) {
+					for (String col : XftStringUtils.CommaDelimitedStringToArrayList(getQueryVariable("columns"))) {
+						if (col.contains("/")) {
 							fields.add(col);
-						}else if(this.fieldMapping.containsKey(col)){
+						} else if (this.fieldMapping.containsKey(col)) {
 							fields.add(this.fieldMapping.get(col));
 						}
 					}
 				}
 			}
-			
-			for(String field:fields){
+
+			for (String field : fields) {
 				try {
-					GenericWrapperElement ge=XftStringUtils.GetRootElement(field);
-                    assert ge != null;
-                    if(!ge.getXSIType().equals(rootElementName.getXSIType()) && ge.isExtensionOf(rootElementName)){
-						rootElementName=ge;
+					GenericWrapperElement ge = XftStringUtils.GetRootElement(field);
+					assert ge != null;
+					if (!ge.getXSIType().equals(rootElementName.getXSIType()) && ge.isExtensionOf(rootElementName)) {
+						rootElementName = ge;
 					}
 				} catch (ElementNotFoundException e) {
-					//log.error("",e);
+					// log.error("",e);
 				}
 			}
-			
+
 			return rootElementName.getXSIType();
 		} catch (Throwable e) {
-			//log.error("",e);
+			// log.error("",e);
 			return this.getDefaultElementName();
 		}
 	}
-	
+
 	public XFTTable formatHeaders(XFTTable table, QueryOrganizer qo, String idpath, String URIpath) {
 		final ArrayList<String> newColumns = new ArrayList<>();
 		for (String column : table.getColumns()) {
@@ -200,7 +202,6 @@ public class ScanListServiceImpl implements ScanListService {
 		}
 		return null;
 	}
-
 
 	public void populateQuery(QueryOrganizer qo) {
 		final String queryVariable = getQueryVariable("columns");
@@ -324,7 +325,6 @@ public class ScanListServiceImpl implements ScanListService {
 		return null;
 	}
 
-	
 	public CriteriaCollection processQueryCriteria(String xPath, String values) {
 		CriteriaCollection cc = new CriteriaCollection("OR");
 		try {
@@ -439,13 +439,13 @@ public class ScanListServiceImpl implements ScanListService {
 
 	// HC
 	private Form getBodyAsForm() {
-//	        if (_body == null) {
-//	            final Representation entity = getRequest().getEntity();
-//	            if (RequestUtil.isMultiPartFormData(entity) && entity.getSize() > 0) {
-//	                _mediaType = entity.getMediaType();
-//	                _body = new Form(entity);
-//	            }
-//	        }
+		// if (_body == null) {
+		// final Representation entity = getRequest().getEntity();
+		// if (RequestUtil.isMultiPartFormData(entity) && entity.getSize() > 0) {
+		// _mediaType = entity.getMediaType();
+		// _body = new Form(entity);
+		// }
+		// }
 
 		return _body;
 	}
@@ -503,7 +503,7 @@ public class ScanListServiceImpl implements ScanListService {
 		return form;
 		// return request.getResourceRef().getQueryAsForm();
 	}
-	
+
 	public ArrayList<String> columns = null;
 	private Form _body;
 	private MediaType _mediaType;

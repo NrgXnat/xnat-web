@@ -37,8 +37,6 @@ import org.nrg.xnat.restlet.representations.JSONTableRepresentation;
 import org.nrg.xnat.services.resources.ExperimentResourceService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.restlet.data.MediaType;
-import org.restlet.data.Status;
-import org.restlet.resource.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,14 +55,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Service
 @Slf4j
-public class ExperimentResourceServiceImpl extends Resource implements ExperimentResourceService {
+public class ExperimentResourceServiceImpl implements ExperimentResourceService {
 	private final static Logger logger = LoggerFactory.getLogger(ExperimentResourceServiceImpl.class);
 
 	private UserI _user;
 	private XnatExperimentdata expt = null;
-	//private XFTTable table = null;
 	private String xmlPath = null;
-	//List<String> resourceIds = new ArrayList<>();
 	
 	
 	private XFTTable catalogs = null;
@@ -115,7 +111,6 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 			}
 			params.put("totalRecords", recordCount);
 		}
-		// return representTable(table, overrideVariant(variant), params);
 		return new JSONTableRepresentation(table, null, params, MediaType.APPLICATION_JSON).getText();
 	}
 
@@ -153,8 +148,8 @@ public class ExperimentResourceServiceImpl extends Resource implements Experimen
 								false, proj.getId()); //isQueryVariableTrue("includeRootPath")
 						return new BeanRepresentation(catalogData.catBean, MediaType.TEXT_XML).getText();
 					} catch (ServerException e) {
-						getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND,
-								"Unable to find catalog file: " + e.getMessage());
+						log.error("Unable to find catalog file: ", e.getMessage());
+						
 					}
 				} else {
 					return new ItemXMLRepresentation(resource.getItem(), MediaType.TEXT_XML).getText();
