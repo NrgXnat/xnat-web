@@ -24,7 +24,6 @@ import org.nrg.xnat.services.resources.util.ItemXMLRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
 import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
 import org.nrg.xnat.utils.CatalogUtils;
-import org.restlet.data.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

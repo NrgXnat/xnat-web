@@ -14,8 +14,9 @@ import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXWriter;
 import org.xml.sax.SAXException;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public class ItemXMLRepresentationUtil {
-	static org.apache.log4j.Logger logger = Logger.getLogger(ItemXMLRepresentationUtil.class);
 	XFTItem item = null;
 	boolean includeSchemaLocations=true;
 	private boolean allowDBAccess=true;
@@ -61,15 +62,15 @@ public class ItemXMLRepresentationUtil {
 				writer.setWriteHiddenFields(hidden_fields);
 				writer.write(item);
 			} catch (TransformerConfigurationException e) {
-				logger.error("",e);
+				log.error("",e);
 			} catch (IllegalArgumentException e) {
-				logger.error("",e);
+				log.error("",e);
 			} catch (TransformerFactoryConfigurationError e) {
-				logger.error("",e);
+				log.error("",e);
 			} catch (FieldNotFoundException e) {
-				logger.error("",e);
+				log.error("",e);
 			} catch (SAXException e) {
-				logger.error("",e);
+				log.error("",e);
 			}
 	}
 

@@ -23,8 +23,10 @@ import org.nrg.xft.security.UserI;
 import com.noelios.restlet.ext.servlet.ServletCall;
 import com.noelios.restlet.http.HttpRequest;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public abstract class TurbineScreenRepresentationUtil {
-	static org.apache.log4j.Logger logger = Logger.getLogger(TurbineScreenRepresentationUtil.class);
 	final RunData data;
 	final HttpRequest request;
 	final UserI user;
@@ -110,7 +112,7 @@ public abstract class TurbineScreenRepresentationUtil {
 			try {
 				XDAT.setUserDetails(user);
 			} catch (Exception e) {
-				logger.error("",e);
+				log.error("",e);
 			}
 		}
 		
@@ -168,9 +170,9 @@ public abstract class TurbineScreenRepresentationUtil {
 	    	data.setScreenTemplate(getScreen());
 			turbineScreen(data,out);
 		} catch (TurbineException e) {
-			logger.error("",e);
+			log.error("",e);
 		} catch (Exception e) {
-			logger.error("",e);
+			log.error("",e);
 		}
 	}
 	

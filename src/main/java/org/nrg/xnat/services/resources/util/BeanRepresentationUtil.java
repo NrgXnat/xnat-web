@@ -9,10 +9,11 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 
 import org.apache.log4j.Logger;
 import org.nrg.xdat.bean.base.BaseElement;
-import org.nrg.xnat.restlet.representations.ItemXMLRepresentation;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class BeanRepresentationUtil {
-	static org.apache.log4j.Logger logger = Logger.getLogger(ItemXMLRepresentation.class);
 	BaseElement cat = null;
 	boolean includeSchemaLocations=true;
 	
@@ -45,9 +46,9 @@ public class BeanRepresentationUtil {
 				cat.toXML(pw, false);
 				pw.close();
 			} catch (IllegalArgumentException e) {
-				logger.error("",e);
+				log.error("",e);
 			} catch (TransformerFactoryConfigurationError e) {
-				logger.error("",e);
+				log.error("",e);
 			}
 	}
 
