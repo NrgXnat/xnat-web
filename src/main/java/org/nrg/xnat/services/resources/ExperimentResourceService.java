@@ -15,5 +15,5 @@ public interface ExperimentResourceService {
 	//void handlePut();
 
 	//void handleDelete();
-	public String getExperimentResource(String experimentId, String resourceId) throws IOException;
+	public String getExperimentResource(String experimentId, String resourceId) throws IOException, Exception;
 }

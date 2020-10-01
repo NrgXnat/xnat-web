@@ -55,7 +55,7 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 	public ResponseEntity<String> getResources(HttpServletRequest request,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
 			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId)
-			throws NotFoundException, IOException {
+			throws Exception {
 		if (request != null) {
 			_log.debug("Controller getExperimentResources - Request content  {} " + request);
 		}
@@ -76,7 +76,7 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 	public ResponseEntity<String> getResourcesXml(HttpServletRequest request,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
 			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId)
-			throws NotFoundException, IOException {
+			throws Exception {
 		if (request != null) {
 			_log.debug("Controller getExperimentResources for xml - Request content {} " + request);
 		}

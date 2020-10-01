@@ -5,35 +5,25 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.framework.exceptions.NrgServiceError;
-import org.nrg.framework.exceptions.NrgServiceRuntimeException;
-import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.security.helpers.Users;
-import org.nrg.xdat.security.user.exceptions.UserInitException;
-import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
-import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.XftStringUtils;
-import org.nrg.xnat.restlet.representations.JSONTableRepresentation;
 import org.nrg.xnat.services.resources.files.FileListService;
+import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
+import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
 import org.nrg.xnat.utils.CatalogUtils;
-import org.restlet.data.MediaType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -42,14 +32,9 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class FileListServiceImpl implements FileListService {
+public class FileListServiceImpl extends ResourceXapiUtil implements FileListService {
 	private final static Logger logger = LoggerFactory.getLogger(FileListServiceImpl.class);
-	private UserI _user;
 	private XnatProjectdata proj = null;
-	private ArrayList<XnatImagescandata> scans = null;
-	private ItemI security = null;
-	private  String xmlPath = null;
-	
 	@Override
 	public String getResourceFiles(UserI sessionUser, String assessedId, String scanId) {
 		return null;
@@ -145,7 +130,6 @@ public class FileListServiceImpl implements FileListService {
 			}
 		}
 
-		final boolean fileStats = false; // isQueryVariableTrue("file_stats");
 		final boolean cacheFileStats = false; // isQueryVariableTrue("cache_file_stats");
 
 		final Hashtable<String, Object> params = new Hashtable<>();
@@ -164,68 +148,10 @@ public class FileListServiceImpl implements FileListService {
 			params.put("totalRecords", recordCount);
 		}
 
-		return new JSONTableRepresentation(table, null, params, MediaType.APPLICATION_JSON).getText();
+		return new JSONTableRepresentationUtil(table, null, params).getText();
 	}
 
-	@Nonnull
-	public UserI getUser() {
-		try {
-			_user = ObjectUtils.defaultIfNull(XDAT.getUserDetails(), Users.getGuest());
-			return ObjectUtils.defaultIfNull(_user, Users.getGuest());
-		} catch (UserNotFoundException | UserInitException e) {
-			throw new NrgServiceRuntimeException(NrgServiceError.UserServiceError,
-					"An error occurred retrieving the guest user.", e);
-		}
 	
-	}
-
-	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll)
-			throws Exception {
-		final StringBuilder query = new StringBuilder();
-		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
-		final boolean isInResource = StringUtils.equalsIgnoreCase("out", "in");
-
-		final UserI user = getUser();
-		if (!scans.isEmpty()) {
-			final List<Integer> scanIds = Lists.transform(scans, new Function<XnatImagescandata, Integer>() {
-				@Override
-				public Integer apply(final XnatImagescandata scan) {
-					return scan.getXnatImagescandataId();
-				}
-			});
-			xmlPath = "xnat:imageScanData/file";
-			query.append(STARTER_FIELDS);
-			query.append(", 'scans'::TEXT AS category, scan.id::TEXT AS cat_id, scan.type::TEXT AS cat_desc");
-			if (includeURI) {
-				query.append(
-						",'/experiments/' || scan.image_session_id || '/scans/' || scan.id || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
-			}
-			query.append(
-					" FROM xnat_abstractresource abst LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id LEFT JOIN xnat_imagescandata scan ON abst.xnat_imagescandata_xnat_imagescandata_id=scan.xnat_imagescandata_id WHERE xnat_imagescandata_xnat_imagescandata_id IN ('");
-			query.append(StringUtils.join(scanIds, "', '"));
-			query.append("') ");
-			if (hasResourceIds) {
-				query.append(" AND (").append(getResourceIdsWhereClause(resourceIds, "abst.xnat_abstractresource_id"))
-						.append(")");
-			}
-		} else {
-			query.append(STARTER_FIELDS);
-			query.append(
-					", 'resources'::TEXT AS category, NULL::TEXT AS cat_id, ' '::TEXT AS cat_desc FROM xnat_abstractresource abst LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE xnat_abstractresource_id IS NULL");
-		}
-
-		final String completedQuery = query.toString();
-		logger.debug("Loading catalog for user '{}' using query: {}", user.getUsername(), completedQuery);
-		return XFTTable.Execute(completedQuery, user.getDBName(), user.getUsername());
-	}
-
-	private static final String STARTER_FIELDS = "SELECT xnat_abstractresource_id, abst.label, xme.element_name ";
-
-	/*private String getResourceIdsWhereClause(final List<String> resourceIds) {
-		return getResourceIdsWhereClause(resourceIds, "map.xnat_abstractresource_xnat_abstractresource_id",
-				"abst.label");
-	}
-*/
 	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey) {
 		return getResourceIdsWhereClause(resourceIds, idKey, "abst.label");
 	}
