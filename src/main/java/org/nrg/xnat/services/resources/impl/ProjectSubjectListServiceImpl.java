@@ -9,11 +9,14 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.db.ViewManager;
+import org.nrg.xft.presentation.FlattenedItemA;
+import org.nrg.xft.presentation.ItemJSONBuilder;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.search.QueryOrganizer;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
+import org.nrg.xnat.services.resources.util.JSONObjectRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
 import org.nrg.xnat.services.resources.util.RepresentItemUtil;
 import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
@@ -114,8 +117,18 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 		}
 
 		if (sub != null) {
-			RepresentItemUtil representItemUtil = null;
-			return representItemUtil.representItem(sub.getItem(), proj);
+			try {
+                FlattenedItemA.HistoryConfigI history = (isQueryVariableTrue("includeHistory")) ? FlattenedItemA.GET_ALL : new FlattenedItemA.HistoryConfigI() {
+                    @Override
+                    public boolean getIncludeHistory() {
+                        return false;
+                    }
+                };
+			 return new JSONObjectRepresentationUtil((new ItemJSONBuilder()).call(sub.getItem(), history, isQueryVariableTrue("includeHeaders"))).getText();
+		} catch (Exception e) {
+			log.error("Inernal server error : --");
+            return null;
+		}
 		} else {
 			final StringBuilder message = new StringBuilder("Unable to find the specified subject. ");
 			if (proj == null) {
@@ -131,6 +144,13 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 		}
 	}
 
+	private boolean isQueryVariableTrue(String value) {
+		if(value.equals("includeHistory"))
+			return true;
+		else if(value.equals("includeHeaders"))
+			return false;
+		return false;
+	}
 //	private Representation representItem(XFTItem item, MediaType mt) {
 //		Representation representation = null;
 //		try {

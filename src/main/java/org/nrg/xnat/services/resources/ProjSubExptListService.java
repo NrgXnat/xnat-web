@@ -1,7 +1,6 @@
 package org.nrg.xnat.services.resources;
 
-import org.restlet.resource.Representation;
-import org.restlet.resource.Variant;
+import org.nrg.xft.security.UserI;
 
 public interface ProjSubExptListService {
 	
@@ -9,5 +8,5 @@ public interface ProjSubExptListService {
 
 	public void handlePost();
 
-	public Representation represent(Variant variant);
+	public String getProjectExperiments(final UserI user, final String projectId, String experimentId) throws  Exception;
 }
