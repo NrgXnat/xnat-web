@@ -40,13 +40,14 @@ public class ResourceXapiUtil {
 	protected XnatExperimentdata expt = null;
 	protected ItemI parent = null;
 	private String xmlPath = null;
+	protected ArrayList<XnatExperimentdata> expts = new ArrayList<>();
 	protected ArrayList<XnatImagescandata> scans = null;
 	protected Map<String, String> fieldMapping = new HashMap<>();
 	
 	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll)
 						throws Exception {
 					// checkResourceIDs(resourceIds);
-					ArrayList<XnatExperimentdata> expts = new ArrayList<>();
+					//ArrayList<XnatExperimentdata> expts = new ArrayList<>();
 					final StringBuilder query = new StringBuilder();
 					final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 					// final boolean isInResource = StringUtils.equalsIgnoreCase("out", "in"); //

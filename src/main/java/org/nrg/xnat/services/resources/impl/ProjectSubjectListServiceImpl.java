@@ -4,8 +4,13 @@
 package org.nrg.xnat.services.resources.impl;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Hashtable;
+import java.util.Objects;
+
+import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.db.ViewManager;
@@ -14,12 +19,15 @@ import org.nrg.xft.presentation.ItemJSONBuilder;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.search.QueryOrganizer;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
 import org.nrg.xnat.services.resources.util.JSONObjectRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
-import org.nrg.xnat.services.resources.util.RepresentItemUtil;
 import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
+import org.nrg.xnat.utils.CatalogUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,10 +36,14 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements ProjectSubjectListService {
+	private final static Logger logger = LoggerFactory.getLogger(ProjectSubjectListServiceImpl.class);
 
 	private XnatProjectdata proj = null;
 	public String userName = null;
 	private XnatSubjectdata sub = null;
+   // XnatSubjectassessordata expt = null;
+    XnatSubjectassessordata existing;
+    ArrayList<XnatExperimentdata> experiments =null;
 
 	@Autowired
 	public ProjectSubjectListServiceImpl() {
@@ -39,18 +51,72 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 	}
 
 	@Override
-	public String getProjectSubjectResource(String projectId, String subjectId) throws IOException {
-		if (projectId != null && subjectId != null) {
+	public String getProjectSubjectResource(String projectId, String subjectId, String experimentId) throws Exception {
+		
+		if (projectId != null && subjectId != null && experimentId != null) {
+			return getProjectSubjectExperimentById(projectId, subjectId,experimentId);
+		}else if (projectId != null && subjectId != null) {
 			return getProjectSubjectById(projectId, subjectId);
 		} else if (projectId != null) {
 			return getProjectSubjectById(projectId);
-		}
+		} 
 		return "invalid resource";
+	}
+
+	private String getProjectSubjectExperimentById(String projectId, String subjectId, String experimentId) throws Exception {
+		 XnatSubjectassessordata experiment = null;
+		 setProjectSubjectOrExisting(projectId,subjectId,experimentId);
+		 if (Objects.isNull(experiment) && Objects.nonNull(experimentId)) {
+			 experiment = (XnatSubjectassessordata) XnatExperimentdata.getXnatExperimentdatasById(experimentId, getUser(), false);
+			 if (Objects.isNull(experiment) && Objects.nonNull(proj)) {
+				 experiment = (XnatSubjectassessordata) XnatExperimentdata.GetExptByProjectIdentifier(proj.getId(), experimentId, getUser(), false);
+	            }
+	        }
+		 FlattenedItemA.HistoryConfigI history = (isQueryVariableTrue("includeHistory")) ? FlattenedItemA.GET_ALL : new FlattenedItemA.HistoryConfigI() {
+             @Override
+             public boolean getIncludeHistory() {
+                 return false;
+             }
+         };
+		 return new JSONObjectRepresentationUtil((new ItemJSONBuilder()).call(sub.getItem(), history, isQueryVariableTrue("includeHeaders"))).getText();
+	}
+
+	private void setProjectSubjectOrExisting(String projectId, String subjectId, String experimentId) {
+		if(Objects.nonNull(projectId))
+			getProjectData(projectId);
+		if(Objects.nonNull(subjectId))
+			getSubjectData(subjectId);
+		if(Objects.nonNull(experimentId) && Objects.nonNull(proj) && Objects.isNull(existing))
+			getExistingData(experimentId);
+	 fieldMapping.putAll(XMLPathShortcuts.getInstance().getShortcuts(XMLPathShortcuts.EXPERIMENT_DATA, false));
+	}
+
+	private void getExistingData(String experimentId) {
+		existing = (XnatSubjectassessordata) XnatExperimentdata.GetExptByProjectIdentifier(proj.getId(), experimentId, getUser(), false);
+		  if (Objects.isNull(existing)) {
+            existing = (XnatSubjectassessordata) XnatExperimentdata.getXnatExperimentdatasById(experimentId, getUser(), false);
+            if (Objects.nonNull(existing) && (Objects.nonNull(proj) && !existing.hasProject(proj.getId()))) 
+            	existing = null;
+            }
+		  }
+
+	private void getSubjectData(String subjectId) {
+		sub = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, getUser(), false);
+		if (Objects.isNull(sub)) {
+			sub = XnatSubjectdata.getXnatSubjectdatasById(subjectId, getUser(), false);
+			if (Objects.nonNull(sub) && (Objects.nonNull(proj) && !sub.hasProject(proj.getId()))) {
+				sub = null;
+			}
+		}
+	}
+
+	private void getProjectData(String projectId) {
+		proj = XnatProjectdata.getProjectByIDorAlias(projectId, getUser(), false);
 	}
 
 	public String getProjectSubjectById(String projectId) throws IOException {
 		XFTTable table = null;
-		proj = XnatProjectdata.getProjectByIDorAlias(projectId, getUser(), false);
+		getProjectData(projectId);
 		if (proj != null) {
 			try {
 				final UserI user = getUser();
@@ -107,14 +173,10 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 
 	public String getProjectSubjectById(String projectId, String subjectId) throws IOException {
 		final UserI user = getUser();
-		proj = XnatProjectdata.getProjectByIDorAlias(projectId, getUser(), false);
-		if (sub == null && subjectId != null) {
-			sub = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-
-			if (sub == null && proj != null) {
-				sub = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, user, false);
-			}
-		}
+		
+		getProjectData(projectId);
+		
+		getSubjectData(subjectId);
 
 		if (sub != null) {
 			try {
@@ -151,26 +213,75 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 			return false;
 		return false;
 	}
-//	private Representation representItem(XFTItem item, MediaType mt) {
-//		Representation representation = null;
-//		try {
-//			FlattenedItemA.HistoryConfigI history = new FlattenedItemA.HistoryConfigI() {
-//				@Override
-//				public boolean getIncludeHistory() {
-//					return false;
-//				}
-//			};
-//			representation = new JSONObjectRepresentation(MediaType.APPLICATION_JSON,
-//					(new ItemJSONBuilder()).call(item, history, false));
-//		} catch (Exception e) {
-//			// getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
-//			return null;
-//		}
-//		if (representation != null && proj != null && representation instanceof TurbineScreenRepresentation
-//				&& StringUtils.isNotBlank(proj.getId())) {
-//			((TurbineScreenRepresentation) representation).setRunDataParameter("project", proj.getId());
-//		}
-//		return representation;
-//	}
+
+	@Override
+	public String getProjectSubjectExperimentResource(String projectId, String subjectId, String experimentId, String resourceId) throws IOException {
+		if (projectId != null && subjectId != null && experimentId != null && resourceId != null) {
+			return getProjectSubjectExperimentResourceByResourceId(projectId, subjectId,experimentId,resourceId );
+		}else	if (projectId != null && subjectId != null && experimentId != null) {
+			return getProjectSubjectExperimentResourceById(projectId, subjectId,experimentId);
+		}
+		return "invalid resource";
+	}
+
+	private String getProjectSubjectExperimentResourceById(String projectId, String subjectId, String experimentId) throws IOException {
+
+		getProjectData(projectId);
+
+		getSubjectData(subjectId);
+		
+		getExperimentsData(experimentId);
+		
+		XFTTable table = null;
+		if (experiments.size() > 0 || sub != null || proj != null) {
+			try {
+				table = loadCatalogs(null, false, isQueryVariableTrue("all"));
+			} catch (Exception e) {
+				// logger.error("", e);
+			}
+		}
+		final boolean fileStats = false; // isQueryVariableTrue("file_stats");
+		final boolean cacheFileStats = false;// isQueryVariableTrue("cache_file_stats");
+		final Hashtable<String, Object> params = new Hashtable<>();
+		params.put("title", "Resources");
+
+		if (table != null) {
+			table = CatalogUtils.populateTable(table, getUser(), null, cacheFileStats);
+
+			// If table.rows() is null, set recordCount to 0
+			final ArrayList<Object[]> records = table.rows();
+			final int recordCount = (records != null) ? records.size() : 0;
+
+			if (logger.isDebugEnabled()) {
+				logger.debug("Found a total of " + recordCount + " records");
+			}
+			params.put("totalRecords", recordCount);
+		}
+		return new JSONTableRepresentationUtil(table, null, params).getText();
+	}
+
+	private void  getExperimentsData(String experimentId) {
+        if (experimentId != null) {
+            for (String s : XftStringUtils.CommaDelimitedStringToArrayList(experimentId)) {
+                XnatExperimentdata expt = XnatExperimentdata.getXnatExperimentdatasById(s, getUser(), false);
+
+                if (proj != null) {
+                	expt = XnatExperimentdata.GetExptByProjectIdentifier(proj.getId(), s, getUser(), false);
+                }
+                if (expt != null) {
+                    try {
+                        if (expt.canRead(getUser())) {
+                        	experiments.add(expt);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                } 
+            }
+        }
+	}
+
+	private String getProjectSubjectExperimentResourceByResourceId(String projectId, String subjectId,String experimentId, String resourceId) {
+		return null;
+	}
 
 }

@@ -38,7 +38,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/resources",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
+                                 //"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources",
@@ -69,7 +69,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}",
+                                 //"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}",
                                  "/subjects/{subjectId}/resources/{resourceId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public XnatAbstractresourceI getResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
