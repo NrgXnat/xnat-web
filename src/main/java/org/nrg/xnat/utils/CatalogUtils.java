@@ -1600,11 +1600,17 @@ public class CatalogUtils {
             if (extract && StringUtils.equalsAnyIgnoreCase(compression, "tar", "gz", "zip", "zar")) {
                 log.debug("Found archive file {}", filename);
                 ZipI zipper;
-                if (compression.equalsIgnoreCase(".tar")) {
+                if (compression.equalsIgnoreCase("tar")) {
                     zipper = new TarUtils();
-                } else if (compression.equalsIgnoreCase(".gz")) {
-                    zipper = new TarUtils();
-                    zipper.setCompressionMethod(ZipOutputStream.DEFLATED);
+                } else if (compression.equalsIgnoreCase("gz")) {
+                    String secondExtension = FilenameUtils.getExtension( FilenameUtils.removeExtension( filename));
+                    if( secondExtension.equalsIgnoreCase( "tar")) {
+                        zipper = new TarUtils();
+                        zipper.setCompressionMethod(ZipOutputStream.DEFLATED);
+                    }
+                    else {
+                        zipper = new ZipUtils();
+                    }
                 } else {
                     zipper = new ZipUtils();
                 }
