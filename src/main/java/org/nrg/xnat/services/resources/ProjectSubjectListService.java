@@ -10,5 +10,7 @@ public interface ProjectSubjectListService {
 
 	public String getProjectSubjectResource(String projectId, String subjectId, String experimentId) throws Exception;
 
-	public String getProjectSubjectExperimentResource(String projectId, String subjectId, String experimentId, String resourceId) throws IOException;
+	public String getProjectSubjectExperimentResource(String projectId, String subjectId, String experimentId) throws IOException;
+
+	public String getProjectSubjectExperimentResources(String projectId, String subjectId, String experimentId,String resourceId) throws IOException;
 }

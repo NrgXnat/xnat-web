@@ -27,6 +27,7 @@ import org.nrg.xnat.services.resources.ProjSubExptListService;
 import org.nrg.xnat.services.resources.util.JSONObjectRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
 import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import groovy.util.logging.Slf4j;
@@ -35,15 +36,21 @@ import groovy.util.logging.Slf4j;
 @Slf4j
 public class ProjSubExptListServiceImpl extends ResourceXapiUtil implements ProjSubExptListService {
 
-	XnatProjectdata proj=null;
-	XnatSubjectdata subject=null;
-	XnatExperimentdata _existing= null;
-	XnatExperimentdata _experiment = null;
+	private XnatProjectdata proj=null;
+	private XnatSubjectdata subject=null;
+	private XnatExperimentdata _existing= null;
+	private XnatExperimentdata _experiment = null;
 	
-	public Map<String, String> fieldMapping = new HashMap<>();
+	//public Map<String, String> fieldMapping = new HashMap<>();
+	
+	@Autowired
+	public ProjSubExptListServiceImpl() {
+		fieldMapping.putAll(XMLPathShortcuts.getInstance().getShortcuts(XMLPathShortcuts.EXPERIMENT_DATA, true));
+	}
+	
+	
 	@Override
 	public String getProjectExperiments(UserI user, String projectId, String experimentId) throws Exception {
-		fieldMapping.putAll(XMLPathShortcuts.getInstance().getShortcuts(XMLPathShortcuts.EXPERIMENT_DATA, true));
 		if (projectId != null && experimentId != null) {
 			return getProjectExperimentByExperimentId(projectId, experimentId, user);
 		} else if (projectId != null) {
@@ -52,7 +59,7 @@ public class ProjSubExptListServiceImpl extends ResourceXapiUtil implements Proj
 		return "invalid resource";
 	}
 	private String getProjectExperimentByProjectId(String projectId, UserI user) throws IOException {
-		proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		proj = XnatProjectdata.getProjectByIDorAlias(projectId, getUser(), false);
 		XFTTable table = null;
 //		try {
 //			final SecurityValues values = new SecurityValues();
@@ -66,11 +73,13 @@ public class ProjSubExptListServiceImpl extends ResourceXapiUtil implements Proj
 //		}
 		
 		try {
-			final QueryOrganizer qo = new QueryOrganizer("xnat:subjectAssessorData", user, ViewManager.ALL);
-			qo.addField("xnat:subjectAssessorData/ID");
-			
+			final QueryOrganizer qo = new QueryOrganizer("xnat:subjectAssessorData", getUser(), ViewManager.ALL);
+			//qo.addField("xnat:subjectAssessorData/ID");
+			qo.addField("xnat:experimentdata/date");
+			qo.addField("xnat:experimentData/meta/insert_date");
+			qo.addField("xnat:experimentdata/id");
+			qo.addField("xnat:experimentdata/label");
 			CriteriaCollection where=new CriteriaCollection("AND");
-
 			CriteriaCollection cc= new CriteriaCollection("OR");
 			cc.addClause("xnat:subjectAssessorData"+"/project", proj.getId());
 			cc.addClause("xnat:subjectAssessorData"+"/sharing/share/project", proj.getId());
@@ -84,7 +93,7 @@ public class ProjSubExptListServiceImpl extends ResourceXapiUtil implements Proj
 
 				String query=qo.buildQuery();
 
-				table=XFTTable.Execute(query, user.getDBName(), user.getUsername());
+				table=XFTTable.Execute(query, getUser().getDBName(), getUser().getUsername());
 				
 				if(table.size()>0){
 					 if(!ElementSecurity.IsSecureElement("xnat:subjectAssessorData")){
@@ -127,7 +136,6 @@ public class ProjSubExptListServiceImpl extends ResourceXapiUtil implements Proj
 
 		                    table.rows().removeAll(remove);
 		                }
-					
 					table=formatHeaders(table,qo,"xnat:subjectAssessorData"+"/ID","/data/experiments/");
 
 					final Integer labelI   = table.getColumnIndex("label");

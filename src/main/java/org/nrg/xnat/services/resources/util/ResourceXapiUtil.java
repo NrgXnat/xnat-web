@@ -184,7 +184,7 @@ public class ResourceXapiUtil {
 					return XFTTable.Execute(completedQuery, user.getDBName(), user.getUsername());
 				}
 	
-	private String getResourceIdsWhereClause(final List<String> resourceIds) {
+	protected String getResourceIdsWhereClause(final List<String> resourceIds) {
 		return getResourceIdsWhereClause(resourceIds, "map.xnat_abstractresource_xnat_abstractresource_id",
 				"abst.label");
 	}
@@ -193,7 +193,7 @@ public class ResourceXapiUtil {
 		return getResourceIdsWhereClause(resourceIds, idKey, "abst.label");
 	}
 
-	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
+	protected String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
 			final String labelKey) {
 		// Numeric resource IDs are those that contain only digits.
 		final List<String> numericIds = Lists.newArrayList(Iterables.filter(resourceIds, new Predicate<String>() {
@@ -291,8 +291,8 @@ public class ResourceXapiUtil {
 		return null;
 	}
 	
-	private static final String STARTER_FIELDS = "SELECT xnat_abstractresource_id, abst.label, xme.element_name ";
-	private static final String USER_ACCESSIBLE_ASSESSOR_IDS = "( SELECT * FROM xnat_imageassessordata WHERE id IN (SELECT id "
+	public static final String STARTER_FIELDS = "SELECT xnat_abstractresource_id, abst.label, xme.element_name ";
+	public static final String USER_ACCESSIBLE_ASSESSOR_IDS = "( SELECT * FROM xnat_imageassessordata WHERE id IN (SELECT id "
 			+ " FROM   (SELECT xea.element_name, " + "                xfm.field, " + "                xfm.field_value "
 			+ "         FROM   xdat_user u " + "                JOIN xdat_user_groupid map "
 			+ "                  ON u.xdat_user_id = map.groups_groupid_xdat_user_xdat_user_id "

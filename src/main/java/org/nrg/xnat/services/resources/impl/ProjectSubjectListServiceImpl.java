@@ -5,15 +5,30 @@ package org.nrg.xnat.services.resources.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringSubstitutor;
+import org.nrg.action.ServerException;
+import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatReconstructedimagedata;
+import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTTable;
+import org.nrg.xft.db.PoolDBUtils;
 import org.nrg.xft.db.ViewManager;
+import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.presentation.FlattenedItemA;
 import org.nrg.xft.presentation.ItemJSONBuilder;
 import org.nrg.xft.search.CriteriaCollection;
@@ -21,15 +36,26 @@ import org.nrg.xft.search.QueryOrganizer;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
+import org.nrg.xnat.restlet.representations.BeanRepresentation;
+import org.nrg.xnat.restlet.representations.ItemXMLRepresentation;
 import org.nrg.xnat.services.resources.ProjectSubjectListService;
+import org.nrg.xnat.services.resources.util.BeanRepresentationUtil;
+import org.nrg.xnat.services.resources.util.ItemXMLRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONObjectRepresentationUtil;
 import org.nrg.xnat.services.resources.util.JSONTableRepresentationUtil;
 import org.nrg.xnat.services.resources.util.ResourceXapiUtil;
 import org.nrg.xnat.utils.CatalogUtils;
+import org.restlet.data.MediaType;
+import org.restlet.data.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,9 +67,14 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 	private XnatProjectdata proj = null;
 	public String userName = null;
 	private XnatSubjectdata sub = null;
+	ItemI security = null;
+	String xmlPath = null;
+	String type = null;
+    ItemI parent = null;
+    private XFTTable catalogs = null;
+	 //ArrayList<XnatExperimentdata> experiments = new ArrayList<>();
    // XnatSubjectassessordata expt = null;
     XnatSubjectassessordata existing;
-    ArrayList<XnatExperimentdata> experiments =null;
 
 	@Autowired
 	public ProjectSubjectListServiceImpl() {
@@ -211,31 +242,31 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 			return true;
 		else if(value.equals("includeHeaders"))
 			return false;
+		else if(value.equals("all"))
+			return true;
 		return false;
 	}
 
 	@Override
-	public String getProjectSubjectExperimentResource(String projectId, String subjectId, String experimentId, String resourceId) throws IOException {
-		if (projectId != null && subjectId != null && experimentId != null && resourceId != null) {
-			return getProjectSubjectExperimentResourceByResourceId(projectId, subjectId,experimentId,resourceId );
-		}else	if (projectId != null && subjectId != null && experimentId != null) {
+	public String getProjectSubjectExperimentResource(String projectId, String subjectId, String experimentId) throws IOException {
+		if (projectId != null && subjectId != null && experimentId != null) {
 			return getProjectSubjectExperimentResourceById(projectId, subjectId,experimentId);
 		}
 		return "invalid resource";
 	}
 
 	private String getProjectSubjectExperimentResourceById(String projectId, String subjectId, String experimentId) throws IOException {
-
+		ArrayList<XnatExperimentdata> experiments = new ArrayList<>();
 		getProjectData(projectId);
-
+		
 		getSubjectData(subjectId);
 		
-		getExperimentsData(experimentId);
+		experiments = getExperimentsData(experimentId);
 		
 		XFTTable table = null;
 		if (experiments.size() > 0 || sub != null || proj != null) {
 			try {
-				table = loadCatalogs(null, false, isQueryVariableTrue("all"));
+				table = loadCatalogs(null, false, isQueryVariableTrue("all"),experiments);
 			} catch (Exception e) {
 				// logger.error("", e);
 			}
@@ -260,12 +291,13 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
 		return new JSONTableRepresentationUtil(table, null, params).getText();
 	}
 
-	private void  getExperimentsData(String experimentId) {
+	private ArrayList<XnatExperimentdata>  getExperimentsData(String experimentId) {
+		ArrayList<XnatExperimentdata> experiments = new ArrayList<>();
         if (experimentId != null) {
             for (String s : XftStringUtils.CommaDelimitedStringToArrayList(experimentId)) {
                 XnatExperimentdata expt = XnatExperimentdata.getXnatExperimentdatasById(s, getUser(), false);
 
-                if (proj != null) {
+                if (expt == null && proj != null) {
                 	expt = XnatExperimentdata.GetExptByProjectIdentifier(proj.getId(), s, getUser(), false);
                 }
                 if (expt != null) {
@@ -278,10 +310,195 @@ public class ProjectSubjectListServiceImpl extends ResourceXapiUtil implements P
                 } 
             }
         }
+		return experiments;
+	}
+	
+	private static final Predicate<String> CONTAINS_QUOTE = new Predicate<String>() {
+        @Override
+        public boolean apply(final String resourceId) {
+            return StringUtils.contains(resourceId, "'");
+        }
+    };
+
+    private static final Predicate<String> HACK_CHECK = new Predicate<String>() {
+        @Override
+        public boolean apply(final String resourceId) {
+            return PoolDBUtils.HackCheck(resourceId);
+        }
+    };
+	 public void checkResourceIDs(final List<String> resourceIds) throws Exception {
+	        if (resourceIds == null || resourceIds.isEmpty()) {
+	            return;
+	        }
+	        if (Iterables.any(resourceIds, CONTAINS_QUOTE)) {
+	            throw new Exception("Possible SQL Injection attempt. The \"'\" character is not allowed in resource labels: " + StringUtils.join(Iterables.filter(resourceIds, CONTAINS_QUOTE), ", "));
+	        }
+	        if (Iterables.any(resourceIds, HACK_CHECK)) {
+	            throw new Exception("Possible SQL Injection attempt: " + StringUtils.join(Iterables.filter(resourceIds, CONTAINS_QUOTE), ", "));
+	        }
+	    }
+	
+	 public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll, ArrayList<XnatExperimentdata> experiments) throws Exception {
+	        checkResourceIDs(resourceIds);
+
+	        final StringBuilder query = new StringBuilder();
+	        final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
+	        final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
+	        
+	        final UserI user = getUser();
+	        if (!experiments.isEmpty()) {
+	            security = experiments.get(0);
+	            parent = experiments.get(0);
+	            final List<String> experimentIds = Lists.transform(experiments, new Function<XnatExperimentdata, String>() {
+	                @Override
+	                public String apply(final XnatExperimentdata experiment) {
+	                    return experiment.getId();
+	                }
+	            });
+	            if (allowAll && (isQueryVariableTrue("all") || resourceIds != null)) {
+	                xmlPath = "xnat:experimentData/resources/resource";
+	                final Map<String, String> variables = new HashMap<>();
+	                variables.put("username", user.getUsername());
+	                variables.put("sessionIds", StringUtils.join(experimentIds, "', '"));
+	                final String userAccessibleAccessorIds = StringSubstitutor.replace(USER_ACCESSIBLE_ASSESSOR_IDS, variables);
+	                // resources
+
+	                query.append("SELECT * FROM (").append(STARTER_FIELDS).append(", 'resources'::TEXT AS category, NULL::TEXT AS cat_id,''::TEXT AS cat_desc");
+	                if (includeURI) {
+	                    query.append(",'/experiments/' || res_map.xnat_experimentdata_id || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+	                }
+	                query.append(" FROM xnat_experimentdata_resource res_map JOIN xnat_abstractresource abst ON res_map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE res_map.xnat_experimentdata_id IN ('");
+	                query.append(StringUtils.join(experimentIds, "', '"));
+	                query.append("') ");
+	                query.append("  UNION ");
+	                query.append(STARTER_FIELDS);
+	                query.append(", 'scans'::TEXT,isd.id,isd.type");
+	                if (includeURI) {
+	                    query.append(",'/experiments/' || isd.image_session_id || '/scans/' || isd.id || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+	                }
+	                query.append(" FROM xnat_imagescanData isd JOIN xnat_abstractresource abst ON isd.xnat_imagescandata_id=abst.xnat_imagescandata_xnat_imagescandata_id JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE isd.image_session_id IN ('");
+	                query.append(StringUtils.join(experimentIds, "', '"));
+	                query.append("') UNION ");
+	                query.append(STARTER_FIELDS);
+	                query.append(", 'reconstructions'::TEXT,recon.id,recon.type");
+	                if (includeURI) {
+	                    query.append(",'/experiments/' || recon.image_session_id || '/reconstructions/' || recon.id || '/out' || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+	                }
+	                query.append(" FROM xnat_reconstructedimagedata recon JOIN recon_out_resource map ON recon.xnat_reconstructedimagedata_id=map.xnat_reconstructedimagedata_xnat_reconstructedimagedata_id JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE image_session_id IN ('");
+	                query.append(StringUtils.join(experimentIds, "', '"));
+	                query.append("') UNION ");
+	                query.append(STARTER_FIELDS);
+	                query.append(", 'assessors'::TEXT,iad.id,xes.singular");
+	                if (includeURI) {
+	                    query.append(",'/experiments/' || iad.imagesession_id || '/assessors/' || iad.id || '/out' || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+	                }
+	                query.append(" FROM ").append(userAccessibleAccessorIds).append(" iad JOIN img_assessor_out_resource map ON iad.id=map.xnat_imageassessordata_id JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id LEFT JOIN xdat_element_security xes ON xme.element_name=xes.element_name WHERE iad.imagesession_id IN ('");
+	                query.append(StringUtils.join(experimentIds, "', '"));
+	                query.append("') UNION ");
+	                query.append(STARTER_FIELDS);
+	                query.append(", 'assessors'::TEXT,iad.id,xes.singular");
+	                if (includeURI) {
+	                    query.append(",'/experiments/' || iad.imagesession_id || '/assessors/' || iad.id || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+	                }
+	                query.append(" FROM ").append(userAccessibleAccessorIds).append(" iad JOIN xnat_experimentdata_resource map ON iad.id=map.xnat_experimentdata_id JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id LEFT JOIN xdat_element_security xes ON xme.element_name=xes.element_name WHERE iad.imagesession_id IN ('");
+	                query.append(StringUtils.join(experimentIds, "', '"));
+	                query.append("')) all_resources");
+
+	                if (hasResourceIds) {
+	                    query.append(" WHERE (").append(getResourceIdsWhereClause(resourceIds, "xnat_abstractresource_id", "label")).append(")");
+	                }
+	            } 
+	        }  
+
+	        final String completedQuery = query.toString();
+	        log.debug("Loading catalog for user '{}' using query: {}", user.getUsername(), completedQuery);
+	        return XFTTable.Execute(completedQuery, user.getDBName(), userName);
+	    }
+
+	private String getProjectSubjectExperimentResourceByResourceId(String projectId, String subjectId,String experimentId, String resourceId) throws IOException {
+		List<String> resourceIds = new ArrayList<>();
+		List<XnatAbstractresource> resources = new ArrayList<>();
+		//XFTTable table = null;
+		resourceIds.add(resourceId);
+		getAllMatches(resourceIds, resources);
+//
+//		if (experimentId != null) {
+//			expt = XnatExperimentdata.getXnatExperimentdatasById(experimentId, getUser(), false);
+//		}
+//		if (expt != null) {
+//			try {
+//				table = loadCatalogs(resourceIds, false, true);// isQueryVariableTrue("all") -> true
+//			} catch (Exception e) {
+//				logger.error("", e);
+//			}
+//		}
+
+		if (resources.size() == 1) {
+			final XnatAbstractresource resource = resources.get(0);
+			
+				 try {
+		                if (proj == null) {
+		                    if (parent.getItem().instanceOf("xnat:experimentData")) {
+		                        proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+		                    } else if (security.getItem().instanceOf("xnat:experimentData")) {
+		                        proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+		                    }
+		                }
+
+		                if (resource.getItem().instanceOf("xnat:resourceCatalog")) {
+		                    try {
+		                        CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(
+		                                proj.getRootArchivePath(), ((XnatResourcecatalog) resource), isQueryVariableTrue("includeRootPath"), proj.getId());
+		                        return new BeanRepresentationUtil(catalogData.catBean).getText();
+		                    } catch (ServerException e) {
+		                    }
+		                } else {
+		                	return new ItemXMLRepresentationUtil(resource.getItem()).getText();
+		                }
+		            } catch (ElementNotFoundException e) {
+		                log.error("", e);
+		            }
+				 }
+
+		return "input null";
+	}
+	
+	private void getAllMatches(List<String> resourceIds, List<XnatAbstractresource> resources) {
+		resources.clear();
+		try {
+			catalogs = loadCatalogs(resourceIds, false, true);
+			// setCatalogs(loadCatalogs(resourceIds, false, true));
+		} catch (Exception e) {
+			log.error("An error occurred trying to load catalogs from the resource IDs: {}", resourceIds, e);
+		}
+		initializeResourcesFromIdsAndCatalogs(resourceIds, resources);
+	}
+	private void initializeResourcesFromIdsAndCatalogs(List<String> resourceIds, List<XnatAbstractresource> resources) {
+		if (catalogs != null && catalogs.size() > 0) {
+			for (final Object[] row : catalogs.rows()) {
+				final String id = Integer.toString((Integer) row[0]);
+				final String label = (String) row[1];
+				resources.addAll(
+						Lists.transform(Lists.newArrayList(Iterables.filter(resourceIds, new Predicate<String>() {
+							@Override
+							public boolean apply(@Nullable final String resourceId) {
+								return StringUtils.equalsAny(resourceId, id, label);
+							}
+						})), new Function<String, XnatAbstractresource>() {
+							@Override
+							public XnatAbstractresource apply(final String resourceId) {
+								return XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(row[0],
+										getUser(), false);
+							}
+						}));
+			}
+		}
 	}
 
-	private String getProjectSubjectExperimentResourceByResourceId(String projectId, String subjectId,String experimentId, String resourceId) {
-		return null;
+	@Override
+	public String getProjectSubjectExperimentResources(String projectId, String subjectId, String experimentId,String resourceId) throws IOException {
+		if (projectId != null && subjectId != null && experimentId != null && resourceId != null)
+			return getProjectSubjectExperimentResourceByResourceId(projectId, subjectId, experimentId, resourceId);
+		return "invalid resource";
 	}
-
 }

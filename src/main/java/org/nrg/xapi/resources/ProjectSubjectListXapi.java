@@ -71,9 +71,7 @@ public class ProjectSubjectListXapi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = {
-			"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
-			"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}",}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	@XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getProjectSubjectExperimentResources(
 			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 			 @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
@@ -83,7 +81,29 @@ public class ProjectSubjectListXapi extends AbstractXapiProjectRestController {
 					
 			throws IOException, NotFoundException {
 		_log.debug("Controller Api- get Resources by subjectId");
-		final String projectSubject = _projectService.getProjectSubjectExperimentResource(projectId, subjectId,experimentId,resourceId);
+		final String projectSubject = _projectService.getProjectSubjectExperimentResource(projectId, subjectId,experimentId);
+	    if (projectSubject == null) {
+			throw new NotFoundException("No Project with ID was found.");
+		}
+		return new ResponseEntity<>(projectSubject, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Get the resources for a project, subject, or experiment", notes = "The resource should be identified by standard item-relative paths, such as /experiments/XNAT_E0001/resources or /projects/XNAT_01/subjects/XNAT_01_01/resources.", response = XnatAbstractresourceI.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "The resource(s) were successfully retrieved."),
+			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
+			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}",}, produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+	public ResponseEntity<String> getProjectSubjectExperimentResourcesData(
+			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			 @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+			 @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+			 @ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId
+			)
+					
+			throws IOException, NotFoundException {
+		_log.debug("Controller Api- get Resources by subjectId");
+		final String projectSubject = _projectService.getProjectSubjectExperimentResources(projectId, subjectId,experimentId,resourceId);
 	    if (projectSubject == null) {
 			throw new NotFoundException("No Project with ID was found.");
 		}

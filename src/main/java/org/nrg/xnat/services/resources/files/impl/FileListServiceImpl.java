@@ -152,11 +152,7 @@ public class FileListServiceImpl extends ResourceXapiUtil implements FileListSer
 	}
 
 	
-	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey) {
-		return getResourceIdsWhereClause(resourceIds, idKey, "abst.label");
-	}
-
-	private String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
+	protected String getResourceIdsWhereClause(final List<String> resourceIds, final String idKey,
 			final String labelKey) {
 		// Numeric resource IDs are those that contain only digits.
 		final List<String> numericIds = Lists.newArrayList(Iterables.filter(resourceIds, new Predicate<String>() {
