@@ -2,18 +2,11 @@ package org.nrg.xnat.services.resources;
 
 import java.io.IOException;
 
-import org.restlet.resource.Representation;
-import org.restlet.resource.ResourceException;
-import org.restlet.resource.Variant;
+import org.nrg.action.ClientException;
 
 public interface ExperimentResourceService {
-
-	//boolean isModifiable();
-
-	//Representation represent(Variant variant) throws ResourceException;
-
-	//void handlePut();
-
-	//void handleDelete();
+	
 	public String getExperimentResource(String experimentId, String resourceId) throws IOException, Exception;
+
+	public String getExperimentResourceFiles(String experimentId, String resourceId) throws ClientException, IOException;
 }

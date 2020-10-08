@@ -49,8 +49,7 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = { "/experiments/{experimentId}/files", "/experiments/{experimentId}/resources",
-			"/experiments/{experimentId}/resources/{resourceId}/files" }, 
+	@XapiRequestMapping(value = { "/experiments/{experimentId}/resources"}, 
 			produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getResources(HttpServletRequest request,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
@@ -66,6 +65,30 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 		}
 		return new ResponseEntity<>(projectSubject, HttpStatus.OK);
 	}
+	
+	
+	@ApiOperation(value = "Get the resources for a experiment or resource", notes = "The resource should be identified by standard item-relative paths, such as /experiments/XNAT_E0001/resources or /projects/XNAT_01/subjects/XNAT_01_01/resources.", response = XnatAbstractresourceI.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "The resource(s) were successfully retrieved."),
+			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
+			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = { "/experiments/{experimentId}/files", 
+								   "/experiments/{experimentId}/resources/{resourceId}/files" }, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<String> getResourcesFiles(HttpServletRequest request,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final String resourceId)
+			throws Exception {
+		if (request != null) {
+			_log.debug("Controller getExperimentResources - Request content  {} " + request);
+		}
+		_log.debug("Controller getExperimentResources by experiment id , resource id ");
+		final String projectSubject = _experimentService.getExperimentResourceFiles(experimentId, resourceId);
+		if (projectSubject == null) {
+			throw new NotFoundException("No Project with ID was found.");
+		}
+		return new ResponseEntity<>(projectSubject, HttpStatus.OK);
+	}
+	
 	
 	@ApiOperation(value = "Get the resources for a experiment or resource", notes = "The resource should be identified by standard item-relative paths, such as /experiments/XNAT_E0001/resources or /projects/XNAT_01/subjects/XNAT_01_01/resources.", response = XnatAbstractresourceI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "The resource(s) were successfully retrieved."),
