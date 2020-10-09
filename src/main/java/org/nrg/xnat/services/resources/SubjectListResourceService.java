@@ -1,15 +1,10 @@
 package org.nrg.xnat.services.resources;
 
-import java.util.ArrayList;
+import java.io.IOException;
 
-import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
-import org.restlet.resource.Representation;
-import org.restlet.resource.Variant;
+import org.nrg.xft.security.UserI;
 
 public interface SubjectListResourceService {
-
-	public Representation represent(Variant variant);
-
-	public ArrayList<String> getDefaultFields(GenericWrapperElement e);
+	public String getSubjectResource(UserI userI, String subjectId) throws IOException, Exception;
 
 }
