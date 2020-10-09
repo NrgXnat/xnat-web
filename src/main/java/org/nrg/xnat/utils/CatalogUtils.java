@@ -34,6 +34,7 @@ import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FileUtils;
+import org.nrg.xft.utils.fileExtraction.FileExtractor;
 import org.nrg.xft.utils.zip.TarUtils;
 import org.nrg.xft.utils.zip.ZipI;
 import org.nrg.xft.utils.zip.ZipUtils;
@@ -1597,26 +1598,10 @@ public class CatalogUtils {
             String filename = Paths.get(StringUtils.replace(fileWriter.getName(), "\\", "/")).getFileName().toString();
             final String compression = FilenameUtils.getExtension(filename);
 
-            if (extract && StringUtils.equalsAnyIgnoreCase(compression, "tar", "gz", "zip", "zar")) {
-                log.debug("Found archive file {}", filename);
-                ZipI zipper;
-                if (compression.equalsIgnoreCase("tar")) {
-                    zipper = new TarUtils();
-                } else if (compression.equalsIgnoreCase("gz")) {
-                    String secondExtension = FilenameUtils.getExtension( FilenameUtils.removeExtension( filename));
-                    if( secondExtension.equalsIgnoreCase( "tar")) {
-                        zipper = new TarUtils();
-                        zipper.setCompressionMethod(ZipOutputStream.DEFLATED);
-                    }
-                    else {
-                        zipper = new ZipUtils();
-                    }
-                } else {
-                    zipper = new ZipUtils();
-                }
-
-                try (final InputStream input = fileWriter.getInputStream()) {
-                    final List<File> files = zipper.extract(input, destinationDir.getAbsolutePath(), overwrite, ci);
+            if( extract) {
+                FileExtractor extractor = new FileExtractor();
+                try (final InputStream inputStream = fileWriter.getInputStream()) {
+                    final List<File> files = extractor.extract( fileWriter.getName(), inputStream, destinationDir.toPath(), overwrite, ci);
                     for (final File file : files) {
                         if (!file.isDirectory()) {
                             // relative path is used to compare to existing catalog entries, and add if missing.
@@ -1632,9 +1617,10 @@ public class CatalogUtils {
                 }
 
                 if (!overwrite) {
-                    duplicates.addAll(zipper.getDuplicates());
+                    duplicates.addAll(extractor.getDuplicates());
                 }
             } else {
+
                 final String instance;
                 if (!StringUtils.isBlank(fileWriter.getNestedPath())) {
                     instance = makePath(fileWriter.getNestedPath(), filename);
