@@ -38,12 +38,16 @@ public class SubjectListServiceImpl implements SubjectListService {
 
 	@Override
 	public XnatSubject findById(UserI user, String subjectId) {
-		 return _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE, new MapSqlParameterSource("subjectId", subjectId), ROW_MAPPER);
+		return _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE, new MapSqlParameterSource("subjectId", subjectId),
+				ROW_MAPPER);
 	}
 
-	
-	 private static final String SUBJECT_QUERY  = "SELECT  s.id  AS id, s.label AS lable FROM xnat_subjectdata s";
-	 private static final String BY_ID_WHERE  =" WHERE s.id = :subjectId";
+	private static final String BY_ID_WHERE = " WHERE xnat_subjectData.id = :subjectId";
+
+	private static final String SUBJECT_QUERY = " SELECT xnat_subjectData.id AS id, xnat_subjectData.project AS project, xnat_subjectData.label AS label,\n"
+			+ " table1.insert_date AS insertDate, table2.login AS insertUser\n" + "FROM xnat_subjectData\n"
+			+ "LEFT JOIN xnat_subjectData_meta_data table1 ON xnat_subjectData.subjectData_info=table1.meta_data_id \n"
+			+ "LEFT JOIN xdat_user table2 ON table1.insert_user_xdat_user_id=table2.xdat_user_id";
 
 	private static final RowMapper<XnatSubject> ROW_MAPPER = new RowMapper<XnatSubject>() {
 		@Override
@@ -51,6 +55,6 @@ public class SubjectListServiceImpl implements SubjectListService {
 			return new XnatSubject(resultSet);
 		}
 	};
-	
+
 	private final NamedParameterJdbcTemplate _template;
 }

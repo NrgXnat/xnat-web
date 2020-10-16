@@ -34,9 +34,9 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
 	 
 	@Autowired
 	public SubjectListApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
-			final SubjectListService subjectListResourceService) {
+			final SubjectListService subjectListService) {
 		super(userManagementService, roleHolder);
-		_subjectListResourceService = subjectListResourceService;
+		_subjectListService = subjectListService;
 	}
 	
 	@ApiOperation(value = "Gets the requested subject", notes= "Returns the subject with the specified ID", response = XnatSubject.class, responseContainer = "List")
@@ -46,7 +46,7 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<XnatSubject> getSubjectById(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
 		log.debug("Controller Api- get Resources by subjectId");
-		XnatSubject subjectData = _subjectListResourceService.findById(getSessionUser(),subjectId);
+		XnatSubject subjectData = _subjectListService.findById(getSessionUser(),subjectId);
 	    if (subjectData == null) {
 			throw new NotFoundException("No Project with ID was found.");
 		}
@@ -59,12 +59,12 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/subjects" , produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatSubject>> getSubjectList(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
 		log.debug("Controller Api- get Resources by subjectId");
-		List<XnatSubject> subjectData = _subjectListResourceService.getAll(getSessionUser());
+		List<XnatSubject> subjectData = _subjectListService.getAll(getSessionUser());
 	    if (subjectData == null) {
 			throw new NotFoundException("No Project with ID was found.");
 		}
 		return new ResponseEntity<>(subjectData, HttpStatus.OK);
 	}
 	
-	private final SubjectListService _subjectListResourceService;
+	private final SubjectListService _subjectListService;
 }
