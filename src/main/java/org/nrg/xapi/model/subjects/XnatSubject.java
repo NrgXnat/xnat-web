@@ -4,6 +4,8 @@ import java.io.Writer;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Objects;
+
 import org.nrg.xnat.model.XnatSubjectI;
 
 public class XnatSubject implements XnatSubjectI {
@@ -12,21 +14,21 @@ public class XnatSubject implements XnatSubjectI {
 	}
 
 	public XnatSubject(final XnatSubjectI subject) {
-		_id = subject.getId();
-		_project = subject.getProject();
-		_label = subject.getLabel();
+		_id = Objects.isNull(subject.getId()) || subject.getId().isEmpty() ?  EMPTY_STRING : subject.getId();
+		_project = Objects.isNull(subject.getProject()) || subject.getProject().isEmpty() ?  EMPTY_STRING : subject.getProject();
+		_label = Objects.isNull(subject.getLabel()) || subject.getLabel().isEmpty() ?  EMPTY_STRING : subject.getLabel();
 		_insertDate = subject.getInsertDate();
-		_insertUser = subject.getInsertUser();
+		_insertUser = Objects.isNull(subject.getInsertUser()) || subject.getInsertUser().isEmpty() ?  EMPTY_STRING : subject.getInsertUser();
 		
 		
 	}
 
 	public XnatSubject(final ResultSet resultSet) throws SQLException {
-		_id = resultSet.getString(1);
-		_project = resultSet.getString(2);
-		_label = resultSet.getString(3);
+		_id = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
+		_project = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
+		_label = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
 		_insertDate = resultSet.getDate(4);
-		_insertUser = resultSet.getString(5);
+		_insertUser = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
 	}
 
 	@Override
@@ -88,4 +90,5 @@ public class XnatSubject implements XnatSubjectI {
 	private String _project;
 	private Date _insertDate;
 	private String _insertUser;
+	private static final String EMPTY_STRING = "";
 }

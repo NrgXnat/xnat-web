@@ -45,7 +45,7 @@ public class ProjectListApi extends AbstractXapiProjectRestController {
         @ApiResponse(code = 404, message = "The requested project wasn't found."),
         @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	@XapiRequestMapping(value = "/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<XnatProject> getSubjectById(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<XnatProject> getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get Resources by projectId");
 		XnatProject xnatProject = _projectListService.findById(getSessionUser(),projectId);
 	    if (xnatProject == null) {
@@ -58,7 +58,7 @@ public class ProjectListApi extends AbstractXapiProjectRestController {
 	@ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
        @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	@XapiRequestMapping(value = "/projects" , produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatProject>> getSubjectList(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<List<XnatProject>> getProjectList() throws Exception {
 		log.debug("Controller Api- get Resources by projectId");
 		List<XnatProject> xnatProjects = _projectListService.getAll(getSessionUser());
 	    if (xnatProjects == null) {

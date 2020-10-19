@@ -49,7 +49,7 @@ public class ExperimentResourceXapi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = { "/experiments/{experimentId}/resources"}, 
+	@XapiRequestMapping(value = { "/old/experiments/{experimentId}/resources"}, 
 			produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getResources(HttpServletRequest request,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,

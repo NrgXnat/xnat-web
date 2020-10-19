@@ -647,8 +647,9 @@ public class XNATTemplate extends SecureResource {
             query.append(STARTER_FIELDS);
             query.append(", 'resources'::TEXT AS category, NULL::TEXT AS cat_id, ' '::TEXT AS cat_desc FROM xnat_abstractresource abst LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE xnat_abstractresource_id IS NULL");
         }
-
+        System.out.println("##################query#############"+ query);
         final String completedQuery = query.toString();
+        System.out.println("##################completedQuery#############"+ completedQuery);
         log.debug("Loading catalog for user '{}' using query: {}", user.getUsername(), completedQuery);
         return XFTTable.Execute(completedQuery, user.getDBName(), userName);
     }

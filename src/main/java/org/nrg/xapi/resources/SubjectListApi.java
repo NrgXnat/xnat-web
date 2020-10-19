@@ -57,7 +57,7 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
 	@ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
         @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	@XapiRequestMapping(value = "/subjects" , produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatSubject>> getSubjectList(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
+	public ResponseEntity<List<XnatSubject>> getSubjectList() throws Exception {
 		log.debug("Controller Api- get Resources by subjectId");
 		List<XnatSubject> subjectData = _subjectListService.getAll(getSessionUser());
 	    if (subjectData == null) {
