@@ -26,9 +26,9 @@ public interface XnatExperimentResourceI {
 
 	public void setFileCount(int fileCount);
 
-	public long getFileSize();
+	public Object getFileSize();
 
-	public void setFileSize(long fileSize);
+	public void setFileSize(Object fileSize);
 
 	public String getFormat();
 
@@ -41,4 +41,8 @@ public interface XnatExperimentResourceI {
 	public String getTags();
 
 	public void setTags(String tags);
+
+	public String getLabel();
+
+	public void setLabel(String label);
 }

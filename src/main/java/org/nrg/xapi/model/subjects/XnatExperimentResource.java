@@ -13,18 +13,23 @@ public class XnatExperimentResource implements XnatExperimentResourceI {
 	
 	public XnatExperimentResource(XnatExperimentResourceI experimentResource) {
 		_xnatAbstractResourceId = experimentResource.getXnatAbstractResourceId();
-		_categoryId =  Objects.isNull(experimentResource.getCategoryId()) || experimentResource.getCategoryId().isEmpty() ?  EMPTY_STRING : experimentResource.getCategoryId();
-		_categoryDescription =  Objects.isNull(experimentResource.getCategoryDescription()) || experimentResource.getCategoryDescription().isEmpty() ?  EMPTY_STRING : experimentResource.getCategoryDescription();
+		_label =  Objects.isNull(experimentResource.getLabel()) || experimentResource.getLabel().isEmpty() ?  EMPTY_STRING : experimentResource.getLabel();
 		_elementName = Objects.isNull(experimentResource.getElementName()) || experimentResource.getElementName().isEmpty() ?  EMPTY_STRING : experimentResource.getElementName();
 		_category =  Objects.isNull(experimentResource.getCategory()) || experimentResource.getCategory().isEmpty() ?  EMPTY_STRING : experimentResource.getCategory();
+		_categoryId =  Objects.isNull(experimentResource.getCategoryId()) || experimentResource.getCategoryId().isEmpty() ?  EMPTY_STRING : experimentResource.getCategoryId();
+		_categoryDescription =  Objects.isNull(experimentResource.getCategoryDescription()) || experimentResource.getCategoryDescription().isEmpty() ?  EMPTY_STRING : experimentResource.getCategoryDescription();
+		
+		
+		
 	}
 
 	public XnatExperimentResource(ResultSet resultSet) throws SQLException {
 		_xnatAbstractResourceId = resultSet.getInt(1);
-		_categoryId = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
-		_categoryDescription =  Objects.isNull(resultSet.getString(3)) || resultSet.getString(3).isEmpty() ?  EMPTY_STRING : resultSet.getString(3);
-		_elementName = Objects.isNull(resultSet.getString(4)) || resultSet.getString(4).isEmpty() ?  EMPTY_STRING : resultSet.getString(4);
-		_elementName = Objects.isNull(resultSet.getString(5)) || resultSet.getString(5).isEmpty() ?  EMPTY_STRING : resultSet.getString(5);
+		_label = Objects.isNull(resultSet.getString(2)) || resultSet.getString(2).isEmpty() ?  EMPTY_STRING : resultSet.getString(2);
+		_elementName =  Objects.isNull(resultSet.getString(3)) || resultSet.getString(3).isEmpty() ?  EMPTY_STRING : resultSet.getString(3);
+		_category = Objects.isNull(resultSet.getString(4)) || resultSet.getString(4).isEmpty() ?  EMPTY_STRING : resultSet.getString(4);
+		_categoryId = Objects.isNull(resultSet.getString(5)) || resultSet.getString(5).isEmpty() ?  EMPTY_STRING : resultSet.getString(5);
+		_categoryDescription = Objects.isNull(resultSet.getString(6)) || resultSet.getString(6).isEmpty() ?  EMPTY_STRING : resultSet.getString(6);
 		
 	}
 	@Override
@@ -88,13 +93,13 @@ public class XnatExperimentResource implements XnatExperimentResourceI {
 	}
 
 	@Override
-	public long getFileSize() {
+	public Object getFileSize() {
 		return _fileSize;
 	}
 
 	@Override
-	public void setFileSize(long fileSize) {
-		_fileSize = fileSize;
+	public void setFileSize(Object object) {
+		_fileSize = object;
 	}
 
 	@Override
@@ -126,6 +131,16 @@ public class XnatExperimentResource implements XnatExperimentResourceI {
 	public void setTags(String tags) {
 		_tags = tags;
 	}
+	
+	public String getLabel() {
+		return _label;
+	}
+
+
+	public void setLabel(String label) {
+		_label = label;
+	}
+
 
 	private int _xnatAbstractResourceId;
 	private String _categoryId;
@@ -133,10 +148,11 @@ public class XnatExperimentResource implements XnatExperimentResourceI {
 	private String _category;
 	private String _elementName;
 	private int _fileCount;
-	private long _fileSize;
+	private Object _fileSize;
 	private String _format;
 	private String _content;
 	private String _tags;
-	private final static String EMPTY_STRING = ""; 
+	private String _label;
+	public final static String EMPTY_STRING = ""; 
 
 }
