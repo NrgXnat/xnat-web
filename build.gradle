@@ -28,7 +28,7 @@ buildscript {
 }
 
 group "org.nrg.xnat"
-version = vXnat
+version = "1.8.0-ROI-SNAPSHOT"
 
 apply plugin: "eclipse"
 apply plugin: "groovy"
@@ -150,9 +150,10 @@ dependencies {
     implementation platform("org.nrg:parent:${vXnat}")
 
     // NRG dependencies first.
+    api("org.nrg.xnat:xnat-data-models:1.8.0-ROI-SNAPSHOT") {
+        transitive = false
+    }
     api "org.nrg.xdat:core"
-    api "org.nrg.xnat:xnat-data-models"
-    api "org.nrg:framework"
     api "org.springframework.security:spring-security-ldap"
     api "org.springframework.security.oauth:spring-security-oauth2"
     api "org.springframework.security:spring-security-jwt"
@@ -164,11 +165,6 @@ dependencies {
     api "org.springframework:spring-core"
 
     implementation "org.nrg.xnat:spawner"
-
-    implementation("org.nrg.xnat:xnat-data-models") {
-        transitive = false
-    }
-    implementation "org.nrg.xdat:core"
     implementation "org.nrg:framework"
     implementation "org.nrg:transaction"
     implementation "org.nrg:prefs"
