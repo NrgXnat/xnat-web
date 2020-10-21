@@ -46,7 +46,7 @@ public class ProjectGroupResourceXapi extends AbstractXapiProjectRestController 
 			@ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = { "/projects/{projectId}/groups",
+	@XapiRequestMapping(value = { /* "/projects/{projectId}/groups", */
 			"/projects/{projectId}/groups/{groupId}"}, produces = {
 			MediaType.APPLICATION_JSON_VALUE }, method = GET)
 	public ResponseEntity<String> getProjectGroupResources(HttpServletRequest request,

@@ -38,11 +38,19 @@ public class SubjectListServiceImpl implements SubjectListService {
 
 	@Override
 	public XnatSubject findById(UserI user, String subjectId) {
-		return _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE, new MapSqlParameterSource("subjectId", subjectId),
-				ROW_MAPPER);
+		return _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE, new MapSqlParameterSource("subjectId", subjectId),ROW_MAPPER);
 	}
+	
+	@Override
+	public List<XnatSubject> findSubjectsByProjectId(UserI sessionUser, String projectId) {
+		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO_SUB, new MapSqlParameterSource("projectId", projectId),ROW_MAPPER);
+	}
+	
+	
 
 	private static final String BY_ID_WHERE = " WHERE xnat_subjectData.id = :subjectId";
+	
+	private static final String BY_ID_WHERE_PRO_SUB = " WHERE xnat_subjectData.project = :projectId";
 
 	private static final String SUBJECT_QUERY = " SELECT xnat_subjectData.id AS id, xnat_subjectData.project AS project, xnat_subjectData.label AS label,\n"
 			+ " table1.insert_date AS insertDate, table2.login AS insertUser\n" + "FROM xnat_subjectData\n"
@@ -57,4 +65,5 @@ public class SubjectListServiceImpl implements SubjectListService {
 	};
 
 	private final NamedParameterJdbcTemplate _template;
+
 }

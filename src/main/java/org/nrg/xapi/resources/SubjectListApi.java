@@ -66,5 +66,19 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
 		return new ResponseEntity<>(subjectData, HttpStatus.OK);
 	}
 	
+	
+	@ApiOperation(value = "Get list of specified project subjects", notes= "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubject.class, responseContainer = "List")
+	@ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
+        @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects" , produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatSubject>> getProjectSubjectList(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+		log.debug("Controller Api- get Resources by subjectId");
+		List<XnatSubject> proSubjects = _subjectListService.findSubjectsByProjectId(getSessionUser(),projectId);
+	    if (proSubjects == null) {
+			throw new NotFoundException("No Project with ID was found.");
+		}
+		return new ResponseEntity<>(proSubjects, HttpStatus.OK);
+	}
+	
 	private final SubjectListService _subjectListService;
 }

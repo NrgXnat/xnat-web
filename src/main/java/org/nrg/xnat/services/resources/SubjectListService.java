@@ -15,4 +15,6 @@ public interface SubjectListService {
 
 	public XnatSubject findById(UserI user, String itemId);
 
+	public List<XnatSubject> findSubjectsByProjectId(UserI sessionUser, String projectId);
+
 }

@@ -5,7 +5,7 @@ import java.util.List;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 
-public interface XftDataObjectService<T extends ArchivableItem> {
+public interface XftDataObjectService<T> {
 
 	public T create(UserI user, T item);
 

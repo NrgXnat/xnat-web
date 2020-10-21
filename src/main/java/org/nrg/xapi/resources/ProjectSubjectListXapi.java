@@ -48,7 +48,7 @@ public class ProjectSubjectListXapi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = {
-			"/projects/{projectId}/subjects",
+			/* "/projects/{projectId}/subjects", */
 			"/projects/{projectId}/subjects/{subjectId}",
 			"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getResources(
