@@ -1,11 +1,11 @@
 package org.nrg.xnat.services.resources;
 
-import java.io.IOException;
+import java.util.List;
 
+import org.nrg.xapi.model.subjects.XnatScan;
 import org.nrg.xft.security.UserI;
 
-public interface ScanListService {
+public interface ScanListService extends XftDataObjectService<XnatScan> {
 
-	String getScanResource(UserI userI, String accessedId) throws IOException;
-
+	public List<XnatScan> findScansByExperimentId(UserI user, String experimentId);
 }

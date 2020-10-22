@@ -6,8 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import com.google.common.base.Function;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.model.subjects.XnatExperimentResource;
+import org.nrg.xapi.model.util.XnatTemplateUtil;
 import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImagescandata;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.resources.ExperimentResourceListService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +21,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import com.google.common.collect.Lists;
 
 @Service
 public class ExperimentResourceListServiceImpl implements ExperimentResourceListService {
@@ -46,7 +54,51 @@ public class ExperimentResourceListServiceImpl implements ExperimentResourceList
 		return getXnatExperimentResourceData(xnatExperResources, user);
 	}
 	
+	@Override
+	public List<XnatExperimentResource> findExperimentScanResourcesByAssessedIdAndScanId(UserI user, String assessedId, String scanId) {
+		List<XnatExperimentResource> xnatExperResources = new ArrayList<>();
+		
+		ArrayList<XnatExperimentdata> assesseds = XnatTemplateUtil.getXnatExperimentdata(assessedId, user,null);
+		ArrayList<XnatImagescandata> scans = XnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
+
+		String query = getQuery(scans,assesseds, null);
+		
+		xnatExperResources = _template.query(query, ROW_MAPPER);
+		
+		return getXnatExperimentResourceData(xnatExperResources, user);
+	}
 	
+	
+	private String getQuery(ArrayList<XnatImagescandata> scans, ArrayList<XnatExperimentdata> assesseds, final List<String> resourceIds) {
+		final StringBuilder query = new StringBuilder();
+		 boolean includeURI= false;
+		 final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
+		if (!scans.isEmpty()) {
+            final List<Integer> scanIds = Lists.transform(scans, new Function<XnatImagescandata, Integer>() {
+                @Override
+                public Integer apply(final XnatImagescandata scan) {
+                    return scan.getXnatImagescandataId();
+                }
+            });
+            query.append(STARTER_FIELDS);
+            query.append(", 'scans'::TEXT AS category, scan.id::TEXT AS cat_id, scan.type::TEXT AS cat_desc");
+          
+			if (includeURI) {
+                query.append(",'/experiments/' || scan.image_session_id || '/scans/' || scan.id || '/resources/' || abst.xnat_abstractresource_id AS resource_path");
+            }
+            query.append(" FROM xnat_abstractresource abst LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id LEFT JOIN xnat_imagescandata scan ON abst.xnat_imagescandata_xnat_imagescandata_id=scan.xnat_imagescandata_id WHERE xnat_imagescandata_xnat_imagescandata_id IN ('");
+            query.append(StringUtils.join(scanIds, "', '"));
+            query.append("') ");
+            if (hasResourceIds) {
+            	XnatTemplateUtil xnatTemplateUtil = new XnatTemplateUtil();
+                query.append(" AND (").append(xnatTemplateUtil.getResourceIdsWhereClause(resourceIds, "abst.xnat_abstractresource_id")).append(")");
+            }
+		}
+		return query.toString();
+	}
+	
+	 
+
 	private List<XnatExperimentResource> getXnatExperimentResourceData(List<XnatExperimentResource> xnatExperResources, UserI user) {
 		List<XnatExperimentResource> xnatExperimentResources = new ArrayList<>();
 		if(xnatExperResources.size()>0) {
@@ -71,6 +123,9 @@ public class ExperimentResourceListServiceImpl implements ExperimentResourceList
 	}
 
 
+	
+	private static final String STARTER_FIELDS = "SELECT xnat_abstractresource_id, abst.label, xme.element_name ";
+	
 	private static final String BY_ID_WHERE_RES_MAP = " WHERE res_map.xnat_experimentdata_id = :experimentId";
 	
 	private static final String BY_ID_WHERE_ISD_IMAGE = " WHERE isd.image_session_id = :experimentId";
@@ -96,5 +151,7 @@ public class ExperimentResourceListServiceImpl implements ExperimentResourceList
 	};
 
 	private final NamedParameterJdbcTemplate _template;
+
+	
 
 }

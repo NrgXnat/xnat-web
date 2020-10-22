@@ -71,7 +71,7 @@ public class FileResourceXapi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = {
-			"/experiments/{assessedId}/scans/{scanId}/resources",
+			/* "/experiments/{assessedId}/scans/{scanId}/resources", */
 			"/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}" }, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<String> getResources(@ApiParam(value = "The ID of the assessedId.") @PathVariable(required = false) final String assessedId,
 			 @ApiParam(value = "The ID of the scanId.") @PathVariable(required = false) final String scanId )

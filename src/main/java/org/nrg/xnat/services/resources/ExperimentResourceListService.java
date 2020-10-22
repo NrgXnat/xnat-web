@@ -14,4 +14,6 @@ public interface ExperimentResourceListService {
 	public XnatExperimentResource get(UserI user, int itemId);
 
 	public List<XnatExperimentResource> findResourceByExperimentId(UserI user, String itemId);
+	
+	public List<XnatExperimentResource> findExperimentScanResourcesByAssessedIdAndScanId(UserI user, String assessedId, String scanId);
 }
