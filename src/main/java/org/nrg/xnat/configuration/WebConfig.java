@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Chars;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nrg.framework.services.SerializerService;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xnat.preferences.AsyncOperationsPreferences;
 import org.nrg.xnat.web.converters.XftBeanHttpMessageConverter;
@@ -58,10 +59,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Autowired
     public WebConfig(final Jackson2ObjectMapperBuilder objectMapperBuilder,
                      @Qualifier("threadPoolExecutorFactoryBean") final ThreadPoolExecutorFactoryBean threadPoolExecutorFactoryBean,
-                     final AsyncOperationsPreferences preferences) {
+                     final AsyncOperationsPreferences preferences,
+                     final SerializerService serializer) {
         _threadPoolFactory = threadPoolExecutorFactoryBean;
         _preferences = preferences;
         _objectMapper = objectMapperBuilder.build();
+        _serializer = serializer;
         _objectMapper.getFactory().setCharacterEscapes(CHARACTER_ESCAPES);
         _marshaller = new Jaxb2Marshaller();
         _marshaller.setClassesToBeBound(SiteConfigPreferences.class);
@@ -86,7 +89,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(mappingJackson2HttpMessageConverter());
         converters.add(marshallingHttpMessageConverter());
         converters.add(resourceHttpMessageConverter());
-        converters.add(xftBeanHttpMessageConverter());
+        converters.add(xftBeanHttpMessageConverter(_serializer));
         converters.add(xftObjectHttpMessageConverter());
         converters.add(zipFileHttpMessageConverter());
     }
@@ -109,8 +112,9 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public HttpMessageConverter<?> xftBeanHttpMessageConverter() {
-        return new XftBeanHttpMessageConverter();
+    public HttpMessageConverter<?> xftBeanHttpMessageConverter(final SerializerService serializer) {
+    	System.out.println("###################HttpMessageConverter ##############"+ serializer);
+        return new XftBeanHttpMessageConverter(serializer);
     }
 
     @Bean
@@ -193,5 +197,6 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     private final AsyncOperationsPreferences    _preferences;
     private final Jaxb2Marshaller               _marshaller;
     private final ThreadPoolExecutorFactoryBean _threadPoolFactory;
-    private       ObjectMapper                  _objectMapper;
+    private final ObjectMapper                  _objectMapper;
+    private final SerializerService             _serializer;
 }

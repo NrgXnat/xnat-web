@@ -7,13 +7,12 @@ import java.util.List;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.model.subjects.XnatExperiment;
-import org.nrg.xapi.model.subjects.XnatProjSubExperiment;
-import org.nrg.xapi.model.subjects.XnatProject;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.services.resources.ExperimentListService;
+import org.nrg.xnat.services.resources.ExperimentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -32,25 +31,25 @@ import lombok.extern.slf4j.Slf4j;
 @XapiRestController
 @ResponseBody
 @Slf4j
-public class ExperimentListApi extends AbstractXapiProjectRestController {
+public class ExperimentApi extends AbstractXapiProjectRestController {
 
 	@Autowired
-	public ExperimentListApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
-			final ExperimentListService experimentListService) {
+	public ExperimentApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,
+			final ExperimentService experimentService) {
 		super(userManagementService, roleHolder);
-		_experimentListService = experimentListService;
+		_experimentService = experimentService;
 	}
 
 	@ApiOperation(value = "Gets the requested  experiment", notes = "Returns the  experiment with the specified ID", response = XnatExperiment.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
 			@ApiResponse(code = 404, message = "The requested project wasn't found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/new/new/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<XnatExperiment> getExperimentById(
+	@XapiRequestMapping(value = "/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XnatExperimentdata> getExperimentById(
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
 			throws Exception {
 		log.debug("Controller Api- get Resources by projectId");
-		XnatExperiment xnatExperiment = _experimentListService.findById(getSessionUser(), experimentId);
+		XnatExperimentdata xnatExperiment = _experimentService.findById(getSessionUser(), experimentId);
 		if (xnatExperiment == null) {
 			throw new NotFoundException("No experiment with ID was found.");
 		}
@@ -60,10 +59,10 @@ public class ExperimentListApi extends AbstractXapiProjectRestController {
 	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all subjects configured in the XNAT system.", response = XnatExperiment.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = "/new/new/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatExperiment>> getExperimentList() throws Exception {
+	@XapiRequestMapping(value = "/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatExperimentdata>> getExperimentList() throws Exception {
 		log.debug("Controller Api- get xnatExperiments");
-		List<XnatExperiment> xnatExperiments = _experimentListService.getAll(getSessionUser());
+		List<XnatExperimentdata> xnatExperiments = _experimentService.getAll(getSessionUser());
 		if (xnatExperiments == null) {
 			throw new NotFoundException("No Project with ID was found.");
 		}
@@ -71,21 +70,37 @@ public class ExperimentListApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatProjSubExperiment.class, responseContainer = "List")
-	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
-			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = "/new/projects/{projectId}/subjects/{subjectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatProjSubExperiment>> getProjectSubjectExperimentList(
-			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId ,
-			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId)throws Exception {
-		log.debug("Controller Api- get XnatProjSubExperiment");
-		List<XnatProjSubExperiment> xnatProSubExperiments = _experimentListService.findAllExprimentByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
-		if (xnatProSubExperiments == null) {
-			throw new NotFoundException("No Project with ID was found.");
+	@ApiOperation(value = "Gets the requested  experiment", notes = "Returns the  experiment with the specified ID", response = XnatExperiment.class, responseContainer = "single")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
+			@ApiResponse(code = 404, message = "The requested project wasn't found."),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/new/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XnatExperimentdata> getExperimentByExperimentId(
+			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
+			throws Exception {
+		log.debug("Controller Api- get Resources by projectId");
+		XnatExperimentdata xnatExperiment = _experimentService.findByExperimentId(getSessionUser(), experimentId);
+		if (xnatExperiment == null) {
+			throw new NotFoundException("No experiment with ID was found.");
 		}
-		return new ResponseEntity<>(xnatProSubExperiments, HttpStatus.OK);
+		return new ResponseEntity<>(xnatExperiment, HttpStatus.OK);
 	}
 
-	private final ExperimentListService _experimentListService;
+	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all subjects configured in the XNAT system.", response = XnatExperiment.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/new/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatExperimentdata>> getAllExperimentList() throws Exception {
+		log.debug("Controller Api- get xnatExperiments");
+		List<XnatExperimentdata> xnatExperiments = _experimentService.getAllExperiments(getSessionUser());
+		if (xnatExperiments == null) {
+			throw new NotFoundException("No Project with ID was found.");
+		}
+		return new ResponseEntity<>(xnatExperiments, HttpStatus.OK);
+	}
+
+
+
+	private final ExperimentService _experimentService;
 
 }

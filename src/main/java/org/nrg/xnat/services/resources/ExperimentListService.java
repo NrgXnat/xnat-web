@@ -3,6 +3,7 @@ package org.nrg.xnat.services.resources;
 import java.util.List;
 
 import org.nrg.xapi.model.subjects.XnatExperiment;
+import org.nrg.xapi.model.subjects.XnatProjSubExperiment;
 import org.nrg.xft.security.UserI;
 
 public interface ExperimentListService {
@@ -14,4 +15,6 @@ public interface ExperimentListService {
 	public XnatExperiment get(UserI user, int itemId);
 
 	public XnatExperiment findById(UserI user, String itemId);
+	
+	public List<XnatProjSubExperiment> findAllExprimentByProjectIdAndSubjectId(UserI user, String projectId, String subjectId);
 }

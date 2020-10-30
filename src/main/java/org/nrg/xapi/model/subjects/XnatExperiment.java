@@ -91,12 +91,12 @@ public class XnatExperiment implements XnatExperimentI {
 		_xsiType = xsiType;
 	}
 
-	private String _id;
-	private String _lable;
-	private String _project;
-	private Date _date;
-	private Date _insertDate;
-	private String _xsiType;
-	private final static String EMPTY_STRING = ""; 
+	protected String _id;
+	protected String _lable;
+	protected String _project;
+	protected Date _date;
+	protected Date _insertDate;
+	protected String _xsiType;
+	protected final static String EMPTY_STRING = ""; 
 
 }

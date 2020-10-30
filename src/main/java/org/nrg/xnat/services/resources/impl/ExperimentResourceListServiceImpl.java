@@ -115,7 +115,7 @@ public class ExperimentResourceListServiceImpl implements ExperimentResourceList
 				xnatExperimentResource.setElementName(temp.getElementName());
 				xnatExperimentResource.setLabel(temp.getLabel());
 				xnatExperimentResource.setXnatAbstractResourceId(temp.getXnatAbstractResourceId());
-				xnatExperimentResource.setCategoryId(temp.getCategory());
+				xnatExperimentResource.setCategoryId(temp.getCategoryId());
 				xnatExperimentResources.add(xnatExperimentResource);
 			}	
 		}

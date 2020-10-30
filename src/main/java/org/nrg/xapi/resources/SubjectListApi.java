@@ -58,7 +58,7 @@ public class SubjectListApi extends AbstractXapiProjectRestController {
         @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	@XapiRequestMapping(value = "/subjects" , produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatSubject>> getSubjectList() throws Exception {
-		log.debug("Controller Api- get Resources by subjectId");
+		log.debug("Controller Api- getAllsubjects");
 		List<XnatSubject> subjectData = _subjectListService.getAll(getSessionUser());
 	    if (subjectData == null) {
 			throw new NotFoundException("No Project with ID was found.");
