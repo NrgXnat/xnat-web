@@ -24,7 +24,7 @@ import java.io.Writer;
 @Component
 public class XftObjectHttpMessageConverter extends AbstractHttpMessageConverter<ItemI> {
     public XftObjectHttpMessageConverter() {
-        super(MediaType.APPLICATION_XML);
+        super(MediaType.APPLICATION_JSON, MediaType.APPLICATION_XML);
     }
 
     @Override

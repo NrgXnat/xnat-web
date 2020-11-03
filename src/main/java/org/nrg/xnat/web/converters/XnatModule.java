@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.configuration2.INIConfiguration;
+import org.apache.commons.configuration2.SubnodeConfiguration;
 import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.utilities.BasicXnatResourceLocator;
 import org.nrg.xdat.base.BaseElement;
 import org.springframework.core.io.Resource;
@@ -15,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.util.Properties;
+import java.util.Iterator;
 
 @Component
 @Slf4j
@@ -26,41 +28,45 @@ public class XnatModule extends SimpleModule {
             final INIConfiguration ini = new INIConfiguration();
             try (final Reader reader = new InputStreamReader(resource.getInputStream())) {
                 ini.read(reader);
-                final Properties serializers = ini.getProperties("serializers");
-                for (final String target : serializers.stringPropertyNames()) {
-                    final String serializer = serializers.getProperty(target);
+                final SubnodeConfiguration serializers         = ini.getSection("serializers");
+                final Iterator<String>     serializableClasses = serializers.getKeys();
+                while (serializableClasses.hasNext()) {
+                    final String serializableClass = serializableClasses.next();
+                    final String serializer        = serializers.getString(serializableClass);
                     try {
-                        final Class<? extends BaseElement> targetClass = Class.forName(target).asSubclass(BaseElement.class);
+                        final Class<? extends BaseElement> targetClass = Class.forName("org.nrg.xdat.om." + serializableClass).asSubclass(BaseElement.class);
                         try {
                             // noinspection unchecked
                             final Class<? extends JsonSerializer<BaseElement>> serializerClass = (Class<? extends JsonSerializer<BaseElement>>) Class.forName(serializer).asSubclass(JsonSerializer.class);
                             addSerializer(targetClass, serializerClass.newInstance());
                         } catch (ClassNotFoundException e) {
-                            log.error("Couldn't find class definition for serializer class {}, skipping mapping to target {}", serializer, target, e);
+                            log.error("Couldn't find class definition for serializer class {}, skipping mapping to target {}", serializer, targetClass, e);
                         } catch (IllegalAccessException | InstantiationException e) {
-                            log.error("Couldn't find create instance of serializer class {}, skipping mapping to target {}", serializer, target, e);
+                            log.error("Couldn't find create instance of serializer class {}, skipping mapping to target {}", serializer, targetClass, e);
                         }
                     } catch (ClassNotFoundException e) {
-                        log.error("Couldn't find class definition for target class {}, skipping mapping to serializer {}", target, serializer, e);
+                        log.error("Couldn't find class definition for target class {}, skipping mapping to serializer {}", serializableClass, serializer, e);
                     }
                 }
-                final Properties deserializers = ini.getProperties("deserializers");
-                for (final String target : deserializers.stringPropertyNames()) {
-                    final String deserializer = deserializers.getProperty(target);
+                final SubnodeConfiguration deserializers         = ini.getSection("deserializers");
+                final Iterator<String>     deserializableClasses = serializers.getKeys();
+                while (deserializableClasses.hasNext()) {
+                    final String deserializableClass = deserializableClasses.next();
+                    final String deserializer        = deserializers.getString(deserializableClass);
                     try {
-                        final Class<? extends BaseElement> targetClass = Class.forName(target).asSubclass(BaseElement.class);
+                        final Class<? extends BaseElement> targetClass = Class.forName("org.nrg.xdat.om." + deserializableClass).asSubclass(BaseElement.class);
                         try {
                             // noinspection unchecked
                             final Class<? extends JsonDeserializer<BaseElement>> deserializerClass = (Class<? extends JsonDeserializer<BaseElement>>) Class.forName(deserializer).asSubclass(JsonDeserializer.class);
                             //noinspection unchecked
                             addDeserializer((Class<BaseElement>) targetClass, deserializerClass.newInstance());
                         } catch (ClassNotFoundException e) {
-                            log.error("Couldn't find class definition for serializer class {}, skipping mapping to target {}", deserializer, target, e);
+                            log.error("Couldn't find class definition for serializer class {}, skipping mapping to target {}", deserializer, deserializableClass, e);
                         } catch (IllegalAccessException | InstantiationException e) {
-                            log.error("Couldn't find create instance of serializer class {}, skipping mapping to target {}", deserializer, target, e);
+                            log.error("Couldn't find create instance of serializer class {}, skipping mapping to target {}", deserializer, deserializableClass, e);
                         }
                     } catch (ClassNotFoundException e) {
-                        log.error("Couldn't find class definition for target class {}, skipping mapping to serializer {}", target, deserializer, e);
+                        log.error("Couldn't find class definition for target class {}, skipping mapping to serializer {}", deserializableClass, deserializer, e);
                     }
                 }
             } catch (ConfigurationException e) {

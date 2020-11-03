@@ -85,12 +85,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
     @Override
     public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
+        converters.add(xftBeanHttpMessageConverter(_serializer));
+        converters.add(xftObjectHttpMessageConverter());
         converters.add(stringHttpMessageConverter());
         converters.add(mappingJackson2HttpMessageConverter());
         converters.add(marshallingHttpMessageConverter());
         converters.add(resourceHttpMessageConverter());
-        converters.add(xftBeanHttpMessageConverter(_serializer));
-        converters.add(xftObjectHttpMessageConverter());
         converters.add(zipFileHttpMessageConverter());
     }
 
