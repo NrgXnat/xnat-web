@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
 
-	protected XnatExperimentdataDeserializer() {
+	public XnatExperimentdataDeserializer() {
 		super(XnatExperimentdata.class);
 	}
 
@@ -25,7 +25,6 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 		 if (parser.getCurrentToken() != JsonToken.START_OBJECT) {
 	            throw new IOException("invalid start marker");
 	        }
-		   System.out.println("##################XnatExperimentdataDeserializer#######################");
 	        final XnatExperimentdata     experiment      = new XnatExperimentdata();
 
 	        while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -61,7 +60,6 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 	                    break;
 	            }
 	        }
-		       System.out.println("##################XnatExperimentdataDeserializer experiment#######################" + experiment);
 	        return experiment;
 	}
 

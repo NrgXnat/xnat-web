@@ -41,7 +41,7 @@ import java.util.stream.Collectors;
 public class XftBeanHttpMessageConverter extends AbstractHttpMessageConverter<BaseElement> {
     @Autowired
     public XftBeanHttpMessageConverter(final SerializerService serializer) {
-        super(MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON);
+        super(MediaType.APPLICATION_XML);
         _serializer = serializer;
     }
 
@@ -52,7 +52,6 @@ public class XftBeanHttpMessageConverter extends AbstractHttpMessageConverter<Ba
 
     @Override
     protected BaseElement readInternal(final Class<? extends BaseElement> clazz, final HttpInputMessage inputMessage) throws IOException, HttpMessageNotReadableException {
-        System.out.println("##############XftBeanHttpMessageConverter readInternal########## "+ inputMessage);
     	final MediaType mediaType = getPreferredMediaType(inputMessage.getHeaders());
         try (final InputStream body = inputMessage.getBody()) {
             // return mediaType == MediaType.APPLICATION_XML ? readXmlBody(body) : readJsonBody(clazz, body);
@@ -62,7 +61,6 @@ public class XftBeanHttpMessageConverter extends AbstractHttpMessageConverter<Ba
 
     @Override
     protected void writeInternal(final BaseElement baseElement, final HttpOutputMessage outputMessage) throws HttpMessageNotWritableException, IOException {
-    	System.out.println("##############XftBeanHttpMessageConverter writeInternal########## "+ outputMessage);
     	final MediaType mediaType = getPreferredMediaType(outputMessage.getHeaders());
         try (final OutputStream body = outputMessage.getBody()) {
             if (mediaType == MediaType.APPLICATION_XML) {

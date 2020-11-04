@@ -113,7 +113,6 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
     @Bean
     public HttpMessageConverter<?> xftBeanHttpMessageConverter(final SerializerService serializer) {
-    	System.out.println("###################HttpMessageConverter ##############"+ serializer);
         return new XftBeanHttpMessageConverter(serializer);
     }
 

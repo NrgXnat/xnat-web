@@ -1,16 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
 import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.model.XnatSubjectassessordataI;
-import org.nrg.xdat.model.XnatSubjectdataFieldI;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<XnatSubjectdata> {
@@ -20,8 +16,6 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
 
     @Override
     protected void serializeImpl(final XnatSubjectdata subject, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-       System.out.println("##################XnatSubjectdataSerializer#######################");
-       System.out.println("##################subject#######################" + subject);
     	writeNonBlankField(generator, "id", subject.getId());
         writeNonBlankField(generator, "label", subject.getLabel());
         writeNonBlankField(generator, "project", subject.getProject());
@@ -43,29 +37,28 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
             writeNonBlankField(generator, "createdBy", insertUser.getUsername());
         }
 
-        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
-        if (experiments != null && !experiments.isEmpty()) {
-            generator.writeStartArray();
-            for (final XnatSubjectassessordataI experiment : experiments) {
-                final JsonSerializer<Object> serializer = provider.findValueSerializer(experiment.getClass());
-                if (serializer != null) {
-                    serializer.serialize(experiment, generator, provider);
-                } else {
-                    log.warn("I tried to serialize an experiment of type {} but couldn't find a valid serializer", experiment.getClass());
-                }
-            }
-            generator.writeEndArray();
-        }
-
-        final List<XnatSubjectdataFieldI> fields = subject.getFields_field();
-        if (!fields.isEmpty()) {
-            generator.writeStartArray();
-            for (final XnatSubjectdataFieldI field : fields) {
-                writeNonBlankField(generator, field.getName(), field.getField());
-            }
-            generator.writeEndArray();
-        }
+//        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
+//        if (experiments != null && !experiments.isEmpty()) {
+//            generator.writeStartArray();
+//            for (final XnatSubjectassessordataI experiment : experiments) {
+//                final JsonSerializer<Object> serializer = provider.findValueSerializer(experiment.getClass());
+//                if (serializer != null) {
+//                    serializer.serialize(experiment, generator, provider);
+//                } else {
+//                    log.warn("I tried to serialize an experiment of type {} but couldn't find a valid serializer", experiment.getClass());
+//                }
+//            }
+//            generator.writeEndArray();
+//        }
+//
+//        final List<XnatSubjectdataFieldI> fields = subject.getFields_field();
+//        if (!fields.isEmpty()) {
+//            generator.writeStartArray();
+//            for (final XnatSubjectdataFieldI field : fields) {
+//                writeNonBlankField(generator, field.getName(), field.getField());
+//            }
+//            generator.writeEndArray();
+//        }
         
-        System.out.println("##################generator#######################" + generator);
     }
 }
