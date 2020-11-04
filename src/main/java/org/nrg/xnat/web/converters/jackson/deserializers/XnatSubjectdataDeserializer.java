@@ -17,11 +17,7 @@ public class XnatSubjectdataDeserializer extends AbstractBaseElementDeserializer
     }
 
     @Override
-    public XnatSubjectdata deserialize(final JsonParser parser, final DeserializationContext context) throws IOException {
-        if (parser.getCurrentToken() != JsonToken.START_OBJECT) {
-            throw new IOException("invalid start marker");
-        }
-
+    protected XnatSubjectdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatSubjectdata     subject      = new XnatSubjectdata();
         final XnatDemographicdata demographics = new XnatDemographicdata();
         try {

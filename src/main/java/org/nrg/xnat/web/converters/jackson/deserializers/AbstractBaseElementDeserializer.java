@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.base.BaseElement;
 
 import java.io.IOException;
@@ -12,13 +13,23 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
 
+@Slf4j
 public abstract class AbstractBaseElementDeserializer<T extends BaseElement> extends StdDeserializer<T> {
     protected AbstractBaseElementDeserializer(final Class<T> dataType) {
         super(dataType);
     }
 
+    protected abstract T deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException;
+
     @Override
-    public abstract T deserialize(final JsonParser parser, final DeserializationContext context) throws IOException;
+    public T deserialize(final JsonParser parser, final DeserializationContext context) throws IOException {
+        if (parser.getCurrentToken() != JsonToken.START_OBJECT) {
+            throw new IOException("invalid start marker");
+        }
+        final T deserialized = deserializeImpl(parser, context);
+        log.debug("Deserialized object of type {}", deserialized.getClass().getName());
+        return deserialized;
+    }
 
     protected Date parseDate(final String date) {
         return Date.from(LocalDate.parse(date).atStartOfDay().atZone(ZoneId.systemDefault()).toInstant());
