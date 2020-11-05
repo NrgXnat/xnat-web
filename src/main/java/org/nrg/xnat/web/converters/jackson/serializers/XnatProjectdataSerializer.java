@@ -3,10 +3,7 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
-
-import org.nrg.xdat.om.XnatInvestigatordata;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xft.security.UserI;
 
 import java.io.IOException;
 
@@ -18,21 +15,18 @@ public class XnatProjectdataSerializer extends AbstractBaseElementSerializer<Xna
 
     @Override
     protected void serializeImpl(final XnatProjectdata project, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "id", project.getId());
+        writeNonBlankField(generator, "id", project.getId());
         writeNonBlankField(generator, "description", project.getDescription());
         writeNonBlankField(generator, "name", project.getName());
         writeNonBlankField(generator, "secondaryId", project.getSecondaryId());
-        writeNonNullDate(generator, "created", project.getInsertDate());
+        writeNonNullField(generator, "pi", project.getPi());
+        writeNonNullField(generator, "investigators", project.getInvestigators_investigator());
         //writeNonBlankField(generator, "firstName", xnatInvestigatordata.getFirstname());
         //writeNonBlankField(generator, "lastName", xnatInvestigatordata.getLastname());
         //writeNonBlankField(generator, "firstName", project.getPi().getFirstname());
         //writeNonBlankField(generator, "firstName", project.getPi().getLastname());
-       
 
-        final UserI insertUser = project.getInsertUser();
-        if (insertUser != null) {
-            writeNonBlankField(generator, "createdBy", insertUser.getUsername());
-        }
+
 //        final List<XnatProjectassessordataI> experiments = project.getExperiments_experiment();
 //        if (experiments != null && !experiments.isEmpty()) {
 //            generator.writeStartArray();
@@ -55,6 +49,6 @@ public class XnatProjectdataSerializer extends AbstractBaseElementSerializer<Xna
 //            }
 //            generator.writeEndArray();
 //        }
-        
+
     }
 }

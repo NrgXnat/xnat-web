@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.base.BaseElement;
+import org.nrg.xft.security.UserI;
 
 import java.io.IOException;
 import java.time.ZoneId;
@@ -21,11 +22,17 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
 
     @Override
     public void serialize(final T element, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        if (element != null) {
-            generator.writeStartObject();
-            serializeImpl(element, generator, provider);
-            generator.writeEndObject();
+        generator.writeStartObject();
+
+        serializeImpl(element, generator, provider);
+
+        writeNonBlankField(generator, "xsiType", element.getXSIType());
+        writeNonNullDate(generator, "created", element.getInsertDate());
+        final UserI insertUser = element.getInsertUser();
+        if (insertUser != null) {
+            writeNonBlankField(generator, "createdBy", insertUser.getUsername());
         }
+        generator.writeEndObject();
     }
 
     protected void writeNonBlankField(final JsonGenerator generator, final String name, final String value) throws IOException {

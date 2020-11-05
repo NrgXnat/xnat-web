@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xft.security.UserI;
 
 import java.io.IOException;
 
@@ -30,12 +29,6 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
         writeNonBlankField(generator, "ethnicity", subject.getEthnicity());
         writeNonBlankField(generator, "race", subject.getRace());
         writeNonBlankField(generator, "initials", subject.getInitials());
-        writeNonNullDate(generator, "created", subject.getInsertDate());
-
-        final UserI insertUser = subject.getInsertUser();
-        if (insertUser != null) {
-            writeNonBlankField(generator, "createdBy", insertUser.getUsername());
-        }
 
 //        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
 //        if (experiments != null && !experiments.isEmpty()) {
