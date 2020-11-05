@@ -39,21 +39,22 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 		_resourceService = resourceService;
 	}
 	
-	@ApiOperation(value = "Gets the requested  experiment", notes = "Returns the  experiment with the specified ID", response = XnatExperimentdata.class, responseContainer = "single")
-	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested experiment."),
-			@ApiResponse(code = 404, message = "The requested experiment wasn't found."),
+	@ApiOperation(value = "Gets the requested  resources", notes = "Returns the  resources with the specified Experiment ID", response = XnatAbstractresource.class, responseContainer = "single")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resources."),
+			@ApiResponse(code = 404, message = "The requested resources wasn't found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatAbstractresource>> getExperimentById(
+	public ResponseEntity<List<XnatAbstractresource>> getResourceByExperimentId(
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
 			throws Exception {
-		log.debug("Controller Api- get experiment by experimentId");
-		List<XnatAbstractresource> xnatExperimentResources = _resourceService.findByExperimentId(getSessionUser(), experimentId);
-		if (xnatExperimentResources == null) {
-			throw new NotFoundException("No experiment with ID was found.");
+		log.debug("Controller Api- get resources by experimentId");
+		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByExperimentId(getSessionUser(), experimentId);
+		if (xnatAbstractresources == null) {
+			throw new NotFoundException("No resources with experimentId was found.");
 		}
-		return new ResponseEntity<>(xnatExperimentResources, HttpStatus.OK);
+		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
 	}
+	
 	
 
 	private final ResourceService _resourceService;

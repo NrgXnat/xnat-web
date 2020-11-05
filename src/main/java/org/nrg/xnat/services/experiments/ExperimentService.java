@@ -17,9 +17,7 @@ public interface ExperimentService {
 
 	public List<XnatExperimentdata> findByProject(UserI user, String projectId);
 	
-	public List<XnatExperimentdata> findBySubject(UserI user, String subjectId);
-	
-	public List<XnatExperimentdata> findByLabel(UserI user, String label);
+	public List<XnatExperimentdata> findByProjectAndLabel(UserI user, String projectId, String label);
 
 	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId);
 

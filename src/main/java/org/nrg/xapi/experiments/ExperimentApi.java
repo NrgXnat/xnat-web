@@ -42,7 +42,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested experiment."),
 			@ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/experiments/{experimentId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = GET)
+	@XapiRequestMapping(value = "/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<XnatExperimentdata> getExperimentById(
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
 			throws Exception {

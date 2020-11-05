@@ -33,19 +33,12 @@ public class ExperimentServiceImpl implements ExperimentService {
 
 	@Override
 	public List<XnatExperimentdata> findByProject(UserI user, String projectId) {
-		//String xmlPath = "xnat:subjectAssessorData";
-		//return XnatExperimentdata.getXnatExperimentdatasByField(xmlPath, projectId, user, false);
 		return _template.query(PROJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId),new ExperimentRowMapper(user));
 	}
 
 	@Override
 	public List<XnatExperimentdata> findByProjectAndSubject(UserI user, String projectId, String subjectId) {
 		return _template.query(PROJECT_SUBJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId),new ExperimentRowMapper(user));
-	}
-	
-	@Override
-	public List<XnatExperimentdata> findBySubject(UserI user, String subjectId) {
-		return null;
 	}
 	
 	@Override
@@ -63,7 +56,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 	}
 
 	@Override
-	public List<XnatExperimentdata> findByLabel(UserI user, String label) {
+	public List<XnatExperimentdata> findByProjectAndLabel(UserI user, String projectId, String label) {
 		return null;
 	}
 	

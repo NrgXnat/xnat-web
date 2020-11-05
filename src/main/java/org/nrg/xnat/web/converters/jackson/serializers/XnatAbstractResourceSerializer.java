@@ -18,12 +18,14 @@ public class XnatAbstractResourceSerializer extends AbstractBaseElementSerialize
 
     @Override
     protected void serializeImpl(final XnatAbstractresource resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-       writeNonNullNumber(generator, "fileCount", resource.getFileCount());
+    	writeNonNullNumber(generator, "fileCount", resource.getFileCount());
         writeNonBlankField(generator, "label", resource.getLabel());
         writeNonBlankField(generator, "format", resource.getFormat());
         writeNonBlankField(generator, "content", resource.getContent());
         writeNonNullNumber(generator, "xnatAbstractResourceId", resource.getXnatAbstractresourceId());
-        writeNonBlankField(generator, "tag", resource.getTagString());
+        writeNonBlankField(generator, "tags", resource.getTagString());
+        writeNonNullField(generator, "fileSize", resource.getFileSize());
+        
        
 
         final UserI insertUser = resource.getInsertUser();
