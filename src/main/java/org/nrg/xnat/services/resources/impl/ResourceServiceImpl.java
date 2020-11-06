@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.resources.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +26,14 @@ public class ResourceServiceImpl implements ResourceService{
 		return _template.query(EXPERIMENT_QUERY + BY_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId), new ResourceRowMapper(user));
 	}
 	
+	
 	@Override
 	public XnatAbstractresource findByIdAndExperimentId(UserI user, Integer resourceId, String experimentId) {
-		return null;
+		return _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
 	}
-	
-	
+
+
+
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {
 	        _user = user;
@@ -49,7 +50,9 @@ public class ResourceServiceImpl implements ResourceService{
 	
 	private static final String BY_ID_WHERE = " where x.id = :experimentId ";
 	
+	private static final String AND_WHERE = " and";
 	
+	private static final String BY_RESOURCE_ID_WHERE = " ar.xnat_abstractresource_id = :resourceId ";
 	
 	private static final String EXPERIMENT_QUERY = "SELECT DISTINCT ar.xnat_abstractresource_id, e.element_name FROM  xnat_experimentdata x \n" + 
 													" LEFT JOIN xnat_imagescandata s ON x.id = s.image_session_id\n" + 

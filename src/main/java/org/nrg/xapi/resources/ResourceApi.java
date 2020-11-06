@@ -55,6 +55,22 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
 	}
 	
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified ID and experimentId", response = XnatAbstractresource.class, responseContainer = "single")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+	public ResponseEntity<XnatAbstractresource> getResourceByIdAndExperimentId(
+			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId)
+			throws Exception {
+		log.debug("Controller Api- get resources by Id and experimentId");
+		XnatAbstractresource xnatAbstractresource = _resourceService.findByIdAndExperimentId(getSessionUser(), resourceId, experimentId);
+		if (xnatAbstractresource == null) {
+			throw new NotFoundException("No resource with ID and experimentId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresource, HttpStatus.OK);
+	}
 	
 
 	private final ResourceService _resourceService;
