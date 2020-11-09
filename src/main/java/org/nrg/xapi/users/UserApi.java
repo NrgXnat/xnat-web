@@ -43,7 +43,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	@ApiResponse(code = 404, message = "The requested uers wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/users", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XdatUsergroup>> getByProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<List<XdatUsergroup>> getUserByProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get Users by projectId");
 		List<XdatUsergroup> xnatSubject = _userService.findByProject(getSessionUser(), projectId);
 		if (xnatSubject == null) {

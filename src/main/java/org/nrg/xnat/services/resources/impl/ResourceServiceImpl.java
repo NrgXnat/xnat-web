@@ -32,6 +32,11 @@ public class ResourceServiceImpl implements ResourceService{
 		return _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
 	}
 
+	@Override
+	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI sessionUser, String projectId, String subjectId, String experimentId) {
+		return null;
+	}
+
 
 
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
@@ -85,7 +90,5 @@ public class ResourceServiceImpl implements ResourceService{
 	
    
    private final NamedParameterJdbcTemplate _template;
-
-
 
 }

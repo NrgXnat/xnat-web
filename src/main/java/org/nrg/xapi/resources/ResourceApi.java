@@ -9,7 +9,6 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ResourceService;
@@ -70,6 +69,24 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 			throw new NotFoundException("No resource with ID and experimentId  was found.");
 		}
 		return new ResponseEntity<>(xnatAbstractresource, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified ID and experimentId", response = XnatAbstractresource.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatAbstractresource>> getResourceByProjectIdAndSubjectIdExperimentId(
+			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
+			throws Exception {
+		log.debug("Controller Api- get resources by Id and experimentId");
+		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByProjectAndSubjectAndExperiment(getSessionUser(), projectId, subjectId, experimentId);
+		if (xnatAbstractresources == null) {
+			throw new NotFoundException("No resource with ID and experimentId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
 	}
 	
 
