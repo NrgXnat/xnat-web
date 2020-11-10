@@ -45,6 +45,10 @@ public class XdatUsergroupDeserializer extends AbstractBaseElementDeserializer<X
                 case "email":
                 	user.setEmail(parser.getText());
                     break;
+                case "tag":
+                	userGroup.setTag(parser.getText());
+                    break;
+
             }
         }
         return userGroup;

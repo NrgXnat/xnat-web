@@ -15,6 +15,8 @@ public class XdatUsergroupSerializer extends AbstractBaseElementSerializer<XdatU
 	protected void serializeImpl(final XdatUsergroup userGroup, final JsonGenerator generator,final SerializerProvider provider) throws IOException {
 		writeNonBlankField(generator, "id", userGroup.getId());
 		writeNonBlankField(generator, "displayname", userGroup.getDisplayname());
+		writeNonBlankField(generator, "tag", userGroup.getTag());
+		writeNonNullNumber(generator, "xdatUsergroupId", userGroup.getXdatUsergroupId());
 		//writeNonNullField(generator, "user", userGroup.getUser());
 	}
 }

@@ -3,9 +3,12 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xdat.om.XnatSubjectdata;
 
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<XnatSubjectdata> {
@@ -19,16 +22,27 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
         writeNonBlankField(generator, "label", subject.getLabel());
         writeNonBlankField(generator, "project", subject.getProject());
         writeNonBlankField(generator, "group", subject.getGroup());
-        writeNonBlankField(generator, "dob", subject.getDOBDisplay());
-        writeNonBlankField(generator, "educationDesc", subject.getEducationDesc());
-        writeNonNullNumber(generator, "education", subject.getEducation());
-        writeNonNullNumber(generator, "age", subject.getAge());
         writeNonNullNumber(generator, "ses", subject.getSes());
-        writeNonBlankField(generator, "gender", subject.getGender());
-        writeNonBlankField(generator, "handedness", subject.getHandedness());
-        writeNonBlankField(generator, "ethnicity", subject.getEthnicity());
-        writeNonBlankField(generator, "race", subject.getRace());
         writeNonBlankField(generator, "initials", subject.getInitials());
+        writeNonNullField(generator, "demographics", subject.getDemographics());
+        
+        
+//        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
+//        if (experiments != null && !experiments.isEmpty()) {
+//        	experiments.forEach(expe -> {
+//    			try {
+//    				generator.writeStartObject();
+//    				generator.writeObjectField("experiments", expe);
+//    				generator.writeEndObject();
+//    			} catch (IOException e) {
+//    				e.printStackTrace();
+//    			} catch (Exception e) {
+//    				e.printStackTrace();
+//    			}
+//    		});
+//        }
+		
+        //writeNonNullField(generator, "experiments", subject.getExperiments_experiment());
 
 //        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
 //        if (experiments != null && !experiments.isEmpty()) {
@@ -43,7 +57,7 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
 //            }
 //            generator.writeEndArray();
 //        }
-//
+
 //        final List<XnatSubjectdataFieldI> fields = subject.getFields_field();
 //        if (!fields.isEmpty()) {
 //            generator.writeStartArray();

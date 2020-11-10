@@ -10,4 +10,6 @@ public interface ScanService {
 	List<XnatScscandata> findScanTypesByProject(UserI sessionUser, String projectId);
 
 	List<XnatScscandata> getAllScanTypes(UserI sessionUser);
+	
+	List<XnatScscandata> findByExperiments(UserI sessionUser, String experimentId);
 }

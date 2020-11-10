@@ -38,7 +38,6 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 
 
-
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {
 	        _user = user;

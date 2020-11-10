@@ -52,6 +52,21 @@ public class UserApi extends AbstractXapiProjectRestController {
 		return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
 	}
 	
+	
+	@ApiOperation(value = "Gets the requested  users", notes = "Returns the  users with the specified projectId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
+	@ApiResponse(code = 404, message = "The requested uers wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/groups", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XdatUsergroup>> getUserGroupByProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+		log.debug("Controller Api- get Users by projectId");
+		List<XdatUsergroup> xnatSubject = _userService.getUserGroupByProject(getSessionUser(), projectId);
+		if (xnatSubject == null) {
+			throw new NotFoundException("No Subject with ID was found.");
+		}
+		return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
+	}
+	
 	private final UserService _userService;
 
 }

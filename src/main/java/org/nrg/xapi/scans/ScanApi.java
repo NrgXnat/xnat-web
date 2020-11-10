@@ -68,7 +68,19 @@ public class ScanApi extends AbstractXapiProjectRestController {
 		return new ResponseEntity<>(xnatScscandatas, HttpStatus.OK);
 	}
 	
-	
+	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/experiments/{experimentId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatScscandata>> getExperimentScans(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
+		log.debug("Controller Api- get scans");
+		List<XnatScscandata> xnatScscandatas = _scanService.findByExperiments(getSessionUser(), experimentId);
+		if (xnatScscandatas == null) {
+			throw new NotFoundException("No Subject with data was found.");
+		}
+		return new ResponseEntity<>(xnatScscandatas, HttpStatus.OK);
+	}
+
 	
 	private final ScanService _scanService;
 }

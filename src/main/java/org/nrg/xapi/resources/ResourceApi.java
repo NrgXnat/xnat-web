@@ -40,8 +40,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	
 	@ApiOperation(value = "Gets the requested  resources", notes = "Returns the  resources with the specified Experiment ID", response = XnatAbstractresource.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resources."),
-			@ApiResponse(code = 404, message = "The requested resources wasn't found."),
-			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@ApiResponse(code = 404, message = "The requested resources wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatAbstractresource>> getResourceByExperimentId(
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId)
@@ -88,6 +88,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 		}
 		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
 	}
+	
 	
 
 	private final ResourceService _resourceService;
