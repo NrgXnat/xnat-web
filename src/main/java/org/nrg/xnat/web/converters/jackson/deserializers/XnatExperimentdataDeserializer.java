@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatDemographicdata;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xft.ItemI;
 
 import java.io.IOException;
 
@@ -15,7 +18,7 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
     }
 
     @Override
-    protected XnatExperimentdata deserializeImpl(JsonParser parser, DeserializationContext context) throws IOException {
+    protected XnatExperimentdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatExperimentdata experiment = new XnatExperimentdata();
 
         while (parser.nextToken() != JsonToken.END_OBJECT) {
@@ -23,10 +26,10 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
             parser.nextToken();  //move to next token in string
             switch (field) {
                 case "id":
-                    experiment.setId(parser.getText());
+                	experiment.setId(parser.getText());
                     break;
                 case "label":
-                    experiment.setLabel(parser.getText());
+                	experiment.setLabel(parser.getText());
                     break;
                 case "project":
                     experiment.setProject(parser.getText());

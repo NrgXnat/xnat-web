@@ -2,14 +2,15 @@ package org.nrg.xnat.services.scans;
 
 import java.util.List;
 
-import org.nrg.xdat.om.XnatScscandata;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xft.security.UserI;
 
 public interface ScanService {
 	
-	List<XnatScscandata> findScanTypesByProject(UserI sessionUser, String projectId);
+	public List<XnatImagescandata> findScanTypesByProject(UserI sessionUser, String projectId);
 
-	List<XnatScscandata> getAllScanTypes(UserI sessionUser);
+	public List<XnatImagescandata> getAllScanTypes(UserI sessionUser);
 	
-	List<XnatScscandata> findByExperiments(UserI sessionUser, String experimentId);
+	public List<XnatImagescandata> findByExperiments(UserI sessionUser, String experimentId);
+	
 }

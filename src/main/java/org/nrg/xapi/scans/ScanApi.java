@@ -9,6 +9,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xapi.subjects.SubjectApi;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatScscandata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -46,39 +47,39 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatScscandata>> getProjectScanTypes(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<List<XnatImagescandata>> getProjectScanTypes(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get all project scans");
-		List<XnatScscandata> xnatScscandatas = _scanService.findScanTypesByProject(getSessionUser(), projectId);
-		if (xnatScscandatas == null) {
+		List<XnatImagescandata> xnatImagescandatas = _scanService.findScanTypesByProject(getSessionUser(), projectId);
+		if (xnatImagescandatas == null) {
 			throw new NotFoundException("No Subject with data was found.");
 		}
-		return new ResponseEntity<>(xnatScscandatas, HttpStatus.OK);
+		return new ResponseEntity<>(xnatImagescandatas, HttpStatus.OK);
 	}
 	
 	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatScscandata>> getAllScanTypes() throws Exception {
+	public ResponseEntity<List<XnatImagescandata>> getAllScanTypes() throws Exception {
 		log.debug("Controller Api- get scan types");
-		List<XnatScscandata> xnatScscandatas = _scanService.getAllScanTypes(getSessionUser());
-		if (xnatScscandatas == null) {
+		List<XnatImagescandata> xnatImagescandatas = _scanService.getAllScanTypes(getSessionUser());
+		if (xnatImagescandatas == null) {
 			throw new NotFoundException("No Subject with data was found.");
 		}
-		return new ResponseEntity<>(xnatScscandatas, HttpStatus.OK);
+		return new ResponseEntity<>(xnatImagescandatas, HttpStatus.OK);
 	}
 	
 	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatScscandata>> getExperimentScans(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
+	public ResponseEntity<List<XnatImagescandata>> getExperimentScans(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
 		log.debug("Controller Api- get scans");
-		List<XnatScscandata> xnatScscandatas = _scanService.findByExperiments(getSessionUser(), experimentId);
-		if (xnatScscandatas == null) {
+		List<XnatImagescandata> xnatImagescandatas = _scanService.findByExperiments(getSessionUser(), experimentId);
+		if (xnatImagescandatas == null) {
 			throw new NotFoundException("No Subject with data was found.");
 		}
-		return new ResponseEntity<>(xnatScscandatas, HttpStatus.OK);
+		return new ResponseEntity<>(xnatImagescandatas, HttpStatus.OK);
 	}
 
 	

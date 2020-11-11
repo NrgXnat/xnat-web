@@ -25,8 +25,12 @@ public class XnatSubjectdataSerializer extends AbstractBaseElementSerializer<Xna
         writeNonNullNumber(generator, "ses", subject.getSes());
         writeNonBlankField(generator, "initials", subject.getInitials());
         writeNonNullField(generator, "demographics", subject.getDemographics());
-        
-        
+      
+        generator.writeArrayFieldStart("experiments");
+        for(final XnatSubjectassessordataI experiment : subject.getExperiments_experiment()) {
+        	generator.writeString(experiment.getId());
+        }
+        generator.writeEndArray();
 //        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
 //        if (experiments != null && !experiments.isEmpty()) {
 //        	experiments.forEach(expe -> {
