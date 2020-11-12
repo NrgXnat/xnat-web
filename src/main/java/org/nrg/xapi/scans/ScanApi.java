@@ -72,14 +72,29 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = "/experiments/{experimentId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatImagescandata>> getExperimentScans(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
+	@XapiRequestMapping(value = "/experiments/{assessedId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatImagescandata>> getExperimentScans(@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId) throws Exception {
 		log.debug("Controller Api- get scans");
-		List<XnatImagescandata> xnatImagescandatas = _scanService.findByExperiments(getSessionUser(), experimentId);
+		List<XnatImagescandata> xnatImagescandatas = _scanService.findByAssessed(getSessionUser(), assessedId);
 		if (xnatImagescandatas == null) {
 			throw new NotFoundException("No Subject with data was found.");
 		}
 		return new ResponseEntity<>(xnatImagescandatas, HttpStatus.OK);
+	}
+	
+	
+	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/experiments/{assessedId}/scans/{scanId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XnatImagescandata> getExperimentScansByassessedAndId(@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId,
+			@ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final String scanId) throws Exception {
+		log.debug("Controller Api- get scans");
+		XnatImagescandata xnatImagescandata = _scanService.findByAssessedAndScan(getSessionUser(), assessedId, scanId);
+		if (xnatImagescandata == null) {
+			throw new NotFoundException("No Subject with data was found.");
+		}
+		return new ResponseEntity<>(xnatImagescandata, HttpStatus.OK);
 	}
 
 	

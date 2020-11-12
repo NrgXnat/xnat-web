@@ -2,10 +2,14 @@ package org.nrg.xnat.services.resources.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatTemplateUtil;
 import org.nrg.xnat.services.resources.ResourceService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -32,6 +36,16 @@ public class ResourceServiceImpl implements ResourceService{
 		return _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
 	}
 
+	@Override
+	public List<XnatAbstractresource> getResourceByExperimentAndScan(UserI user, String assessedId, String scanId) {
+		List<XnatAbstractresource> xnatAbstractresources;
+		ArrayList<XnatExperimentdata> assesseds = XnatTemplateUtil.getXnatExperimentdata(assessedId, user,null);
+		ArrayList<XnatImagescandata> scans = XnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
+		String query = XnatTemplateUtil.getQuery(scans,assesseds, null);
+		 xnatAbstractresources = _template.query(query,  new ResourceRowMapper(user));
+		 return xnatAbstractresources;
+	}
+	
 	@Override
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI sessionUser, String projectId, String subjectId, String experimentId) {
 		return null;
@@ -89,5 +103,6 @@ public class ResourceServiceImpl implements ResourceService{
 	
    
    private final NamedParameterJdbcTemplate _template;
+
 
 }

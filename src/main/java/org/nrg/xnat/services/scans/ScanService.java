@@ -11,6 +11,8 @@ public interface ScanService {
 
 	public List<XnatImagescandata> getAllScanTypes(UserI sessionUser);
 	
-	public List<XnatImagescandata> findByExperiments(UserI sessionUser, String experimentId);
+	public List<XnatImagescandata> findByAssessed(UserI sessionUser, String assessedId);
+
+	public XnatImagescandata findByAssessedAndScan(UserI sessionUser, String assessedId, String scanId);
 	
 }

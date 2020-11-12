@@ -5,7 +5,6 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatImagescandata;
-import org.nrg.xdat.om.XnatScscandata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.scans.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +23,7 @@ public class ScanServiceImpl implements ScanService {
 	
 	@Override
 	public List<XnatImagescandata> findScanTypesByProject(UserI user, String projectId) {
-		return _template.query(SCAN_QUERY + BY_SCAN_ID_WHERE + GROUP_BY, new MapSqlParameterSource("projectId", projectId), new ImageScanRowMapper(user));
+		return _template.query(SCAN_QUERY + BY_PROJECT_ID_WHERE + GROUP_BY, new MapSqlParameterSource("projectId", projectId), new ImageScanRowMapper(user));
 	}
 
 	@Override
@@ -33,10 +32,14 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	@Override
-	public List<XnatImagescandata> findByExperiments(UserI user, String experimentId) {
-		return _template.query(EXPERIMENT_SCAN_SUB_QUERY, new MapSqlParameterSource("experimentId", experimentId), new ImageScanRowMapper(user));
+	public List<XnatImagescandata> findByAssessed(UserI user, String assessedId) {
+		return _template.query(ASSESSED_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId), new ImageScanRowMapper(user));
 	}
 
+	@Override
+	public XnatImagescandata findByAssessedAndScan(UserI user, String assessedId, String scanId) {
+		return _template.queryForObject(ASSESSED_AND_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId).addValue("scanId", scanId), new ImageScanRowMapper(user));
+	}
 	
 	private static class ImageScanRowMapper implements RowMapper<XnatImagescandata> {
 
@@ -54,14 +57,19 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	
-	private static final String BY_SCAN_ID_WHERE =" WHERE session.project= :projectId ";
+	private static final String BY_PROJECT_ID_WHERE =" WHERE session.project= :projectId ";
 	
 	private static final String GROUP_BY = " GROUP BY scan.type, scan.xnat_imagescandata_id  ORDER BY scan.type";
 	
 	
-	private static final String BY_EXPERIMENT_ID_WHERE =" SECURITY WHERE (( (xnat_imageScanData0= :experimentId)) AND ( (xnat_imageScanData0= :experimentId)))) ";
+	private static final String BY_ASSESSED_ID_WHERE =" SECURITY WHERE (( (xnat_imageScanData0= :assessedId)) AND ( (xnat_imageScanData0= :assessedId)))) ";
+	
+	private static final String BY_SCAN_ID_WHERE ="  WHERE xnat_imageScanData.id= :scanId";
 
-	private  final String EXPERIMENT_SCAN_SUB_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_EXPERIMENT_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
+	private  final String ASSESSED_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
+	
+	
+	private  final String ASSESSED_AND_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 + BY_SCAN_ID_WHERE ;
 
 	private static final String SCAN_QUERY = "SELECT  scan.series_description, scan.type, scan.xnat_imagescandata_id \n" + 
 											 "FROM xnat_imagescandata scan\n" + 

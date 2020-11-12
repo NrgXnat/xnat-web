@@ -19,5 +19,9 @@ public class XnatImagescandataSerializer extends AbstractBaseElementSerializer<X
         writeNonBlankField(generator, "note", scan.getNote());
         writeNonBlankField(generator, "id", scan.getId());
         writeNonBlankField(generator, "quality", scan.getQuality());
+        writeNonBlankField(generator, "modality",scan.getModality());
+        writeNonNullField(generator, "file",scan.getFile());
+        
+        
     }
 }
