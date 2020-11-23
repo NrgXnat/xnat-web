@@ -56,7 +56,7 @@ public class SubjectApi  extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatSubjectdata>> getAllExperimentList() throws Exception {
+	public ResponseEntity<List<XnatSubjectdata>> getAllSubjectList() throws Exception {
 		log.debug("Controller Api- get subjects");
 		List<XnatSubjectdata> xnatSubjects = _subjectService.getAll(getSessionUser());
 		if (xnatSubjects == null) {
@@ -70,13 +70,27 @@ public class SubjectApi  extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatSubjectdata>> getAllExperimentList(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<List<XnatSubjectdata>> getAllSubjectListByProjectId(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get subjects");
 		List<XnatSubjectdata> xnatSubjects = _subjectService.findByProject(getSessionUser(), projectId);
 		if (xnatSubjects == null) {
 			throw new NotFoundException("No Subject with data was found.");
 		}
 		return new ResponseEntity<>(xnatSubjects, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XnatSubjectdata> getAllSubjectListByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
+		log.debug("Controller Api- get subjects");
+		XnatSubjectdata xnatSubject = _subjectService.findByProjectAndSubject(getSessionUser(), projectId, subjectId);
+		if (xnatSubject == null) {
+			throw new NotFoundException("No Subject with data was found.");
+		}
+		return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
 	}
 	
 	private final SubjectService _subjectService;

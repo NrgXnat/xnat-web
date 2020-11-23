@@ -47,7 +47,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 		log.debug("Controller Api- get Users by projectId");
 		List<XdatUsergroup> xnatSubject = _userService.findByProject(getSessionUser(), projectId);
 		if (xnatSubject == null) {
-			throw new NotFoundException("No Subject with ID was found.");
+			throw new NotFoundException("No project with ID was found.");
 		}
 		return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
 	}
@@ -60,11 +60,27 @@ public class UserApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/groups", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XdatUsergroup>> getUserGroupByProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get Users by projectId");
-		List<XdatUsergroup> xnatSubject = _userService.getUserGroupByProject(getSessionUser(), projectId);
-		if (xnatSubject == null) {
-			throw new NotFoundException("No Subject with ID was found.");
+		List<XdatUsergroup> xdatUsergroups = _userService.getUserGroupByProject(getSessionUser(), projectId);
+		if (xdatUsergroups == null) {
+			throw new NotFoundException("No project with ID was found.");
 		}
-		return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
+		return new ResponseEntity<>(xdatUsergroups, HttpStatus.OK);
+	}
+	
+	
+	@ApiOperation(value = "Gets the requested  users", notes = "Returns the  users with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
+	@ApiResponse(code = 404, message = "The requested uers wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/groups/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XdatUsergroup> getUserGroupByGroupIdAndProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+																		 @ApiParam(value = "The ID of the group.") @PathVariable(required = false) final String groupId) throws Exception {
+		log.debug("Controller Api- get Users by projectId and GroupId");
+		XdatUsergroup xdatUsergroup = _userService.getUserGroupByGroupIdAndProject(getSessionUser(),groupId, projectId);
+		if (xdatUsergroup == null) {
+			throw new NotFoundException("No project with ID was found.");
+		}
+		return new ResponseEntity<>(xdatUsergroup, HttpStatus.OK);
 	}
 	
 	private final UserService _userService;

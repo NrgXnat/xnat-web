@@ -13,7 +13,7 @@ public interface SubjectService {
 	
 	public List<XnatSubjectdata> findByProject(UserI user, String projectId);
 	
-	public List<XnatSubjectdata> findByProjectAndSubject(UserI user, String projectId, String subjectId);
+	public XnatSubjectdata findByProjectAndSubject(UserI user, String projectId, String subjectId);
 	
 	public XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata);
 	

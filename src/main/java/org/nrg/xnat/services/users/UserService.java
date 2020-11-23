@@ -9,4 +9,6 @@ public interface UserService {
 	public List<XdatUsergroup> findByProject(UserI user, String projectId);
 
 	public List<XdatUsergroup> getUserGroupByProject(UserI sessionUser, String projectId);
+	
+	public XdatUsergroup getUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId);
 }

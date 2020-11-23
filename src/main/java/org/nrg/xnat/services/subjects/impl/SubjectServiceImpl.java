@@ -33,13 +33,13 @@ public class SubjectServiceImpl implements SubjectService {
 	}
 
 	@Override
-	public List<XnatSubjectdata> findByProjectAndSubject(UserI user, String projectId, String subjectId) {
-		return null;
+	public XnatSubjectdata findByProjectAndSubject(UserI user, String projectId, String subjectId) {
+		return _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
 	}
 
 	@Override
 	public List<XnatSubjectdata> findByProject(UserI user, String projectId) {
-		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO_SUB, new MapSqlParameterSource("projectId", projectId), new SubjectRowMapper(user));
+		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new SubjectRowMapper(user));
 	}
 
 	@Override
@@ -73,7 +73,9 @@ public class SubjectServiceImpl implements SubjectService {
 		private final UserI _user;
 	}
 
-	private static final String BY_ID_WHERE_PRO_SUB = " WHERE xnat_subjectData.project = :projectId";
+	private static final String BY_ID_WHERE_PRO = " WHERE xnat_subjectData.project = :projectId";
+	
+	private static final String BY_ID_WHERE_SUB = "  and  xnat_subjectData.id = :subjectId";
 
 	private static final String SUBJECT_QUERY = " SELECT xnat_subjectData.id AS id, xnat_subjectData.project AS project, xnat_subjectData.label AS label,\n"
 			+ " table1.insert_date AS insertDate, table2.login AS insertUser\n" + "FROM xnat_subjectData\n"

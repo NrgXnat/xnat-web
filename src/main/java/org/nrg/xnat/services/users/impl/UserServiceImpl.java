@@ -27,7 +27,12 @@ public class UserServiceImpl implements UserService{
 	
 	@Override
 	public List<XdatUsergroup> getUserGroupByProject(UserI user, String projectId) {
-		return _template.query(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT, new MapSqlParameterSource("projectId", projectId), new UserGroupRowMapper(user));
+		return _template.query(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId), new UserGroupRowMapper(user));
+	}
+	
+	@Override
+	public XdatUsergroup getUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) {
+		return _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
 	}
 	
 	private static class UserRowMapper implements RowMapper<XdatUsergroup> {
@@ -67,12 +72,18 @@ public class UserServiceImpl implements UserService{
 	
 	private static final String BY_ID_WHERE_PRO = "WHERE tag= :projectId  and enabled = 1  ORDER BY g.id DESC";
 	
+	private static final String BY_GROUP_ID_WHERE = " and ug.id= :groupId" ;
+	
 	private static final String USER_GROUP_QUERY = "SELECT ug.id, ug.displayname,ug.tag,ug.xdat_usergroup_id, \n" + 
 			   										"COUNT(map.groups_groupid_xdat_user_xdat_user_id) AS users \n" + 
 			   										"FROM xdat_userGroup ug \n" +
 			   										"LEFT JOIN xdat_user_groupid map ON ug.id=map.groupid";
 
-	private static final String BY_ID_WHERE_USER_GROUP_PROJECT = " WHERE tag= :projectId GROUP BY ug.id, ug.displayname,ug.tag,ug.xdat_usergroup_id ORDER BY ug.displayname DESC";
+	private static final String BY_ID_WHERE_USER_GROUP_PROJECT = " WHERE tag= :projectId ";
+	
+	private static final String USER_GROUP_BY= " GROUP BY ug.id, ug.displayname,ug.tag,ug.xdat_usergroup_id ORDER BY ug.displayname DESC";
 	
 	private final NamedParameterJdbcTemplate _template;
+
+	
 }
