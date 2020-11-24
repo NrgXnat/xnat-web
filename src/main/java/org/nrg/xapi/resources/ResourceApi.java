@@ -107,7 +107,35 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	}
 
 	
-
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified  projectId", response = XnatAbstractresource.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatAbstractresource>> getResourceByProject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId)throws Exception {
+		log.debug("Controller Api- get resources by  projectId");
+		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByProject(getSessionUser(), projectId);
+		if (xnatAbstractresources == null) {
+			throw new NotFoundException("No resource with projectId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified  Id and projectId", response = XnatAbstractresource.class, responseContainer = "Single")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+	public ResponseEntity<XnatAbstractresource> getResourceByIdAndProject(@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId,
+			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId)throws Exception {
+		log.debug("Controller Api- get resources by  Id and projectId");
+		XnatAbstractresource xnatAbstractresource = _resourceService.findByIdAndProject(getSessionUser(), resourceId, projectId);
+		if (xnatAbstractresource == null) {
+			throw new NotFoundException("No resource with Id and projectId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresource, HttpStatus.OK);
+	}
+	
 	private final ResourceService _resourceService;
 
 }

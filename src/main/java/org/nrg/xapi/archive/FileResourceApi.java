@@ -36,17 +36,17 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
                    @ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/projects/{projectId}/resources",
-                                 "/projects/{projectId}/subjects/{subjectId}/resources",
+    @XapiRequestMapping(value = {//"/projects/{projectId}/resources",
+                                 //"/projects/{projectId}/subjects/{subjectId}/resources",
                                  //"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources",
                                  //"/experiments/{experimentId}/resources",
                                  "/experiments/{assessedId}/assessors/{experimentId}/resources",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources",
-                                 //"/experiments/{assessedId}/scans/{scanId}/resources",
-                                 "/subjects/{subjectId}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+                                 "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources"},
+                                 //"/experiments/{assessedId}/scans/{scanId}/resources","/subjects/{subjectId}/resources"},
+                                 produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatAbstractresourceI> getResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
                                                     @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
                                                     @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
@@ -65,13 +65,14 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}",
                                  //"/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}",
                                 // "/experiments/{experimentId}/resources/{resourceId}",
-                                 "/projects/{projectId}/resources/{resourceId}",
+                                 //"/projects/{projectId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}",
                                  //"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}",
-                                 "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}",
-                                 "/subjects/{subjectId}/resources/{resourceId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+                                // "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}",
+                                // "/subjects/{subjectId}/resources/{resourceId}"
+                                 }, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public XnatAbstractresourceI getResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
                                              @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
                                              @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,

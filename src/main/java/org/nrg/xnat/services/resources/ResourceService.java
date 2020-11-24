@@ -7,12 +7,16 @@ import org.nrg.xft.security.UserI;
 
 public interface ResourceService {
 	
-	List<XnatAbstractresource> findByExperimentId(final UserI user, final String experimentId);
+	public List<XnatAbstractresource> findByExperimentId(final UserI user, final String experimentId);
 	
-	XnatAbstractresource findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId);
+	public XnatAbstractresource findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId);
 
-	List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI sessionUser, String projectId, String subjectId, String experimentId);
+	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(final UserI user, final String projectId, final String subjectId, final String experimentId);
 	
-	List<XnatAbstractresource> getResourceByExperimentAndScan(UserI sessionUser, String assessedId, String scanId);
+	public List<XnatAbstractresource> getResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId);
+	
+	public List<XnatAbstractresource> findByProject(final UserI user, final String projectId);
+
+	public XnatAbstractresource findByIdAndProject(final UserI user, final Integer resourceId, final String projectId);
 
 }
