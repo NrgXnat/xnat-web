@@ -19,4 +19,5 @@ public interface ResourceService {
 
 	public XnatAbstractresource findByIdAndProject(final UserI user, final Integer resourceId, final String projectId);
 
+	public List<XnatAbstractresource> findBySubject(final UserI user, final String subjectId);
 }

@@ -7,7 +7,6 @@ import java.util.List;
 
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.XnatTemplateUtil;
@@ -59,6 +58,11 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 	
 	@Override
+	public List<XnatAbstractresource> findBySubject(UserI user, String subjectId) {
+		return _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new ResourceRowMapper(user));
+	}
+	
+	@Override
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI sessionUser, String projectId, String subjectId, String experimentId) {
 		return null;
 	}
@@ -86,8 +90,17 @@ public class ResourceServiceImpl implements ResourceService{
 	
 	private static final String BY_RESOURCE_ID_WHERE = " ar.xnat_abstractresource_id = :resourceId ";
 	
+	private static final String BY_ID_WHERE_SUBJECT = " s.id = :subjectId ";
+
+	private static final String BY_WHERE = " where";
+	
 	private static final String PROJECT_QUERY = "SELECT  ar.xnat_abstractresource_id FROM xnat_abstractresource ar \n" +
 												"LEFT JOIN xnat_projectdata_resource pr ON ar.xnat_abstractresource_id = pr.xnat_abstractresource_xnat_abstractresource_id";
+	
+	private static final String SUBJECT_QUERY = "SELECT DISTINCT ar.xnat_abstractresource_id FROM xnat_subjectdata s\n" + 
+												" LEFT JOIN xnat_subjectdata_resource r ON s.id = r.xnat_subjectdata_id\n" + 
+												" LEFT JOIN xnat_abstractresource ar ON ar.xnat_abstractresource_id = r.xnat_abstractresource_xnat_abstractresource_id\n" + 
+												" LEFT JOIN xdat_meta_element e ON ar.extension = e.xdat_meta_element_id";
 	
 	private static final String EXPERIMENT_QUERY = "SELECT DISTINCT ar.xnat_abstractresource_id, e.element_name FROM  xnat_experimentdata x \n" + 
 													" LEFT JOIN xnat_imagescandata s ON x.id = s.image_session_id\n" + 

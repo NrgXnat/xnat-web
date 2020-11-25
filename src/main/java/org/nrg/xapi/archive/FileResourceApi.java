@@ -101,7 +101,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}/files",
                                  //"/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}/files",
                                  "/subjects/{subjectId}/resources/{resourceId}/files",
-                                 "/projects/{projectId}/files",
+                                 //"/projects/{projectId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/files",
