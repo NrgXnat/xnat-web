@@ -81,6 +81,21 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	}
 	
 	
+	@ApiOperation(value = "Get single experiment", notes = "The experiments function returns a single experiment configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "Single")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/projects/{projectId}/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<XnatExperimentdata> getExperimentByIdAndProject(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+		log.debug("Controller Api- get experiments");
+		XnatExperimentdata xnatExperiment = _experimentService.findByIdAndProject(getSessionUser(), experimentId, projectId);
+		if (xnatExperiment == null) {
+			throw new NotFoundException("No experiments with data was found.");
+		}
+		return new ResponseEntity<>(xnatExperiment, HttpStatus.OK);
+	}
+	
+	
 	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })

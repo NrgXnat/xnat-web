@@ -22,4 +22,6 @@ public interface ExperimentService {
 	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId);
 
 	public void deleteById(UserI user, String experimentId);
+
+	public XnatExperimentdata findByIdAndProject(UserI user, String experimentId, String projectId);
 }

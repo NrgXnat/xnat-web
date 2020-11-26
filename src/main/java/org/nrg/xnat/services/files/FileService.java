@@ -6,5 +6,8 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 
 public interface FileService {
-	List<XnatResourcecatalog> findByProject(UserI sessionUser, String projectId);
+	
+	List<XnatResourcecatalog> findByProject(UserI user, String projectId);
+
+	List<XnatResourcecatalog> findBySubject(UserI user, String subjectId);
 }

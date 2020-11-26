@@ -1,6 +1,7 @@
 package org.nrg.xnat.services.projects.impl;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
@@ -23,7 +24,9 @@ public class ProjectServiceImpl extends AbstractXftServiceImpl implements Projec
 
 	@Override
 	public XnatProjectdata findById(UserI user, String projectId) {
-		return XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		if(Objects.nonNull(projectId))
+			return XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		else throw new NullPointerException("ProjectId is Null");
 	}
 
 	@Override

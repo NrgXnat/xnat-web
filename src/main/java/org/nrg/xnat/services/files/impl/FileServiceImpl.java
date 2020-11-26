@@ -26,6 +26,11 @@ public class FileServiceImpl implements FileService {
 		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatResourcecatalog> findBySubject(UserI user, String subjectId) {
+		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+	}
+	
 	
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
@@ -47,5 +52,13 @@ public class FileServiceImpl implements FileService {
 												"LEFT JOIN xnat_abstractresource abst ON pr.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
 												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id";
 	
+	private static final String SUBJECT_QUERY= "SELECT xnat_abstractresource_id FROM xnat_subjectdata_resource map \n" + 
+												"LEFT JOIN xnat_subjectdata sub ON map.xnat_subjectdata_id=sub.id \n" + 
+												"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
+												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id ";
+	
+	private static final String BY_ID_WHERE_SUBJECT = " where xnat_subjectdata_id = :subjectId ";
+	
 	private final NamedParameterJdbcTemplate _template;
+
 }

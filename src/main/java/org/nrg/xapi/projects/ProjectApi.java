@@ -43,11 +43,11 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	@ApiResponse(code = 404, message = "The requested project wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<XnatProjectdata> getSubjectBySubjectId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+	public ResponseEntity<XnatProjectdata> getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
 		log.debug("Controller Api- get project by projectId");
 		XnatProjectdata xnatProject = _projectService.findById(getSessionUser(), projectId);
 		if (xnatProject == null) {
-			throw new NotFoundException("No Subject with ID was found.");
+			throw new NotFoundException("No Project with ID was found.");
 		}
 		return new ResponseEntity<>(xnatProject, HttpStatus.OK);
 	}
@@ -56,14 +56,15 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatProjectdata>> getAllExperimentList() throws Exception {
+	public ResponseEntity<List<XnatProjectdata>> getAllProjectList() throws Exception {
 		log.debug("Controller Api- get projects");
 		List<XnatProjectdata> xnatProjects = _projectService.getAll(getSessionUser());
 		if (xnatProjects == null) {
-			throw new NotFoundException("No Subject with data was found.");
+			throw new NotFoundException("No Project with XnatProjectdata was found.");
 		}
 		return new ResponseEntity<>(xnatProjects, HttpStatus.OK);
 	}
+	
 	
 	private final ProjectService _projectService;
 }
