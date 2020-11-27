@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.experiments.ExperimentService;
 import org.springframework.beans.factory.annotation.Autowired;
