@@ -67,6 +67,17 @@ public class ResourceServiceImpl implements ResourceService{
 		return null;
 	}
 
+	
+	@Override
+	public List<XnatAbstractresource> findByProjectAndSubject(UserI user, String projectId, String subjectId) {
+		return _template.query(SUBJECT_QUERY + BY_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_SUBJECT  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
+	}
+
+
+	@Override
+	public XnatAbstractresource findByIdAndProjectAndSubject(UserI user, Integer resourceId, String projectId, String subjectId) {
+		return _template.queryForObject(SUBJECT_QUERY + BY_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_SUBJECT + AND_WHERE + BY_RESOURCE_ID_WHERE  , new MapSqlParameterSource("resourceId", resourceId).addValue("projectId", projectId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
+	}
 
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {
@@ -93,6 +104,8 @@ public class ResourceServiceImpl implements ResourceService{
 	private static final String BY_ID_WHERE_SUBJECT = " s.id = :subjectId ";
 
 	private static final String BY_WHERE = " where";
+	
+	private static final String BY_WHERE_PROJECT = " where s.project = :projectId ";
 	
 	private static final String PROJECT_QUERY = "SELECT  ar.xnat_abstractresource_id FROM xnat_abstractresource ar \n" +
 												"LEFT JOIN xnat_projectdata_resource pr ON ar.xnat_abstractresource_id = pr.xnat_abstractresource_xnat_abstractresource_id";
