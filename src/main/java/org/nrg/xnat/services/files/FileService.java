@@ -10,4 +10,6 @@ public interface FileService {
 	List<XnatResourcecatalog> findByProject(UserI user, String projectId);
 
 	List<XnatResourcecatalog> findBySubject(UserI user, String subjectId);
+
+	List<XnatResourcecatalog> findByProjectAndSubject(UserI user, String projectId, String subjectId);
 }

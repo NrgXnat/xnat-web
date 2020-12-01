@@ -78,6 +78,11 @@ public class ResourceServiceImpl implements ResourceService{
 	public XnatAbstractresource findByIdAndProjectAndSubject(UserI user, Integer resourceId, String projectId, String subjectId) {
 		return _template.queryForObject(SUBJECT_QUERY + BY_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_SUBJECT + AND_WHERE + BY_RESOURCE_ID_WHERE  , new MapSqlParameterSource("resourceId", resourceId).addValue("projectId", projectId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
 	}
+	
+	@Override
+	public XnatAbstractresource findByIdAndSubject(UserI user, Integer resourceId, String subjectId) {
+		return _template.queryForObject(SUBJECT_QUERY  + BY_WHERE + BY_RESOURCE_ID_WHERE + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("resourceId", resourceId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
+	}
 
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {

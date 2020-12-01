@@ -151,6 +151,22 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	}
 	
 	
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified  subjectId", response = XnatAbstractresource.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+	public ResponseEntity<XnatAbstractresource> getResourceByIdAndSubject(@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId)throws Exception {
+		log.debug("Controller Api- get resources by  subjectId");
+		XnatAbstractresource xnatAbstractresource = _resourceService.findByIdAndSubject(getSessionUser(), resourceId, subjectId);
+		if (xnatAbstractresource == null) {
+			throw new NotFoundException("No resource with subjectId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresource, HttpStatus.OK);
+	}
+	
+	
 	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified  projectId and subjectId", response = XnatAbstractresource.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
