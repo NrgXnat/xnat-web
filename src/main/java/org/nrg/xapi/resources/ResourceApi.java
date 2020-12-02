@@ -186,7 +186,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/projects/{projectId}//subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
 	public ResponseEntity<XnatAbstractresource> getResourceByIdAndProjectAndSubject(@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId,
 			@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId)throws Exception {

@@ -90,7 +90,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item(s)"),
                    @ApiResponse(code = 403, message = "The the requested item(s) don't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files",
+    @XapiRequestMapping(value = {//"/projects/{projectId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}/files",

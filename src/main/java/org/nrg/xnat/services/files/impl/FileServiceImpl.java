@@ -36,6 +36,11 @@ public class FileServiceImpl implements FileService {
 		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatResourcecatalog> findByProjectAndResource(UserI user, String projectId, Integer resourceId) {
+		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+	}
+	
 	
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
@@ -68,6 +73,8 @@ public class FileServiceImpl implements FileService {
 												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id ";
 	
 	private static final String BY_ID_WHERE_PROJ = " where sub.project = :projectId ";
+	
+	private static final String BY_ID_WHERE_PROJ_AND_RESOURCE = " WHERE xnat_projectdata_id= :projectId  AND pr.xnat_abstractresource_xnat_abstractresource_id = :resourceId ";
 	
 	private static final String BY_ID_WHERE_SUBJECT = " xnat_subjectdata_id = :subjectId ";
 	

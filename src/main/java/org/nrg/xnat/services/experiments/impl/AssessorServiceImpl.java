@@ -31,6 +31,11 @@ public class AssessorServiceImpl implements AssessorService {
 		return _template.queryForObject(PROJECT_SUBJECT_AND_EXPERIMENT_QUERY + BY_PRO_SUB_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessorId", assessorId),new AssessorRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatImageassessordata> findByExperiment(UserI user, String experimentId) {
+		return _template.query(EXPERIMENT_QUERY + BY_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId),new AssessorRowMapper(user));
+	}
+	
 	private static class AssessorRowMapper implements RowMapper<XnatImageassessordata> {
 		AssessorRowMapper(final UserI user) {
 	        _user = user;
@@ -52,6 +57,16 @@ public class AssessorServiceImpl implements AssessorService {
 																		" LEFT JOIN xnat_subjectdata sd ON sd.id=sad.subject_id\n" + 
 																		" LEFT JOIN xnat_experimentData ed1 ON sd.project=ed1.project \n" + 
 																		"LEFT JOIN xnat_experimentData_share eds ON ed.id=eds.sharing_share_xnat_experimentDa_id ";
+	
+	private static final String EXPERIMENT_QUERY = "SELECT  DISTINCT  iad.id AS id from xnat_imageSessionData isd\n" + 
+													" LEFT JOIN xnat_imageAssessorData iad ON isd.id=iad.imageSession_ID\n" + 
+													" LEFT JOIN xnat_derivedData dd ON isd.id=dd.id \n" + 
+													" LEFT JOIN xnat_experimentData ed ON dd.id=ed.id \n" + 
+													"LEFT JOIN xnat_experimentData_share eds ON ed.id=eds.sharing_share_xnat_experimentDa_id";
+	
+	private static final String BY_EXP_ID_WHERE = " where iad.imagesession_id = :experimentId";
+	
+	
 	
 	private static final String BY_PRO_SUB_EXP_ID_WHERE = " where iad.imagesession_id= :experimentId AND ed1.project = :projectId \n" + 
 														 " AND sad.subject_id= :subjectId ";

@@ -72,5 +72,19 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 		return new ResponseEntity<>(xnatImageassessordata, HttpStatus.OK);
 	}
 	
+	
+	@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a list of all assessors configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured assessors."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatImageassessordata>> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
+		log.debug("Controller Api- get xnatImageassessordatas");
+		List<XnatImageassessordata> xnatImageassessordatas = _assessorService.findByExperiment(getSessionUser(), experimentId);
+		if (xnatImageassessordatas == null) {
+			throw new NotFoundException("No xnatImageassessordatas with data was found.");
+		}
+		return new ResponseEntity<>(xnatImageassessordatas, HttpStatus.OK);
+	}
+	
 	private final AssessorService _assessorService;
 }

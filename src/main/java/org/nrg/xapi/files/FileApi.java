@@ -72,11 +72,26 @@ public class FileApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/projects/{projectId}//subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatResourcecatalog>> getByProjectAndSubject(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId)throws Exception {
 		log.debug("Controller Api- get files by  projectId");
 		List<XnatResourcecatalog> xnatResourcecatalogs = _fileService.findByProjectAndSubject(getSessionUser(), projectId, subjectId);
+		if (xnatResourcecatalogs == null) {
+			throw new NotFoundException("No files with projectId  was found.");
+		}
+		return new ResponseEntity<>(xnatResourcecatalogs, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatResourcecatalog>> getByProjectAndResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId)throws Exception {
+		log.debug("Controller Api- get files by  projectId And resourceId ");
+		List<XnatResourcecatalog> xnatResourcecatalogs = _fileService.findByProjectAndResource(getSessionUser(), projectId, resourceId);
 		if (xnatResourcecatalogs == null) {
 			throw new NotFoundException("No files with projectId  was found.");
 		}
