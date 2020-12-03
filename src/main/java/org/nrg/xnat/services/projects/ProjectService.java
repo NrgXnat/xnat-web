@@ -3,6 +3,7 @@ package org.nrg.xnat.services.projects;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 
 public interface ProjectService {
@@ -11,7 +12,7 @@ public interface ProjectService {
 
 	public XnatProjectdata findById(UserI user, String projectId);
 	
-	public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata);
+	public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata) throws XftItemException;
 
 	public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata, String projectId);
 

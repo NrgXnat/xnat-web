@@ -41,6 +41,16 @@ public class ScanServiceImpl implements ScanService {
 		return _template.queryForObject(ASSESSED_AND_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId).addValue("scanId", scanId), new ImageScanRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatImagescandata> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId,String experimentId) {
+		return null;
+	}
+
+	@Override
+	public XnatImagescandata findByProjectAndSubjectAndExperimentAndScan(UserI user, String projectId, String subjectId, String experimentId, String scanId) {
+		return null;
+	}
+	
 	private static class ImageScanRowMapper implements RowMapper<XnatImagescandata> {
 
 		ImageScanRowMapper(final UserI user) {
@@ -86,5 +96,6 @@ public class ScanServiceImpl implements ScanService {
 	
 	
 	private final NamedParameterJdbcTemplate _template;
+
 
 }

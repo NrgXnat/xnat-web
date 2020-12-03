@@ -12,4 +12,6 @@ public interface AssessorService {
 	XnatImageassessordata findByIdAndProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId, String assessorId);
 
 	List<XnatImageassessordata> findByExperiment(UserI user, String experimentId);
+
+	XnatImageassessordata findByIdAndExperiment(UserI user, String assessorId, String experimentId);
 }

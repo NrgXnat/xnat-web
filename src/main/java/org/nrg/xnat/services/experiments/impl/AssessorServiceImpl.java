@@ -36,6 +36,11 @@ public class AssessorServiceImpl implements AssessorService {
 		return _template.query(EXPERIMENT_QUERY + BY_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId),new AssessorRowMapper(user));
 	}
 	
+	@Override
+	public XnatImageassessordata findByIdAndExperiment(UserI user, String assessorId, String experimentId) {
+		return _template.queryForObject(EXPERIMENT_QUERY + BY_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("assessorId", assessorId).addValue("experimentId", experimentId),new AssessorRowMapper(user));
+	}
+	
 	private static class AssessorRowMapper implements RowMapper<XnatImageassessordata> {
 		AssessorRowMapper(final UserI user) {
 	        _user = user;

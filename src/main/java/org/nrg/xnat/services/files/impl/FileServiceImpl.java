@@ -41,6 +41,10 @@ public class FileServiceImpl implements FileService {
 		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId) {
+		return _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+	}
 	
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
@@ -72,6 +76,14 @@ public class FileServiceImpl implements FileService {
 												"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
 												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id ";
 	
+	private static final String SUBJECT_RESOURCE_QUERY= "SELECT xnat_abstractresource_id\n" + 
+														"FROM xnat_subjectdata_resource map \n" + 
+														"LEFT JOIN xnat_subjectdata sub ON map.xnat_subjectdata_id=sub.id \n" + 
+														"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
+														"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id";
+	
+	private static final String BY_ID_WHERE_SUBJ_AND_RESOURCE = " WHERE xnat_subjectdata_id= :subjectId  AND map.xnat_abstractresource_xnat_abstractresource_id= :resourceId";
+	
 	private static final String BY_ID_WHERE_PROJ = " where sub.project = :projectId ";
 	
 	private static final String BY_ID_WHERE_PROJ_AND_RESOURCE = " WHERE xnat_projectdata_id= :projectId  AND pr.xnat_abstractresource_xnat_abstractresource_id = :resourceId ";
@@ -79,5 +91,6 @@ public class FileServiceImpl implements FileService {
 	private static final String BY_ID_WHERE_SUBJECT = " xnat_subjectdata_id = :subjectId ";
 	
 	private final NamedParameterJdbcTemplate _template;
+
 
 }
