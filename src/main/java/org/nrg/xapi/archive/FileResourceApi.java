@@ -41,11 +41,12 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  //"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources",
+                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources"
                                  //"/experiments/{experimentId}/resources",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/resources",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources"},
-                                 //"/experiments/{assessedId}/scans/{scanId}/resources","/subjects/{subjectId}/resources"},
+                                 //"/experiments/{assessedId}/assessors/{experimentId}/resources",
+                                 //"/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources"},
+                                 //"/experiments/{assessedId}/scans/{scanId}/resources","/subjects/{subjectId}/resources"
+                                 },
                                  produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatAbstractresourceI> getResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
                                                     @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
@@ -61,7 +62,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to access the requested item"),
                    @ApiResponse(code = 403, message = "The the requested item doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}",
+    @XapiRequestMapping(value = {//"/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}",
                                  "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}",
                                  //"/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}",
                                 // "/experiments/{experimentId}/resources/{resourceId}",
@@ -97,7 +98,7 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}/files",
                                 // "/experiments/{experimentId}/resources/{resourceId}/files",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}/files",
+                                // "/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}/files",
                                  "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/resources/{resourceId}/files",
                                  //"/experiments/{assessedId}/scans/{scanId}/resources/{resourceId}/files",
                                  //"/subjects/{subjectId}/resources/{resourceId}/files",
@@ -108,8 +109,8 @@ public class FileResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/files",
                                  //"/experiments/{experimentId}/files",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/files",
-                                 "/experiments/{assessedId}/assessors/{experimentId}/files",
+                                 //"/experiments/{assessedId}/assessors/{experimentId}/{resourceType}/files",
+                                 //"/experiments/{assessedId}/assessors/{experimentId}/files",
                                  //"/experiments/{assessedId}/scans/{scanId}/files",
                                  //"/subjects/{subjectId}/files"
                                  }, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)

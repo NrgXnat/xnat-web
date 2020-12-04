@@ -13,7 +13,7 @@ public interface ResourceService {
 
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(final UserI user, final String projectId, final String subjectId, final String experimentId);
 	
-	public List<XnatAbstractresource> getResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId);
+	public List<XnatAbstractresource> findResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId);
 	
 	public List<XnatAbstractresource> findByProject(final UserI user, final String projectId);
 
@@ -26,4 +26,8 @@ public interface ResourceService {
 	public XnatAbstractresource findByIdAndProjectAndSubject(final UserI user,final Integer resourceId, final String projectId, final String subjectId);
 
 	public XnatAbstractresource findByIdAndSubject(UserI sessionUser, Integer resourceId, String subjectId);
+
+	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user,String experimentId, String assessedId);
+
+	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, Integer resourceId);
 }

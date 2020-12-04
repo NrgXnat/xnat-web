@@ -37,7 +37,7 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 
 	@Override
-	public List<XnatAbstractresource> getResourceByExperimentAndScan(UserI user, String assessedId, String scanId) {
+	public List<XnatAbstractresource> findResourceByExperimentAndScan(UserI user, String assessedId, String scanId) {
 		List<XnatAbstractresource> xnatAbstractresources;
 		ArrayList<XnatExperimentdata> assesseds = XnatTemplateUtil.getXnatExperimentdata(assessedId, user,null);
 		ArrayList<XnatImagescandata> scans = XnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
@@ -82,6 +82,16 @@ public class ResourceServiceImpl implements ResourceService{
 	@Override
 	public XnatAbstractresource findByIdAndSubject(UserI user, Integer resourceId, String subjectId) {
 		return _template.queryForObject(SUBJECT_QUERY  + BY_WHERE + BY_RESOURCE_ID_WHERE + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("resourceId", resourceId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
+	}
+	
+	@Override
+	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user, String experimentId, String assessedId ) {
+		return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE   , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId), new ResourceRowMapper(user));
+	}
+	
+	@Override
+	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, Integer resourceId) {
+		return _template.queryForObject(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE + AND_WHERE + BY_WHERE_RESOURCE  , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId).addValue("resourceId", resourceId), new ResourceRowMapper(user));	
 	}
 
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
@@ -130,6 +140,20 @@ public class ResourceServiceImpl implements ResourceService{
 													" ar.xnat_abstractresource_id IN (r.xnat_abstractresource_xnat_abstractresource_id, air.xnat_abstractresource_xnat_abstractresource_id, aor.xnat_abstractresource_xnat_abstractresource_id)\n" + 
 													" LEFT JOIN xdat_meta_element e ON ar.extension = e.xdat_meta_element_id "; 
 	
-   private final NamedParameterJdbcTemplate _template;
+	private static final String EXPERIMENT_ASSESSER_QUERY= "SELECT xnat_abstractresource_id\n" + 
+																	"FROM img_assessor_out_resource map \n" + 
+																	"LEFT JOIN xnat_experimentdata expt ON map.xnat_imageassessordata_id=expt.id  \n" + 
+																	"LEFT JOIN xdat_meta_element xmeexpt ON expt.extension=xmeexpt.xdat_meta_element_id \n" + 
+																	"LEFT JOIN xdat_element_security xes ON xmeexpt.element_name=xes.element_name \n" + 
+																	"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
+																	"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id \n" + 
+																	"LEFT JOIN xnat_imageassessordata xiad ON expt.id=xiad.id\n" + 
+																	"LEFT JOIN xnat_imageAssessorData iad ON map.xnat_imageassessordata_id=iad.id";
+	
+	private static final String BY_WHERE_EXP_ASSE = "  WHERE iad.imagesession_id= :experimentId  AND map.xnat_imageassessordata_id = :assessedId ";
+  
+	private static final String BY_WHERE_RESOURCE = " xnat_abstractresource_id = :resourceId";
+	
+	private final NamedParameterJdbcTemplate _template;
 
 }
