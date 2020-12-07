@@ -51,6 +51,11 @@ public class FileServiceImpl implements FileService {
 		return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
 	}
 	
+	@Override
+	public List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user,String projectId, String subjectId, String experimentId, String assessedId) {
+		return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
+	}
+	
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
 	        _user = user;
@@ -97,6 +102,20 @@ public class FileServiceImpl implements FileService {
 															"LEFT JOIN xnat_imageassessordata xiad ON expt.id=xiad.id\n" + 
 															"LEFT JOIN xnat_imageAssessorData iad ON map.xnat_imageassessordata_id=iad.id";
 	
+	private static final String PRO_SUB_EXP_ASS_QUERY=" SELECT xnat_abstractresource_id\n" + 
+			  											"FROM img_assessor_out_resource map \n" + 
+			  											"LEFT JOIN xnat_experimentdata expt ON map.xnat_imageassessordata_id=expt.id  \n" + 
+			  											"LEFT JOIN xdat_meta_element xmeexpt ON expt.extension=xmeexpt.xdat_meta_element_id \n" + 
+			  											"LEFT JOIN xdat_element_security xes ON xmeexpt.element_name=xes.element_name \n" + 
+			  											"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
+			  											"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id \n" + 
+			  											"LEFT JOIN xnat_imageassessordata xiad ON expt.id=xiad.id\n" + 
+			  											"LEFT JOIN xnat_imageAssessorData iad ON map.xnat_imageassessordata_id=iad.id\n" + 
+			  											"LEFT JOIN xnat_subjectAssessorData sad ON iad.imagesession_id=sad.id  \n" + 
+			  											"LEFT JOIN xnat_subjectdata sd ON sd.id=sad.subject_id ";
+
+	private static final String BY_WHERE_PRO_SUB_EXP_ASS= " WHERE expt.project = :projectId AND sad.subject_id= :subjectId AND iad.imagesession_id= :experimentId  AND map.xnat_imageassessordata_id = :assessedId ";
+	
 	private static final String BY_ID_WHERE_EXP_AND_ASSESSER = " WHERE iad.imagesession_id= :experimentId  AND  map.xnat_imageassessordata_id = :assessorId";
 	
 	private static final String BY_ID_WHERE_SUBJ_AND_RESOURCE = " WHERE xnat_subjectdata_id= :subjectId  AND map.xnat_abstractresource_xnat_abstractresource_id= :resourceId";
@@ -108,5 +127,6 @@ public class FileServiceImpl implements FileService {
 	private static final String BY_ID_WHERE_SUBJECT = " xnat_subjectdata_id = :subjectId ";
 	
 	private final NamedParameterJdbcTemplate _template;
+
 
 }

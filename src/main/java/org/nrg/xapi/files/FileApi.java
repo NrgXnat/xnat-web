@@ -127,5 +127,22 @@ public class FileApi extends AbstractXapiProjectRestController {
 		}
 		return new ResponseEntity<>(xnatResourcecatalogs, HttpStatus.OK);
 	}
+	
+	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  files with the specified  projectId and subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested files."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors/{assessedId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatResourcecatalog>> getByIdAndProjectAndSubjectAndExperimentAndAssessors(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId)throws Exception {
+		log.debug("Controller Api- get resources by  projectId");
+		List<XnatResourcecatalog> xnatResourcecatalogs = _fileService.findByIdAndProjectAndSubjectAndExperimentAndAssessors(getSessionUser(),projectId, subjectId, experimentId, assessedId);
+		if (xnatResourcecatalogs == null) {
+			throw new NotFoundException("No resource with projectId and subjectId  was found.");
+		}
+		return new ResponseEntity<>(xnatResourcecatalogs, HttpStatus.OK);
+	}
 	private final FileService _fileService;
 }

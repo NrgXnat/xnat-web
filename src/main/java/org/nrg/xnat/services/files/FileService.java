@@ -18,4 +18,6 @@ public interface FileService {
 	List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId);
 
 	List<XnatResourcecatalog> findByExperimentAndAssessors(UserI user, String experimentId, String assessorId);
+
+	List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId);
 }

@@ -30,4 +30,6 @@ public interface ResourceService {
 	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user,String experimentId, String assessedId);
 
 	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, Integer resourceId);
+
+	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId);
 }
