@@ -146,7 +146,6 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified project or subject doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}", "/subjects/{subjectId}"},
-                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
     public void deleteSubject(@ApiParam("The project containing the subject to be deleted") @PathVariable(required = false) final String projectId,
