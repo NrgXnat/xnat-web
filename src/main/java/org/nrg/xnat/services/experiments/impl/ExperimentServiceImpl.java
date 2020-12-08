@@ -91,7 +91,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 	private  final String PROJECT_SUBJECT_EXPERIMENT_QUERY = EXPERIMENT_SUB_QUERY1 + BY_PRO_SUB_ID_WHERE  +  EXPERIMENT_SUB_QUERY2 +  BY_PRO_SUB_ID_WHERE2 + EXPERIMENT_SUB_QUERY3;
 	
 	
-	private static final String BY_PRO_SUB_ID_WHERE ="    SECURITY WHERE ((((xnat_experimentData14= :c) OR  (xnat_experimentData_share25= :projectId)) AND  \n" + 
+	private static final String BY_PRO_SUB_ID_WHERE ="    SECURITY WHERE ((((xnat_experimentData14= :projectId) OR  (xnat_experimentData_share25= :projectId)) AND  \n" + 
 			" ((xnat_subjectAssessorData1= :subjectId))) AND (( (xnat_experimentData14= :projectId) OR  (xnat_experimentData_share25= :projectId)) AND  \n" + 
 			" ((xnat_subjectAssessorData1= :subjectId)))))";
 	
