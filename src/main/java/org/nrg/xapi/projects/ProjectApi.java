@@ -100,7 +100,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/projects/{projectId}/projects/{projectId}", "/projects/{projectId}"},
+    @XapiRequestMapping(value = "/projects/{projectId}",
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
     public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId) throws Exception {

@@ -1,5 +1,6 @@
 package org.nrg.xnat.services.subjects;
 
+import org.nrg.action.ClientException;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 
@@ -18,7 +19,7 @@ public interface SubjectService {
 
     XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata);
 
-    void deleteById(UserI user, String subjectId);
+    void deleteById(UserI user, String subjectId) throws ClientException;
 
-    void delete(UserI user, XnatSubjectdata subject);
+    void delete(UserI user, XnatSubjectdata subject) throws ClientException;
 }

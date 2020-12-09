@@ -2,6 +2,7 @@ package org.nrg.xapi.subjects;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
@@ -147,13 +149,13 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}", "/subjects/{subjectId}"},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
+                        method = DELETE)
     public void deleteSubject(@ApiParam("The project containing the subject to be deleted") @PathVariable(required = false) final String projectId,
                               @ApiParam("The ID of the subject to be deleted") @PathVariable final String subjectId) throws Exception {
-        // TODO: Would be good to validate subject ID/label with project ID
         log.debug("Controller Api- Delete subject {} in project {}", subjectId, StringUtils.defaultIfBlank(projectId, "N/A"));
         _subjectService.deleteById(getSessionUser(), subjectId);
     }
 
+    
     private final SubjectService _subjectService;
 }
