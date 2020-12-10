@@ -2,7 +2,10 @@ package org.nrg.xnat.model.util;
 
 import static org.nrg.xft.event.XftItemEventI.DELETE;
 
+import org.apache.commons.lang3.StringUtils;
+import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
@@ -11,12 +14,23 @@ import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatPvisitdata;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xft.ItemI;
+import org.nrg.xft.XFTItem;
+import org.nrg.xft.db.MaterializedView;
+import org.nrg.xft.db.ViewManager;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.XftItemEvent;
+import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.SaveItemHelper;
+import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
@@ -27,6 +41,181 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XnatSubjectUtil {
+	
+	public XFTItem loadItem(String dataType, boolean parseFileItems, XnatSubjectdata subject) throws ClientException, ServerException {
+		return loadItem(dataType, parseFileItems, null, subject);
+	}
+
+	
+	public XFTItem loadItem(String dataType, boolean parseFileItems, XFTItem template, XnatSubjectdata subject) throws ClientException, ServerException {
+        XFTItem item = null;
+        if (template != null && populateFromDB()) {
+            item = template;
+        }
+		return item;
+        
+	}
+	
+	public boolean populateFromDB() {
+		return getQueryVariable("populateFromDB") == null || isQueryVariableTrue("populateFromDB");
+	}
+
+	public String getQueryVariable(String key) {
+		return null;
+				//getQueryVariable(key, getRequest());
+	}
+
+	public boolean isQueryVariableTrue(String key) {
+		return isQueryVariableTrueHelper(getQueryVariable(key));
+	}
+
+	protected static boolean isQueryVariableTrueHelper(final Object queryVariableObj) {
+		if (queryVariableObj == null) {
+			return false;
+		}
+		if (queryVariableObj instanceof String) {
+			return !(StringUtils.equalsAnyIgnoreCase((String) queryVariableObj, "false", "0"));
+		} else {
+			return false;
+		}
+	}
+	
+	
+	 protected boolean validateSubject(final XnatSubjectdata subject) throws Exception {
+	        if (StringUtils.isNotBlank(subject.getLabel()) && !XftStringUtils.isValidId(subject.getId())) {
+	           // getResponse().setStatus(Status.CLIENT_ERROR_EXPECTATION_FAILED, "Invalid character in subject label.");
+	            return false;
+	        }
+
+	        final ValidationResults results = subject.validate();
+	        if (results != null && !results.isValid()) {
+	           // getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, results.toFullString());
+	            return false;
+	        }
+
+	        return true;
+	    }
+		
+		 public boolean create(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, EventDetails event, UserI user) throws Exception {
+		        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user, item.getItem(), event);
+		        final EventMetaI meta = workflow.buildEvent();
+		        return create(item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
+		    }
+		 
+		 public boolean create(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, final PersistentWorkflowI workflow, final EventMetaI meta, UserI user) throws Exception {
+		        return createOrUpdateImpl(true, item, overwriteSecurity, allowDataDeletion, workflow, meta ,user);
+		    }
+		 
+		 private boolean createOrUpdateImpl(final boolean isCreate, final ArchivableItem item, final boolean overwriteSecurity, final boolean allowDataDeletion, final PersistentWorkflowI workflow, final EventMetaI meta, UserI user) throws Exception {
+		        try {
+		            if (SaveItemHelper.authorizedSave(item, user, overwriteSecurity, allowDataDeletion, meta)) {
+		                if (isCreate) {
+		                    final XFTItem xftItem = item.getItem();
+		                    if (xftItem.instanceOf(XnatExperimentdata.SCHEMA_ELEMENT_NAME) || xftItem.instanceOf(XnatSubjectdata.SCHEMA_ELEMENT_NAME) || xftItem.instanceOf(XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+		                        XDAT.triggerXftItemEvent(xftItem, XftItemEvent.CREATE);
+		                    }
+		                }
+		                WorkflowUtils.complete(workflow, meta);
+		                Users.clearCache(user);
+		                MaterializedView.deleteByUser(user);
+		                return true;
+		            }
+		            return false;
+		        } catch (Exception e) {
+		            WorkflowUtils.fail(workflow, meta);
+		            throw e;
+		        }
+		    }
+
+	
+	 
+	 public void postSaveManageStatus(ItemI i, UserI user) throws ActionException {
+	        try {
+	            if (isQueryVariableTrue("activate")) {
+	                if (Permissions.canActivate(user, i.getItem())) {
+	                    PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, i.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, "Activated"));
+	                    try {
+	                        i.activate(user);
+	                        WorkflowUtils.complete(wrk, wrk.buildEvent());
+	                    } catch (Exception e) {
+	                    	log.error("", e);
+	                        WorkflowUtils.fail(wrk, wrk.buildEvent());
+	                    }
+	                } else {
+	                    //getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient activation privileges for experiments in this project.");
+	                }
+	            }
+
+	            if (isQueryVariableTrue(ViewManager.QUARANTINE)) {
+	                if (Permissions.canActivate(user, i.getItem())) {
+	                    PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, i.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, "Quarantined"));
+	                    try {
+	                        i.quarantine(user);
+	                        WorkflowUtils.complete(wrk, wrk.buildEvent());
+	                    } catch (Exception e) {
+	                    	log.error("", e);
+	                        WorkflowUtils.fail(wrk, wrk.buildEvent());
+	                    }
+	                } else {
+	                   // getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient activation privileges for experiments in this project.");
+	                }
+	            }
+
+	            if (isQueryVariableTrue("_lock")) {
+	                if (Permissions.canActivate(user, i.getItem())) {
+	                    PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, i.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, "Locked"));
+	                    try {
+	                        i.lock(user);
+	                        WorkflowUtils.complete(wrk, wrk.buildEvent());
+	                    } catch (Exception e) {
+	                    	log.error("", e);
+	                        WorkflowUtils.fail(wrk, wrk.buildEvent());
+	                    }
+	                } else {
+	                    throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient activation privileges for experiments in this project.", new Exception());
+	                }
+	            } else if (isQueryVariableTrue("_unlock")) {
+	                if (Permissions.canActivate(user, i.getItem())) {
+	                    PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, i.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, "Unlocked"));
+	                    try {
+	                        i.activate(user);
+	                        WorkflowUtils.complete(wrk, wrk.buildEvent());
+	                    } catch (Exception e) {
+	                    	log.error("", e);
+	                        WorkflowUtils.fail(wrk, wrk.buildEvent());
+	                    }
+	                } else {
+	                    throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient activation privileges for experiments in this project.", new Exception());
+	                }
+	            } else if (isQueryVariableTrue("_obsolete")) {
+	                if (Permissions.canActivate(user, i.getItem())) {
+	                    PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, i.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, "Obsoleted"));
+	                    try {
+	                        i.getItem().setStatus(user, ViewManager.OBSOLETE);
+	                        WorkflowUtils.complete(wrk, wrk.buildEvent());
+	                    } catch (Exception e) {
+	                    	log.error("", e);
+	                        WorkflowUtils.fail(wrk, wrk.buildEvent());
+	                    }
+	                } else {
+	                    throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient activation privileges for experiments in this project.", new Exception());
+	                }
+	            }
+	        } catch (ActionException e) {
+	            throw e;
+	        } catch (Exception e) {
+	            log.error("", e);
+	            throw new org.nrg.action.ServerException("Error modifying status", e);
+	        }
+	    }
+	
+	
+	private Integer getEventId() {
+		return null;
+	}
+	
+	
+
 
 	public void deleteItem(final XnatProjectdata proj, final BaseElement item, final UserI user) throws ClientException {
        

@@ -3,11 +3,29 @@ package org.nrg.xnat.services.subjects.impl;
 import lombok.extern.slf4j.Slf4j;
 
 import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
+import org.nrg.xdat.XDAT;
+import org.nrg.xdat.om.XnatDemographicdata;
+import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xft.XFTItem;
+import org.nrg.xft.db.MaterializedView;
+import org.nrg.xft.event.EventDetails;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.XftItemEvent;
+import org.nrg.xft.event.EventUtils.TYPE;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.model.util.XnatSubjectUtil;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.services.subjects.SubjectService;
+import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.nrg.xnat.utils.WorkflowUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -50,18 +68,51 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
     @Override
-    public XnatSubjectdata create(final UserI user, final XnatSubjectdata subject) {
-        log.debug("User {} is creating a new subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
-        return null;
-    }
+    public XnatSubjectdata create(final UserI user, final XnatSubjectdata subject) throws XftItemException {
+    	  XnatSubjectUtil xnatSubjectUtil = new XnatSubjectUtil();
+    	  XFTItem item;
+          try {
+        		item = xnatSubjectUtil.loadItem("xnat:subjectData", true, subject);
+        		
+//          final XFTItem item = XFTItem.NewItem(XnatSubjectdata.SCHEMA_ELEMENT_NAME, user);
+//  		 	item.setProperty(XnatSubjectdata.SCHEMA_ELEMENT_NAME + ".project", subject.getProject());
+//  		    item.setProperty(XnatSubjectdata.SCHEMA_ELEMENT_NAME + ".group", subject.getGroup());
+//  		    item.setProperty(XnatSubjectdata.SCHEMA_ELEMENT_NAME + ".label", subject.getLabel());
+//          item.setProperty(XnatSubjectdata.SCHEMA_ELEMENT_NAME + ".src", subject.getSrc());
+         // item.setProperty(XnatDemographicdata.SCHEMA_ELEMENT_NAME + ".demographics", subject.getDemographics());
+          //item.setProperty(XnatSubjectdata.SCHEMA_ELEMENT_NAME + ".keywords", subject.getAge(subject.getDOB()));
+          
+          XnatSubjectdata sub = new XnatSubjectdata(item);
+          xnatSubjectUtil.create(sub, false, false, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(sub.getXSIType(), true)), user);
+
+          xnatSubjectUtil.postSaveManageStatus(sub,user);
+          } catch (Exception e) {
+  	            throw new XftItemException("Failed to create the subject: " + subject.toString(), e);
+  	        }
+          return subject;
+   	}	
+
 
     @Override
-    public XnatSubjectdata update(final UserI user, final XnatSubjectdata subject) {
+    public XnatSubjectdata update(final UserI user, final XnatSubjectdata subject) throws XftItemException {
         log.debug("User {} is updating the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         return null;
     }
+    
+	 
+	 public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
+	        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, "", "");
+	    }
 
-    @Override
+	    private TYPE getEventType() {
+			return null;
+		}
+
+		private String getAction() {
+			return "Added Subject";
+		}
+
+	@Override
     public void deleteById(final UserI user, final String subjectId) throws ClientException {
         delete(user, findById(user, subjectId));
     }

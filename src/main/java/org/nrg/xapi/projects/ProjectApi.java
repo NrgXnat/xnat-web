@@ -2,6 +2,7 @@ package org.nrg.xapi.projects;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
@@ -100,11 +101,8 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "/projects/{projectId}",
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
+    @XapiRequestMapping(value = "/projects/{projectId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
     public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId) throws Exception {
-        // TODO: Would be good to validate project ID/label with project ID
         log.debug("Controller Api- Delete project {}", projectId);
         _projectService.deleteById(getSessionUser(), projectId);
     }

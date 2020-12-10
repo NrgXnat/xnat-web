@@ -2,6 +2,7 @@ package org.nrg.xnat.services.subjects;
 
 import org.nrg.action.ClientException;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 
 import java.util.List;
@@ -15,9 +16,9 @@ public interface SubjectService {
 
     XnatSubjectdata findByProjectAndSubject(UserI user, String projectId, String subjectId);
 
-    XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata);
+    XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException;
 
-    XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata);
+    XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException;
 
     void deleteById(UserI user, String subjectId) throws ClientException;
 
