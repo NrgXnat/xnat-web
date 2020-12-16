@@ -2,6 +2,7 @@ package org.nrg.xapi.subjects;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 import io.swagger.annotations.*;
@@ -22,7 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
@@ -104,7 +105,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
     public XnatSubjectdata createSubject(@ApiParam("The project in which the subject should be created") @PathVariable(required = false) final String projectId,
-                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdata subject) throws Exception {
+                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdata subject, @RequestParam(required = false) String label) throws Exception {
         log.debug("Controller Api- Create subject: {}", subject);
         final boolean subjectHasProject = StringUtils.isNotBlank(subject.getProject());
         final boolean hasProject        = StringUtils.isNotBlank(projectId);
@@ -117,7 +118,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         if (!subjectHasProject) {
             subject.setProject(projectId);
         }
-        return _subjectService.create(getSessionUser(), subject);
+         return _subjectService.create(getSessionUser(), subject);
     }
 
     @ApiOperation(value = "Update an existing subject", notes = "Updates the submitted subject.", response = XnatSubjectdata.class)
@@ -128,10 +129,10 @@ public class SubjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}", "/subjects/{subjectId}"},
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
+                        method = PUT)
     public XnatSubjectdata updateSubject(@ApiParam("The project containing the subject to be updated") @PathVariable(required = false) final String projectId,
                                          @ApiParam("The ID of the subject to be updated") @PathVariable final String subjectId,
-                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdata subject) throws Exception {
+                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdata subject, @RequestParam(required = false) String label) throws Exception {
         if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(subject.getProject(), projectId)) {
             throw new DataFormatException("You specified the project " + projectId + " in your request but the subject is assigned to project " + subject.getProject() + ". These values must be the same.");
         }
@@ -139,7 +140,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
             throw new DataFormatException("You specified the subject ID " + subjectId + " in your request but the subject to be updated has the ID " + subject.getId() + ". These values must be the same.");
         }
         log.debug("Controller Api- Update subject {} (ID {}) in project {}", subject.getLabel(), subjectId, subject.getProject());
-        return _subjectService.update(getSessionUser(), subject);
+        return _subjectService.update(getSessionUser(), subject, label);
     }
 
     @ApiOperation(value = "Delete an existing subject", notes = "Deletes the specified subject.")

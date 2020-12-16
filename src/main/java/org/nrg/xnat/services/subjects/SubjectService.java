@@ -17,8 +17,8 @@ public interface SubjectService {
     XnatSubjectdata findByProjectAndSubject(UserI user, String projectId, String subjectId);
 
     XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException;
-
-    XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException;
+    
+    XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata, String label) throws XftItemException;
 
     void deleteById(UserI user, String subjectId) throws ClientException;
 
