@@ -2,6 +2,7 @@ package org.nrg.xapi.projects;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 import io.swagger.annotations.*;
@@ -86,7 +87,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}",
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
+                        method = PUT)
     public XnatProjectdata updateProject(@ApiParam("The ID of the project to be updated") @PathVariable final String projectId,
                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdata project) throws Exception {
         if (!StringUtils.equals(projectId, project.getId())) {

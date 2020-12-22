@@ -1,5 +1,8 @@
 package org.nrg.xnat.services.projects;
 
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
@@ -13,7 +16,7 @@ public interface ProjectService {
 
     XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata) throws XftItemException;
 
-    XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata);
+    XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
     void deleteById(UserI user, String projectId);
 
