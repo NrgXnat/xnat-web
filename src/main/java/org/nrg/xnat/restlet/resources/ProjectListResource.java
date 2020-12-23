@@ -75,7 +75,7 @@ public class ProjectListResource extends QueryOrganizerResource {
         XFTItem item;
         try {
             item = this.loadItem("xnat:projectData", true);
-
+            System.out.println("RESOURCE ITEM IS ======"+ item);
             final UserI user = getUser();
             if (item == null) {
                 String xsiType = this.getQueryVariable("xsiType");
@@ -96,7 +96,7 @@ public class ProjectListResource extends QueryOrganizerResource {
 
             if (item.instanceOf("xnat:projectData")) {
                 XnatProjectdata project = new XnatProjectdata(item);
-
+                System.out.println("REST XnatProjectdata IS ======"+ project);
                 if (StringUtils.isBlank(project.getId())) {
                     this.getResponse().setStatus(Status.CLIENT_ERROR_EXPECTATION_FAILED, "Requires XNAT ProjectData ID");
                     return;

@@ -19,6 +19,8 @@ public class XnatProjectdataSerializer extends AbstractBaseElementSerializer<Xna
         writeNonBlankField(generator, "description", project.getDescription());
         writeNonBlankField(generator, "name", project.getName());
         writeNonBlankField(generator, "secondaryId", project.getSecondaryId());
+        writeNonBlankField(generator, "keywords", project.getKeywords());
+        writeNonNullBoolean(generator, "active", project.getActive());
         writeNonNullField(generator, "pi", project.getPi());
         writeNonNullField(generator, "investigators", project.getInvestigators_investigator());
         //writeNonBlankField(generator, "firstName", xnatInvestigatordata.getFirstname());

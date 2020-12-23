@@ -2,7 +2,6 @@ package org.nrg.xnat.services.projects.impl;
 
 import lombok.extern.slf4j.Slf4j;
 
-import org.apache.commons.httpclient.HttpStatus;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -20,6 +19,8 @@ import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.security.user.exceptions.UserInitException;
+import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
@@ -33,40 +34,28 @@ import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.exception.XFTInitException;
+import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.model.util.XnatProjectUtil;
-import org.nrg.xnat.services.archive.impl.legacy.AbstractXftServiceImpl;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
-import org.restlet.data.Status;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import static org.nrg.xdat.om.base.auto.AutoXnatProjectdata.SCHEMA_ELEMENT_NAME;
-import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
-import static org.restlet.data.Status.CLIENT_ERROR_CONFLICT;
-import static org.restlet.data.Status.CLIENT_ERROR_EXPECTATION_FAILED;
-import static org.restlet.data.Status.CLIENT_ERROR_FORBIDDEN;
-import static org.restlet.data.Status.SERVER_ERROR_INTERNAL;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 @Service
 @Slf4j
-public class ProjectServiceImpl extends AbstractXftServiceImpl implements ProjectService {
-    @Autowired
-    public ProjectServiceImpl(final NamedParameterJdbcTemplate template) {
-        super(template);
-    }
-
+public class ProjectServiceImpl implements ProjectService {
+	
     @Override
     public List<XnatProjectdata> getAll(final UserI user) {
         return XnatProjectdata.getAllXnatProjectdatas(user, false);
@@ -82,60 +71,49 @@ public class ProjectServiceImpl extends AbstractXftServiceImpl implements Projec
     }
 
     @Override
-    public XnatProjectdata create(final UserI user, final XnatProjectdata project) {
-        log.debug("User {} is creating the project {}", user.getUsername(), project.getId());
-        XFTItem item;
-        try {
-            item = project.getItem();
-            	
-            if (item == null) {
-                String xsiType = this.getQueryVariable("xsiType");
-                if (xsiType != null) {
-                    item = XFTItem.NewItem(xsiType, user);
-                }
-            }
-            if (item == null) 
-            	throw new DataFormatException("Need POST Contents");
-           
-            boolean allowDataDeletion = false;
-            if (this.getQueryVariable("allowDataDeletion") != null && this.getQueryVariable("allowDataDeletion").equalsIgnoreCase("true")) {
-                allowDataDeletion = true;
-            }
-            
-            if (item.instanceOf("xnat:projectData")) {
-                XnatProjectdata proj = new XnatProjectdata(item);
+    public XnatProjectdata create(final UserI user, final XnatProjectdata proj) throws ActionException, UserNotFoundException, UserInitException, DataFormatException, XftItemException, InsufficientPrivilegesException, ResourceAlreadyExistsException {
+        log.debug("User {} is creating the project {}", user.getUsername(), proj.getId());
 
-                if (StringUtils.isBlank(proj.getId()))
-                	throw new DataFormatException("Requires XNAT ProjectData ID");
-                
-                if (!XftStringUtils.isValidId(proj.getId())) 
-                	throw new DataFormatException("Invalid character in project ID.");
+		XFTItem item;
+		//step 1: get XFTItem from project request
+		item = getProjectXftItem(user, proj);
+		
+		//step 2: Set user into XFTItem
+		item.setUser(user);
 
-                if (item.getCurrentDBVersion() == null) {
-                    if (XDAT.getSiteConfigPreferences().getUiAllowNonAdminProjectCreation() || Roles.isSiteAdmin(user)) {
-                        final XnatProjectdata saved = BaseXnatProjectdata.createProject(proj, user, allowDataDeletion, false, newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN), getQueryVariable("accessibility"));
-                        //returnSuccessfulCreateFromList(saved.getId());
-                    } else  
-                    	throw new InsufficientPrivilegesException("User account doesn't have permission to edit this project.");
-                } else  
-                	throw new ResourceAlreadyExistsException("Project already exists.", proj.getId());
-            }
-            
-        }catch (Exception e) {
-			// TODO: handle exception
+		boolean allowDataDeletion = false;
+		if (this.getQueryVariable("allowDataDeletion") != null && this.getQueryVariable("allowDataDeletion").equalsIgnoreCase("true")) {
+			allowDataDeletion = true;
 		}
-		return XnatProjectdata.getXnatProjectdatasById(project.getId(), user, false);
+
+		if (item.instanceOf("xnat:projectData")) {
+			XnatProjectdata project = new XnatProjectdata(item);
+			if (StringUtils.isBlank(project.getId()))
+				throw new DataFormatException("Requires XNAT ProjectData ID");
+
+			if (!XftStringUtils.isValidId(project.getId()))
+				throw new DataFormatException("Invalid character in project ID.");
+
+			if (item.getCurrentDBVersion() == null) {
+				if (XDAT.getSiteConfigPreferences().getUiAllowNonAdminProjectCreation() || Roles.isSiteAdmin(user)) {
+					BaseXnatProjectdata.createProject(project, user, allowDataDeletion, false, newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN), getQueryVariable("accessibility"));
+				} else
+					throw new InsufficientPrivilegesException( "User account doesn't have permission to edit this project.");
+			} else
+				throw new ResourceAlreadyExistsException("Project already exists.", proj.getId());
+		}
+		return XnatProjectdata.getXnatProjectdatasById(proj.getId(), user, false);
     }
     
     
     @SuppressWarnings("unused")
 	@Override
-    public XnatProjectdata update(final UserI user, final XnatProjectdata proj) throws Exception {
+    public XnatProjectdata update(final UserI user, final XnatProjectdata project) throws Exception {
     	XnatProjectUtil xnatProjectUtil = new XnatProjectUtil();
-    	XnatProjectdata project = null;
-    	  final String projectId = proj.getId();
+    	//XnatProjectdata project = null;
+    	  final String projectId = project.getId();
    	 String filepath = null;
-   	project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+   	//project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
     	 if (user.isGuest()) {
     		 throw new InsufficientPrivilegesException("User has insufficent privileges");
          }
@@ -157,10 +135,9 @@ public class ProjectServiceImpl extends AbstractXftServiceImpl implements Projec
          try {
              if (project == null || Permissions.canEdit(user, project)) {
                  XFTItem item = getProjectXftItem(user, project);
-
-                 if (item == null) {
+                 if (item == null) 
                 	 throw new DataFormatException("Need PUT Contents");
-                 }
+                 
 
                  final boolean allowDataDeletion = BooleanUtils.toBoolean(getQueryVariable("allowDataDeletion"));
                  if (item.instanceOf("xnat:projectData")) {
@@ -344,31 +321,26 @@ public class ProjectServiceImpl extends AbstractXftServiceImpl implements Projec
     }
 
     @Override
-    public void deleteById(final UserI user, final String projectId) {
+    public void deleteById(final UserI user, final String projectId) throws DataFormatException, InitializationException {
         delete(user, findById(user, projectId));
     }
 
     @Override
-    public void delete(final UserI user, final XnatProjectdata proj) {
+    public void delete(final UserI user, final XnatProjectdata proj) throws DataFormatException, InitializationException {
     	XnatProjectdata project = null;
   	  final String projectId = proj.getId();
  	 String filepath = null;
  	project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
         log.debug("User {} is deleting the project {}", user.getUsername(), project.getId());
-        if (project == null || StringUtils.isNotBlank(filepath)) {
-           // getResponse().setStatus(CLIENT_ERROR_BAD_REQUEST);
-            //return;
-        }
-       // final UserI user = getUser();
+        if (project == null || StringUtils.isNotBlank(filepath))
+        	throw new DataFormatException("Please check project request object");
         try {
-            if (user.isGuest() || !Permissions.canDelete(user, project)) {
-                //getResponse().setStatus(CLIENT_ERROR_FORBIDDEN);
-               // return;
-            }
+            if (user.isGuest() || !Permissions.canDelete(user, project)) 
+            	 throw new InsufficientPrivilegesException("User account doesn't have permission to delete this project.");
+            
         } catch (Exception e) {
             log.error("An error occurred checking permissions for user " + user.getUsername() + " to delete the project " + projectId, e);
-           // getResponse().setStatus(SERVER_ERROR_INTERNAL);
-           // return;
+            throw new InitializationException("An error occurred checking permissions for user " + user.getUsername() + " to delete the project " + projectId);
         }
 
         try {
@@ -387,7 +359,7 @@ public class ProjectServiceImpl extends AbstractXftServiceImpl implements Projec
             log.error("An error occurred trying manage delete operation for user " + user.getUsername() + " on project " + projectId, e);
         }
         // If we got here, the delete operation failed, so the server error status should always be set.
-       // getResponse().setStatus(SERVER_ERROR_INTERNAL);
+        throw new InitializationException("delete operation failed");
     }
     
     
