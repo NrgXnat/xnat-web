@@ -18,6 +18,9 @@ import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatProjectparticipantI;
@@ -44,6 +47,9 @@ import org.nrg.xft.event.XftItemEvent;
 import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
@@ -109,8 +115,7 @@ public class XnatSubjectUtil {
 	}
 	
 	 
-	public void postSaveManageStatus(ItemI i, UserI user) throws ActionException {
-		try {
+	public void postSaveManageStatus(ItemI i, UserI user) throws InsufficientPrivilegesException, Exception {
 			if (isQueryVariableTrue("activate")) {
 				if (Permissions.canActivate(user, i.getItem())) {
 					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user,
@@ -122,11 +127,8 @@ public class XnatSubjectUtil {
 						log.error("", e);
 						WorkflowUtils.fail(wrk, wrk.buildEvent());
 					}
-				} else {
-					// getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user
-					// account has insufficient activation privileges for experiments in this
-					// project.");
-				}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
 			}
 
 			if (isQueryVariableTrue(ViewManager.QUARANTINE)) {
@@ -140,11 +142,8 @@ public class XnatSubjectUtil {
 						log.error("", e);
 						WorkflowUtils.fail(wrk, wrk.buildEvent());
 					}
-				} else {
-					// getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user
-					// account has insufficient activation privileges for experiments in this
-					// project.");
-				}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
 			}
 
 			if (isQueryVariableTrue("_lock")) {
@@ -172,11 +171,9 @@ public class XnatSubjectUtil {
 						log.error("", e);
 						WorkflowUtils.fail(wrk, wrk.buildEvent());
 					}
-				} else {
-					throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
-							"Specified user account has insufficient activation privileges for experiments in this project.",
-							new Exception());
-				}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+				
 			} else if (isQueryVariableTrue("_obsolete")) {
 				if (Permissions.canActivate(user, i.getItem())) {
 					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user,
@@ -188,24 +185,16 @@ public class XnatSubjectUtil {
 						log.error("", e);
 						WorkflowUtils.fail(wrk, wrk.buildEvent());
 					}
-				} else {
-					throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
-							"Specified user account has insufficient activation privileges for experiments in this project.",
-							new Exception());
-				}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+				
 			}
-		} catch (ActionException e) {
-			throw e;
-		} catch (Exception e) {
-			log.error("", e);
-			throw new org.nrg.action.ServerException("Error modifying status", e);
-		}
 	}
 	 
 	
 	public void validateSubject(final XnatSubjectdata subject) throws Exception {
         if (StringUtils.isNotBlank(subject.getLabel()) && !XftStringUtils.isValidId(subject.getId())) 
-        	throw new ClientException("Invalid character in subject label.");
+        	throw new DataFormatException("Invalid character in subject label.");
 
         final ValidationResults results = subject.validate();
         if (results != null && !results.isValid()) 
@@ -232,9 +221,9 @@ public class XnatSubjectUtil {
 						sub.setSharing_share(participant);
 					}
 				}
-			} else {
-				throw new ClientException(Status.CLIENT_ERROR_CONFLICT,"Submitted subject record must include the project attribute.", new Exception());
-			}
+			} else 
+				throw new ResourceAlreadyExistsException("Submitted subject record must include the project attribute.", null);
+			
 			return sub;
 		}
 
@@ -256,12 +245,12 @@ public class XnatSubjectUtil {
 			}
 			if (existing == null) {
 				if (!Permissions.canCreate(user, sub)) 
-					throw new ClientException("Specified user account has insufficient create privileges for subjects in this project.");
+					throw new InsufficientPrivilegesException("Specified user account has insufficient create privileges for subjects in this project.");
 				//IS NEW
 				if (StringUtils.isBlank(sub.getId())) 
 					sub.setId(XnatSubjectdata.CreateNewID());
 			} else 
-				throw new ClientAlreadyExistsException("Subject already exists.");
+				throw new ResourceAlreadyExistsException("Subject already exists.", null);
 			
 			return sub;
 		}
@@ -294,15 +283,7 @@ public class XnatSubjectUtil {
 		return null;
 	}
 	
-	
-	
-	
 	// End -create XnatSubjectData methods
-	
-	
-	
-	
-
 	
 	
 	
@@ -312,26 +293,21 @@ public class XnatSubjectUtil {
 	        } catch (Rename.ProcessingInProgress e) {
 	            final String message = "Specified session is being processed (" + e.getPipelineName() + ").";
 	            log.error(message, e);
-	           // getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, message);
 	            return false;
 	        } catch (Rename.DuplicateLabelException | Rename.LabelConflictException e) {
 	            final String message = "Specified label " + label + " is already in use.";
 	            log.error(message, e);
-	            //getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, message);
 	            return false;
 	        } catch (Rename.FolderConflictException e) {
 	            final String message = "File system destination contains pre-existing files";
 	            log.error(message, e);
-	            //getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, message);
 	            return false;
 	        } catch (InvalidArchiveStructure | URISyntaxException e) {
 	            final String message = "Non-standard archive structure in existing experiment directory.";
 	            log.error(message, e);
-	            //getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, message);
 	            return false;
 	        } catch (Exception e) {
 	            log.error(e.getMessage(), e);
-	            //getResponse().setStatus(Status.SERVER_ERROR_INTERNAL,e.getMessage());
 	            return false;
 	        }
 	        return true;

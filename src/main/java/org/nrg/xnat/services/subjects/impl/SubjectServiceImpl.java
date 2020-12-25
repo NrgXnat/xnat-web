@@ -6,6 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.transaction.TransactionException;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatProjectparticipantI;
 import org.nrg.xdat.om.XnatImagesessiondata;
@@ -111,12 +116,11 @@ public class SubjectServiceImpl implements SubjectService {
     
     
     @Override
-    public XnatSubjectdata create(final UserI user, final XnatSubjectdata subject) throws XftItemException {
+    public XnatSubjectdata create(final UserI user, final XnatSubjectdata subject) throws Exception {
     	  XnatSubjectUtil xnatSubjectUtil = new XnatSubjectUtil();
     	  boolean completeDocument = false;
     	  XnatProjectdata proj = null;
     	  XFTItem item;
-		try {
 			//Step 1: get the XFTItem from subject 
 			item = subject.getItem();
 
@@ -153,21 +157,18 @@ public class SubjectServiceImpl implements SubjectService {
 				// Step 10:
 				return XnatSubjectdata.getXnatSubjectdatasById(sub.getId(), user, false);
         } 
-		} catch (Exception e) {
-			throw new XftItemException("Failed to create the subject: " + subject.toString(), e);
-		}
 		
           return null;
    	}	
     
     @Override
-    public XnatSubjectdata update(final UserI user, final XnatSubjectdata subject,  String label) throws XftItemException {
+    public XnatSubjectdata update(final UserI user, final XnatSubjectdata subject,  String label) throws Exception {
         log.debug("User {} is updating the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         XnatSubjectUtil xnatSubjectUtil = new XnatSubjectUtil();
         XnatSubjectdata existing = null;
         XnatProjectdata proj = null;
         XnatSubjectdata sub = null;
-        try {
+       
         String  filepath = null;
         final String PRIMARY = "primary";
         
@@ -192,24 +193,19 @@ public class SubjectServiceImpl implements SubjectService {
         if (item.instanceOf("xnat:subjectData")) {
             sub = new XnatSubjectdata(item);
             
-            if (filepath != null && !filepath.equals("")) {
+            if (filepath != null && !filepath.equals("")) 
             	sub = updateXnatSubjectFilePathNull(filepath, label, sub, user, PRIMARY, existing);
-            } else {
+            else
             	sub= updateXnatSubjectFilePathNotNull(proj, sub, user, subject, existing, label, xnatSubjectUtil);
-            }
+            
         } else {
             //this.getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY, "Only xnat:Subject documents can be PUT to this address.");
         }
-    } catch (Exception e) {
-        //this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-        log.error("", e);
-    }
 		return sub;
     }
     
 	 
 	private XnatSubjectdata updateXnatSubjectFilePathNotNull(XnatProjectdata proj, XnatSubjectdata sub, UserI user, XnatSubjectdata subject, XnatSubjectdata existing, String label, XnatSubjectUtil xnatSubjectUtil) throws Exception {
-		try {
 
 			if (proj == null && sub.getProject() != null)
 				proj = XnatProjectdata.getXnatProjectdatasById(sub.getProject(), user, false);
@@ -226,8 +222,7 @@ public class SubjectServiceImpl implements SubjectService {
 
 			xnatSubjectUtil.validateSubject(sub);
 
-			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, sub.getItem(), newEventInstance(
-					EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(sub.getXSIType(), (existing == null))));
+			PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, sub.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(sub.getXSIType(), (existing == null))));
 			EventMetaI c = wrk.buildEvent();
 
 			// Save the experiment.
@@ -238,41 +233,26 @@ public class SubjectServiceImpl implements SubjectService {
 			// returnString(sub.getId(), (existing == null) ? Status.SUCCESS_CREATED :
 			// Status.SUCCESS_OK);
 
-		} catch (SAXParseException e) {
-			// this.getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY,
-			// e.getMessage());
-		} catch (InvalidValueException e) {
-			// this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-			log.error("", e);
-		} catch (ActionException e) {
-			// this.getResponse().setStatus(e.getStatus(),e.getMessage());
-		}
 		return sub;
 	}
 
 	private void verifyUpdateXnatSubjectExistingPermission(XnatSubjectdata sub, XnatProjectdata proj, UserI user, XnatSubjectdata existing, String label, XnatSubjectUtil xnatSubjectUtil) throws Exception {
 		if (existing == null) {
-			if (!Permissions.canCreate(user, sub)) {
-				// this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user
-				// account has insufficient create privileges for subjects in this project.");
-				// return;
-			}
+			if (!Permissions.canCreate(user, sub)) 
+				throw new InsufficientPrivilegesException("Specified user  account has insufficient create privileges for subjects in this project.");
+			
 			// IS NEW
 			if (StringUtils.isBlank(sub.getId())) {
 				sub.setId(XnatSubjectdata.CreateNewID());
 			}
 		} else {
-			if (!existing.getProject().equals(sub.getProject())) {
-				// this.getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, "Project must be
-				// modified through separate URI.");
-				// return;
-			}
+			if (!existing.getProject().equals(sub.getProject()))
+				throw new ResourceAlreadyExistsException("Project must be modified through separate URI.", label);
+			
 
-			if (!Permissions.canEdit(user, sub)) {
-				// this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user
-				// account has insufficient edit privileges for subjects in this project.");
-				// return;
-			}
+			if (!Permissions.canEdit(user, sub)) 
+				throw new InsufficientPrivilegesException("Specified user account has insufficient edit privileges for subjects in this project.");
+			
 			if (sub.getId() == null || sub.getId().equals("")) {
 				sub.setId(existing.getId());
 			}
@@ -289,15 +269,11 @@ public class SubjectServiceImpl implements SubjectService {
 
 					XnatSubjectdata match = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), label, user,
 							false);
-					if (match != null) {
-						// getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT,"Specified label is
-						// already in use.");
-						// return;
-					}
+					if (match != null) 
+						throw new ResourceAlreadyExistsException("Specified label is already in use.", label);
 
 					xnatSubjectUtil.rename(proj, existing, label, user);
 				}
-				// return;
 			}
 		}
 	}
@@ -369,15 +345,12 @@ public class SubjectServiceImpl implements SubjectService {
 	private XnatSubjectdata saveExperiment(XnatSubjectdata sub, UserI user, PersistentWorkflowI wrk, XnatSubjectdata existing, EventMetaI c) throws UnknownPrimaryProjectException, Exception {
 		try {
 			//check for unexpected modifications of ID and Project
-			if(existing !=null && !StringUtils.equals(existing.getId(),sub.getId())){
-				//this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST,"ID cannot be modified");
-				//return;
-			}
+			if(existing !=null && !StringUtils.equals(existing.getId(),sub.getId()))
+				throw new DataFormatException("ID cannot be modified");
 			
-			if(existing !=null && !StringUtils.equals(existing.getProject(),sub.getProject())){
-				//this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST,"Project must be modified through separate URI.");
-				//return;
-			}  
+			
+			if(existing !=null && !StringUtils.equals(existing.getProject(),sub.getProject()))
+				throw new DataFormatException("Project must be modified through separate URI.");
 		
 		if (SaveItemHelper.authorizedSave(sub, user, false, isQueryVariableTrue("allowDataDeletion"), c)) {
              XDAT.triggerXftItemEvent(sub, CREATE);
@@ -403,8 +376,8 @@ public class SubjectServiceImpl implements SubjectService {
                          }
                      }
                      catch (TransactionException e) {
-                        //this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
-                     }
+                         throw new InitializationException(e.getMessage());
+                      }
                 }
              }
          }
@@ -419,10 +392,8 @@ public class SubjectServiceImpl implements SubjectService {
 	private XnatSubjectdata updateXnatSubjectFilePathNull(String filepath, String label, XnatSubjectdata sub, UserI user, String PRIMARY, XnatSubjectdata existing) throws Exception {
 
         if (filepath.startsWith("projects/")) {
-            if (!Permissions.canRead(user,sub)) {
-               // this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient privileges for subjects in this project.");
-                //return;
-            }
+            if (!Permissions.canRead(user,sub))
+            	throw new InsufficientPrivilegesException("Specified user account has insufficient privileges for subjects in this project.");
 
             String newProjectS = filepath.substring(9);
             XnatProjectdata newProject = XnatProjectdata.getXnatProjectdatasById(newProjectS, user, false);
@@ -437,11 +408,9 @@ public class SubjectServiceImpl implements SubjectService {
                         matched = ((XnatProjectparticipant) pp);
                         if (newLabel != null && (pp.getLabel() == null || (!pp.getLabel().equals(newLabel)))) {
                             XnatSubjectdata temp = XnatSubjectdata.GetSubjectByProjectIdentifier(newProject.getId(), newLabel, null, false);
-                            if (temp != null) {
-                                //this.getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, "Label already in use:" + newLabel);
-                                //return;
-                            }
-
+                            if (temp != null)
+                            	throw new ResourceAlreadyExistsException("Label already in use:" , newLabel);
+                            
                             pp.setLabel(newLabel);
                             BaseXnatSubjectdata.SaveSharedProject((XnatProjectparticipant) pp, sub, user, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING));
 
@@ -463,10 +432,9 @@ public class SubjectServiceImpl implements SubjectService {
                 }
 
                 if (isQueryVariableTrue(PRIMARY)) {
-                    if (!Permissions.canDelete(user,sub)) {
-                        //this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient privileges for subjects in this project.");
-                        //return;
-                    }
+                    if (!Permissions.canDelete(user,sub)) 
+                    	throw new InsufficientPrivilegesException("Specified user account has insufficient privileges for subjects in this project.");
+                    
 
                     EventMetaI c = BaseXnatSubjectdata.ChangePrimaryProject(user, sub, newProject, newLabel, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.MODIFY_PROJECT));
 
@@ -478,10 +446,8 @@ public class SubjectServiceImpl implements SubjectService {
                     if (matched == null) {
                         if (newLabel != null) {
                             XnatSubjectdata temp = XnatSubjectdata.GetSubjectByProjectIdentifier(newProject.getId(), newLabel, null, false);
-                            if (temp != null) {
-                                //this.getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, "Label already in use:" + newLabel);
-                                //return;
-                            }
+                            if (temp != null)
+                            	throw new ResourceAlreadyExistsException( "Label already in use:" , newLabel);
                         }
                         if (Permissions.canCreate(user,sub.getXSIType() + "/project", newProject.getId())) {
                             XnatProjectparticipant pp = new XnatProjectparticipant(user);
@@ -489,23 +455,17 @@ public class SubjectServiceImpl implements SubjectService {
                             if (newLabel != null) pp.setLabel(newLabel);
                             pp.setSubjectId(sub.getId());
                             BaseXnatSubjectdata.SaveSharedProject(pp, sub, user, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING));
-                        } else {
-                           // this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Specified user account has insufficient create privileges for subjects in the " + newProject.getId() + " project.");
-                            //return;
-                        }
-                    } else {
-                        //this.getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT, "Already assigned to project:" + newProject.getId());
-                        //return;
-                    }
+                        } else 
+                        	throw new InsufficientPrivilegesException("Specified user account has insufficient create privileges for subjects in the " + newProject.getId() + " project.");
+                    } else 
+                    	throw new ResourceAlreadyExistsException("Already assigned to project:", newProject.getId());
                 }
 
-                //this.returnDefaultRepresentation();
-            } else {
-                //this.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Unable to identify project: " + newProjectS);
-            }
-        } else {
-            //this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-        }
+            } else 
+            	throw new NotFoundException("Unable to identify project: " + newProjectS);
+        } else 
+        	throw new DataFormatException("Please check request object");
+
 		return sub;
     
 		
