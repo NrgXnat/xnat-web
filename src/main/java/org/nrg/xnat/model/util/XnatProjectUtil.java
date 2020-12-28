@@ -1,5 +1,6 @@
 package org.nrg.xnat.model.util;
 
+import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -67,4 +68,23 @@ public class XnatProjectUtil {
 		
 		
 		//End -Update XnatSubjectData methods
+		  
+		  public XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, UserI user) throws NotFoundException {
+			  String filepath ="";
+		        if (filepath != null && !filepath.equals("")) {
+		            if (filepath.startsWith("projects/")) {
+		                final String          newProjectId = filepath.substring(9);
+		                final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
+		                if (newProject == null) {
+		                    throw new NotFoundException(newProjectId);
+		                }
+		                return newProject;
+		            } else {
+		                throw new IllegalArgumentException("Illegal file path '" + filepath + "' does not start with 'projects/'.");
+		            }
+		        } else if (!item.getProject().equals(project.getId())) {
+		            return project;
+		        }
+		        return null;
+		    }
 }

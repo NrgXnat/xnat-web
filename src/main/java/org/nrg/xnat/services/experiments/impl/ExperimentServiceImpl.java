@@ -1,19 +1,49 @@
 package org.nrg.xnat.services.experiments.impl;
 
+import static org.nrg.xft.event.XftItemEventI.DELETE;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
+import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
+import org.nrg.xdat.om.XnatImagesessiondata;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatPvisitdata;
+import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xft.event.EventDetails;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.EventUtils.CATEGORY;
+import org.nrg.xft.event.EventUtils.TYPE;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatProjectUtil;
 import org.nrg.xnat.services.experiments.ExperimentService;
+import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.nrg.xnat.utils.WorkflowUtils;
+import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.google.common.collect.ImmutableMap;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class ExperimentServiceImpl implements ExperimentService {
 	
@@ -58,7 +88,114 @@ public class ExperimentServiceImpl implements ExperimentService {
 	}
 
 	@Override
-	public void deleteById(UserI user, String experimentId) {
+	public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException {
+		delete(user, findById(user, experimentId), projectId);
+	}
+
+	@SuppressWarnings("unused")
+	@Override
+	public void delete(UserI user, XnatExperimentdata experiment, String projectId) throws DataFormatException, NotFoundException  {
+		 if(Objects.isNull(experiment))
+			 throw new NotFoundException("The experiment not found");
+		
+		if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(experiment.getProject(), projectId)) 
+			 throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
+	        
+		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(experiment.getProject(), user, false);
+		 if (experiment == null && experiment.getId() != null) {
+	            experiment = XnatExperimentdata.getXnatExperimentdatasById(experiment.getId(), user, false);
+
+	            if (experiment == null && project != null) {
+	                experiment = XnatExperimentdata.GetExptByProjectIdentifier(project.getId(), experiment.getId(), user, false);
+	            }
+	        }
+		 
+	        deleteItem(user, project, experiment);
+		
+	}
+	 protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item) {
+	        if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
+	            throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
+	        }
+
+	        try {
+	          XnatProjectUtil xnatProjectUtil = new XnatProjectUtil();
+	            final XnatProjectdata     newProject = xnatProjectUtil.getProjectFromFilePath(proj, (ArchivableItem) item, user);
+	            final PersistentWorkflowI wrk        = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType())));
+	            final EventMetaI          c          = wrk.buildEvent();
+
+	            try {
+	                final boolean                      removeFiles = isQueryVariableTrue("removeFiles");
+	                final XnatProjectdata              project     = (newProject != null) ? newProject : proj;
+	                final Class<? extends BaseElement> itemType    = item.getClass();
+
+	                final String message;
+	                if (XnatPvisitdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatPvisitdata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatImagesessiondata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatImagesessiondata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatSubjectdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatSubjectdata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatExperimentdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatExperimentdata) item).delete(project, user, removeFiles, c);
+	                } else {
+	                    message = null;
+	                }
+	                if (message != null) {
+	                    WorkflowUtils.fail(wrk, c);
+	                    throw new InsufficientPrivilegesException("You don't have permission to delete", message);
+	                } else {
+	                    XDAT.triggerXftItemEvent(item, DELETE, ImmutableMap.of("target", project.getId()));
+	                    WorkflowUtils.complete(wrk, c);
+	                }
+	            } catch (Exception e) {
+	                try {
+	                    WorkflowUtils.fail(wrk, c);
+	                } catch (Exception e1) {
+	                    log.error("", e1);
+	                }
+	                log.error("", e);
+	            }
+	        } catch (PersistentWorkflowUtils.EventRequirementAbsent e) {
+	            log.error("Forbidden: " + e.getMessage(), e);
+	        } catch (NotFoundException e) {
+	        	log.error("Not Found: " + e.getMessage(), e);
+	        } catch (IllegalArgumentException e) {
+	        	log.error("Bad Request Found: " + e.getMessage(), e);
+	        }
+	    }
+
+	
+	
+	
+	private EventDetails newEventInstance(EventUtils.CATEGORY cat, String deleteAction) {
+		 return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : "", getReason(), getComment());
+	}
+
+	private String getComment() {
+		return null;
+	}
+
+	private String getReason() {
+		return null;
+	}
+
+	private String getAction() {
+		return null;
+	}
+
+	private TYPE getEventType() {
+		final String id = null;
+				//getQueryVariable(EventUtils.EVENT_TYPE);
+        if (id != null) {
+            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
+        } else {
+            return EventUtils.TYPE.WEB_SERVICE;
+        }
+	}
+
+	private boolean isQueryVariableTrue(String string) {
+		return false;
 	}
 
 	@Override
@@ -133,7 +270,5 @@ public class ExperimentServiceImpl implements ExperimentService {
 
 	private final NamedParameterJdbcTemplate _template;
 
-
-	
 
 }

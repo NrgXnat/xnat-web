@@ -1,10 +1,13 @@
 package org.nrg.xapi.experiments;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -108,6 +111,19 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 		}
 		return new ResponseEntity<>(xnatExperiments, HttpStatus.OK);
 	}
+	
+	@ApiOperation(value = "Delete an existing experiment", notes = "Deletes the specified experiment.")
+    @ApiResponses({@ApiResponse(code = 200, message = "Deleted the specified experiment."),
+                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete experiments in the specified experiment"),
+                   @ApiResponse(code = 404, message = "The specified experiment or experiment doesn't exist"),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = {"/projects/{projectId}/experiments/{experimentId}","/experiments/{experimentId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+    public void deleteProject(@ApiParam("The ID of the experiment to be deleted") @PathVariable(required = false) final String projectId,
+    		@ApiParam("The ID of the experiment to be deleted") @PathVariable(required = false) final String experimentId) throws Exception {
+        log.debug("Controller Api- Delete experiment {}", projectId);
+        _experimentService.deleteById(getSessionUser(), experimentId, projectId);
+    }
+	
 
 	private final ExperimentService _experimentService;
 

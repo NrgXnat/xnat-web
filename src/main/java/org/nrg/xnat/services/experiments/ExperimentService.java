@@ -2,6 +2,8 @@ package org.nrg.xnat.services.experiments;
 
 import java.util.List;
 
+import org.nrg.framework.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xft.security.UserI;
 
@@ -21,7 +23,9 @@ public interface ExperimentService {
 
 	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId);
 
-	public void deleteById(UserI user, String experimentId);
+	public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException ;
+	
+    void delete(UserI user, XnatExperimentdata xnatExperimentdata,  String projectId) throws DataFormatException, NotFoundException ;
 
 	public XnatExperimentdata findByIdAndProject(UserI user, String experimentId, String projectId);
 }
