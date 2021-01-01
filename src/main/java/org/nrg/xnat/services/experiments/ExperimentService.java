@@ -9,7 +9,7 @@ import org.nrg.xft.security.UserI;
 
 public interface ExperimentService {
 
-	public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata);
+	public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata,String projectId, String subjectId);
 
 	public List<XnatExperimentdata> getAll(UserI user);
 	
@@ -21,7 +21,7 @@ public interface ExperimentService {
 	
 	public List<XnatExperimentdata> findByProjectAndLabel(UserI user, String projectId, String label);
 
-	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId);
+	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId, String projectId, String subjectId);
 
 	public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException ;
 	

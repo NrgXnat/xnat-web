@@ -52,6 +52,15 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
                 case "version":
                     experiment.setVersion(parser.getIntValue());
                     break;
+                case "acquisitionSite":
+                    experiment.setAcquisitionSite(parser.getText());
+                    break;
+                case "visit":
+                    experiment.setVisit(parser.getText());
+                    break;
+                case "visitId":
+                    experiment.setVisitId(parser.getText());
+                    break;
             }
         }
         return experiment;

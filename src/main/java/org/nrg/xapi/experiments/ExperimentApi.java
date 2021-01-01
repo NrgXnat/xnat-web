@@ -2,6 +2,8 @@ package org.nrg.xapi.experiments;
 
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.List;
 
@@ -12,6 +14,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.experiments.ExperimentService;
@@ -20,6 +23,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -123,6 +128,57 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
         log.debug("Controller Api- Delete experiment {}", projectId);
         _experimentService.deleteById(getSessionUser(), experimentId, projectId);
     }
+	
+	 @ApiOperation(value = "Update an existing experiment", notes = "Updates the submitted experiment.", response = XnatExperimentdata.class)
+	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated experiment."),
+	                   @ApiResponse(code = 403, message = "The user doesn't have permission to edit experiment in the specified project"),
+	                   @ApiResponse(code = 404, message = "The specified experiment doesn't exist"),
+	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	    @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}"},
+	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        method = PUT)
+	    public XnatExperimentdata updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable(required = false) final String projectId,
+	    		@ApiParam("The subject in which the experiment should be created") @PathVariable(required = false) final String subjectId,                            
+	    		@ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
+	                                         @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment, @RequestParam(required = false) String label) throws Exception {
+	        if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(experiment.getProject(), projectId)) {
+	            throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
+	        }
+	        if (!StringUtils.equals(experimentId, experiment.getId())) {
+	            throw new DataFormatException("You specified the subject ID " + experimentId + " in your request but the experiment to be updated has the ID " + experiment.getId() + ". These values must be the same.");
+	        }
+	        log.debug("Controller Api- Update experiment {} (ID {}) in project {}", experiment.getLabel(), experimentId, experiment.getProject());
+	        return _experimentService.update(getSessionUser(), experiment, experimentId,projectId, subjectId);
+	    }
+	 
+	 
+	 @ApiOperation(value = "Create a new experiment", notes = "Creates the submitted experiment.", response = XnatExperimentdata.class)
+	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created experiment."),
+	                   @ApiResponse(code = 403, message = "The user doesn't have permission to create experiment in the specified project"),
+	                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
+	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	    @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments"},
+	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        method = POST)
+	    public XnatExperimentdata createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable(required = false) final String projectId,
+	    		@ApiParam("The subject in which the experiment should be created") @PathVariable(required = false) final String subjectId,
+	                                         @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment, @RequestParam(required = false) String label) throws Exception {
+	        log.debug("Controller Api- Create experiment: {}", experiment);
+	        final boolean experimentHasProject = StringUtils.isNotBlank(experiment.getProject());
+	        final boolean hasProject        = StringUtils.isNotBlank(projectId);
+	        if (!experimentHasProject && !hasProject) {
+	            throw new DataFormatException("You must specify a project in which the experiment should be created.");
+	        }
+	        if (experimentHasProject && hasProject && !StringUtils.equals(experiment.getProject(), projectId)) {
+	            throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
+	        }
+	        if (!experimentHasProject) {
+	        	experiment.setProject(projectId);
+	        }
+	         return _experimentService.create(getSessionUser(), experiment, projectId, subjectId);
+	    }
 	
 
 	private final ExperimentService _experimentService;
