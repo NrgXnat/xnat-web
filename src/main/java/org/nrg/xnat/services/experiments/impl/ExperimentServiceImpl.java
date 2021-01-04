@@ -104,12 +104,12 @@ public class ExperimentServiceImpl implements ExperimentService {
 	}
 	
 	@Override
-	public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId) {
+	public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId) throws Exception {
 		return update(user, xnatExperimentdata, null, xnatExperimentdata.getProject(),subjectId);
 	}
 	
 	@Override
-	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatexperiment, String experimentId, String projectId, String subjectId) {
+	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatexperiment, String experimentId, String projectId, String subjectId) throws Exception {
 		XnatExperimentdata existing   = new XnatExperimentdata();
 		XnatProjectdata project = null;
 		XnatExperimentdata experiment = null;
@@ -223,11 +223,14 @@ public class ExperimentServiceImpl implements ExperimentService {
                             }
 
                         } catch (SAXException e) {
-                            log.error("Error processing XML", e.getMessage());
+                        	 log.error("Error processing XML", e.getMessage());
+                        	throw new SAXException("Error processing XML");
                         } catch (ValidationException e) {
-                            log.error("Error validating the item", e.getMessage());
+                        	log.error("Error validating the item", e.getMessage());
+                        	throw new Exception("Error processing XML");
                         } catch (Exception e) {
-                            log.error("Unknown error encountered",  e.getMessage());
+                        	 log.error("Unknown error encountered",  e.getMessage());
+                        	throw new Exception(e.getMessage());
                         }
                     }
 
@@ -243,7 +246,9 @@ public class ExperimentServiceImpl implements ExperimentService {
         } catch (ActionException e) {
         	log.error("ActionException", e.getMessage());
         } catch (Exception e) {
-            log.error("SERVER_ERROR_INTERNAL", e);
+        	log.error("SERVER_ERROR_INTERNAL", e);
+        	throw new Exception("Something went wrong");
+            
         }
 		return experiment;
 	}
@@ -406,9 +411,9 @@ public class ExperimentServiceImpl implements ExperimentService {
 	@SuppressWarnings("unused")
 	private XFTItem getXnatExperimentItem(UserI user, XnatProjectdata project, XnatExperimentdata experiment, String experimentId) throws XFTInitException, ElementNotFoundException, DataFormatException {
 		 XFTItem item = experiment.getItem();
-
-         if (item == null) {
-             String xsiType = null;
+       
+		 if (item == null) {
+             String xsiType = experiment.getXSIType();
              		//getQueryVariable("xsiType");
              if (xsiType != null) 
             	 item = XFTItem.NewItem(xsiType, user);
@@ -504,40 +509,45 @@ public class ExperimentServiceImpl implements ExperimentService {
 	    private void setSubject(final XFTItem item, XnatExperimentdata experiment, XnatProjectdata project, XnatExperimentdata existing, UserI user, String subjectId2) throws Exception {
 	        //MATCH SUBJECT
 	        XnatSubjectdata subject;
-	        if (item.instanceOf(XnatSubjectassessordata.SCHEMA_ELEMENT_NAME)) {
-	            final XnatSubjectassessordata assessor = (XnatSubjectassessordata) experiment;
+	        try {
+	        	if (item.instanceOf(XnatSubjectassessordata.SCHEMA_ELEMENT_NAME)) {
+		            final XnatSubjectassessordata assessor = (XnatSubjectassessordata) experiment;
 
-//	            if (StringUtils.isNotBlank(getQueryVariable("subject_ID"))) {
-//	                assessor.setSubjectId(getQueryVariable("subject_ID"));
-//	            }
-	            if (StringUtils.isNotBlank(subjectId2)) {
-	                assessor.setSubjectId(subjectId2);
-	            }
+//		            if (StringUtils.isNotBlank(getQueryVariable("subject_ID"))) {
+//		                assessor.setSubjectId(getQueryVariable("subject_ID"));
+//		            }
+		            if (StringUtils.isNotBlank(subjectId2)) {
+		                assessor.setSubjectId(subjectId2);
+		            }
 
-	            if (StringUtils.isNotBlank(assessor.getSubjectId())) {
-	                subject = getSubject(assessor, user);
+		            if (StringUtils.isNotBlank(assessor.getSubjectId())) {
+		                subject = getSubject(assessor, user);
 
-	                if (subject == null && existing != null) {
-	                    subject = ((XnatSubjectassessordata) existing).getSubjectData();
-	                    if (subject != null) {
-	                        assessor.setSubjectId(subject.getId());
-	                    }
-	                }
+		                if (subject == null && existing != null) {
+		                    subject = ((XnatSubjectassessordata) existing).getSubjectData();
+		                    if (subject != null) {
+		                        assessor.setSubjectId(subject.getId());
+		                    }
+		                }
 
-	                if (subject == null) {
-	                    final String subjectId = XnatSubjectdata.CreateNewID();
-	                    subject = new XnatSubjectdata(user);
-	                    subject.setProject(project.getId());
-	                    subject.setLabel(assessor.getSubjectId());
-	                    subject.setId(subjectId);
-	                    if (!Permissions.canCreate(user, subject)) 
-	                    	throw new InsufficientPrivilegesException("Specified user account has insufficient create privileges for subjects in this project.");
-	                 
-	                    BaseXnatSubjectdata.save(subject, false, true, user, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT));
-	                    assessor.setSubjectId(subject.getId());
-	                }
-	            }
-	        }
+		                if (subject == null) {
+		                    final String subjectId = XnatSubjectdata.CreateNewID();
+		                    subject = new XnatSubjectdata(user);
+		                    subject.setProject(project.getId());
+		                    subject.setLabel(assessor.getSubjectId());
+		                    subject.setId(subjectId);
+		                    if (!Permissions.canCreate(user, subject)) 
+		                    	throw new InsufficientPrivilegesException("Specified user account has insufficient create privileges for subjects in this project.");
+		                 
+		                    BaseXnatSubjectdata.save(subject, false, true, user, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT));
+		                    assessor.setSubjectId(subject.getId());
+		                }
+		            }
+		        }
+	        }catch (Exception e) {
+				throw new Exception("Error in set subject");
+			}
+	        
 	    }
 	    
 	    private XnatSubjectdata getSubject(XnatSubjectassessordata assessor, UserI user) {
