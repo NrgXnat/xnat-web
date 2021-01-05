@@ -58,6 +58,9 @@ import org.nrg.xnat.restlet.util.XNATRestConstants;
 import org.nrg.xnat.services.experiments.ExperimentService;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
+import org.restlet.data.MediaType;
+import org.restlet.data.Status;
+import org.restlet.resource.Variant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -105,7 +108,174 @@ public class ExperimentServiceImpl implements ExperimentService {
 	
 	@Override
 	public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId) throws Exception {
-		return update(user, xnatExperimentdata, null, xnatExperimentdata.getProject(),subjectId);
+		
+		XnatProjectdata proj = null;
+		XnatSubjectdata subject=null;
+		XnatSubjectassessordata expt=null;
+		SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+		if (projectId != null) {
+			proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+			if (proj == null)
+				throw new NotFoundException("Unable to identify project " + projectId);
+			
+			if (subjectId != null) {
+				subject = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, user, false);
+				if (subject == null) {
+					subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+					if (subject != null && (proj != null && !subject.hasProject(proj .getId()))) {
+						subject = null;
+					}
+				}
+			}
+			
+		try {
+		XFTItem item = xnatExperimentdata.getItem();
+
+		if (item == null) {
+			String xsiType = this.getQueryVariable("xsiType");
+			if (xsiType != null) {
+				item = XFTItem.NewItem(xsiType, user);
+			}
+		}
+
+		if (item == null) 
+			throw new DataFormatException("Need PUT Contents");
+
+		if (item.instanceOf("xnat:subjectAssessorData")) {
+			 expt = (XnatSubjectassessordata) BaseElement.GetGeneratedItem(item);
+
+			//MATCH PROJECT
+			if (proj == null && expt.getProject() != null) 
+				proj = XnatProjectdata.getXnatProjectdatasById(expt.getProject(), user, false);
+			
+
+			if (proj != null) {
+				if (expt.getProject() == null || expt.getProject().equals("")) {
+					expt.setProject(proj.getId());
+				} else if (expt.getProject().equals(proj.getId())) {
+				} else {
+					boolean matched = false;
+					for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
+						if (pp.getProject().equals(proj.getId())) {
+							matched = true;
+							break;
+						}
+					}
+
+					if (!matched) {
+						XnatExperimentdataShare pp = new XnatExperimentdataShare((UserI) user);
+						pp.setProject(proj.getId());
+						expt.setSharing_share(pp);
+					}
+				}
+			} else 
+				throw new DataFormatException("Submitted experiment record must include the project attribute.");
+			
+
+			//MATCH SUBJECT
+			if (subject != null) {
+				expt.setSubjectId(subject.getId());
+			} else {
+				if (expt.getSubjectId() != null && !expt.getSubjectId().equals("")) {
+					subject = XnatSubjectdata.getXnatSubjectdatasById(expt.getSubjectId(), user, false);
+
+					if (subject == null && expt.getProject() != null && expt.getLabel() != null) {
+						subject = XnatSubjectdata.GetSubjectByProjectIdentifier(expt.getProject(), expt.getSubjectId(), user, false);
+					}
+
+					if (subject == null) {
+						for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
+							subject = XnatSubjectdata.GetSubjectByProjectIdentifier(pp.getProject(), expt.getSubjectId(), user, false);
+							if (subject != null) {
+								break;
+							}
+						}
+					}
+
+					if (subject == null) {
+						final String newSubjectId = XnatSubjectdata.CreateNewID();
+						subject = new XnatSubjectdata(user);
+						subject.setProject(proj.getId());
+						subject.setLabel(expt.getSubjectId());
+						subject.setId(newSubjectId);
+						secureResoureUtil.create(subject, false, true, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT), user);
+						expt.setSubjectId(subject.getId());
+					}
+				}
+			}
+
+			if (subject == null) 
+				throw new DataFormatException("Submitted experiment record must include the subject.");
+			
+
+			//FIND PRE-EXISTING
+			XnatSubjectassessordata existing = null;
+			if (expt.getId() != null) {
+				existing = (XnatSubjectassessordata) XnatExperimentdata.getXnatExperimentdatasById(expt.getId(), user, completeDocument);
+			}
+
+			if (existing == null && expt.getProject() != null && expt.getLabel() != null) {
+				existing = (XnatSubjectassessordata) XnatExperimentdata.GetExptByProjectIdentifier(expt.getProject(), expt.getLabel(), user, completeDocument);
+			}
+
+			if (existing == null) {
+				for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
+					existing = (XnatSubjectassessordata) XnatExperimentdata.GetExptByProjectIdentifier(pp.getProject(), pp.getLabel(), user, completeDocument);
+					if (existing != null) {
+						break;
+					}
+				}
+			}
+
+			if (existing == null) {
+				if (!Permissions.canCreate(user, expt)) 
+					throw new InsufficientPrivilegesException("Specified user account has insufficient create privileges for experiments in this project.");
+			
+				//IS NEW
+				if (expt.getId() == null || expt.getId().equals("")) {
+					expt.setId(XnatExperimentdata.CreateNewID());
+				}
+			} else {
+				throw new ResourceAlreadyExistsException("Specified experiment already exists.", expt.getLabel());
+			}
+
+			boolean allowDataDeletion = false;
+			if (this.getQueryVariable("allowDataDeletion") != null && this.getQueryVariable("allowDataDeletion").equals("true")) {
+				allowDataDeletion = true;
+			}
+
+			if (StringUtils.isNotBlank(expt.getLabel()) && !XftStringUtils.isValidId(expt.getId()))
+				throw new DataFormatException("Invalid character in experiment label.");
+
+			final ValidationResults vr = expt.validate();
+
+			if (vr != null && !vr.isValid()) 
+				throw new DataFormatException(vr.toFullString());
+
+			secureResoureUtil.create(expt, false, allowDataDeletion, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(expt.getXSIType(), (existing == null))), user);
+
+			secureResoureUtil.postSaveManageStatus(expt, user);
+
+			if (Permissions.canEdit(user, expt.getItem())) {
+				if (this.isQueryVariableTrue(XNATRestConstants.TRIGGER_PIPELINES) || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES)) {
+					TriggerPipelines tp = new TriggerPipelines(expt, this.isQueryVariableTrue(XNATRestConstants.SUPRESS_EMAIL), user);
+					tp.call();
+				}
+					}
+
+				} else {
+					throw new DataFormatException("Only xnat:Subject documents can be PUT to this address.");
+				}
+			} catch (ActionException e) {
+				log.error("ActionException", e.getMessage());
+			} catch (InvalidValueException e) {
+				 log.error("InvalidValueException", e.getMessage());
+			} catch (Exception e) {
+				log.error("SERVER_ERROR_INTERNAL", e);
+	        	throw new Exception("Something went wrong");
+			}
+		}
+		return expt;
 	}
 	
 	@Override
@@ -205,40 +375,8 @@ public class ExperimentServiceImpl implements ExperimentService {
 
                 secureResoureUtil.postSaveManageStatus(experiment, user);
 
-                //verifyPermission(user,experiment, wrk, c, secureResoureUtil);
+                verifyPermission(user,experiment, wrk, c, secureResoureUtil);
                 
-                if (Permissions.canEdit(user, experiment.getItem())) {
-                    if ((isQueryVariableTrue(XNATRestConstants.PULL_DATA_FROM_HEADERS) || secureResoureUtil.containsAction(XNATRestConstants.PULL_DATA_FROM_HEADERS)) && experiment instanceof XnatImagesessiondata) {
-                        try {
-                            wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, experiment.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.DICOM_PULL));
-                            assert wrk != null;
-                            c = wrk.buildEvent();
-                            try {
-                                PullSessionDataFromHeaders pull = new PullSessionDataFromHeaders((XnatImagesessiondata) experiment, user, allowDataDeletion(), isQueryVariableTrue("overwrite"), false, c);
-                                pull.call();
-                                WorkflowUtils.complete(wrk, c);
-                            } catch (Exception e) {
-                                WorkflowUtils.fail(wrk, c);
-                                throw e;
-                            }
-
-                        } catch (SAXException e) {
-                        	 log.error("Error processing XML", e.getMessage());
-                        	throw new SAXException("Error processing XML");
-                        } catch (ValidationException e) {
-                        	log.error("Error validating the item", e.getMessage());
-                        	throw new Exception("Error processing XML");
-                        } catch (Exception e) {
-                        	 log.error("Unknown error encountered",  e.getMessage());
-                        	throw new Exception(e.getMessage());
-                        }
-                    }
-
-                    if (isQueryVariableTrue(XNATRestConstants.TRIGGER_PIPELINES) || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES)) {
-                        TriggerPipelines tp = new TriggerPipelines(experiment, isQueryVariableTrue(XNATRestConstants.SUPRESS_EMAIL), user);
-                        tp.call();
-                    }
-                }
             }
 
         } catch (InvalidValueException e) {
