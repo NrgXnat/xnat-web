@@ -37,6 +37,7 @@ import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.archive.Rename;
 import org.nrg.xnat.exceptions.InvalidArchiveStructure;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Form;
 import org.restlet.data.Status;
@@ -111,6 +112,23 @@ public class SecureResoureUtil {
 		}
 	}
 	
+	public boolean create(final ArchivableItem parent, final ItemI sub, final boolean overwriteSecurity, final boolean allowDataDeletion, final EventDetails event, UserI user) throws Exception {
+        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user, parent.getItem(), event);
+        final EventMetaI          meta     = workflow.buildEvent();
+
+        try {
+            if (SaveItemHelper.authorizedSave(sub, user, false, false, meta)) {
+                WorkflowUtils.complete(workflow, meta);
+                Users.clearCache(user);
+                MaterializedView.deleteByUser(user);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            WorkflowUtils.fail(workflow, meta);
+            throw e;
+        }
+    }
 	 
 	public void postSaveManageStatus(ItemI i, UserI user) throws InsufficientPrivilegesException, Exception {
 			if (isQueryVariableTrue("activate")) {
@@ -229,6 +247,22 @@ public class SecureResoureUtil {
         XDAT.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
     }
 	
+    
+    public void delete(ArchivableItem parent, ItemI item, EventDetails event, UserI user) throws Exception {
+        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user, parent.getXSIType(), parent.getId(), parent.getProject(), event);
+        final EventMetaI          ci       = workflow.buildEvent();
+
+        try {
+            XNATUtils.delete(parent, item, ci, isQueryVariableTrue("removeFiles"));
+            WorkflowUtils.complete(workflow, ci);
+        } catch (Exception e) {
+            WorkflowUtils.fail(workflow, ci);
+            throw e;
+        }
+
+        Users.clearCache(user);
+        MaterializedView.deleteByUser(user);
+    }
 	
 	
 	 protected    List<String> actions = null;

@@ -24,8 +24,14 @@ public class XnatImagescandataDeserializer extends AbstractBaseElementDeserializ
                 case "xnatImagescandataId":
                 	scans.setXnatImagescandataId(parser.getIntValue());
                     break;
-                case "seriesDescription":
-                	scans.setSeriesDescription(Objects.nonNull(parser.getText()) || !parser.getText().isEmpty() ? parser.getText() : "");
+                case "id":
+                	scans.setId(parser.getText());
+                    break;
+                case "project":
+                	scans.setId(parser.getText());
+                    break;
+                case "imageSessionId":
+                	scans.setImageSessionId(parser.getText());
                     break;
                 case "type":
                 	scans.setType(parser.getText());
@@ -33,11 +39,41 @@ public class XnatImagescandataDeserializer extends AbstractBaseElementDeserializ
                 case "note":
                 	scans.setNote(parser.getText());
                     break;
-                case "id":
-                	scans.setId(parser.getText());
-                    break;
                 case "quality":
                 	scans.setQuality(parser.getText());
+                    break;
+                case "modality":
+                	scans.setModality(parser.getText());
+                    break;
+                case "seriesDescription":
+                	scans.setSeriesDescription(Objects.nonNull(parser.getText()) || !parser.getText().isEmpty() ? parser.getText() : "");
+                    break;
+                case "condition":
+                	scans.setCondition(parser.getText());
+                    break;
+                case "documentation":
+                	scans.setDocumentation(parser.getText());
+                    break;
+                case "scanner":
+                	scans.setScanner(parser.getText());
+                    break;
+                case "scannerManufacturer":
+                	scans.setScanner_manufacturer(parser.getText());
+                    break;
+                case "scannerModel":
+                	scans.setScanner_model(parser.getText());
+                    break;
+                case "scannerSoftwareVersion":
+                	scans.setScanner_softwareversion(parser.getText());
+                    break;
+                case "seriesClass":
+                	scans.setSeriesClass(parser.getText());
+                    break;
+                case "operator":
+                	scans.setOperator(parser.getText());
+                    break;
+                case "frame":
+                	scans.setFrames(parser.getIntValue());
                     break;
             }
         }
