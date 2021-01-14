@@ -18,6 +18,7 @@ public class XnatSubjectassessordataSerializer extends AbstractBaseElementSerial
     	writeNonBlankField(generator, "id", xnatSubjectassessordata.getId());
         writeNonBlankField(generator, "label", xnatSubjectassessordata.getLabel());
         writeNonBlankField(generator, "project", xnatSubjectassessordata.getProject());
+        writeNonBlankField(generator, "xsiType", xnatSubjectassessordata.getXSIType());
         writeNonBlankField(generator, "note", xnatSubjectassessordata.getNote());
         writeNonBlankField(generator, "protocol", xnatSubjectassessordata.getProtocol());
         writeNonBlankField(generator, "original", xnatSubjectassessordata.getOriginal());

@@ -58,6 +58,9 @@ public class XnatSubjectassessordataDeserializer extends AbstractBaseElementDese
                 case "visitId":
                     xnatSubjectassessordata.setVisitId(parser.getText());
                     break;
+                case "xsiType":
+                	xnatSubjectassessordata.getItem().setXmlType("xnat:mrSessionData");
+                    break;
             }
         }
         return xnatSubjectassessordata;

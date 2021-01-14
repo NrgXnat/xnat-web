@@ -4,11 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatDemographicdata;
 import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xft.ItemI;
-
 import java.io.IOException;
 
 @Slf4j
@@ -60,6 +56,9 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
                     break;
                 case "visitId":
                     experiment.setVisitId(parser.getText());
+                    break;
+                case "xsiType":
+                    experiment.getItem().setXmlType("xnat:mrSessionData");
                     break;
             }
         }

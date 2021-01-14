@@ -5,6 +5,7 @@ import java.util.List;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xft.security.UserI;
 
 public interface ExperimentService {

@@ -22,6 +22,7 @@ public class XnatExperimentdataSerializer extends AbstractBaseElementSerializer<
     	writeNonBlankField(generator, "id", experiment.getId());
         writeNonBlankField(generator, "label", experiment.getLabel());
         writeNonBlankField(generator, "project", experiment.getProject());
+        writeNonBlankField(generator, "xsiType", experiment.getXSIType());
         writeNonBlankField(generator, "note", experiment.getNote());
         writeNonBlankField(generator, "protocol", experiment.getProtocol());
         writeNonBlankField(generator, "original", experiment.getOriginal());

@@ -9,15 +9,21 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.framework.utilities.Reflection;
+import org.nrg.pipeline.xmlbeans.xnat.MrSessionData;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatMrassessordata;
+import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xft.XFTItem;
 import org.nrg.xnat.services.experiments.ExperimentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -165,8 +171,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                        method = POST)
 	    public XnatExperimentdata createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable(required = false) final String projectId,
 	    		@ApiParam("The subject in which the experiment should be created") @PathVariable(required = false) final String subjectId,
-	            @ApiParam("The subject to be created.") @RequestBody final XnatSubjectassessordata experiment, @RequestParam(required = false) String label) throws Exception {
-	        log.debug("Controller Api- Create experiment: {}", experiment);
+	            @ApiParam("The subject to be created.") @RequestBody final XnatSubjectassessordata experiment, @RequestParam  String xsiType) throws Exception {
 	        final boolean experimentHasProject = StringUtils.isNotBlank(experiment.getProject());
 	        final boolean hasProject        = StringUtils.isNotBlank(projectId);
 	        if (!experimentHasProject && !hasProject) {
