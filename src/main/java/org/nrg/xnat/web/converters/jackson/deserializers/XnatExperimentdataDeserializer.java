@@ -4,8 +4,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.framework.utilities.Reflection;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatMrsessiondata;
+
 import java.io.IOException;
+import java.util.List;
 
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
@@ -15,8 +20,7 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 
     @Override
     protected XnatExperimentdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatExperimentdata experiment = new XnatExperimentdata();
-
+        XnatExperimentdata experiment = null;
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
@@ -58,9 +62,15 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
                     experiment.setVisitId(parser.getText());
                     break;
                 case "xsiType":
-                    experiment.getItem().setXmlType("xnat:mrSessionData");
-                    break;
-            }
+                	System.out.println("Outer XSI TYPE experiment ===>");
+						if (parser.getText().equals("xnat:mrSessionData")) {
+							experiment = new XnatMrsessiondata();
+							System.out.println("Inner XSI TYPE experiment ===>");
+							XnatMrsessiondata experiment1 = (XnatMrsessiondata)experiment;
+								System.out.println("Inner XSI TYPE experiment ==>"+ experiment1.getXSIType());
+						}
+				break;
+			}
         }
         return experiment;
     }

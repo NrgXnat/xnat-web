@@ -171,7 +171,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                        method = POST)
 	    public XnatExperimentdata createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable(required = false) final String projectId,
 	    		@ApiParam("The subject in which the experiment should be created") @PathVariable(required = false) final String subjectId,
-	            @ApiParam("The subject to be created.") @RequestBody final XnatSubjectassessordata experiment, @RequestParam  String xsiType) throws Exception {
+	            @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment, @RequestParam  String xsiType) throws Exception {
 	        final boolean experimentHasProject = StringUtils.isNotBlank(experiment.getProject());
 	        final boolean hasProject        = StringUtils.isNotBlank(projectId);
 	        if (!experimentHasProject && !hasProject) {
