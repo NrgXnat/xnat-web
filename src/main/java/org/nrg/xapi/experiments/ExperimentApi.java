@@ -148,7 +148,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    public XnatExperimentdata updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable(required = false) final String projectId,
 	    		@ApiParam("The subject in which the experiment should be created") @PathVariable(required = false) final String subjectId,                            
 	    		@ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
-	            @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectassessordata experiment, @RequestParam(required = false) String label) throws Exception {
+	            @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment, @RequestParam(required = false) String label) throws Exception {
 	        if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(experiment.getProject(), projectId)) {
 	            throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
 	        }

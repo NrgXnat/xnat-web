@@ -1,77 +1,87 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 
-import org.nrg.framework.utilities.Reflection;
+import org.nrg.xdat.om.XnatCrsessiondata;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatMrsessiondata;
-
 import java.io.IOException;
-import java.util.List;
+import java.util.Iterator;
 
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
+	
     public XnatExperimentdataDeserializer() {
         super(XnatExperimentdata.class);
     }
 
     @Override
     protected XnatExperimentdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        XnatExperimentdata experiment = null;
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "id":
-                	experiment.setId(parser.getText());
-                    break;
-                case "label":
-                	experiment.setLabel(parser.getText());
-                    break;
-                case "project":
-                    experiment.setProject(parser.getText());
-                    break;
-                case "note":
-                    experiment.setNote(parser.getText());
-                    break;
-                case "protocol":
-                    experiment.setProtocol(parser.getText());
-                    break;
-                case "original":
-                    experiment.setOriginal(parser.getText());
-                    break;
-                case "date":
-                    experiment.setDate(parseDate(parser.getText()));
-                    break;
-                case "delay":
-                    experiment.setDelay(parser.getIntValue());
-                    break;
-                case "version":
-                    experiment.setVersion(parser.getIntValue());
-                    break;
-                case "acquisitionSite":
-                    experiment.setAcquisitionSite(parser.getText());
-                    break;
-                case "visit":
-                    experiment.setVisit(parser.getText());
-                    break;
-                case "visitId":
-                    experiment.setVisitId(parser.getText());
-                    break;
-                case "xsiType":
-                	System.out.println("Outer XSI TYPE experiment ===>");
-						if (parser.getText().equals("xnat:mrSessionData")) {
-							experiment = new XnatMrsessiondata();
-							System.out.println("Inner XSI TYPE experiment ===>");
-							XnatMrsessiondata experiment1 = (XnatMrsessiondata)experiment;
-								System.out.println("Inner XSI TYPE experiment ==>"+ experiment1.getXSIType());
-						}
-				break;
+    	XnatExperimentdata experiment = null;
+    	final TreeNode tree= parser.readValueAsTree();
+    	final TreeNode xsiType = tree.get("xsiType");
+    
+    	if(xsiType == null) 
+    		throw new RuntimeException("xsiType not found");
+    	
+    	if(removeFirstAndLastQuotes(xsiType.toString()).equals(MR_SESSION_DATA)) 
+    		experiment =new XnatMrsessiondata();
+    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CR_SESSION_DATA)) 
+    		experiment =new XnatCrsessiondata();
+    	
+    	Iterator<String> optionsKeys = tree.fieldNames();
+    	  while (optionsKeys.hasNext()) {
+    		  String field = optionsKeys.next();
+    		  TreeNode optionValue = tree.get(field);
+    		  switch (field) {
+              case "id":
+              	experiment.setId(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "label":
+              	experiment.setLabel(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "project":
+                  experiment.setProject(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "note":
+                  experiment.setNote(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "protocol":
+                  experiment.setProtocol(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "original":
+                  experiment.setOriginal(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "date":
+                  experiment.setDate(parseDate(removeFirstAndLastQuotes(optionValue.toString())));
+                  break;
+              case "delay":
+                  experiment.setDelay(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())));
+                  break;
+              case "version":
+                  experiment.setVersion(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())));
+                  break;
+              case "acquisitionSite":
+                  experiment.setAcquisitionSite(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "visit":
+                  experiment.setVisit(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
+              case "visitId":
+                  experiment.setVisitId(removeFirstAndLastQuotes(optionValue.toString()));
+                  break;
 			}
-        }
+    	  }
         return experiment;
     }
+    
+    public String removeFirstAndLastQuotes(String inputString) {
+    	return inputString.toString().replace("\"", "");
+    }
+    
+	private static final String MR_SESSION_DATA= "xnat:mrSessionData";
+	private static final String CR_SESSION_DATA= "xnat:crSessionData";
 }
