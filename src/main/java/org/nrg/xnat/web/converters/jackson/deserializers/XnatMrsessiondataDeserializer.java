@@ -1,15 +1,23 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
+import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
+import org.nrg.xft.ItemI;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializer<XnatMrsessiondata> {
     public XnatMrsessiondataDeserializer() {
         super(XnatMrsessiondata.class);
@@ -18,7 +26,12 @@ public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializ
     @Override
     protected XnatMrsessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatMrsessiondata xnatMrsessiondata = new XnatMrsessiondata();
-
+        List<XnatImagescandata> xnatImagescandatas= new ArrayList<>();
+        try {
+        	xnatMrsessiondata.setScans_scan((ItemI) xnatImagescandatas);
+        } catch (Exception e) {
+            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
+        }
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
@@ -58,6 +71,9 @@ public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializ
                     break;
                 case "visitId":
                     xnatMrsessiondata.setVisitId(parser.getText());
+                    break;
+                case "scans":
+                    xnatMrsessiondata.setScans_scan((ItemI) xnatImagescandatas);
                     break;
             }
         }

@@ -31,6 +31,7 @@ public class XnatCrsessiondataSerializer extends AbstractBaseElementSerializer<X
         writeNonBlankField(generator, "visitId", xnatCrsessiondata.getVisitId());
         writeNonBlankField(generator, "description", xnatCrsessiondata.getDescription());
         writeNonNullField(generator, "subjectId", xnatCrsessiondata.getSubjectId());
+        writeNonNullField(generator, "scans", xnatCrsessiondata.getScans_scan());
        // writeNonNullField(generator, "experiment", xnatCrsessiondata.getExperimentdata());
     }
 

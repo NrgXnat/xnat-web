@@ -30,6 +30,7 @@ public class XnatMrsessiondataSerializer extends AbstractBaseElementSerializer<X
         writeNonBlankField(generator, "visitId", xnatMrsessiondata.getVisitId());
         writeNonBlankField(generator, "description", xnatMrsessiondata.getDescription());
         writeNonNullField(generator, "subjectId", xnatMrsessiondata.getSubjectId());
+        writeNonNullField(generator, "scans", xnatMrsessiondata.getScans_scan());
        // writeNonNullField(generator, "experiment", xnatSubjectassessordata.getExperimentdata());
     }
 

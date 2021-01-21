@@ -5,11 +5,17 @@ import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatCrsessiondata;
+import org.nrg.xdat.om.XnatCtsessiondata;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatMrsessiondata;
+import org.nrg.xdat.om.XnatPetmrsessiondata;
+import org.nrg.xdat.om.XnatPetsessiondata;
+
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Objects;
 
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
@@ -20,17 +26,16 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 
     @Override
     protected XnatExperimentdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-    	XnatExperimentdata experiment = null;
     	final TreeNode tree= parser.readValueAsTree();
-    	final TreeNode xsiType = tree.get("xsiType");
+    	final TreeNode xsiType = tree.get(DATA_TYPE);
     
     	if(xsiType == null) 
     		throw new RuntimeException("xsiType not found");
     	
-    	if(removeFirstAndLastQuotes(xsiType.toString()).equals(MR_SESSION_DATA)) 
-    		experiment =new XnatMrsessiondata();
-    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CR_SESSION_DATA)) 
-    		experiment =new XnatCrsessiondata();
+    	XnatExperimentdata experiment = getExperimentTypeObject(xsiType);
+    	
+    	if(Objects.isNull(experiment))
+    		throw new NullPointerException("Experiment object is Null");
     	
     	Iterator<String> optionsKeys = tree.fieldNames();
     	  while (optionsKeys.hasNext()) {
@@ -78,10 +83,30 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
         return experiment;
     }
     
-    public String removeFirstAndLastQuotes(String inputString) {
+    private XnatExperimentdata getExperimentTypeObject(TreeNode xsiType) {
+    	XnatExperimentdata experiment = null;
+    	if(removeFirstAndLastQuotes(xsiType.toString()).equals(MR_SESSION_DATA)) 
+    		experiment =new XnatMrsessiondata();
+    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CR_SESSION_DATA)) 
+    		experiment =new XnatCrsessiondata();
+    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CT_SESSION_DATA)) 
+    		experiment =new XnatCtsessiondata();
+    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(PET_MR_SESSION_DATA)) 
+    		experiment =new XnatPetmrsessiondata();
+    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(PET_SESSION_DATA)) 
+    		experiment =new XnatPetsessiondata();
+		return experiment;
+	}
+
+	public String removeFirstAndLastQuotes(String inputString) {
     	return inputString.toString().replace("\"", "");
     }
     
+	private static final String DATA_TYPE= "xsiType";
 	private static final String MR_SESSION_DATA= "xnat:mrSessionData";
 	private static final String CR_SESSION_DATA= "xnat:crSessionData";
+	private static final String CT_SESSION_DATA= "xnat:ctSessionData";
+	private static final String PET_MR_SESSION_DATA= "xnat:petmrSessionData";
+	private static final String PET_SESSION_DATA= "xnat:petSessionData";
+	
 }
