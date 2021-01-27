@@ -12,6 +12,9 @@ import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.om.XnatPetmrsessiondata;
 import org.nrg.xdat.om.XnatPetsessiondata;
+import org.nrg.xdat.schema.SchemaElement;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.XFTInitException;
 
 import java.io.IOException;
 import java.util.Iterator;
@@ -32,7 +35,15 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
     	if(xsiType == null) 
     		throw new RuntimeException("xsiType not found");
     	
-    	XnatExperimentdata experiment = getExperimentTypeObject(xsiType);
+    	SchemaElement element;
+		XnatExperimentdata experiment = null;
+		try {
+			element = SchemaElement.GetElement(removeFirstAndLastQuotes(xsiType.toString()));
+			final Class<? extends XnatExperimentdata> xsiTypeClass = element.getCorrespondingJavaClass().asSubclass(XnatExperimentdata.class);
+			experiment = xsiTypeClass.newInstance();
+		} catch (XFTInitException | ElementNotFoundException | ClassNotFoundException | InstantiationException | IllegalAccessException  e) {
+			e.printStackTrace();
+		}
     	
     	if(Objects.isNull(experiment))
     		throw new NullPointerException("Experiment object is Null");
@@ -83,30 +94,11 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
         return experiment;
     }
     
-    private XnatExperimentdata getExperimentTypeObject(TreeNode xsiType) {
-    	XnatExperimentdata experiment = null;
-    	if(removeFirstAndLastQuotes(xsiType.toString()).equals(MR_SESSION_DATA)) 
-    		experiment =new XnatMrsessiondata();
-    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CR_SESSION_DATA)) 
-    		experiment =new XnatCrsessiondata();
-    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(CT_SESSION_DATA)) 
-    		experiment =new XnatCtsessiondata();
-    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(PET_MR_SESSION_DATA)) 
-    		experiment =new XnatPetmrsessiondata();
-    	else if(removeFirstAndLastQuotes(xsiType.toString()).equals(PET_SESSION_DATA)) 
-    		experiment =new XnatPetsessiondata();
-		return experiment;
-	}
 
 	public String removeFirstAndLastQuotes(String inputString) {
     	return inputString.toString().replace("\"", "");
     }
     
 	private static final String DATA_TYPE= "xsiType";
-	private static final String MR_SESSION_DATA= "xnat:mrSessionData";
-	private static final String CR_SESSION_DATA= "xnat:crSessionData";
-	private static final String CT_SESSION_DATA= "xnat:ctSessionData";
-	private static final String PET_MR_SESSION_DATA= "xnat:petmrSessionData";
-	private static final String PET_SESSION_DATA= "xnat:petSessionData";
 	
 }
