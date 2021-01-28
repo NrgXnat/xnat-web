@@ -25,11 +25,11 @@ public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializ
     protected XnatMrsessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatMrsessiondata xnatMrsessiondata = new XnatMrsessiondata();
         List<XnatImagescandata> xnatImagescandatas= null;
-        try {
-        	xnatMrsessiondata.setScans_scan((ItemI) xnatImagescandatas);
-        } catch (Exception e) {
-            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
-        }
+//        try {
+//        	xnatMrsessiondata.setScans_scan(xnatImagescandatas);
+//        } catch (Exception e) {
+//            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
+//        }
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
