@@ -140,11 +140,13 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 	 */
 	private List<XnatImagescandata> getXnatImagescandata(TreeNode scan) {
 		List<XnatImagescandata> xnatImagescandatas = new ArrayList<>();
+		
 		if (Objects.nonNull(scan) && scan.toString().length() > 0) {
 			JSONArray jsonArray = new JSONArray(scan.toString());
 			for (int i = 0, size = jsonArray.length(); i < size; i++) {
-				XnatImagescandata xnatImagescandata = new XnatImagescandata();
 				JSONObject objectInArray = jsonArray.getJSONObject(i);
+				
+				XnatImagescandata xnatImagescandata = new XnatImagescandata();
 				String[] elementNames = JSONObject.getNames(objectInArray);
 				for (String elementName : elementNames) {
 					switch (elementName) {
@@ -154,15 +156,11 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 					case "type":
 						xnatImagescandata.setType(objectInArray.getString(elementName));
 						break;
-					case "xsiType":
-						xnatImagescandata.getItem().setXmlType(objectInArray.getString(elementName));
-						break;
 					case "project":
 						xnatImagescandata.setProject(objectInArray.getString(elementName));
 						break;
 					case "note":
 						xnatImagescandata.setNote(objectInArray.getString(elementName));
-						break;
 					case "quality":
 						xnatImagescandata.setQuality(objectInArray.getString(elementName));
 						break;
