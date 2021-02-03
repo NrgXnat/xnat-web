@@ -8,8 +8,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.nrg.xdat.om.XnatCtscandata;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
+import org.nrg.xdat.om.XnatMrscandata;
+import org.nrg.xdat.om.XnatPetscandata;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -58,40 +61,40 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
     		  TreeNode optionValue = tree.get(field);
     		  switch (field) {
               case "id":
-              	experiment.setId(removeFirstAndLastQuotes(optionValue.toString()));
+              	experiment.setId(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "label":
-              	experiment.setLabel(removeFirstAndLastQuotes(optionValue.toString()));
+              	experiment.setLabel(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "project":
-                  experiment.setProject(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setProject(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "note":
-                  experiment.setNote(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setNote(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "protocol":
-                  experiment.setProtocol(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setProtocol(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "original":
-                  experiment.setOriginal(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setOriginal(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "date":
-                  experiment.setDate(parseDate(removeFirstAndLastQuotes(optionValue.toString())));
+                  experiment.setDate(Objects.nonNull(parseDate(removeFirstAndLastQuotes(optionValue.toString())))?parseDate(removeFirstAndLastQuotes(optionValue.toString())):null);
                   break;
               case "delay":
-                  experiment.setDelay(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())));
+                  experiment.setDelay(Objects.nonNull(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())))?Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())):null);
                   break;
               case "version":
-                  experiment.setVersion(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())));
+                  experiment.setVersion(Objects.nonNull(Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())))?Integer.parseInt(removeFirstAndLastQuotes(optionValue.toString())):null);
                   break;
               case "acquisitionSite":
-                  experiment.setAcquisitionSite(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setAcquisitionSite(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "visit":
-                  experiment.setVisit(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setVisit(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
               case "visitId":
-                  experiment.setVisitId(removeFirstAndLastQuotes(optionValue.toString()));
+                  experiment.setVisitId(Objects.nonNull(removeFirstAndLastQuotes(optionValue.toString()))?removeFirstAndLastQuotes(optionValue.toString()):null);
                   break;
 			}
     	  }
@@ -146,23 +149,46 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 			for (int i = 0, size = jsonArray.length(); i < size; i++) {
 				JSONObject objectInArray = jsonArray.getJSONObject(i);
 				
-				XnatImagescandata xnatImagescandata = new XnatImagescandata();
+				XnatImagescandata xnatImagescandata = getXnatImagescanDataType(objectInArray);
+				
 				String[] elementNames = JSONObject.getNames(objectInArray);
 				for (String elementName : elementNames) {
 					switch (elementName) {
 					case "id":
-						xnatImagescandata.setId(objectInArray.getString(elementName));
+						xnatImagescandata.setId(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
 						break;
 					case "type":
-						xnatImagescandata.setType(objectInArray.getString(elementName));
+						xnatImagescandata.setType(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
 						break;
 					case "project":
-						xnatImagescandata.setProject(objectInArray.getString(elementName));
+						xnatImagescandata.setProject(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
 						break;
 					case "note":
-						xnatImagescandata.setNote(objectInArray.getString(elementName));
+						xnatImagescandata.setNote(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
 					case "quality":
-						xnatImagescandata.setQuality(objectInArray.getString(elementName));
+						xnatImagescandata.setQuality(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "modality":
+						xnatImagescandata.setModality(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "scanner":
+						xnatImagescandata.setScanner(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "scannerManufacturer":
+						xnatImagescandata.setScanner_manufacturer(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "scannerModel":
+						xnatImagescandata.setScanner_model(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "scannerSoftwareversion":
+						xnatImagescandata.setScanner_softwareversion(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "seriesClass":
+						xnatImagescandata.setSeriesClass(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
+						break;
+					case "uId":
+						xnatImagescandata.setUid(Objects.nonNull(objectInArray.getString(elementName))?objectInArray.getString(elementName):null);
 						break;
 					}
 				}
@@ -171,6 +197,20 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 		}
 
 		return xnatImagescandatas;
+	}
+
+	private XnatImagescandata getXnatImagescanDataType(JSONObject objectInArray) {
+		XnatImagescandata xnatImagescandata = null;
+		SchemaElement element;
+		String xsiType = objectInArray.getString(DATA_TYPE);
+		try {
+			element = SchemaElement.GetElement(xsiType);
+			final Class<? extends XnatImagescandata> xsiTypeClass = element.getCorrespondingJavaClass().asSubclass(XnatImagescandata.class);
+			xnatImagescandata = xsiTypeClass.newInstance();
+		} catch (XFTInitException | ElementNotFoundException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+			e.printStackTrace();
+		}
+		return xnatImagescandata;
 	}
 
 	public String removeFirstAndLastQuotes(String inputString) {
