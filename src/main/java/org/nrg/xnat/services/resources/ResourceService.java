@@ -3,6 +3,8 @@ package org.nrg.xnat.services.resources;
 import java.util.List;
 
 import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.om.XnatResource;
+import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 
 public interface ResourceService {
@@ -16,6 +18,8 @@ public interface ResourceService {
 	public List<XnatAbstractresource> findResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId);
 	
 	public List<XnatAbstractresource> findByProject(final UserI user, final String projectId);
+	
+	public XnatAbstractresource findByProjectAndLabel(final UserI user, final String projectId, String label);
 
 	public XnatAbstractresource findByIdAndProject(final UserI user, final Integer resourceId, final String projectId);
 
@@ -32,4 +36,6 @@ public interface ResourceService {
 	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, Integer resourceId);
 
 	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId);
+
+	public XnatResourcecatalog create(UserI user, String projectId, XnatResource xnatResourcecatalog);
 }

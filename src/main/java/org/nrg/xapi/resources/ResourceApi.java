@@ -1,14 +1,19 @@
 package org.nrg.xapi.resources;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatResource;
+import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.resources.ResourceService;
@@ -17,6 +22,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -250,6 +257,23 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 		}
 		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
 	}
+	
+	
+	 @ApiOperation(value = "Create a new resource", notes = "Creates the submitted resource.", response = XnatResourcecatalog.class)
+	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created resource."),
+	                   @ApiResponse(code = 403, message = "The user doesn't have permission to create resource"),
+	                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
+	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	    @XapiRequestMapping(value = "/projects/{projectId}/resources",
+	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	                        method = POST)
+	    public XnatResourcecatalog createResource(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    		@ApiParam(value = "The label of the resource.") @RequestParam(required = false) final String label,
+				 @RequestBody final XnatResource xnatResource) throws Exception {
+	        log.debug("Controller Api- Create resource: {}", projectId);
+	        return _resourceService.create(getSessionUser(),projectId,xnatResource );
+	    }
 	
 	private final ResourceService _resourceService;
 

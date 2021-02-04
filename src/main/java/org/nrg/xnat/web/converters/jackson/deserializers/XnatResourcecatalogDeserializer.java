@@ -14,7 +14,7 @@ public class XnatResourcecatalogDeserializer extends AbstractBaseElementDeserial
         super(XnatResourcecatalog.class);
     }
 
-    @SuppressWarnings("null")
+  
     @Override
     protected XnatResourcecatalog deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatResourcecatalog resource = new XnatResourcecatalog();
@@ -26,8 +26,26 @@ public class XnatResourcecatalogDeserializer extends AbstractBaseElementDeserial
                 case "fileCount":
                     resource.setFileCount(parser.getIntValue());
                     break;
-                case "collection":
+                case "label":
                     resource.setLabel(parser.getText());
+                    break;
+                case "note":
+                    resource.setNote(parser.getText());
+                    break;
+                case "description":
+                    resource.setDescription(parser.getText());
+                    break;
+                case "content":
+                    resource.setContent(parser.getText());
+                    break;
+                case "format":
+                    resource.setFormat(parser.getText());
+                    break;
+                case "fileSize":
+                    resource.setFileSize(parser.getText());
+                    break;
+                case "uri":
+                    resource.setUri(parser.getText());
                     break;
                 case "xnatAbstractResourceId":
                     resource.setXnatAbstractresourceId(parser.getIntValue());
