@@ -24,7 +24,7 @@ public class XnatResourceSerializer extends AbstractBaseElementSerializer<XnatRe
         writeNonBlankField(generator, "description", resource.getDescription());
         writeNonBlankField(generator, "note", resource.getNote());
         writeNonNullNumber(generator, "xnatAbstractResourceId", resource.getXnatAbstractresourceId());
-        writeNonBlankField(generator, "tags", resource.getTagString());
+        writeNonNullField(generator, "tags", resource.getTags_tag());
         writeNonNullField(generator, "fileSize", resource.getFileSize());
         writeNonNullField(generator, "resource", resource.getAbstractresource());
         writeNonNullField(generator, "files", resource.getCorrespondingFiles());

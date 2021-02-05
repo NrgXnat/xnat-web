@@ -6,8 +6,11 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatAbstractresource;
@@ -268,11 +271,23 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
-	    public XnatResourcecatalog createResource(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    public XnatResourcecatalog createResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+	    		@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+	    		@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
 	    		@ApiParam(value = "The label of the resource.") @RequestParam(required = false) final String label,
 				 @RequestBody final XnatResource xnatResource) throws Exception {
 	        log.debug("Controller Api- Create resource: {}", projectId);
-	        return _resourceService.create(getSessionUser(),projectId,xnatResource );
+	        
+	        if (StringUtils.isNotBlank(label) && !StringUtils.equals(xnatResource.getLabel(), label)) {
+	            throw new DataFormatException("You specified the label " + label + " in your request but the resource is assigned to project " + projectId + ". These values must be the same.");
+	        }
+	        
+	        List<XnatAbstractresource> xnatResourcecatalogs = _resourceService.findByProjectAndLabel(getSessionUser(), projectId, label);
+	       
+	        if(xnatResourcecatalogs.size()>0)
+	        	throw new ResourceAlreadyExistsException("You specified the label in your request is alreay exists", label);
+	        
+	        return _resourceService.create(getSessionUser(),projectId, xnatResource );
 	    }
 	
 	private final ResourceService _resourceService;

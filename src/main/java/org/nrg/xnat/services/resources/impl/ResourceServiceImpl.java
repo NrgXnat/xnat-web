@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,7 @@ import org.nrg.xnat.model.util.XnatTemplateUtil;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.services.resources.ResourceService;
+import org.nrg.xnat.services.subjects.SubjectService;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
@@ -52,10 +54,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ResourceServiceImpl implements ResourceService{
 	
 	@Autowired
-	public ResourceServiceImpl(final NamedParameterJdbcTemplate template, ProjectService projectService) {
+	public ResourceServiceImpl(final NamedParameterJdbcTemplate template) {
 		_template = template;
 		_catalogService = XDAT.getContextService().getBean(CatalogService.class);
-		_projectService = projectService;
 	}
 
 	@Override
@@ -85,8 +86,8 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 	
 	@Override
-	public XnatAbstractresource findByProjectAndLabel(UserI user, String projectId, String label) {
-		return _template.queryForObject(PROJECT_QUERY + BY_ID_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_label , new MapSqlParameterSource("projectId", projectId).addValue("label", label), new ResourceRowMapper(user));
+	public List<XnatAbstractresource> findByProjectAndLabel(UserI user, String projectId, String label) {
+		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_label , new MapSqlParameterSource("projectId", projectId).addValue("label", label), new ResourceRowMapper(user));
 	}
 
 	@Override
@@ -139,56 +140,53 @@ public class ResourceServiceImpl implements ResourceService{
 	@Override
 	public XnatResourcecatalog create(UserI user, String projectId, XnatResource xnatResource) {
 		
-		  XFTItem item;
-	        try {
-	            item=xnatResource.getItem();
-	            if(item==null)
-	            	throw new DataFormatException("Need POST Contents");
-	            
-	            if(item.instanceOf("xnat:resourceCatalog")){
-	                XnatResourcecatalog catResource = (XnatResourcecatalog)BaseElement.GetGeneratedItem(item);
+		if(Objects.nonNull(projectId))
+			proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		
+		XFTItem item;
+		try {
+			item = xnatResource.getItem();
+			if (item == null)
+				throw new DataFormatException("Need POST Contents");
 
-	                if(catResource.getXnatAbstractresourceId()!=null){
-	                    XnatAbstractresource existing=XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(catResource.getXnatAbstractresourceId(), user, false);
-	                    if(existing!=null)
-	                    	throw new ResourceAlreadyExistsException("Specified catalog already exists.", projectId);
-	                  else
-	                	  throw new DataFormatException("Contains erroneous generated fields (xnat_abstractresource_id)");
-	                }
+			if (item.instanceOf("xnat:resourceCatalog")) {
+				XnatResourcecatalog catResource = (XnatResourcecatalog) BaseElement.GetGeneratedItem(item);
 
-	                //setCatalogAttributes(user, catResource);
+				if (catResource.getXnatAbstractresourceId() != null) {
+					XnatAbstractresource existing = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(catResource.getXnatAbstractresourceId(), user, false);
+					if (existing != null)
+						throw new ResourceAlreadyExistsException("Specified catalog already exists.", projectId);
+					else
+						throw new DataFormatException("Contains erroneous generated fields (xnat_abstractresource_id)");
+				}
 
-	                PersistentWorkflowI wrk=PersistentWorkflowUtils.getWorkflowByEventId(user,getEventId());
-	                if(wrk==null && "SNAPSHOTS".equals(catResource.getLabel())){
-	                    if(getSecurityItem() instanceof XnatExperimentdata){
-	                        Collection<? extends PersistentWorkflowI> workflows = PersistentWorkflowUtils.getOpenWorkflows(user,((ArchivableItem)getSecurityItem()).getId());
-	                        if(workflows!=null && workflows.size()==1){
-	                            wrk=(WrkWorkflowdata)CollectionUtils.get(workflows, 0);
-	                            if(!"xnat_tools/AutoRun.xml".equals(wrk.getPipelineName())){
-	                                wrk=null;
-	                            }
-	                        }
-	                    }
-	                }
-	                insertCatalogWrap(catResource,wrk,user);
-	            }else
-	            	throw new DataFormatException("Only ResourceCatalog documents can be PUT to this address.");
-	            
-	        } catch (ActionException e) {
-	        	log.error(e.getMessage());
-			} catch (Exception e) {
-				log.error(e.getMessage());
-	        }
-			return (XnatResourcecatalog) xnatResource;
-	}
-	
-	 private Integer getEventId() {
-		  final String id = getQueryVariable(EventUtils.EVENT_ID);
-	        if (id != null) {
-	            return Integer.valueOf(id);
-	        } else {
-	            return null;
-	        }
+				setCatalogAttributes(user, catResource);
+
+				PersistentWorkflowI wrk = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
+				if (wrk == null && "SNAPSHOTS".equals(catResource.getLabel())) {
+					if (getSecurityItem() instanceof XnatExperimentdata) {
+						Collection<? extends PersistentWorkflowI> workflows = PersistentWorkflowUtils
+								.getOpenWorkflows(user, ((ArchivableItem) getSecurityItem()).getId());
+						if (workflows != null && workflows.size() == 1) {
+							wrk = (WrkWorkflowdata) CollectionUtils.get(workflows, 0);
+							if (!"xnat_tools/AutoRun.xml".equals(wrk.getPipelineName())) {
+								wrk = null;
+							}
+						}
+					}
+				}
+				
+				insertCatalogWrap(catResource, wrk, user);
+				
+			} else
+				throw new DataFormatException("Only ResourceCatalog documents can be PUT to this address.");
+
+		} catch (ActionException e) {
+			log.error(e.getMessage());
+		} catch (Exception e) {
+			log.error(e.getMessage());
+		}
+		return (XnatResourcecatalog) xnatResource;
 	}
 
 	public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user) throws Exception {
@@ -216,37 +214,17 @@ public class ResourceServiceImpl implements ResourceService{
 	        }
 	    }
 	 
-	public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
-        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
-    }
-	private String getComment() {
-		return null;
-	}
-
-	private String getReason() {
-		return null;
-	}
-
-	public EventUtils.TYPE getEventType() {
-    	return EventUtils.TYPE.WEB_FORM;
-    }
-	private String getAction() {
-		return null;
-	}
 
 	public boolean insertCatalog(XnatResourcecatalog catResource, Integer eventId, UserI user) throws Exception {
 	        final XnatExperimentdata assessed = assesseds.size() == 1 ? assesseds.get(0) : null;
 	        if (recons.size() > 0) {
 	            if (assessed == null) {
-	                //getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Invalid session id.");
 	                return false;
 	            }
-
 	            final XnatReconstructedimagedata reconstruction = recons.get(0);
 	            return _catalogService.insertResourceCatalog(user, UriParserUtils.getArchiveUri(assessed, reconstruction), catResource,eventId) != null;
 	        } else if (scans.size() > 0) {
 	            if (assessed == null) {
-	                //getResponse().setStatus(Status.CLIENT_ERROR_GONE, "Invalid session id.");
 	                return false;
 	            }
 	            final XnatImagescandata scan = scans.get(0);
@@ -266,18 +244,15 @@ public class ResourceServiceImpl implements ResourceService{
         if (this.security != null) {
             return security;
         }
-
         XnatExperimentdata assessed = null;
         if (this.assesseds.size() == 1) {
             assessed = assesseds.get(0);
         }
-
         if (recons.size() > 0) {
             return assessed;
         } else if (scans.size() > 0) {
             return assessed;
         } else if (expts.size() > 0) {
-//			experiment
             return expts.get(0);
         } else if (sub != null) {
             return sub;
@@ -298,7 +273,6 @@ public class ResourceServiceImpl implements ResourceService{
         if (StringUtils.isNotBlank(getQueryVariable("content"))) {
             catalog.setContent(getQueryVariable("content"));
         }
-
         final String[] tags = getQueryVariables("tags");
         if (tags != null) {
             for (final String variable : tags) {
@@ -322,7 +296,35 @@ public class ResourceServiceImpl implements ResourceService{
             }
         }
     }
+	
+	public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
+        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
+    }
+	
+	 private Integer getEventId() {
+		final String id = getQueryVariable(EventUtils.EVENT_ID);
+		if (id != null) {
+			return Integer.valueOf(id);
+		} else {
+			return null;
+		}
+	}
 
+	private String getComment() {
+		return null;
+	}
+
+	private String getReason() {
+		return null;
+	}
+
+	public EventUtils.TYPE getEventType() {
+		return EventUtils.TYPE.WEB_FORM;
+	}
+
+	private String getAction() {
+		return null;
+	}
 	private String[] getQueryVariables(String string) {
 		return null;
 	}
@@ -333,16 +335,18 @@ public class ResourceServiceImpl implements ResourceService{
 
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {
-	        _user = user;
-	    }
-	    @Override
-	    public XnatAbstractresource mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-	        final String xnatAbstractResourceId = resultSet.getString("xnat_abstractresource_id");
-	        XnatAbstractresource xnatAbstractresource= XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(xnatAbstractResourceId, _user, false);
-	        return xnatAbstractresource;
-	    }
-	    private final UserI _user;
-	    
+			_user = user;
+		}
+
+		@Override
+		public XnatAbstractresource mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+			final String xnatAbstractResourceId = resultSet.getString("xnat_abstractresource_id");
+			XnatAbstractresource xnatAbstractresource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(xnatAbstractResourceId, _user, false);
+			return xnatAbstractresource;
+		}
+
+		private final UserI _user;
+
 	}
 	
 	private static final String BY_ID_WHERE_EXPERIMENT = " where x.id = :experimentId ";
@@ -410,9 +414,8 @@ public class ResourceServiceImpl implements ResourceService{
 	
 	private final NamedParameterJdbcTemplate _template;
 	 private final CatalogService _catalogService;
-	 private final ProjectService _projectService;
 	 XnatProjectdata proj = null;
-	    XnatSubjectdata sub  = null;
+	 XnatSubjectdata sub  = null;
 
 	    ArrayList<XnatExperimentdata> expts = new ArrayList<>();
 
