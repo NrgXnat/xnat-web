@@ -138,10 +138,17 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 	
 	@Override
-	public XnatResourcecatalog create(UserI user, String projectId, XnatResource xnatResource) {
+	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId,  XnatResource xnatResource) {
 		
 		if(Objects.nonNull(projectId))
 			proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		if(Objects.nonNull(subjectId))
+			sub = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if (Objects.nonNull(experimentId)) {
+			XnatExperimentdata expt = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+			if (Objects.nonNull(expt))
+				expts.add(expt);
+		}
 		
 		XFTItem item;
 		try {

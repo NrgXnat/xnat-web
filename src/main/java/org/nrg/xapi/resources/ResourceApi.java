@@ -267,7 +267,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 403, message = "The user doesn't have permission to create resource"),
 	                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-	    @XapiRequestMapping(value = "/projects/{projectId}/resources",
+	    @XapiRequestMapping(value = {"/projects/{projectId}/resources", "/subjects/{subjectId}/resources","/projects/{projectId}/subjects/{subjectId}/resources",
+	    		"/experiments/{experimentId}/resources","/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources"},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
@@ -287,7 +288,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	        if(xnatResourcecatalogs.size()>0)
 	        	throw new ResourceAlreadyExistsException("You specified the label in your request is alreay exists", label);
 	        
-	        return _resourceService.create(getSessionUser(),projectId, xnatResource );
+	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId, xnatResource );
 	    }
 	
 	private final ResourceService _resourceService;
