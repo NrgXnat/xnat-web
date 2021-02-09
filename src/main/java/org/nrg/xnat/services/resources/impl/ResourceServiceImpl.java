@@ -19,6 +19,7 @@ import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatAbstractresourceTag;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
+import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatReconstructedimagedata;
 import org.nrg.xdat.om.XnatResource;
@@ -31,7 +32,9 @@ import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.EventUtils.CATEGORY;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.model.util.XnatTemplateUtil;
 import org.nrg.xnat.services.archive.CatalogService;
@@ -40,6 +43,7 @@ import org.nrg.xnat.services.resources.ResourceService;
 import org.nrg.xnat.services.subjects.SubjectService;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
+import org.restlet.data.Method;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
@@ -138,8 +142,11 @@ public class ResourceServiceImpl implements ResourceService{
 	}
 	
 	@Override
-	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId,  XnatResource xnatResource) {
-		
+	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, XnatResource xnatResource) {
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		expts = new ArrayList<>();
+		scans = new ArrayList<>();
 		if(Objects.nonNull(projectId))
 			proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		if(Objects.nonNull(subjectId))
@@ -148,6 +155,12 @@ public class ResourceServiceImpl implements ResourceService{
 			XnatExperimentdata expt = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
 			if (Objects.nonNull(expt))
 				expts.add(expt);
+		}
+		if (Objects.nonNull(assessorId)) {
+			getAssessorData(assessorId, user);
+		}
+		if (Objects.nonNull(scanId)) {
+			getScansData(scanId, user);
 		}
 		
 		XFTItem item;
@@ -194,6 +207,99 @@ public class ResourceServiceImpl implements ResourceService{
 			log.error(e.getMessage());
 		}
 		return (XnatResourcecatalog) xnatResource;
+	}
+
+	private void getScansData(String scanId, UserI user) {
+		 if (scanId != null && this.assesseds.size() > 0) {
+
+			 scanId = scanId.replace("[SLASH]", "/");//this is such an ugly hack.  If a slash is included in the scan type and thus in the URL, it breaks the GET command.  Even if it is properly escaped.  So, I'm adding this alternative encoding of slash to allow us to work around the issue.  Hopefully Spring MVC will eliminate it.
+
+	            CriteriaCollection cc = new CriteriaCollection("OR");
+	            for (XnatExperimentdata assessed : this.assesseds) {
+	                CriteriaCollection subcc = new CriteriaCollection("AND");
+	                subcc.addClause("xnat:imageScanData/image_session_ID", assessed
+	                        .getId());
+	                if (!(scanId.equals("*") || scanId.equals("ALL"))) {
+	                    if (!scanId.contains(",")) {
+	                        subcc.addClause("xnat:imageScanData/ID", scanId);
+	                    } else {
+	                        CriteriaCollection subsubcc = new CriteriaCollection("OR");
+	                        for (String s : XftStringUtils.CommaDelimitedStringToArrayList(scanId, true)) {
+	                            subsubcc.addClause("xnat:imageScanData/ID", s);
+	                        }
+	                        subcc.add(subsubcc);
+	                    }
+	                }
+	                cc.add(subcc);
+
+	                subcc = new CriteriaCollection("AND");
+	                subcc.addClause("xnat:imageScanData/image_session_ID", assessed
+	                        .getId());
+	                if (!(scanId.equals("*") || scanId.equals("ALL"))) {
+	                    if (!scanId.contains(",")) {
+	                        if (scanId.equals("NULL")) {
+	                            CriteriaCollection subsubcc = new CriteriaCollection("OR");
+	                            subsubcc.addClause("xnat:imageScanData/type", "", " IS NULL ", true);
+	                            subsubcc.addClause("xnat:imageScanData/type", "");
+	                            subcc.add(subsubcc);
+	                        } else {
+	                            subcc.addClause("xnat:imageScanData/type", scanId.replace("[COMMA]", ","));
+	                        }
+	                    } else {
+	                        CriteriaCollection subsubcc = new CriteriaCollection("OR");
+	                        for (String s : XftStringUtils.CommaDelimitedStringToArrayList(scanId, true)) {
+	                            if (s.equals("NULL")) {
+	                                subsubcc.addClause("xnat:imageScanData/type", "", " IS NULL ", true);
+	                                subsubcc.addClause("xnat:imageScanData/type", "");
+	                            } else {
+	                                subsubcc.addClause("xnat:imageScanData/type", s.replace("[COMMA]", ","));
+	                            }
+	                        }
+	                        subcc.add(subsubcc);
+	                    }
+	                }
+	                cc.add(subcc);
+	            }
+
+	            scans = XnatImagescandata.getXnatImagescandatasByField(cc, user,  false);
+
+//	            if (scans.size() != 1 && !this.getRequest().getMethod().equals(Method.GET)) {
+//	                response.setStatus(Status.CLIENT_ERROR_NOT_FOUND,
+//	                                   "Unable to identify scan");
+//	                return;
+//	            }
+	        }
+	}
+
+	private void getAssessorData(String assessorId, UserI user) {
+		 for (String s : XftStringUtils.CommaDelimitedStringToArrayList(assessorId)) {
+             XnatExperimentdata assessed = XnatImagesessiondata.getXnatImagesessiondatasById(s, user, false);
+
+             if (assessed != null && (proj != null && !assessed.hasProject(proj.getId()))) {
+                 assessed = null;
+             }
+
+             if (assessed == null && proj != null) {
+                 assessed = XnatImagesessiondata
+                         .GetExptByProjectIdentifier(proj.getId(), s,
+                                                     user, false);
+             }
+
+             if (assessed != null) {
+                 try {
+                     if (assessed.canRead(user)) {
+                         assesseds.add(assessed);
+                     }
+                 } catch (Exception ignored) {
+                 }
+             }
+
+//             if (assesseds.size() != 1 && !this.getRequest().getMethod().equals(Method.GET)) {
+//                 response.setStatus(Status.CLIENT_ERROR_NOT_FOUND,
+//                                    "Unable to identify image session");
+//                 return;
+//             }
+         }
 	}
 
 	public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user) throws Exception {
@@ -248,11 +354,11 @@ public class ResourceServiceImpl implements ResourceService{
 	    }
 	
 	public ItemI getSecurityItem() {
-        if (this.security != null) {
+        if (security != null) {
             return security;
         }
         XnatExperimentdata assessed = null;
-        if (this.assesseds.size() == 1) {
+        if (assesseds.size() == 1) {
             assessed = assesseds.get(0);
         }
         if (recons.size() > 0) {

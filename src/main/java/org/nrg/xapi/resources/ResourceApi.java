@@ -268,13 +268,17 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	    @XapiRequestMapping(value = {"/projects/{projectId}/resources", "/subjects/{subjectId}/resources","/projects/{projectId}/subjects/{subjectId}/resources",
-	    		"/experiments/{experimentId}/resources","/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources"},
+	    		"/experiments/{experimentId}/resources","/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
+	    		"/projects/{projectId}/subjects/{subjectId}//experiments/{assessorId}/scans/{scanId}/resources",
+	    		"/experiments/{assessorId}/scans/{scanId}/resources"},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
 	    public XnatResourcecatalog createResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 	    		@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
 	    		@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+	    		@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
+	    		@ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
 	    		@ApiParam(value = "The label of the resource.") @RequestParam(required = false) final String label,
 				 @RequestBody final XnatResource xnatResource) throws Exception {
 	        log.debug("Controller Api- Create resource: {}", projectId);
@@ -288,7 +292,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	        if(xnatResourcecatalogs.size()>0)
 	        	throw new ResourceAlreadyExistsException("You specified the label in your request is alreay exists", label);
 	        
-	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId, xnatResource );
+	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId,xnatResource );
 	    }
 	
 	private final ResourceService _resourceService;
