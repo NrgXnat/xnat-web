@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.annotation.Nullable;
 import com.google.common.base.Function;
@@ -13,7 +14,10 @@ import com.google.common.base.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XnatImageassessordataI;
+import org.nrg.xdat.om.XnatAbstractresourceTag;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -28,11 +32,13 @@ import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.WorkflowUtils;
+import org.restlet.data.Method;
 import org.restlet.data.Status;
 
 import com.google.common.collect.Iterables;
@@ -42,48 +48,49 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class XnatTemplateUtil {
+
+	protected XnatProjectdata proj = null;
 	
-	 XnatProjectdata proj = null;
-	    XnatSubjectdata sub  = null;
+	protected XnatSubjectdata sub = null;
 
-	    ArrayList<XnatExperimentdata> expts = new ArrayList<>();
+	protected ArrayList<XnatExperimentdata> expts = new ArrayList<>();
 
-	    ArrayList<XnatImagescandata> scans = new ArrayList<>();
+	protected ArrayList<XnatImagescandata> scans = new ArrayList<>();
 
-	    ArrayList<XnatReconstructedimagedata> recons = new ArrayList<>();
+	ArrayList<XnatReconstructedimagedata> recons = new ArrayList<>();
 
-	    ArrayList<XnatExperimentdata> assesseds = new ArrayList<>();
+	protected ArrayList<XnatExperimentdata> assesseds = new ArrayList<>();
 
-	    String type = null;
+	String type = null;
 
-	    ItemI parent = null;
+	ItemI parent = null;
 
-	    ItemI security = null;
+	ItemI security = null;
 
-	    String xmlPath = null;
+	String xmlPath = null;
 
-	    private final CatalogService _catalogService;
-	    
-	     public XnatTemplateUtil() {
-	    	 _catalogService = XDAT.getContextService().getBean(CatalogService.class);
-		} 
-	
+	private final CatalogService _catalogService;
+
+	public XnatTemplateUtil() {
+		_catalogService = XDAT.getContextService().getBean(CatalogService.class);
+	}
+
 	private final static boolean completeDocument = false;
-	
+
 	public XnatProjectdata getXnatProjectdata(String projectId, UserI user) {
-		  if (projectId != null) {
-	            proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
-	        }
+		if (projectId != null) {
+			proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		}
 		return proj;
 
 	}
-	public XnatSubjectdata getXnatSubjectdata(String subjectId, UserI user) {
+	
+	public XnatSubjectdata getXnatSubjectdata(String subjectId, UserI user, XnatProjectdata proj1) {
+		setProjSubExpScanAssessorData(proj1,null,null,null,null) ;
 		if (subjectId != null) {
             if (proj != null) {
-                sub = XnatSubjectdata.GetSubjectByProjectIdentifier(proj
-                                                                            .getId(), subjectId, user, false);
+                sub = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, user, false);
             }
-
             if (sub == null) {
                 sub = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
                 if (sub != null && (proj != null && !sub.hasProject(proj.getId()))) {
@@ -92,13 +99,81 @@ public class XnatTemplateUtil {
             }
         }
 		return sub;
+	}
+	
+	public ArrayList<XnatExperimentdata> getXnatExperimentData(String experimentId, UserI user, ArrayList<XnatExperimentdata> assesseds2, String type2) {
+		setProjSubExpScanAssessorData(null,null,null,assesseds2,null) ;
+		type = type2;
+		if (experimentId != null) {
+            for (String s : XftStringUtils.CommaDelimitedStringToArrayList(experimentId)) {
+                XnatExperimentdata expt = XnatExperimentdata.getXnatExperimentdatasById(s,
+                                                                                        user, false);
 
+                if (expt == null && proj != null) {
+                    expt = XnatExperimentdata.GetExptByProjectIdentifier(proj.getId(), s, user, false);
+                }
+
+                if (expt != null && assesseds.size() > 0) {
+                    if (type == null) {
+                        type = "out";
+                    }
+                }
+
+                if (expt != null) {
+                    try {
+                        if (expt.canRead(user)) {
+                            expts.add(expt);
+                        }
+                    } catch (Exception ignored) {
+                    }
+                } else if (assesseds.size() > 0) {
+                    for (XnatExperimentdata assessed : assesseds) {
+                        for (XnatImageassessordataI iad : ((XnatImagesessiondata) assessed).getMinimalLoadAssessors()) {
+                            if (iad.getId().equals(s)
+                                || (iad.getLabel() != null && iad.getLabel().equals(s))) {
+                                try {
+                                    if (((XnatImageassessordata) iad).canRead(user)) {
+                                        expts.add(((XnatImageassessordata) iad));
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            } else if (s.equals("*") || s.equals("ALL")) {
+                                try {
+                                    if (((XnatImageassessordata) iad).canRead(user)) {
+                                        expts.add(((XnatImageassessordata) iad));
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            } else {
+                                try {
+                                    GenericWrapperElement gwe = GenericWrapperElement.GetElement(s);
+
+                                    if (((XnatImageassessordata) iad).getItem().instanceOf(gwe.getFullXMLName())) {
+                                        if (((XnatImageassessordata) iad).canRead(user)) {
+                                            expts.add(((XnatImageassessordata) iad));
+                                        }
+                                    }
+                                } catch (Exception ignored) {
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+//            if (expts.size() != 1 && !this.getRequest().getMethod().equals(Method.GET)) {
+//                response.setStatus(Status.CLIENT_ERROR_NOT_FOUND,
+//                                   "Unable to identify experiment");
+//                return;
+//            }
+        }
+		return expts;
 	}
 
-	public static ArrayList<XnatExperimentdata> getXnatExperimentdata(String assessid , UserI user, XnatProjectdata proj){
-		ArrayList<XnatExperimentdata> assesseds = new ArrayList<>();
-		if (assessid != null) {
-			for (String s : XftStringUtils.CommaDelimitedStringToArrayList(assessid)) {
+	public  ArrayList<XnatExperimentdata> getXnatAssessordata(String assessId , UserI user, XnatProjectdata proj2){
+		setProjSubExpScanAssessorData(proj2,null,null,null,null) ;
+		if (assessId != null) {
+			for (String s : XftStringUtils.CommaDelimitedStringToArrayList(assessId)) {
 				XnatExperimentdata assessed = XnatImagesessiondata.getXnatImagesessiondatasById(s, user, false);
 				if (assessed != null && (proj != null && !assessed.hasProject(proj.getId())))
 					assessed = null;
@@ -117,8 +192,8 @@ public class XnatTemplateUtil {
 		return assesseds;
 	}
 	
-	public static ArrayList<XnatImagescandata> getXnatImageScanData(String scanID, UserI user, ArrayList<XnatExperimentdata> assesseds) {
-		ArrayList<XnatImagescandata> scans = new ArrayList<>();
+	public  ArrayList<XnatImagescandata> getXnatImageScanData(String scanID, UserI user, ArrayList<XnatExperimentdata> assesseds2) {
+		setProjSubExpScanAssessorData(null,null,null,assesseds2,null) ; 
 	        if (scanID != null && assesseds.size() > 0) {
 
 	            scanID = scanID.replace("[SLASH]", "/");//this is such an ugly hack.  If a slash is included in the scan type and thus in the URL, it breaks the GET command.  Even if it is properly escaped.  So, I'm adding this alternative encoding of slash to allow us to work around the issue.  Hopefully Spring MVC will eliminate it.
@@ -259,21 +334,19 @@ public class XnatTemplateUtil {
 	}
 	
 	 public ItemI getSecurityItem() {
-	        if (this.security != null) {
+	        if (security != null) {
 	            return security;
 	        }
 
 	        XnatExperimentdata assessed = null;
-	        if (this.assesseds.size() == 1) {
+	        if (assesseds.size() == 1) {
 	            assessed = assesseds.get(0);
 	        }
-
 	        if (recons.size() > 0) {
 	            return assessed;
 	        } else if (scans.size() > 0) {
 	            return assessed;
 	        } else if (expts.size() > 0) {
-//				experiment
 	            return expts.get(0);
 	        } else if (sub != null) {
 	            return sub;
@@ -285,8 +358,11 @@ public class XnatTemplateUtil {
 	    }
 	 
 	 
-	 public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user) throws Exception {
-	        final boolean isNew;
+	 public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user, XnatProjectdata proj2, XnatSubjectdata sub2, ArrayList<XnatExperimentdata> expts2, ArrayList<XnatExperimentdata> assesseds2, ArrayList<XnatImagescandata> scans2) throws Exception {
+	    
+		 setProjSubExpScanAssessorData(proj2,sub2,expts2,assesseds2,scans2) ;
+		 
+		 final boolean isNew;
 	        final Integer wrkId;
 	        if (wrk == null) {
 	            isNew = true;
@@ -311,7 +387,26 @@ public class XnatTemplateUtil {
 	    }
 	 
 	 
-	 public boolean insertCatalog(XnatResourcecatalog catResource, Integer eventId, UserI user) throws Exception {
+	 private void setProjSubExpScanAssessorData(XnatProjectdata proj2, XnatSubjectdata sub2, ArrayList<XnatExperimentdata> expts2, ArrayList<XnatExperimentdata> assesseds2,
+			ArrayList<XnatImagescandata> scans2) {
+		 expts = new ArrayList<>();
+		 assesseds = new ArrayList<XnatExperimentdata>();
+		 scans = new ArrayList<XnatImagescandata>();
+		 assesseds = new ArrayList<XnatExperimentdata>();
+		 
+		 if(Objects.nonNull(proj2))
+			 proj = proj2;
+		 if(Objects.nonNull(sub2))
+			 sub = sub2;
+		 if(Objects.nonNull(expts2) && expts2.size()>0)
+			 expts = expts2;
+		 if(Objects.nonNull(assesseds2) && assesseds2.size()>0)
+			 assesseds = assesseds2;
+		 if(Objects.nonNull(scans2) && scans2.size()>0)
+			 scans = scans2;
+	}
+
+	public boolean insertCatalog(XnatResourcecatalog catResource, Integer eventId, UserI user) throws Exception {
 	        final XnatExperimentdata assessed = assesseds.size() == 1 ? assesseds.get(0) : null;
 
 	        if (recons.size() > 0) {
@@ -340,7 +435,46 @@ public class XnatTemplateUtil {
 	        return true;
 	    }
 	 
-	 public void checkResourceIDs(final List<String> resourceIds) throws Exception {
+	 public void setCatalogAttributes(final UserI user, final XnatResourcecatalog catalog) throws Exception {
+	        if (StringUtils.isNotBlank(getQueryVariable("description"))) {
+	            catalog.setDescription(this.getQueryVariable("description"));
+	        }
+	        if (StringUtils.isNotBlank(getQueryVariable("format"))) {
+	            catalog.setFormat(this.getQueryVariable("format"));
+	        }
+	        if (StringUtils.isNotBlank(getQueryVariable("content"))) {
+	            catalog.setContent(this.getQueryVariable("content"));
+	        }
+
+	        final String[] tags = getQueryVariables("tags");
+	        if (tags != null) {
+	            for (final String variable : tags) {
+	                if (StringUtils.isNotBlank(variable)) {
+	                    for (final String instance : variable.split("\\s*,\\s*")) {
+	                        final XnatAbstractresourceTag tag = new XnatAbstractresourceTag(user);
+	                        if (instance.contains("=")) {
+	                            final String[] atoms = instance.split("=");
+	                            tag.setName(atoms[0]);
+	                            tag.setTag(atoms[1]);
+	                        } else if (instance.contains(":")) {
+	                            final String[] atoms = instance.split(":");
+	                            tag.setName(atoms[0]);
+	                            tag.setTag(atoms[1]);
+	                        } else {
+	                            tag.setTag(instance);
+	                        }
+	                        catalog.setTags_tag(tag);
+	                    }
+	                }
+	            }
+	        }
+	    }
+	 
+	 private String[] getQueryVariables(String string) {
+		return null;
+	}
+
+	public void checkResourceIDs(final List<String> resourceIds) throws Exception {
 	        if (resourceIds == null || resourceIds.isEmpty()) {
 	            return;
 	        }

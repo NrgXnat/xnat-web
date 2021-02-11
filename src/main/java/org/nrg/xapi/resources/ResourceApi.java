@@ -4,8 +4,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.util.List;
-import java.util.Objects;
-
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
@@ -14,7 +12,6 @@ import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -267,10 +264,15 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 403, message = "The user doesn't have permission to create resource"),
 	                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-	    @XapiRequestMapping(value = {"/projects/{projectId}/resources", "/subjects/{subjectId}/resources","/projects/{projectId}/subjects/{subjectId}/resources",
-	    		"/experiments/{experimentId}/resources","/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources",
-	    		"/projects/{projectId}/subjects/{subjectId}//experiments/{assessorId}/scans/{scanId}/resources",
-	    		"/experiments/{assessorId}/scans/{scanId}/resources"},
+	    @XapiRequestMapping(value = {"/projects/{projectId}/resources",
+	    							 "/subjects/{subjectId}/resources", 
+	    							 "/experiments/{experimentId}/resources",
+	    							 "/experiments/{assessorId}/scans/{scanId}/resources",
+	    							 "/experiments/{assessorId}/assessors/{experimentId}/resources",
+	    							 "/projects/{projectId}/subjects/{subjectId}/resources",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/resources",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources",},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
@@ -280,6 +282,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    		@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
 	    		@ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
 	    		@ApiParam(value = "The label of the resource.") @RequestParam(required = false) final String label,
+	    		@ApiParam(value = "The label of the type.") @RequestParam(required = false) final String type,
 				 @RequestBody final XnatResource xnatResource) throws Exception {
 	        log.debug("Controller Api- Create resource: {}", projectId);
 	        
@@ -292,7 +295,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	        if(xnatResourcecatalogs.size()>0)
 	        	throw new ResourceAlreadyExistsException("You specified the label in your request is alreay exists", label);
 	        
-	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId,xnatResource );
+	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId, type, xnatResource );
 	    }
 	
 	private final ResourceService _resourceService;
