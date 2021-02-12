@@ -1,5 +1,6 @@
 package org.nrg.xapi.resources;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
@@ -269,10 +270,12 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    							 "/experiments/{experimentId}/resources",
 	    							 "/experiments/{assessorId}/scans/{scanId}/resources",
 	    							 "/experiments/{assessorId}/assessors/{experimentId}/resources",
+	    							 "/experiments/{assessorId}/assessors/{experimentId}/{type}/resources",
 	    							 "/projects/{projectId}/subjects/{subjectId}/resources",
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/resources",
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources",
-	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources",},
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources"},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
@@ -298,6 +301,19 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId, type, xnatResource );
 	    }
 	
+	 
+	 @ApiOperation(value = "Delete an existing resource", notes = "Deletes the specified resource.")
+	    @ApiResponses({@ApiResponse(code = 200, message = "Deleted the specified resource."),
+	                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified resource"),
+	                   @ApiResponse(code = 404, message = "The specified resource or project doesn't exist"),
+	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+	    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
+			@ApiParam("The ID of the resource to be deleted") @PathVariable final String resourceId) {
+		log.debug("Controller Api- Delete resource {}", resourceId);
+			_resourceService.deleteByProjectIdAndResourceId(getSessionUser(), projectId, resourceId);
+	}
+	 
 	private final ResourceService _resourceService;
 
 }

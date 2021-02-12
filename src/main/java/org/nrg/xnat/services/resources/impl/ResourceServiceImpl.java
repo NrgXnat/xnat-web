@@ -189,6 +189,11 @@ public class ResourceServiceImpl extends XnatTemplateUtil implements ResourceSer
 		return (XnatResourcecatalog) xnatResource;
 	}
 
+	@Override
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId) {
+		// TODO Auto-generated method stub
+		
+	}
 
 	 private Integer getEventId() {
 		final String id = getQueryVariable(EventUtils.EVENT_ID);

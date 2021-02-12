@@ -38,4 +38,6 @@ public interface ResourceService {
 	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId);
 
 	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResourcecatalog);
+
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId);
 }
