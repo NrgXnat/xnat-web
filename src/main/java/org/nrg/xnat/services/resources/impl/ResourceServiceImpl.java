@@ -7,36 +7,61 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import javax.annotation.Nonnull;
+
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutableTriple;
+import org.apache.commons.lang3.tuple.Triple;
 import org.nrg.action.ActionException;
+import org.nrg.action.ClientException;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
+import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.XftItemEvent;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.MetaDataException;
+import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.SaveItemHelper;
+import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
 import org.nrg.xnat.model.util.XnatTemplateUtil;
 import org.nrg.xnat.services.resources.ResourceService;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-public class ResourceServiceImpl extends XnatTemplateUtil implements ResourceService{
+public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements ResourceService{
 	
 	@Autowired
 	public ResourceServiceImpl(final NamedParameterJdbcTemplate template) {
@@ -190,11 +215,163 @@ public class ResourceServiceImpl extends XnatTemplateUtil implements ResourceSer
 	}
 
 	@Override
-	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId) {
-		// TODO Auto-generated method stub
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId1) {
 		
+		if (Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		
+		_resourceIds = setResourcesIds(resourceId1, user, false);
+		
+        final XFTItem securityItem = security.getItem();
+        final XFTItem parentItem   = parent.getItem();
+
+        try {
+            checkPermissionsAndStatus(user, securityItem);
+        } catch (ClientException e) {
+        	log.error( e.getMessage());
+            return;
+        } catch (Exception e) {
+            try {
+                log.error("An error occurred trying to delete the specified resources on parent item {}/ID={} and security item {}/ID={}: {}", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType(), StringUtils.join(getResourceIds(), ", "), e);
+                throw new InitializationException(e.getMessage());
+            } catch (XFTInitException | ElementNotFoundException  | InitializationException ex) {
+                log.error("An error occurred trying to delete resources", ex.getMessage());
+            }
+            return;
+        }
+
+        final Triple<XnatProjectdata, String, String> securityTriple;
+        try {
+            securityTriple = getProjectXsiTypeAndId(parent, security);
+            if (securityTriple.getLeft() == null) {
+                log.warn("Got a parent item of type {}/ID={} and security item of type {}/ID={}, but neither of these is a project, subject, or experiment.", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType());
+                throw new DataFormatException("You can't directly delete insecure items");
+            }
+        } catch (XFTInitException | ElementNotFoundException | DataFormatException e) {
+            log.error("An error occurred trying to delete resources", e.getMessage());
+            return;
+        }
+
+        if (proj == null) {
+            proj = securityTriple.getLeft();
+        }
+
+        final String xsiType    = securityTriple.getMiddle();
+        final String securityId = securityTriple.getRight();
+
+        try {
+            final List<String> ineligible = Lists.newArrayList(Iterables.transform(Iterables.filter(getResources(), new Predicate<XnatAbstractresource>() {
+                @Override
+                public boolean apply(final XnatAbstractresource resource) {
+                    try {
+                        return resource.getItem().isLocked() || !resource.getItem().isActive() && !resource.getItem().isQuarantine();
+                    } catch (MetaDataException e) {
+                        log.error("An error occurred trying to check the lock/active/quarantine status of the resource {} associated with {}/ID={}", resource.getXnatAbstractresourceId(), xsiType, securityId);
+                        return true;
+                    }
+                }
+            }), RESOURCE_TO_STRING_FUNCTION));
+
+            if (!ineligible.isEmpty()) {
+                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Item " + securityItem.getXSIType() + "/ID=" + securityItem.getIDValue() + " has " + ineligible.size() + " resources that are either locked or are not active or quarantined and can't be deleted: " + StringUtils.join(ineligible));
+            }
+
+            final List<String> failed = new ArrayList<>();
+            final String archivePath  = proj.getRootArchivePath();
+            final String project      = proj.getId();
+            for(String rId: _resourceIds) {
+            	final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(rId, user, false);
+            	//for (final XnatAbstractresource resource : getResources()) {
+                    final String              resourceId = getResourceDisplay(resource);
+                    final PersistentWorkflowI workflow   = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, xsiType, securityId, proj.getId(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_CATALOG + " " + resourceId));
+                    final EventMetaI meta  = workflow.buildEvent();
+
+                    try {
+                        resource.deleteWithBackup(archivePath, project, user, meta);
+                        SaveItemHelper.authorizedRemoveChild(parentItem, xmlPath, resource.getItem(), user, meta);
+                        PersistentWorkflowUtils.complete(workflow, meta);
+                    } catch (Exception e) {
+                        failed.add(getResourceDisplay(resource));
+                        workflow.setDetails(e.getMessage());
+                        PersistentWorkflowUtils.fail(workflow, meta);
+                    }
+                //}
+            }
+            
+            if (!failed.isEmpty()) {
+                if (failed.size() == getResources().size()) {
+                	 throw new InitializationException( "Deletion failed for all resources: " + StringUtils.join(failed, ", "));
+                } else {
+                    //getResponse().setStatus(Status.SUCCESS_MULTI_STATUS, "Deleted resources as requested, but the following resources failed somehow: " + StringUtils.join(failed, ", "));
+                }
+            }
+            XDAT.triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
+        } catch (ClientException e) {
+        	log.error( e.getMessage());
+        } catch (Exception e) {
+            log.error("An error occurred trying to delete resources from the secured object {}/ID={}: {}", xsiType, securityId, getResourceIds(), e);
+            //throw new InitializationException(e.getMessage());
+        }
 	}
 
+	private void checkPermissionsAndStatus(final UserI user, final XFTItem securityItem) throws Exception {
+        if (!Permissions.canDelete(user, security)) {
+            throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "User account doesn't have permission to modify this session.");
+        }
+        if (securityItem.isLocked()) {
+            //cannot modify item if it's locked
+            throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Item " + securityItem.getXSIType() + "/ID=" + securityItem.getIDValue() + " is locked, resource deletion not allowed.");
+        }
+        if (!securityItem.isActive() && !securityItem.isQuarantine()) {
+            //cannot modify item if it isn't active or quarantined.
+            throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Item " + securityItem.getXSIType() + "/ID=" + securityItem.getIDValue() + " is not active or quarantined, resource deletion not allowed.");
+        }
+    }
+	
+	 @Nonnull
+	    private Triple<XnatProjectdata, String, String> getProjectXsiTypeAndId(final ItemI parent, final ItemI security) throws ElementNotFoundException {
+	        final XFTItem parentItem   = parent.getItem();
+	        final XFTItem securityItem = security.getItem();
+	        if (parentItem.instanceOf(XnatExperimentdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatExperimentdata experiment = (XnatExperimentdata) this.parent;
+	            return ImmutableTriple.of(experiment.getPrimaryProject(false), experiment.getXSIType(), experiment.getId());
+	        }
+	        if (securityItem.instanceOf(XnatExperimentdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatExperimentdata experiment = (XnatExperimentdata) security;
+	            return ImmutableTriple.of(experiment.getPrimaryProject(false), experiment.getXSIType(), experiment.getId());
+	        }
+	        if (parentItem.instanceOf(XnatSubjectdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatSubjectdata subject = (XnatSubjectdata) parent;
+	            return ImmutableTriple.of(subject.getPrimaryProject(false), XnatSubjectdata.SCHEMA_ELEMENT_NAME, subject.getId());
+	        }
+	        if (securityItem.instanceOf(XnatSubjectdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatSubjectdata subject = (XnatSubjectdata) security;
+	            return ImmutableTriple.of(subject.getPrimaryProject(false), XnatSubjectdata.SCHEMA_ELEMENT_NAME, subject.getId());
+	        }
+	        if (parentItem.instanceOf(XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatProjectdata project = (XnatProjectdata) parent;
+	            return ImmutableTriple.of(project, XnatProjectdata.SCHEMA_ELEMENT_NAME, project.getId());
+	        }
+	        if (securityItem.instanceOf(XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+	            final XnatProjectdata project = (XnatProjectdata) security;
+	            return ImmutableTriple.of(project, XnatProjectdata.SCHEMA_ELEMENT_NAME, project.getId());
+	        }
+	        return ImmutableTriple.nullTriple();
+	    }
+	 
+	 private static final Function<XnatAbstractresource, String> RESOURCE_TO_STRING_FUNCTION = new Function<XnatAbstractresource, String>() {
+	        @Override
+	        public String apply(final XnatAbstractresource resource) {
+	            return getResourceDisplay(resource);
+	        }
+	    };
+	    
+	    @Nonnull
+	    private static String getResourceDisplay(final XnatAbstractresource resource) {
+	        final String resourceLabel = resource.getLabel();
+	        return resource.getXnatAbstractresourceId() + (StringUtils.isBlank(resourceLabel) ? "" : " (" + resourceLabel + ")");
+	    }
+	 
 	 private Integer getEventId() {
 		final String id = getQueryVariable(EventUtils.EVENT_ID);
 		if (id != null) {

@@ -100,8 +100,7 @@ public class XnatTemplateUtil {
 		return sub;
 	}
 
-	public ArrayList<XnatExperimentdata> getXnatExperimentData(String experimentId, UserI user,
-			ArrayList<XnatExperimentdata> assesseds2, String type2) {
+	public ArrayList<XnatExperimentdata> getXnatExperimentData(String experimentId, UserI user, ArrayList<XnatExperimentdata> assesseds2, String type2) {
 		setProjSubExpScanAssessorData(null, null, null, assesseds2, null);
 		type = type2;
 		if (experimentId != null) {
@@ -539,8 +538,7 @@ public class XnatTemplateUtil {
 		return null;
 	}
 
-	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll,
-			UserI user) throws Exception {
+	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll, UserI user) throws Exception {
 		checkResourceIDs(resourceIds);
 
 		final StringBuilder query = new StringBuilder();
