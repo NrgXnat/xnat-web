@@ -307,11 +307,14 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified resource"),
 	                   @ApiResponse(code = 404, message = "The specified resource or project doesn't exist"),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-	    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+	    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}", "/subjects/{subjectId}/resources/{resourceId}",
+	    		"/experiments/{experimentId}/resources/{resourceId}",}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
 	    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
+	    		@ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
+	    		@ApiParam("The ID of the experimentto be deleted") @PathVariable(required = false) final String experimentId,
 			@ApiParam("The ID of the resource to be deleted") @PathVariable final String resourceId) {
 		log.debug("Controller Api- Delete resource {}", resourceId);
-			_resourceService.deleteByProjectIdAndResourceId(getSessionUser(), projectId, resourceId);
+			_resourceService.deleteByProjectIdAndResourceId(getSessionUser(), projectId, subjectId, experimentId, resourceId);
 	}
 	 
 	private final ResourceService _resourceService;

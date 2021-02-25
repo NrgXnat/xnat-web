@@ -215,10 +215,14 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	@Override
-	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId1) {
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String subjectId, String experimentId, String resourceId1) {
 		
 		if (Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
+		if (Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(experimentId))
+			expts = getXnatExperimentData(experimentId, user, null, null);
 		
 		_resourceIds = setResourcesIds(resourceId1, user, false);
 		

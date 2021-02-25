@@ -39,5 +39,5 @@ public interface ResourceService {
 
 	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResourcecatalog);
 
-	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String resourceId);
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String subjectId, String experimentId, String resourceId);
 }
