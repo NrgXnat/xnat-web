@@ -215,47 +215,28 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	@Override
-	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String subjectId, String experimentId, String resourceId1) {
+	public void deleteByProjectIdAndResourceId(UserI user, String projectId, String subjectId, String experimentId, String assessorId,String scanId,String type,String resourceId1) {
 		
-		if (Objects.nonNull(projectId))
+		if(Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
-		if (Objects.nonNull(subjectId))
+		if(Objects.nonNull(subjectId))
 			sub = getXnatSubjectdata(subjectId, user, proj);
-		if (Objects.nonNull(experimentId))
-			expts = getXnatExperimentData(experimentId, user, null, null);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
 		
 		_resourceIds = setResourcesIds(resourceId1, user, false);
 		
         final XFTItem securityItem = security.getItem();
         final XFTItem parentItem   = parent.getItem();
 
-        try {
-            checkPermissionsAndStatus(user, securityItem);
-        } catch (ClientException e) {
-        	log.error( e.getMessage());
-            return;
-        } catch (Exception e) {
-            try {
-                log.error("An error occurred trying to delete the specified resources on parent item {}/ID={} and security item {}/ID={}: {}", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType(), StringUtils.join(getResourceIds(), ", "), e);
-                throw new InitializationException(e.getMessage());
-            } catch (XFTInitException | ElementNotFoundException  | InitializationException ex) {
-                log.error("An error occurred trying to delete resources", ex.getMessage());
-            }
-            return;
-        }
-
-        final Triple<XnatProjectdata, String, String> securityTriple;
-        try {
-            securityTriple = getProjectXsiTypeAndId(parent, security);
-            if (securityTriple.getLeft() == null) {
-                log.warn("Got a parent item of type {}/ID={} and security item of type {}/ID={}, but neither of these is a project, subject, or experiment.", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType());
-                throw new DataFormatException("You can't directly delete insecure items");
-            }
-        } catch (XFTInitException | ElementNotFoundException | DataFormatException e) {
-            log.error("An error occurred trying to delete resources", e.getMessage());
-            return;
-        }
-
+        checkPermsAndStatus(user,securityItem, parentItem );
+       
+        final Triple<XnatProjectdata, String, String> securityTriple = getProjXsiTypeAndId(securityItem, parentItem);
+        
         if (proj == null) {
             proj = securityTriple.getLeft();
         }
@@ -264,32 +245,16 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
         final String securityId = securityTriple.getRight();
 
         try {
-            final List<String> ineligible = Lists.newArrayList(Iterables.transform(Iterables.filter(getResources(), new Predicate<XnatAbstractresource>() {
-                @Override
-                public boolean apply(final XnatAbstractresource resource) {
-                    try {
-                        return resource.getItem().isLocked() || !resource.getItem().isActive() && !resource.getItem().isQuarantine();
-                    } catch (MetaDataException e) {
-                        log.error("An error occurred trying to check the lock/active/quarantine status of the resource {} associated with {}/ID={}", resource.getXnatAbstractresourceId(), xsiType, securityId);
-                        return true;
-                    }
-                }
-            }), RESOURCE_TO_STRING_FUNCTION));
-
-            if (!ineligible.isEmpty()) {
-                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Item " + securityItem.getXSIType() + "/ID=" + securityItem.getIDValue() + " has " + ineligible.size() + " resources that are either locked or are not active or quarantined and can't be deleted: " + StringUtils.join(ineligible));
-            }
-
+        	getAbstractResourceItem(xsiType,securityId,securityItem,parentItem );
+        	
             final List<String> failed = new ArrayList<>();
             final String archivePath  = proj.getRootArchivePath();
             final String project      = proj.getId();
             for(String rId: _resourceIds) {
             	final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(rId, user, false);
-            	//for (final XnatAbstractresource resource : getResources()) {
                     final String              resourceId = getResourceDisplay(resource);
                     final PersistentWorkflowI workflow   = PersistentWorkflowUtils.getOrCreateWorkflowData(getEventId(), user, xsiType, securityId, proj.getId(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_CATALOG + " " + resourceId));
                     final EventMetaI meta  = workflow.buildEvent();
-
                     try {
                         resource.deleteWithBackup(archivePath, project, user, meta);
                         SaveItemHelper.authorizedRemoveChild(parentItem, xmlPath, resource.getItem(), user, meta);
@@ -299,7 +264,6 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
                         workflow.setDetails(e.getMessage());
                         PersistentWorkflowUtils.fail(workflow, meta);
                     }
-                //}
             }
             
             if (!failed.isEmpty()) {
@@ -314,8 +278,61 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
         	log.error( e.getMessage());
         } catch (Exception e) {
             log.error("An error occurred trying to delete resources from the secured object {}/ID={}: {}", xsiType, securityId, getResourceIds(), e);
-            //throw new InitializationException(e.getMessage());
         }
+	}
+
+	private List<String> getAbstractResourceItem(String xsiType, String securityId, XFTItem securityItem, XFTItem parentItem) {
+		final List<String> ineligible = Lists.newArrayList(Iterables.transform(Iterables.filter(getResources(), new Predicate<XnatAbstractresource>() {
+            @Override
+            public boolean apply(final XnatAbstractresource resource) {
+                try {
+                    return resource.getItem().isLocked() || !resource.getItem().isActive() && !resource.getItem().isQuarantine();
+                } catch (MetaDataException e) {
+                    log.error("An error occurred trying to check the lock/active/quarantine status of the resource {} associated with {}/ID={}", resource.getXnatAbstractresourceId(), xsiType, securityId);
+                    return true;
+                }
+            }
+        }), RESOURCE_TO_STRING_FUNCTION));
+
+        if (!ineligible.isEmpty()) {
+            try {
+				throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN, "Item " + securityItem.getXSIType() + "/ID=" + securityItem.getIDValue() + " has " + ineligible.size() + " resources that are either locked or are not active or quarantined and can't be deleted: " + StringUtils.join(ineligible));
+			} catch (ClientException | XFTInitException | ElementNotFoundException e) {
+				e.printStackTrace();
+			}
+        }
+		return ineligible;
+	}
+
+	private Triple<XnatProjectdata, String, String> getProjXsiTypeAndId(XFTItem securityItem, XFTItem parentItem) {
+		 Triple<XnatProjectdata, String, String> securityTriple = null;
+        try {
+            securityTriple = getProjectXsiTypeAndId(parent, security);
+            if (securityTriple.getLeft() == null) {
+                log.warn("Got a parent item of type {}/ID={} and security item of type {}/ID={}, but neither of these is a project, subject, or experiment.", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType());
+                throw new DataFormatException("You can't directly delete insecure items");
+            }
+        } catch (XFTInitException | ElementNotFoundException | DataFormatException e) {
+            log.error("An error occurred trying to delete resources", e.getMessage());
+        }
+        return securityTriple;
+	}
+
+	private void checkPermsAndStatus(UserI user, XFTItem securityItem, XFTItem parentItem) {
+		 try {
+	            checkPermissionsAndStatus(user, securityItem);
+	        } catch (ClientException e) {
+	        	log.error( e.getMessage());
+	            return;
+	        } catch (Exception e) {
+	            try {
+	                log.error("An error occurred trying to delete the specified resources on parent item {}/ID={} and security item {}/ID={}: {}", parentItem.getIDValue(), parentItem.getXSIType(), securityItem.getIDValue(), securityItem.getXSIType(), StringUtils.join(getResourceIds(), ", "), e);
+	                throw new InitializationException(e.getMessage());
+	            } catch (XFTInitException | ElementNotFoundException  | InitializationException ex) {
+	                log.error("An error occurred trying to delete resources", ex.getMessage());
+	            }
+	            return;
+	        }
 	}
 
 	private void checkPermissionsAndStatus(final UserI user, final XFTItem securityItem) throws Exception {

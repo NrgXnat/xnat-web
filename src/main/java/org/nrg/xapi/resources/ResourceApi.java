@@ -303,18 +303,29 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	
 	 
 	 @ApiOperation(value = "Delete an existing resource", notes = "Deletes the specified resource.")
-	    @ApiResponses({@ApiResponse(code = 200, message = "Deleted the specified resource."),
-	                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified resource"),
-	                   @ApiResponse(code = 404, message = "The specified resource or project doesn't exist"),
-	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-	    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}", "/subjects/{subjectId}/resources/{resourceId}",
-	    		"/experiments/{experimentId}/resources/{resourceId}",}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+	 @ApiResponses({@ApiResponse(code = 200, message = "Deleted the specified resource."),
+	 @ApiResponse(code = 403, message = "The user doesn't have permission to delete projects in the specified resource"),
+	 @ApiResponse(code = 404, message = "The specified resource or project doesn't exist"),
+	 @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	 @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}", 
+	    							 "/subjects/{subjectId}/resources/{resourceId}",
+	    							 "/experiments/{experimentId}/resources/{resourceId}",
+	    							 "/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}",
+	    							 "/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}",
+	    							 "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/resources/{resourceId}",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
 	    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
 	    		@ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
 	    		@ApiParam("The ID of the experimentto be deleted") @PathVariable(required = false) final String experimentId,
+	    		@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
+	    		@ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
+	    		@ApiParam(value = "The label of the type.") @RequestParam(required = false) final String type,
 			@ApiParam("The ID of the resource to be deleted") @PathVariable final String resourceId) {
 		log.debug("Controller Api- Delete resource {}", resourceId);
-			_resourceService.deleteByProjectIdAndResourceId(getSessionUser(), projectId, subjectId, experimentId, resourceId);
+			_resourceService.deleteByProjectIdAndResourceId(getSessionUser(), projectId, subjectId, experimentId,assessorId,scanId,type, resourceId);
 	}
 	 
 	private final ResourceService _resourceService;
