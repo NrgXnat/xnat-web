@@ -1,24 +1,92 @@
 package org.nrg.xnat.services.files.impl;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.fileupload.DefaultFileItemFactory;
+import org.apache.commons.fileupload.FileItem;
+import org.apache.commons.fileupload.FileItemHeaders;
+import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItemFactory;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.nrg.action.ClientException;
+import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.CatEntryI;
+import org.nrg.xdat.om.WrkWorkflowdata;
+import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImageassessordata;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.turbine.utils.TurbineUtils;
+import org.nrg.xft.XFTItem;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.XftItemEventI;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.helpers.FileWriterWrapper;
+import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
+import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
+import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
+import org.nrg.xnat.model.util.XapiFileUpload;
+import org.nrg.xnat.presentation.ChangeSummaryBuilderA;
+import org.nrg.xnat.restlet.util.FileWriterWrapperI;
+import org.nrg.xnat.services.cache.UserProjectCache;
 import org.nrg.xnat.services.files.FileService;
+import org.nrg.xnat.services.messaging.file.MoveStoredFileRequest;
+import org.nrg.xnat.turbine.utils.ArchivableItem;
+import org.nrg.xnat.utils.CatalogUtils;
+import org.nrg.xnat.utils.WorkflowUtils;
+import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
-public class FileServiceImpl implements FileService {
+@Slf4j
+public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileService {
 	
 	@Autowired
 	public FileServiceImpl(final NamedParameterJdbcTemplate template) {
 		_template = template;
+		
+		if (!getResources().isEmpty()) {
+            resource = getResources().get(0);
+        }
 	}
 	
 	@Override
@@ -66,6 +134,440 @@ public class FileServiceImpl implements FileService {
 		return _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
 	}
 	
+	
+	@Override
+	public void deleteResourceFile(UserI user, String projectId, String resourceId) {
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		
+		//step 2: set resource_ids
+		_resourceIds = setResourcesIds(resourceId, user, false);
+		
+		//Step 3: get resource data
+		getResourceData(user,_resourceIds );
+		
+		try {
+            if (resource == null || parent == null || security == null) {
+                throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "Unable to determine resource, parent, or security.");
+            }
+
+            if (!Permissions.canDelete(user,security)) {
+                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
+                        "User account doesn't have permission to modify this session.");
+            }
+            XFTItem item = resource.getItem();
+            if (item.isLocked() || !item.isActive() && !item.isQuarantine()) {
+                //cannot modify it if it isn't active
+                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
+                        "Item locked or is not active and not quarantined");
+            }
+
+            if (!(resource instanceof XnatResourcecatalog)) {
+                throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
+                        "File is not an instance of XnatResourcecatalog. Delete operation not supported.");
+            }
+
+            if (proj == null) {
+                if (parent.getItem().instanceOf("xnat:experimentData")) {
+                    proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+                } else if (security.getItem().instanceOf("xnat:experimentData")) {
+                    proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+                }
+            }
+
+            final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(), (XnatResourcecatalog) resource, proj.getId()
+            );
+            final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
+
+            if (entries.isEmpty()) {
+                //getResponse().setStatus(acceptNotFound ? Status.SUCCESS_NO_CONTENT : Status.CLIENT_ERROR_NOT_FOUND, "No matched files");
+                return;
+            }
+
+            PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user,
+                    security.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE));
+            try {
+                long catSize = catalogData.catRes.getFileSize() == null ? 0 : (Long) catalogData.catRes.getFileSize();
+                Map<CatEntryI, File> historyMap = new HashMap<>();
+                for (CatEntryI entry : entries) {
+                    CatalogUtils.CatalogEntryPathInfo info = new CatalogUtils.CatalogEntryPathInfo(entry,
+                            catalogData.catPath);
+                    historyMap.put(entry, new File(info.entryPathDest));
+                    catSize -= CatalogUtils.getCatalogEntrySize(entry);
+                }
+
+                int nremoved = entries.size();
+                int fileCount = (catalogData.catRes.getFileCount() == null) ? 0 :
+                        catalogData.catRes.getFileCount() - nremoved;
+
+                EventMetaI ci = work.buildEvent();
+                Map<String, Map<String, Integer>> auditSummary = new HashMap<>();
+                CatalogUtils.addAuditEntry(auditSummary, Integer.parseInt(ci.getEventId().toString()),
+                        Calendar.getInstance().getTime(), ChangeSummaryBuilderA.REMOVED, nremoved);
+
+                // Perform remove on the catalog bean
+                catalogData.catBean.getEntries_entry().removeAll(entries);
+
+                // Write updated bean to the catalog, maintain history if appropriate, and remove files if requested
+                CatalogUtils.saveUpdatedCatalog(catalogData, auditSummary, catSize, fileCount, ci, user,
+                        historyMap, !isQueryVariableFalse("removeFiles"));
+
+                if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
+                    XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+                            XftItemEventI.DELETE);
+                }
+            } finally {
+                WorkflowUtils.complete(work, work.buildEvent());
+            }
+        } catch (ClientException e) {
+            //getResponse().setStatus(e.getStatus(), e.getMessage());
+        } catch (Exception e) {
+           // getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+        }
+		
+	}
+	
+	
+	
+	private boolean isQueryVariableFalse(String string) {
+		return false;
+	}
+
+	@Override
+	public void createResourceFile(UserI user, MultipartHttpServletRequest request, String projectId, String resourceId, String requestRename,
+			String requestDesc, String requestFormat, String requestContent, String[] requestTags) {
+		//step 1: get project data
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+
+		//step 2: set resource_ids
+		_resourceIds = setResourcesIds(resourceId, user, false);
+		
+		//Step 3: get resource data
+		getResourceData(user,_resourceIds );
+		
+		//step 4: 
+		if (parent != null && security != null) {
+			try {
+				if (Permissions.canEdit(user, security)) {
+
+					verifyProjectIsNull();
+
+					final Object resourceIdentifier = verifyResourceIsNull();
+
+					final boolean overwrite = true; // isQueryVariableTrue("overwrite");
+					final boolean extract = true; // isQueryVariableTrue("extract");
+
+					PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
+
+					workflow = verifyAndGetWorkflow(workflow, user);
+
+					final boolean skipUpdateStats = false; // isQueryVariableFalse("update-stats");
+
+					boolean isNew = false;
+					if (workflow == null && !skipUpdateStats) {
+						isNew = true;
+						workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
+					}
+
+					final EventMetaI eventMeta;
+					if (workflow == null) {
+						eventMeta = EventUtils.DEFAULT_EVENT(user, null);
+					} else {
+						eventMeta = workflow.buildEvent();
+					}
+
+					final UpdateMeta updateMeta = new UpdateMeta(eventMeta, !(skipUpdateStats));
+
+					workflow= uploadFile(request, requestRename, overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, updateMeta, requestDesc, requestFormat, requestContent, requestTags, extract, isNew);
+					
+
+	                    if (StringUtils.isBlank(reference) && workflow != null && isNew) {
+	                        WorkflowUtils.complete(workflow, eventMeta);
+	                    }
+	                }
+	            } catch (IllegalArgumentException e) { // XNAT-2989
+	                //getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, e.getMessage());
+	                log.error("", e);
+	            } catch (Exception e) {
+	               // getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+	                log.error("", e);
+	            }
+	        }
+	}
+	
+	private PersistentWorkflowI uploadFile(MultipartHttpServletRequest request1, String requestRename, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, UpdateMeta updateMeta2, String requestDesc, String requestFormat, String requestContent, String[] requestTags, boolean extract, boolean isNew) throws Exception {
+		try {
+
+			 final List<FileWriterWrapperI> writers = getFileWriters(request1);
+                if (writers == null || writers.isEmpty()) {
+                   // final String method = getRequest().getMethod().toString();
+                   // final long   size   = getRequest().getEntity().getAvailableSize();
+                   // if (size == 0) {
+                        //getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "You tried to " + method + " to this service, but didn't provide any data (found request entity size of 0). Please check the format of your service request.");
+                    //} else {
+                       // getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "You tried to " + method + " a payload of " + CatalogUtils.formatSize(size) + " to this service, but didn't provide any data. If you think you sent data to upload, you can try to " + method + " with the query-string parameter inbody=true or use multipart/form-data encoding.");
+                   // }
+                   // return;
+                }
+
+			final ResourceModifierA resourceModifier = buildResourceModifier(overwrite, updateMeta, user);
+			if (!async || StringUtils.isBlank(reference)) {
+                    final List<String> duplicates = resourceModifier.addFile(writers, resourceIdentifier, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent,requestTags,user), extract);
+                    if (!overwrite && duplicates.size() > 0) {
+                        //getResponse().setStatus(Status.SUCCESS_OK);
+                        //getResponse().setEntity(new JSONObjectRepresentation(MediaType.TEXT_HTML, new JSONObject(ImmutableMap.of("duplicates", duplicates))));
+                        isNew = false;
+                    } else {
+                       // getResponse().setStatus(Status.SUCCESS_OK);
+                       // getResponse().setEntity(new StringRepresentation("", MediaType.TEXT_PLAIN));
+                    }
+
+				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
+					final UserProjectCache cache = XDAT.getContextService().getBeanSafely(UserProjectCache.class);
+					if (cache != null) {
+						cache.clearProjectCacheEntry(projectId);
+					}
+					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+				}
+			} else {
+				if (workflow == null) {
+					throw new Exception("Unexpected null workflow");
+				}
+
+				workflow.setStatus(PersistentWorkflowUtils.QUEUED);
+				WorkflowUtils.save(workflow, workflow.buildEvent());
+
+				final MoveStoredFileRequest request;
+				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
+					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent, requestTags, user), extract, projectId);
+				} else {
+					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent, requestTags, user), extract);
+				}
+				XDAT.sendJmsRequest(request);
+
+				// getResponse().setStatus(Status.SUCCESS_OK);
+				// getResponse().setEntity(new JSONObjectRepresentation(MediaType.TEXT_HTML, new
+				// JSONObject(ImmutableMap.of("workflowId", workflow.getWorkflowId()))));
+			}
+		} catch (Exception e) {
+			log.error("Error occurred while trying to POST file", e);
+			throw e;
+		}
+		return workflow;
+	}
+
+	
+	
+	private PersistentWorkflowI verifyAndGetWorkflow(PersistentWorkflowI workflow, UserI user) {
+		if (workflow == null && resource != null && "SNAPSHOTS".equals(resource.getLabel())) {
+            if (getSecurityItem() instanceof XnatExperimentdata) {
+                final Collection<? extends PersistentWorkflowI> workflows = PersistentWorkflowUtils.getOpenWorkflows(user, ((ArchivableItem) security).getId());
+                if (workflows != null && workflows.size() == 1) {
+                    workflow = (WrkWorkflowdata) CollectionUtils.get(workflows, 0);
+                    if (!"xnat_tools/AutoRun.xml".equals(workflow.getPipelineName())) {
+                        workflow = null;
+                    }
+                }
+            }
+        }
+		return workflow;
+	}
+
+	private Object verifyResourceIsNull() {
+		final Object resourceIdentifier;
+		 if (resource == null) {
+             if (getCatalogs().rows().size() > 0) {
+                 resourceIdentifier = getCatalogs().getFirstObject();
+             } else {
+                 if (!getResourceIds().isEmpty()) {
+                     resourceIdentifier = getResourceIds().get(0);
+                 } else {
+                     resourceIdentifier = null;
+                 }
+             }
+         } else {
+             resourceIdentifier = resource.getXnatAbstractresourceId();
+         }
+		return resourceIdentifier;
+	}
+
+	private void verifyProjectIsNull() throws ElementNotFoundException {
+		if (proj == null) {
+            if (parent.getItem().instanceOf("xnat:experimentData")) {
+                proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+            } else if (security.getItem().instanceOf("xnat:experimentData")) {
+                proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+            } else if (parent.getItem().instanceOf("xnat:subjectData")) {
+                proj = ((XnatSubjectdata) parent).getPrimaryProject(false);
+            } else if (security.getItem().instanceOf("xnat:subjectData")) {
+                proj = ((XnatSubjectdata) security).getPrimaryProject(false);
+            }
+        }
+	}
+
+         public void handleParam(final String key, final Object value) throws ClientException {
+
+         }
+
+         public List<FileWriterWrapperI> getFileWriters(final MultipartHttpServletRequest request) throws FileUploadException, ClientException, IOException {
+             return getFileWritersAndLoadParams(request, false);
+         }
+         public List<FileWriterWrapperI> getFileWritersAndLoadParams(final MultipartHttpServletRequest request, boolean useFileFieldName) throws FileUploadException, ClientException, IOException {
+             final List<FileWriterWrapperI> wrappers = new ArrayList<>();
+//             if (isQueryVariableTrue("inbody") || RequestUtil.isFileInBody(file)) {
+//                 if (entity != null && entity.getMediaType() != null && entity.getMediaType().getName().equals(MediaType.MULTIPART_FORM_DATA.getName())) {
+//                     getResponse().setStatus(Status.CLIENT_ERROR_NOT_ACCEPTABLE, "In-body File posts must include the file directly as the body of the message (not as part of multi-part form data).");
+//                     return null;
+//                 } else {
+//                     // NOTE: modified driveFileName here to return a name when content-type is null
+//                     final String fileName = StringUtils.defaultIfBlank(filepath, RequestUtil.deriveFileName("upload", entity, false));
+//
+//                     if (StringUtils.isBlank(fileName)) {
+//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, there is no filename specified.");
+//                     }
+//                     if (entity == null) {
+//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, the request entity is null.");
+//                     }
+//                     if (entity.getSize() < 1 && !entity.getMediaType().equals(MediaType.APPLICATION_ZIP)) {
+//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, the request entity size is " + entity.getSize() + " but the media type is not application/zip (i.e. streaming compressed upload).");
+//                     }
+//
+//                     wrappers.add(new FileWriterWrapper(entity, fileName));
+//                 }
+//             } else 
+             //if (RequestUtil.isMultiPartFormData(file)) {
+                 final DiskFileItemFactory factory = new DiskFileItemFactory();
+                 factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
+                 ServletFileUpload upload = new ServletFileUpload(factory);
+                 List<FileItem> items = upload.parseRequest(request);
+
+                 for (final FileItem item : items) {
+                     if (item.isFormField()) {
+                         // Load form field to passed parameters map
+                         String fieldName = item.getFieldName();
+                         String value = item.getString();
+                         if (fieldName.equals("reference")) {
+                             throw new FileUploadException("multi-part form posts may not be used to upload files via reference.");
+                         } else {
+                             handleParam(fieldName, TurbineUtils.escapeParam(value));
+                         }
+                         continue;
+                     }
+                     if (item.getName() == null) {
+                         throw new FileUploadException("multi-part form posts must contain the file name of the uploaded file.");
+                     }
+
+                     String fileName = item.getName();
+                     if (fileName.indexOf('\\') > -1) {
+                         fileName = fileName.substring(fileName.lastIndexOf('\\') + 1);
+                     }
+
+                     wrappers.add(new FileWriterWrapper(item, useFileFieldName ? item.getFieldName() : fileName));
+                 }
+            // } else {
+                 //String name = entity.getDownloadName();
+                 //log.debug(name);
+            // }
+
+             return wrappers;
+         }
+
+
+	public Integer getEventId() {
+        final String id = null;
+        		//getQueryVariable(EventUtils.EVENT_ID);
+        if (id != null) {
+            return Integer.valueOf(id);
+        } else {
+            return null;
+        }
+    }
+	
+	private void getResourceData(UserI user, List<String> _resourceIds) {
+		  try {
+	            if (!getResourceIds().isEmpty()) {
+	                final List<Integer> alreadyAdded = new ArrayList<>();
+	                if (hasCatalogs()) {
+	                    for (final Object[] row : getCatalogs().rows()) {
+	                        final Integer id    = (Integer) row[0];
+	                        final String  label = (String) row[1];
+	                        for (final String resourceId : _resourceIds) {
+	                            if (!alreadyAdded.contains(id) && (id.toString().equals(resourceId) || (label != null && label.equals(resourceId)))) {
+	                                final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
+	                                if (row.length == 7) {
+	                                    resource.setBaseURI((String) row[6]);
+	                                }
+	                                if (proj == null || Permissions.canReadProject(user, proj.getId())) {
+	                                    getResources().add(resource);
+	                                    alreadyAdded.add(id);
+	                                }
+	                            }
+	                        }
+	                    }
+	                }
+
+	                // if caller is asking for the files directly by resource ID (e.g. /experiments/{EXPT_ID}/resources/{RESOURCE_ID}/files),
+	                // the catalog will not be found by the superclass
+	                // (unless caller passes all=true, which seems clunky to require given that they are passing in the resource PK).
+	                // So here we provide an alternate path finding the resource
+	                // added check to make sure it's an number.  You can also reference resource labels here (not just pks).
+	                for (final String resourceId : getResourceIds()) {
+	                    try {
+	                        final Integer id = Integer.parseInt(resourceId);
+	                        if (!alreadyAdded.contains(id)) {
+	                            final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
+	                            if (resource != null) {
+	                                final XnatImageassessordata assessor = getAssessor((XnatResourcecatalog) resource);
+	                                if ((proj == null || Permissions.canReadProject(user, proj.getId())) && (assessor == null || Permissions.canRead(user, assessor))) {
+	                                    getResources().add(resource);
+	                                }
+	                            }
+	                        }
+	                    } catch (NumberFormatException e) {
+	                        // ignore... this is probably a resource label
+	                    }
+	                }
+	            }
+
+	            if (!getResources().isEmpty()) {
+	                resource = getResources().get(0);
+	            }
+
+	            //filePath = StringUtils.substringBefore(StringUtils.removeStart(getRequest().getResourceRef().getRemainingPart(), "/"), "?");
+
+	           // getVariants().addAll(VARIANTS);
+	        } catch (Exception e) {
+	            log.error("Error occurred while initializing FileList service", e);
+	            //getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e, "Error during service initialization");
+	        }
+		
+	}
+	
+	 @Nullable
+	    private XnatImageassessordata getAssessor(final @Nonnull XnatResourcecatalog resource) {
+	        try {
+	            final Matcher assessorUriMatcher = PATTERN_ASSESSOR_URI.matcher(resource.getUri());
+	            if (assessorUriMatcher.find()) {
+	                final String assessorId = assessorUriMatcher.group(1);
+	                if (StringUtils.isNotBlank(assessorId)) {
+	                    final XnatImageassessordata assessor = (XnatImageassessordata) XnatExperimentdata.getXnatExperimentdatasById(assessorId, Users.getAdminUser(), false);
+	                    if (assessor != null) {
+	                        return assessor;
+	                    }
+	                    final Matcher archiveUriMatcher = PATTERN_ARCHIVE_URI.matcher(resource.getUri());
+	                    if (archiveUriMatcher.find()) {
+	                        return (XnatImageassessordata) XnatExperimentdata.GetExptByProjectIdentifier(archiveUriMatcher.group(1), assessorId, Users.getAdminUser(), false);
+	                    }
+	                }
+	            }
+	        } catch (Exception e) {
+	            log.error("Error getting assessor object to check permissions.", e);
+	        }
+	        return null;
+	    }
+
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
 	        _user = user;
@@ -179,5 +681,20 @@ public class FileServiceImpl implements FileService {
 	private static final String BY_ID_WHERE_RESOURCE_ID  = "  abst.xnat_abstractresource_id = :resourceId ";
 
 	private final NamedParameterJdbcTemplate _template;
+	
+	//private static final List<Variant> VARIANTS             = Arrays.asList(new Variant(MediaType.APPLICATION_JSON), new Variant(MediaType.TEXT_HTML), new Variant(MediaType.TEXT_XML), new Variant(MediaType.IMAGE_JPEG));
+    private static final Pattern       PATTERN_ASSESSOR_URI = Pattern.compile("/assessors/([^/]+)", Pattern.CASE_INSENSITIVE);
+    private static final Pattern       PATTERN_ARCHIVE_URI  = Pattern.compile("/archive/([^/]+)");
+	
+	private String filePath = "";
+	private XnatAbstractresource resource = null;
+	private String reference;
+	private final boolean acceptNotFound = false;
+	private boolean delete = false;
+	private boolean async = false ;
+	private String[] notifyList = {};
+	
+
+	
 
 }

@@ -60,7 +60,7 @@ public class XnatTemplateUtil {
 
 	protected ArrayList<XnatExperimentdata> assesseds = new ArrayList<>();
 
-	String type = null;
+	protected String type = null;
 
 	protected ItemI parent = null;
 
@@ -530,7 +530,7 @@ public class XnatTemplateUtil {
 		return EventUtils.TYPE.WEB_FORM;
 	}
 
-	private String getAction() {
+	protected String getAction() {
 		return null;
 	}
 

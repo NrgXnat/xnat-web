@@ -5,19 +5,29 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Nonnull;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImageassessordata;
+import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xft.XFTTable;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
+import org.nrg.xnat.helpers.resource.direct.DirectResourceModifierBuilder;
+import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
+import org.nrg.xnat.helpers.resource.direct.ResourceModifierBuilderI;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -77,6 +87,10 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
 	protected NamedParameterJdbcTemplate getTemplate() {
 		return _template;
 	}
+	
+	protected boolean hasCatalogs() {
+		return _catalogs != null && _catalogs.size() > 0;
+	}
 
 	@Data
 	@Accessors(prefix = "_")
@@ -93,6 +107,67 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
 		private final String _projectId;
 	}
 
+	protected ResourceModifierA buildResourceModifier(final boolean overwrite, final EventMetaI ci, UserI user) throws Exception {
+        final XnatImagesessiondata assessed = assesseds.size() == 1 ? (XnatImagesessiondata) assesseds.get(0) : null;
+
+        //this should allow dependency injection - TO
+        final ResourceModifierBuilderI builder = new DirectResourceModifierBuilder();
+
+        if (!recons.isEmpty()) {
+            builder.setRecon(assessed, recons.get(0), type);
+        } else if (!scans.isEmpty()) {
+            builder.setScan(assessed, scans.get(0));
+        } else if (!expts.isEmpty()) {
+            final XnatExperimentdata expt = expts.get(0);
+            if (expt.getItem().instanceOf("xnat:imageAssessorData")) {
+                builder.setAssess(ObjectUtils.defaultIfNull(assessed, ((XnatImageassessordata) expt).getImageSessionData()), (XnatImageassessordata) expt, type);
+            } else {
+                builder.setExpt(ObjectUtils.defaultIfNull(proj, expt.getProjectData()), expt);
+            }
+        } else if (sub != null) {
+            builder.setSubject(proj, sub);
+        } else if (proj != null) {
+            builder.setProject(proj);
+        } else {
+            throw new Exception("Unknown resource");
+        }
+
+        return builder.buildResourceModifier(overwrite, user, ci);
+    }
+	
+	protected XnatResourceInfo buildResourceInfo(EventMetaI ci, String requestDesc, String requestFormat, String requestContent, String[] requestTags, UserI user ) {
+        final String description;
+        if (requestDesc != null) {
+            description = requestDesc;
+        } else {
+            description = null;
+        }
+
+        final String format;
+        if (requestFormat != null) {
+            format =requestFormat;
+        } else {
+            format = null;
+        }
+
+        final String content;
+        if (requestContent != null) {
+            content = requestContent;
+        } else {
+            content = null;
+        }
+
+        String[] tags;
+        if (requestTags != null) {
+            tags = requestTags;
+        } else {
+            tags = null;
+        }
+
+        Date d = EventUtils.getEventDate(ci, false);
+        return XnatResourceInfo.buildResourceInfo(description, format, content, tags, user, d, d, EventUtils.getEventId(ci));
+    }
+	
 	@Data
 	@Accessors(prefix = "_")
 	private static class PermittedResourcePredicate implements Predicate<ResourceMap> {
