@@ -2,11 +2,14 @@ package org.nrg.xnat.services.files;
 
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 public interface FileService {
 	
@@ -28,7 +31,7 @@ public interface FileService {
 
 	List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId);
 	
-	public void createResourceFile(UserI user, MultipartHttpServletRequest request, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags );
+	public void createResourceFile(UserI user,  HttpServletRequest request, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags );
 	
 	public void deleteResourceFile(UserI user,String projectId, String resourceId);
 }

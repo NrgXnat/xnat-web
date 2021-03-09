@@ -21,17 +21,21 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.fileupload.DefaultFileItem;
 import org.apache.commons.fileupload.DefaultFileItemFactory;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
 import org.apache.commons.fileupload.FileUploadException;
+import org.apache.commons.fileupload.disk.DiskFileItem;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.om.WrkWorkflowdata;
@@ -73,6 +77,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -235,7 +240,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 
 	@Override
-	public void createResourceFile(UserI user, MultipartHttpServletRequest request, String projectId, String resourceId, String requestRename,
+	public void createResourceFile(UserI user, HttpServletRequest request, String projectId, String resourceId, String requestRename,
 			String requestDesc, String requestFormat, String requestContent, String[] requestTags) {
 		//step 1: get project data
 		if(Objects.nonNull(projectId))
@@ -256,15 +261,15 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 					final Object resourceIdentifier = verifyResourceIsNull();
 
-					final boolean overwrite = true; // isQueryVariableTrue("overwrite");
-					final boolean extract = true; // isQueryVariableTrue("extract");
+					final boolean overwrite = true; //HC
+					final boolean extract = true;  //HC
 
 					PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
 
 					workflow = verifyAndGetWorkflow(workflow, user);
 
-					final boolean skipUpdateStats = false; // isQueryVariableFalse("update-stats");
-
+					final boolean skipUpdateStats = false; //HC
+					
 					boolean isNew = false;
 					if (workflow == null && !skipUpdateStats) {
 						isNew = true;
@@ -288,18 +293,15 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	                    }
 	                }
 	            } catch (IllegalArgumentException e) { // XNAT-2989
-	                //getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, e.getMessage());
 	                log.error("", e);
 	            } catch (Exception e) {
-	               // getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
 	                log.error("", e);
 	            }
 	        }
 	}
 	
-	private PersistentWorkflowI uploadFile(MultipartHttpServletRequest request1, String requestRename, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, UpdateMeta updateMeta2, String requestDesc, String requestFormat, String requestContent, String[] requestTags, boolean extract, boolean isNew) throws Exception {
+	private PersistentWorkflowI uploadFile(HttpServletRequest request1, String requestRename, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, UpdateMeta updateMeta2, String requestDesc, String requestFormat, String requestContent, String[] requestTags, boolean extract, boolean isNew) throws Exception {
 		try {
-
 			 final List<FileWriterWrapperI> writers = getFileWriters(request1);
                 if (writers == null || writers.isEmpty()) {
                    // final String method = getRequest().getMethod().toString();
@@ -314,14 +316,13 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 			final ResourceModifierA resourceModifier = buildResourceModifier(overwrite, updateMeta, user);
 			if (!async || StringUtils.isBlank(reference)) {
+				filePath = requestRename;
+				type = "out";
                     final List<String> duplicates = resourceModifier.addFile(writers, resourceIdentifier, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent,requestTags,user), extract);
                     if (!overwrite && duplicates.size() > 0) {
-                        //getResponse().setStatus(Status.SUCCESS_OK);
-                        //getResponse().setEntity(new JSONObjectRepresentation(MediaType.TEXT_HTML, new JSONObject(ImmutableMap.of("duplicates", duplicates))));
-                        isNew = false;
+                    	 isNew = false;
+                    	throw new ResourceAlreadyExistsException("duplicate file", "");
                     } else {
-                       // getResponse().setStatus(Status.SUCCESS_OK);
-                       // getResponse().setEntity(new StringRepresentation("", MediaType.TEXT_PLAIN));
                     }
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
@@ -411,38 +412,15 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
          }
 
-         public List<FileWriterWrapperI> getFileWriters(final MultipartHttpServletRequest request) throws FileUploadException, ClientException, IOException {
+         public List<FileWriterWrapperI> getFileWriters(HttpServletRequest request) throws FileUploadException, ClientException, IOException {
              return getFileWritersAndLoadParams(request, false);
          }
-         public List<FileWriterWrapperI> getFileWritersAndLoadParams(final MultipartHttpServletRequest request, boolean useFileFieldName) throws FileUploadException, ClientException, IOException {
+         public List<FileWriterWrapperI> getFileWritersAndLoadParams(HttpServletRequest request, boolean useFileFieldName) throws FileUploadException, ClientException, IOException {
              final List<FileWriterWrapperI> wrappers = new ArrayList<>();
-//             if (isQueryVariableTrue("inbody") || RequestUtil.isFileInBody(file)) {
-//                 if (entity != null && entity.getMediaType() != null && entity.getMediaType().getName().equals(MediaType.MULTIPART_FORM_DATA.getName())) {
-//                     getResponse().setStatus(Status.CLIENT_ERROR_NOT_ACCEPTABLE, "In-body File posts must include the file directly as the body of the message (not as part of multi-part form data).");
-//                     return null;
-//                 } else {
-//                     // NOTE: modified driveFileName here to return a name when content-type is null
-//                     final String fileName = StringUtils.defaultIfBlank(filepath, RequestUtil.deriveFileName("upload", entity, false));
-//
-//                     if (StringUtils.isBlank(fileName)) {
-//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, there is no filename specified.");
-//                     }
-//                     if (entity == null) {
-//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, the request entity is null.");
-//                     }
-//                     if (entity.getSize() < 1 && !entity.getMediaType().equals(MediaType.APPLICATION_ZIP)) {
-//                         throw new FileUploadException("In-body File posts must include the file directly as the body of the message. In this case, the request entity size is " + entity.getSize() + " but the media type is not application/zip (i.e. streaming compressed upload).");
-//                     }
-//
-//                     wrappers.add(new FileWriterWrapper(entity, fileName));
-//                 }
-//             } else 
-             //if (RequestUtil.isMultiPartFormData(file)) {
-                 final DiskFileItemFactory factory = new DiskFileItemFactory();
+                  DiskFileItemFactory factory = new DiskFileItemFactory();
                  factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
                  ServletFileUpload upload = new ServletFileUpload(factory);
                  List<FileItem> items = upload.parseRequest(request);
-
                  for (final FileItem item : items) {
                      if (item.isFormField()) {
                          // Load form field to passed parameters map
@@ -466,14 +444,8 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
                      wrappers.add(new FileWriterWrapper(item, useFileFieldName ? item.getFieldName() : fileName));
                  }
-            // } else {
-                 //String name = entity.getDownloadName();
-                 //log.debug(name);
-            // }
-
              return wrappers;
          }
-
 
 	public Integer getEventId() {
         final String id = null;
