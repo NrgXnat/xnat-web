@@ -35,6 +35,8 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.CatEntryI;
@@ -68,6 +70,7 @@ import org.nrg.xnat.services.files.FileService;
 import org.nrg.xnat.services.messaging.file.MoveStoredFileRequest;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
+import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,153 +91,201 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	@Autowired
 	public FileServiceImpl(final NamedParameterJdbcTemplate template) {
 		_template = template;
-		
-		if (!getResources().isEmpty()) {
-            resource = getResources().get(0);
-        }
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProject(UserI user, String projectId) {
+	public List<XnatResourcecatalog> findByProject(UserI user, String projectId) throws DataFormatException {
+		if(Objects.isNull(projectId))
+			throw new DataFormatException("Projectid is missing");
+		
 		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findBySubject(UserI user, String subjectId) {
+	public List<XnatResourcecatalog> findBySubject(UserI user, String subjectId) throws DataFormatException {
+		if(Objects.isNull(subjectId))
+			throw new DataFormatException("subjectId is missing");
+		
 		return _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectAndSubject(UserI user, String projectId, String subjectId) {
+	public List<XnatResourcecatalog> findByProjectAndSubject(UserI user, String projectId, String subjectId) throws DataFormatException {
+		if(Objects.isNull(projectId) && Objects.isNull(subjectId) )
+			throw new DataFormatException("either projectId or subjectId is missing");
+		
 		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectAndResource(UserI user, String projectId, Integer resourceId) {
+	public List<XnatResourcecatalog> findByProjectAndResource(UserI user, String projectId, Integer resourceId) throws DataFormatException {
+		if(Objects.isNull(projectId) && Objects.isNull(resourceId) )
+			throw new DataFormatException("either projectId or resourceId is missing");
 		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId) {
+	public List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId) throws DataFormatException {
+		if(Objects.isNull(subjectId) && Objects.isNull(resourceId) )
+			throw new DataFormatException("either subjectId or resourceId is missing");
+		
 		return _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByExperimentAndAssessors(UserI user, String experimentId, String assessorId) {
+	public List<XnatResourcecatalog> findByExperimentAndAssessors(UserI user, String experimentId, String assessorId) throws DataFormatException {
+		if(Objects.isNull(experimentId) && Objects.isNull(assessorId) )
+			throw new DataFormatException("either experimentId or assessorId is missing");
+		
 		return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user,String projectId, String subjectId, String experimentId, String assessedId) {
+	public List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException {
+		if(Objects.isNull(projectId) && Objects.isNull(subjectId)&& Objects.isNull(experimentId) && Objects.isNull(assessedId) )
+			throw new DataFormatException("either projectId or subjectId or experimentId or assessedId  is missing");
+		
 		return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByExperiment(UserI user, String experimentId) {
+	public List<XnatResourcecatalog> findByExperiment(UserI user, String experimentId) throws DataFormatException {
+		if(Objects.isNull(experimentId))
+			throw new DataFormatException("experimentId is missing");
+		
 		return _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
 	}
 
 	@Override
-	public List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) {
+	public List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) throws DataFormatException {
+		if(Objects.isNull(experimentId) && Objects.isNull(resourceId) )
+			throw new DataFormatException("either experimentId or resourceId is missing");
+		
 		return _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
 	}
 	
 	
 	@Override
-	public void deleteResourceFile(UserI user, String projectId, String resourceId) {
+	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception {
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
+		// step 1: get proj/sub/assesseds/expts/scans data
 		if(Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
-		
-		//step 2: set resource_ids
+		if(Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
+
+		// step 2: set resource_ids
 		_resourceIds = setResourcesIds(resourceId, user, false);
+
+		// Step 3: get resource data
+		XnatAbstractresource resource = null;
 		
-		//Step 3: get resource data
-		getResourceData(user,_resourceIds );
-		
+		resource= getResourceData(user, _resourceIds);
+
+		// Step 4: validate resource data
+		validateResource(user, resource);
+
+		// Step 5: validate project data
+		verifyProjIsNull();
+
+		// Step 6: get catalogData
+		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
+
+		// Step 7: get  cat Enttry
+		final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
+
+		if (entries.isEmpty())
+			throw new NotFoundException("Resource file not found");
+
+		// Step 8: get or create workflow data
+		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user, security.getItem(),newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE));
+
+		// Step 9: delete resource file
+		deleteResourceFiles(work, catalogData, entries, user);
+
+	}
+	
+	private void deleteResourceFiles(PersistentWorkflowI work, CatalogData catalogData, Collection<CatEntryI> entries, UserI user) throws Exception {
 		try {
-            if (resource == null || parent == null || security == null) {
-                throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "Unable to determine resource, parent, or security.");
+            long catSize = catalogData.catRes.getFileSize() == null ? 0 : (Long) catalogData.catRes.getFileSize();
+            Map<CatEntryI, File> historyMap = new HashMap<>();
+            for (CatEntryI entry : entries) {
+                CatalogUtils.CatalogEntryPathInfo info = new CatalogUtils.CatalogEntryPathInfo(entry,
+                        catalogData.catPath);
+                historyMap.put(entry, new File(info.entryPathDest));
+                catSize -= CatalogUtils.getCatalogEntrySize(entry);
             }
 
-            if (!Permissions.canDelete(user,security)) {
-                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
-                        "User account doesn't have permission to modify this session.");
+            int nremoved = entries.size();
+            int fileCount = (catalogData.catRes.getFileCount() == null) ? 0 :
+                    catalogData.catRes.getFileCount() - nremoved;
+
+            EventMetaI ci = work.buildEvent();
+            Map<String, Map<String, Integer>> auditSummary = new HashMap<>();
+            CatalogUtils.addAuditEntry(auditSummary, Integer.parseInt(ci.getEventId().toString()),
+                    Calendar.getInstance().getTime(), ChangeSummaryBuilderA.REMOVED, nremoved);
+
+            // Perform remove on the catalog bean
+            catalogData.catBean.getEntries_entry().removeAll(entries);
+
+            // Write updated bean to the catalog, maintain history if appropriate, and remove files if requested
+            CatalogUtils.saveUpdatedCatalog(catalogData, auditSummary, catSize, fileCount, ci, user,
+                    historyMap, !isQueryVariableFalse("removeFiles"));
+
+            if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
+                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+                        XftItemEventI.DELETE);
             }
-            XFTItem item = resource.getItem();
-            if (item.isLocked() || !item.isActive() && !item.isQuarantine()) {
-                //cannot modify it if it isn't active
-                throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
-                        "Item locked or is not active and not quarantined");
-            }
-
-            if (!(resource instanceof XnatResourcecatalog)) {
-                throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
-                        "File is not an instance of XnatResourcecatalog. Delete operation not supported.");
-            }
-
-            if (proj == null) {
-                if (parent.getItem().instanceOf("xnat:experimentData")) {
-                    proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
-                } else if (security.getItem().instanceOf("xnat:experimentData")) {
-                    proj = ((XnatExperimentdata) security).getPrimaryProject(false);
-                }
-            }
-
-            final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(), (XnatResourcecatalog) resource, proj.getId()
-            );
-            final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
-
-            if (entries.isEmpty()) {
-                //getResponse().setStatus(acceptNotFound ? Status.SUCCESS_NO_CONTENT : Status.CLIENT_ERROR_NOT_FOUND, "No matched files");
-                return;
-            }
-
-            PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user,
-                    security.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE));
-            try {
-                long catSize = catalogData.catRes.getFileSize() == null ? 0 : (Long) catalogData.catRes.getFileSize();
-                Map<CatEntryI, File> historyMap = new HashMap<>();
-                for (CatEntryI entry : entries) {
-                    CatalogUtils.CatalogEntryPathInfo info = new CatalogUtils.CatalogEntryPathInfo(entry,
-                            catalogData.catPath);
-                    historyMap.put(entry, new File(info.entryPathDest));
-                    catSize -= CatalogUtils.getCatalogEntrySize(entry);
-                }
-
-                int nremoved = entries.size();
-                int fileCount = (catalogData.catRes.getFileCount() == null) ? 0 :
-                        catalogData.catRes.getFileCount() - nremoved;
-
-                EventMetaI ci = work.buildEvent();
-                Map<String, Map<String, Integer>> auditSummary = new HashMap<>();
-                CatalogUtils.addAuditEntry(auditSummary, Integer.parseInt(ci.getEventId().toString()),
-                        Calendar.getInstance().getTime(), ChangeSummaryBuilderA.REMOVED, nremoved);
-
-                // Perform remove on the catalog bean
-                catalogData.catBean.getEntries_entry().removeAll(entries);
-
-                // Write updated bean to the catalog, maintain history if appropriate, and remove files if requested
-                CatalogUtils.saveUpdatedCatalog(catalogData, auditSummary, catSize, fileCount, ci, user,
-                        historyMap, !isQueryVariableFalse("removeFiles"));
-
-                if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-                    XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
-                            XftItemEventI.DELETE);
-                }
-            } finally {
-                WorkflowUtils.complete(work, work.buildEvent());
-            }
-        } catch (ClientException e) {
-            //getResponse().setStatus(e.getStatus(), e.getMessage());
-        } catch (Exception e) {
-           // getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e.getMessage());
+        } finally {
+            WorkflowUtils.complete(work, work.buildEvent());
         }
 		
 	}
-	
-	
-	
+
+	private void validateResource(UserI user, XnatAbstractresource resource) throws Exception {
+		if (resource == null || parent == null || security == null) {
+            throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "Unable to determine resource, parent, or security.");
+        }
+
+        if (!Permissions.canDelete(user,security)) {
+            throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "User account doesn't have permission to modify this session.");
+        }
+        XFTItem item = resource.getItem();
+        if (item.isLocked() || !item.isActive() && !item.isQuarantine()) {
+            //cannot modify it if it isn't active
+            throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
+                    "Item locked or is not active and not quarantined");
+        }
+
+        if (!(resource instanceof XnatResourcecatalog)) {
+            throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
+                    "File is not an instance of XnatResourcecatalog. Delete operation not supported.");
+        }
+		
+	}
+
+	private void verifyProjIsNull() throws ElementNotFoundException {
+		 if (proj == null) {
+             if (parent.getItem().instanceOf("xnat:experimentData")) {
+                 proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+             } else if (security.getItem().instanceOf("xnat:experimentData")) {
+                 proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+             }
+         }
+	}
+
 	private boolean isQueryVariableFalse(String string) {
 		return false;
 	}
@@ -250,7 +301,9 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		_resourceIds = setResourcesIds(resourceId, user, false);
 		
 		//Step 3: get resource data
-		getResourceData(user,_resourceIds );
+		XnatAbstractresource resource = null;
+		
+		resource = getResourceData(user,_resourceIds );
 		
 		//step 4: 
 		if (parent != null && security != null) {
@@ -259,14 +312,14 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 					verifyProjectIsNull();
 
-					final Object resourceIdentifier = verifyResourceIsNull();
+					final Object resourceIdentifier = verifyResourceIsNull(resource);
 
 					final boolean overwrite = true; //HC
 					final boolean extract = true;  //HC
 
 					PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
 
-					workflow = verifyAndGetWorkflow(workflow, user);
+					workflow = verifyAndGetWorkflow(workflow,resource, user);
 
 					final boolean skipUpdateStats = false; //HC
 					
@@ -361,7 +414,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 	
 	
-	private PersistentWorkflowI verifyAndGetWorkflow(PersistentWorkflowI workflow, UserI user) {
+	private PersistentWorkflowI verifyAndGetWorkflow(PersistentWorkflowI workflow, XnatAbstractresource resource, UserI user) {
 		if (workflow == null && resource != null && "SNAPSHOTS".equals(resource.getLabel())) {
             if (getSecurityItem() instanceof XnatExperimentdata) {
                 final Collection<? extends PersistentWorkflowI> workflows = PersistentWorkflowUtils.getOpenWorkflows(user, ((ArchivableItem) security).getId());
@@ -376,7 +429,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return workflow;
 	}
 
-	private Object verifyResourceIsNull() {
+	private Object verifyResourceIsNull(XnatAbstractresource resource) {
 		final Object resourceIdentifier;
 		 if (resource == null) {
              if (getCatalogs().rows().size() > 0) {
@@ -457,7 +510,8 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
         }
     }
 	
-	private void getResourceData(UserI user, List<String> _resourceIds) {
+	private XnatAbstractresource getResourceData(UserI user, List<String> _resourceIds) {
+		XnatAbstractresource resource = null;
 		  try {
 	            if (!getResourceIds().isEmpty()) {
 	                final List<Integer> alreadyAdded = new ArrayList<>();
@@ -467,12 +521,13 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	                        final String  label = (String) row[1];
 	                        for (final String resourceId : _resourceIds) {
 	                            if (!alreadyAdded.contains(id) && (id.toString().equals(resourceId) || (label != null && label.equals(resourceId)))) {
-	                                final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
+	                                final XnatAbstractresource xnatAbstractresource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
 	                                if (row.length == 7) {
-	                                    resource.setBaseURI((String) row[6]);
+	                                	xnatAbstractresource.setBaseURI((String) row[6]);
 	                                }
 	                                if (proj == null || Permissions.canReadProject(user, proj.getId())) {
-	                                    getResources().add(resource);
+	                                	getResources().clear();
+	                                    getResources().add(xnatAbstractresource);
 	                                    alreadyAdded.add(id);
 	                                }
 	                            }
@@ -489,11 +544,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	                    try {
 	                        final Integer id = Integer.parseInt(resourceId);
 	                        if (!alreadyAdded.contains(id)) {
-	                            final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
-	                            if (resource != null) {
-	                                final XnatImageassessordata assessor = getAssessor((XnatResourcecatalog) resource);
+	                            final XnatAbstractresource xnatAbstractresource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
+	                            if (xnatAbstractresource != null) {
+	                                final XnatImageassessordata assessor = getAssessor((XnatResourcecatalog) xnatAbstractresource);
 	                                if ((proj == null || Permissions.canReadProject(user, proj.getId())) && (assessor == null || Permissions.canRead(user, assessor))) {
-	                                    getResources().add(resource);
+	                                	getResources().clear();
+	                                	getResources().add(xnatAbstractresource);
 	                                }
 	                            }
 	                        }
@@ -508,13 +564,10 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	            }
 
 	            //filePath = StringUtils.substringBefore(StringUtils.removeStart(getRequest().getResourceRef().getRemainingPart(), "/"), "?");
-
-	           // getVariants().addAll(VARIANTS);
 	        } catch (Exception e) {
 	            log.error("Error occurred while initializing FileList service", e);
-	            //getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e, "Error during service initialization");
 	        }
-		
+		return resource;
 	}
 	
 	 @Nullable
@@ -659,7 +712,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
     private static final Pattern       PATTERN_ARCHIVE_URI  = Pattern.compile("/archive/([^/]+)");
 	
 	private String filePath = "";
-	private XnatAbstractresource resource = null;
+	//private XnatAbstractresource resource = null;
 	private String reference;
 	private final boolean acceptNotFound = false;
 	private boolean delete = false;

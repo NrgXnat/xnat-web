@@ -207,11 +207,21 @@ public class FileApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete resource file in the specified resource file"),
 	                   @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-	    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}/files", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+	    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files",
+	    							 "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}/files",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}/files",
+	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
+				     				 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
 	    public void deleteProject(@ApiParam("The ID of the resource file to be deleted") @PathVariable(required = false) final String projectId,
+	    		@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+	    		@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+	    		@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
+	    		@ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
+	    		@ApiParam(value = "The label of the type.") @RequestParam(required = false) final String type,
 	    		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId) throws Exception {
 	        log.debug("Controller Api- Delete project {}", projectId);
-	        _fileService.deleteResourceFile(getSessionUser(), projectId, resourceId);
+	        _fileService.deleteResourceFile(getSessionUser(), projectId,subjectId,experimentId,assessorId,scanId,type, resourceId);
 	    }
 	
 	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = void.class)
@@ -219,7 +229,8 @@ public class FileApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}/files",
+    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files"},
+    
                         consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
