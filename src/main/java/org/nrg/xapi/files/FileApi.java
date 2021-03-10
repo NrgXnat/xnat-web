@@ -233,50 +233,8 @@ public class FileApi extends AbstractXapiProjectRestController {
     		@ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final String []  requestTags) 
     		throws Exception {
         log.debug("Controller Api- file project: {}", projectId);
-        DiskFileItemFactory factory = new DiskFileItemFactory();
-        factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
-        ServletFileUpload upload = new ServletFileUpload(factory);
-        List<FileItem> items = upload.parseRequest(request);
          _fileService.createResourceFile(getSessionUser(), request, projectId, resourceId, requestRename, requestDesc, requestFormat, requestContent, requestTags);
     }
 	
-	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = void.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created project."),
-                   @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
-                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
-                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "/projects/upload",
-                        consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
-    public void createFile(@ApiParam("The resource file to be created.")  HttpServletRequest request) 
-    		throws Exception {
-        log.debug("Controller Api- file project: {}", request);
-        DiskFileItemFactory factory = new DiskFileItemFactory();
-        factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
-        ServletFileUpload upload = new ServletFileUpload(factory);
-        List<FileItem> items = upload.parseRequest(request);
-        System.out.println("FIle Upload --"+ items);
-	}
-	
-	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = void.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created project."),
-                   @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
-                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
-                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = "/projects/upload1",
-                        consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
-    public void createFiles(@ApiParam("The resource file to be created.")  HttpServletRequest request) 
-    		throws Exception {
-        log.debug("Controller Api- file project: {}", request);
-        DiskFileItemFactory factory = new DiskFileItemFactory();
-        factory.setRepository(new File(System.getProperty("java.io.tmpdir")));
-        ServletFileUpload upload = new ServletFileUpload(factory);
-        List<FileItem> items = upload.parseRequest(request);
-        System.out.println("FIle Upload --"+ items);
-	}
-
 	private final FileService _fileService;
 }
