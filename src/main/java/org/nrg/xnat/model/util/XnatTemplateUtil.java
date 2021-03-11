@@ -541,10 +541,20 @@ public class XnatTemplateUtil {
 	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll, UserI user) throws Exception {
 		checkResourceIDs(resourceIds);
 
-		final StringBuilder query = new StringBuilder();
+		 StringBuilder query = new StringBuilder();
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
 
+		query = getFinalQuery(resourceIds, includeURI, allowAll, user, hasResourceIds, isInResource);
+
+		final String completedQuery = query.toString();
+		log.debug("Loading catalog for user '{}' using query: {}", user.getUsername(), completedQuery);
+		return XFTTable.Execute(completedQuery, user.getDBName(), user.getUsername());
+	}
+
+	public StringBuilder getFinalQuery(List<String> resourceIds, boolean includeURI, boolean allowAll, UserI user,
+			boolean hasResourceIds, boolean isInResource) {
+		StringBuilder query = new StringBuilder();
 		if (!recons.isEmpty()) {
 			security = assesseds.get(0);
 			parent = recons.get(0);
@@ -789,10 +799,7 @@ public class XnatTemplateUtil {
 			query.append(
 					", 'resources'::TEXT AS category, NULL::TEXT AS cat_id, ' '::TEXT AS cat_desc FROM xnat_abstractresource abst LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id WHERE xnat_abstractresource_id IS NULL");
 		}
-
-		final String completedQuery = query.toString();
-		log.debug("Loading catalog for user '{}' using query: {}", user.getUsername(), completedQuery);
-		return XFTTable.Execute(completedQuery, user.getDBName(), user.getUsername());
+		return query;
 	}
 
 	private boolean isQueryVariableTrue(String string) {

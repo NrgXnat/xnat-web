@@ -111,8 +111,21 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI sessionUser, String projectId, String subjectId, String experimentId) {
-		return null;
+	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId) {
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
+		
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		if(Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		
+		return getXnatAgstractResources(proj, sub, expts,assesseds, user);
 	}
 
 	
@@ -143,8 +156,42 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user, String projectId, String subjectId, String experimentId, String assessedId) {
-		return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new ResourceRowMapper(user));
+	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user, String projectId, String subjectId, String experimentId, String assessorId) {
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		if(Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		
+		return getXnatAgstractResources(proj, sub, expts,assesseds, user);
+		//return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessorId), new ResourceRowMapper(user));
+	}
+	
+	private List<XnatAbstractresource> getXnatAgstractResources(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, UserI user) {
+		 return _template.query(getSqlQuery(proj, sub , expts,assesseds, user), new ResourceRowMapper(user));
+	}
+
+	private String getSqlQuery(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, UserI user) {
+		List<String> resourceIds = null;
+		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
+		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
+		StringBuilder query = new StringBuilder();
+		 if (assesseds.size() > 0 || expts.size() > 0 || sub != null || proj != null) {
+	            try {
+	                 query = getFinalQuery(null, false, true, user, hasResourceIds, isInResource);
+	            } catch (Exception e) {
+	                log.error("", e);
+	            }
+	        }
+		return query.toString();
 	}
 	
 	@Override
