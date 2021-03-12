@@ -145,14 +145,6 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         return new MappingJackson2HttpMessageConverter(_objectMapper);
     }
 
-    @Bean(name = "multipartResolver")
-    public CommonsMultipartResolver getResolver() throws IOException {
-        CommonsMultipartResolver resolver = new CommonsMultipartResolver();
-        // no limit
-        resolver.setMaxUploadSize(-1);
-        resolver.setResolveLazily(true);
-        return resolver;
-    }
     @Bean
     public AsyncTaskExecutor asyncTaskExecutor() {
         final int     corePoolSize           = _preferences.getCorePoolSize();

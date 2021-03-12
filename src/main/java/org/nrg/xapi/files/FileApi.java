@@ -4,48 +4,25 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileItemFactory;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.FileItemStream;
-import org.apache.commons.fileupload.FileUpload;
-import org.apache.commons.fileupload.FileUploadBase;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.files.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -234,7 +211,7 @@ public class FileApi extends AbstractXapiProjectRestController {
                         consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
-    public void createResourceFile(@ApiParam("The resource file to be created.")  HttpServletRequest request,
+    public void createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
     		@ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
     		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
     		@ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
@@ -244,7 +221,8 @@ public class FileApi extends AbstractXapiProjectRestController {
     		@ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final String []  requestTags) 
     		throws Exception {
         log.debug("Controller Api- file project: {}", projectId);
-         _fileService.createResourceFile(getSessionUser(), request, projectId, resourceId, requestRename, requestDesc, requestFormat, requestContent, requestTags);
+       
+         _fileService.createResourceFile(getSessionUser(),file , projectId, resourceId, requestRename, requestDesc, requestFormat, requestContent, requestTags);
     }
 	
 	private final FileService _fileService;

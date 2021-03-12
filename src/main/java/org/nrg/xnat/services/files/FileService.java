@@ -32,7 +32,7 @@ public interface FileService {
 
 	List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) throws DataFormatException;
 	
-	public void createResourceFile(UserI user,  HttpServletRequest request, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags );
+	public void createResourceFile(UserI user,  MultipartFile file, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags ) throws Exception;
 	
 	public void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception;
 }

@@ -448,7 +448,8 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 			return null;
 		}
 	}
-	private String getQueryVariable(String string) {
+	 
+	protected String getQueryVariable(String string) {
 		return null;
 	}
 
