@@ -82,7 +82,7 @@ public class ScanServiceImpl implements ScanService {
 	
 	@Override
 	public List<XnatImagescandata> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId,String experimentId) {
-		return null;
+		return _template.query(PROJECT_SUBJECT_EXPERIMENT_SCAN_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId), new ImageScanRowMapper(user));
 	}
 
 	@Override
@@ -386,6 +386,8 @@ public class ScanServiceImpl implements ScanService {
 
 	private  final String ASSESSED_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
 	
+	private  final String PROJECT_SUBJECT_EXPERIMENT_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_PROJECT_ID_AND_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
+	
 	
 	private  final String ASSESSED_AND_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 + BY_SCAN_ID_WHERE ;
 
@@ -393,14 +395,27 @@ public class ScanServiceImpl implements ScanService {
 											 "FROM xnat_imagescandata scan\n" + 
 											 "LEFT JOIN xnat_experimentData session ON scan.image_session_id=session.id ";
 	
-	private static final String EXPERIMENT_SCAN_SUB_QUERY_1	= "SELECT xnat_imageScanData.xnat_imagescandata_id , xnat_imageScanData.id , xnat_imageScanData.type , \n" + 
-			   " xnat_imageScanData.quality , table1.element_name ,  xnat_imageScanData.note , xnat_imageScanData.series_description  \n" + 
-			   " FROM (SELECT SEARCH.* FROM (SELECT DISTINCT ON (xnat_imageScanData26) * \n" + 
-			   " FROM (SELECT xnat_imageScanData.xnat_imagescandata_id AS xnat_imageScanData26, \n" + 
-			   " xnat_imageScanData.image_session_id AS xnat_imageScanData0 FROM xnat_imageScanData xnat_imageScanData) ";
+//	private static final String EXPERIMENT_SCAN_SUB_QUERY_1	= "SELECT xnat_imageScanData.xnat_imagescandata_id , xnat_imageScanData.id , xnat_imageScanData.type , \n" + 
+//			   " xnat_imageScanData.quality , table1.element_name ,  xnat_imageScanData.note , xnat_imageScanData.series_description  \n" + 
+//			   " FROM (SELECT SEARCH.* FROM (SELECT DISTINCT ON (xnat_imageScanData26) * \n" + 
+//			   " FROM (SELECT xnat_imageScanData.xnat_imagescandata_id AS xnat_imageScanData26, \n" + 
+//			   " xnat_imageScanData.image_session_id AS xnat_imageScanData0 FROM xnat_imageScanData xnat_imageScanData) ";
 			   
-   private static final String EXPERIMENT_SCAN_SUB_QUERY_2 = "  SECURITY LEFT JOIN xnat_imageScanData SEARCH ON SECURITY.xnat_imageScanData26=SEARCH.xnat_imagescandata_id) xnat_imageScanData  \n" + 
-			   " LEFT JOIN xdat_meta_element table1 ON xnat_imageScanData.extension=table1.xdat_meta_element_id";
+//   private static final String EXPERIMENT_SCAN_SUB_QUERY_2 = "  SECURITY LEFT JOIN xnat_imageScanData SEARCH ON SECURITY.xnat_imageScanData26=SEARCH.xnat_imagescandata_id) xnat_imageScanData  \n" + 
+//			   " LEFT JOIN xdat_meta_element table1 ON xnat_imageScanData.extension=table1.xdat_meta_element_id";
+   
+   private static final String EXPERIMENT_SCAN_SUB_QUERY_1 = "SELECT xnat_imageScanData.xnat_imagescandata_id ,\n" + 
+   															 "xnat_imageScanData.id , xnat_imageScanData.type, \n" + 
+   															 "xnat_imageScanData.quality , table1.element_name , \n" + 
+   															 "xnat_imageScanData.note, xnat_imageScanData.project,\n" + 
+   															 "xnat_imageScanData.series_description \n" + 
+   															 "FROM (SELECT SEARCH.* FROM (SELECT DISTINCT ON (xnat_imagescandata_id)* FROM (SELECT xnat_imageScanData.xnat_imagescandata_id AS xnat_imagescandata_id, \n" + 
+   															 "xnat_imageScanData.image_session_id AS image_session_id, xnat_imageScanData.project as project FROM xnat_imageScanData xnat_imageScanData) ";
+   
+   private static final String EXPERIMENT_SCAN_SUB_QUERY_2 = "  SECURITY LEFT JOIN xnat_imageScanData SEARCH ON SECURITY.xnat_imagescandata_id=SEARCH.xnat_imagescandata_id)xnat_imageScanData   \n" + 
+   		"LEFT JOIN xdat_meta_element table1 ON xnat_imageScanData.extension=table1.xdat_meta_element_id";
+   
+   private static final String BY_PROJECT_ID_AND_ASSESSED_ID_WHERE = " SECURITY WHERE  (image_session_id= :experimentId) AND  (image_session_id= :experimentId) AND (project = :projectId) )";
 	
 	
 	private final NamedParameterJdbcTemplate _template;

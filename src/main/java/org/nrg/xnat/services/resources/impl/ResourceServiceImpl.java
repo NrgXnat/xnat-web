@@ -112,20 +112,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId) {
-		proj = null;
-		sub = null;
-		expts = new ArrayList<>();
-		assesseds = new ArrayList<>();
-		scans = new ArrayList<>();
-		
-		if(Objects.nonNull(projectId))
-			proj = getXnatProjectdata(projectId, user);
-		if(Objects.nonNull(subjectId))
-			sub = getXnatSubjectdata(subjectId, user, proj);
-		if(Objects.nonNull(experimentId)) 
-			expts = getXnatExperimentData(experimentId, user,assesseds, type);
-		
-		return getXnatAgstractResources(proj, sub, expts,assesseds, user);
+		return getXnatAbstractResourceData(user, projectId, subjectId, experimentId,null,null, null);
 	}
 
 	
@@ -156,11 +143,21 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user, String projectId, String subjectId, String experimentId, String assessorId) {
+	public List<XnatAbstractresource> findByProjectAndSubjectAndExperimentAndScans(UserI user, String projectId, String subjectId, String assessorId, String scanId) {
+		return getXnatAbstractResourceData(user, projectId, subjectId, null, assessorId, scanId, null);
+	}
+	
+	@Override
+	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) {
+		return getXnatAbstractResourceData(user, projectId, subjectId, experimentId, assessorId, null, type);
+	}
+	
+	public List<XnatAbstractresource> getXnatAbstractResourceData(UserI user, String projectId, String subjectId, String experimentId, String assessorId,String scanId, String type){
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
 		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
 		
 		if(Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
@@ -170,21 +167,22 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 			assesseds = getXnatAssessordata(assessorId, user, proj);
 		if(Objects.nonNull(experimentId)) 
 			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
 		
-		return getXnatAgstractResources(proj, sub, expts,assesseds, user);
-		//return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessorId), new ResourceRowMapper(user));
+		return getXnatAbstractResources(proj, sub, expts,assesseds,scans,user);
 	}
 	
-	private List<XnatAbstractresource> getXnatAgstractResources(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, UserI user) {
-		 return _template.query(getSqlQuery(proj, sub , expts,assesseds, user), new ResourceRowMapper(user));
+	private List<XnatAbstractresource> getXnatAbstractResources(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
+		 return _template.query(getSqlQuery(proj, sub , expts,assesseds,scans, user), new ResourceRowMapper(user));
 	}
 
-	private String getSqlQuery(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, UserI user) {
+	private String getSqlQuery(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		List<String> resourceIds = null;
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
 		StringBuilder query = new StringBuilder();
-		 if (assesseds.size() > 0 || expts.size() > 0 || sub != null || proj != null) {
+		 if (assesseds.size() > 0 || expts.size() > 0 || scans.size() > 0 || sub != null || proj != null) {
 	            try {
 	                 query = getFinalQuery(null, false, true, user, hasResourceIds, isInResource);
 	            } catch (Exception e) {

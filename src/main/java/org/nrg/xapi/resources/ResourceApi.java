@@ -210,7 +210,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessedId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	@XapiRequestMapping(value = "/experiments/{assessedId}/assessors/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatAbstractresource>> getResourceByexperimentIdAndAssessed(
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
 			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId )
@@ -246,13 +246,32 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
-	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	@XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources",
+								 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{type}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public ResponseEntity<List<XnatAbstractresource>> getByIdAndProjectAndSubjectAndExperimentAndAssessors(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
-			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId)throws Exception {
+			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId,
+			@ApiParam(value = "The type string.") @PathVariable(required = false) final String type)throws Exception {
 		log.debug("Controller Api- get resources by  projectId");
-		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByIdAndProjectAndSubjectAndExperimentAndAssessors(getSessionUser(),projectId, subjectId, experimentId, assessedId);
+		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByIdAndProjectAndSubjectAndExperimentAndAssessors(getSessionUser(),projectId, subjectId, experimentId, assessedId,type);
+		if (xnatAbstractresources == null) {
+			throw new NotFoundException("No resource with projectId and subjectId  was found.");
+		}
+		return new ResponseEntity<>(xnatAbstractresources, HttpStatus.OK);
+	}
+	
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified  projectId and subjectId", response = XnatAbstractresource.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
+	@ApiResponse(code = 404, message = "The requested resource wasn't found."),
+	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public ResponseEntity<List<XnatAbstractresource>> getResourceByProjectAndSubjectAndExperimentAndScans(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId,
+			@ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final String scanId)throws Exception {
+		log.debug("Controller Api- get resources by  projectId");
+		List<XnatAbstractresource> xnatAbstractresources = _resourceService.findByProjectAndSubjectAndExperimentAndScans(getSessionUser(), projectId, subjectId, assessedId, scanId);
 		if (xnatAbstractresources == null) {
 			throw new NotFoundException("No resource with projectId and subjectId  was found.");
 		}
