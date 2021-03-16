@@ -21,7 +21,7 @@ public interface ScanService {
 
 	public List<XnatImagescandata> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId);
 
-	public XnatImagescandata findByProjectAndSubjectAndExperimentAndScan(UserI user, String projectId, String subjectId, String experimentId, String scanId);
+	public XnatImagescandata findByProjectAndSubjectAndExperimentAndScan(UserI user, String projectId, String subjectId, String experimentId, Integer scanId);
 
 	public XnatImagescandata create(UserI user, String projectId, String subjectId, String assessedId, XnatImagescandata scan) throws NotFoundException;
 

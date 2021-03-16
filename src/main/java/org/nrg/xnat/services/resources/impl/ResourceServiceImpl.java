@@ -133,12 +133,15 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user, String experimentId, String assessedId ) {
-		return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE   , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId), new ResourceRowMapper(user));
+	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) {
+		if(Objects.nonNull(type) && !type.isEmpty())
+			return getXnatAbstractResourceData(user, null, null, experimentId, assessorId, null, type);
+		else
+			return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE   , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessorId), new ResourceRowMapper(user));
 	}
 	
 	@Override
-	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, Integer resourceId) {
+	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) {
 		return _template.queryForObject(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE + AND_WHERE + BY_WHERE_RESOURCE  , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId).addValue("resourceId", resourceId), new ResourceRowMapper(user));	
 	}
 	

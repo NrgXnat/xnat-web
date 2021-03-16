@@ -86,8 +86,8 @@ public class ScanServiceImpl implements ScanService {
 	}
 
 	@Override
-	public XnatImagescandata findByProjectAndSubjectAndExperimentAndScan(UserI user, String projectId, String subjectId, String experimentId, String scanId) {
-		return null;
+	public XnatImagescandata findByProjectAndSubjectAndExperimentAndScan(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) {
+		return  _template.queryForObject(PROJECT_SUBJECT_EXPERIMENT_SCAN_WITH_SCAN_ID_QUERY_, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId).addValue("scanId", scanId), new ImageScanRowMapper(user));
 	}
 	
 	
@@ -388,6 +388,8 @@ public class ScanServiceImpl implements ScanService {
 	
 	private  final String PROJECT_SUBJECT_EXPERIMENT_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_PROJECT_ID_AND_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
 	
+	private  final String PROJECT_SUBJECT_EXPERIMENT_SCAN_WITH_SCAN_ID_QUERY_ = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_PROJECT_ID_AND_ASSESSED_ID_AND_SCAN_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 ;
+	
 	
 	private  final String ASSESSED_AND_SCAN_QUERY = EXPERIMENT_SCAN_SUB_QUERY_1 + BY_ASSESSED_ID_WHERE +  EXPERIMENT_SCAN_SUB_QUERY_2 + BY_SCAN_ID_WHERE ;
 
@@ -417,6 +419,7 @@ public class ScanServiceImpl implements ScanService {
    
    private static final String BY_PROJECT_ID_AND_ASSESSED_ID_WHERE = " SECURITY WHERE  (image_session_id= :experimentId) AND  (image_session_id= :experimentId) AND (project = :projectId) )";
 	
+   private static final String BY_PROJECT_ID_AND_ASSESSED_ID_AND_SCAN_ID_WHERE = " SECURITY WHERE  (image_session_id= :experimentId) AND  (image_session_id= :experimentId) AND (project = :projectId)  AND (xnat_imagescandata_id = :scanId) )";
 	
 	private final NamedParameterJdbcTemplate _template;
 

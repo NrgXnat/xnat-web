@@ -31,9 +31,9 @@ public interface ResourceService {
 
 	public XnatAbstractresource findByIdAndSubject(UserI sessionUser, Integer resourceId, String subjectId);
 
-	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user,String experimentId, String assessedId);
+	public List<XnatAbstractresource> findResourceByexperimentIdAndAssessedId(UserI user,String experimentId, String assessedId, String type);
 
-	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, Integer resourceId);
+	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, String type, Integer resourceId);
 
 	public List<XnatAbstractresource> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId, String type);
 

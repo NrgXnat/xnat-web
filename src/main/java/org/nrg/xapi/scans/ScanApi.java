@@ -125,7 +125,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	public ResponseEntity<XnatImagescandata> getScansByProjectAndSubjectAndExperiment(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
-			@ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final String scanId) throws Exception {
+			@ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final Integer scanId) throws Exception {
 		log.debug("Controller Api- get scans");
 		XnatImagescandata xnatImagescandata = _scanService.findByProjectAndSubjectAndExperimentAndScan(getSessionUser(),projectId,subjectId , experimentId, scanId);
 		if (xnatImagescandata == null) {
