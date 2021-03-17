@@ -15,7 +15,7 @@ public interface ResourceService {
 
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperiment(final UserI user, final String projectId, final String subjectId, final String experimentId);
 	
-	public List<XnatAbstractresource> findResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId);
+	public List<XnatAbstractresource> findResourceByExperimentAndScan(final UserI user, final String assessedId, final String scanId) throws Exception;
 	
 	public List<XnatAbstractresource> findByProject(final UserI user, final String projectId);
 	

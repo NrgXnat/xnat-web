@@ -80,14 +80,16 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	@Override
-	public List<XnatAbstractresource> findResourceByExperimentAndScan(UserI user, String assessedId, String scanId) {
-		XnatTemplateUtil xnatTemplateUtil =new XnatTemplateUtil();
-		List<XnatAbstractresource> xnatAbstractresources;
-		ArrayList<XnatExperimentdata> assesseds = xnatTemplateUtil.getXnatAssessordata(assessedId, user,null);
-		ArrayList<XnatImagescandata> scans = xnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
-		String query = XnatTemplateUtil.getQuery(scans,assesseds, null);
-		 xnatAbstractresources = _template.query(query,  new ResourceRowMapper(user));
-		 return xnatAbstractresources;
+	public List<XnatAbstractresource> findResourceByExperimentAndScan(UserI user, String assessorId, String scanId) throws Exception {
+		return getXnatAbstractResourceData(user, null, null, null, assessorId, scanId, null);
+		
+//		XnatTemplateUtil xnatTemplateUtil =new XnatTemplateUtil();
+//		List<XnatAbstractresource> xnatAbstractresources;
+//		ArrayList<XnatExperimentdata> assesseds = xnatTemplateUtil.getXnatAssessordata(assessorId, user,null);
+//		ArrayList<XnatImagescandata> scans = xnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
+//		String query = XnatTemplateUtil.getQuery(scans,assesseds, null);
+//		 xnatAbstractresources = _template.query(query,  new ResourceRowMapper(user));
+//		 return xnatAbstractresources;
 	}
 	
 	@Override
@@ -182,6 +184,20 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 
 	private String getSqlQuery(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		List<String> resourceIds = null;
+		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
+		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
+		StringBuilder query = new StringBuilder();
+		 if (assesseds.size() > 0 || expts.size() > 0 || scans.size() > 0 || sub != null || proj != null) {
+	            try {
+	                 query = getFinalQuery(null, false, true, user, hasResourceIds, isInResource);
+	            } catch (Exception e) {
+	                log.error("", e);
+	            }
+	        }
+		return query.toString();
+	}
+	
+	private String getSqlQueryWithResourceIds(List<String> resourceIds, XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
 		StringBuilder query = new StringBuilder();

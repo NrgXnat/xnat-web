@@ -380,7 +380,7 @@ public class ScanServiceImpl implements ScanService {
 	private static final String GROUP_BY = " GROUP BY scan.type, scan.xnat_imagescandata_id  ORDER BY scan.type";
 	
 	
-	private static final String BY_ASSESSED_ID_WHERE =" SECURITY WHERE (( (xnat_imageScanData0= :assessedId)) AND ( (xnat_imageScanData0= :assessedId)))) ";
+	private static final String BY_ASSESSED_ID_WHERE =" SECURITY WHERE (( (image_session_id= :assessedId)) AND ( (image_session_id= :assessedId)))) ";
 	
 	private static final String BY_SCAN_ID_WHERE ="  WHERE xnat_imageScanData.xnat_imagescandata_id= :scanId";
 
