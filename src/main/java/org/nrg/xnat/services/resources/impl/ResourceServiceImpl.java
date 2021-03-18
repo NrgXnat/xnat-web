@@ -143,10 +143,31 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) {
-		return _template.queryForObject(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE + AND_WHERE + BY_WHERE_RESOURCE  , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId).addValue("resourceId", resourceId), new ResourceRowMapper(user));	
+	public XnatAbstractresource findResourceByexperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws Exception {
+		if(Objects.nonNull(type) && !type.isEmpty())
+			return getXnatResource(user, experimentId, assessedId, type, resourceId);
+		else 
+			return _template.queryForObject(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE + AND_WHERE + BY_WHERE_RESOURCE  , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId).addValue("resourceId", resourceId), new ResourceRowMapper(user));	
 	}
 	
+	private XnatAbstractresource getXnatResource(UserI user, String experimentId, String assessorId, String type, Integer resourceId) throws Exception {
+		
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		
+		String id = String.valueOf(resourceId);
+		
+		_resourceIds = setResourcesIds(id, user, false);
+		
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		
+		 return _template.queryForObject(getSqlQueryWithResourceIds(_resourceIds, null, null, expts, assesseds, null, user), new MapSqlParameterSource(),new ResourceRowMapper(user));
+		
+	}
+
 	@Override
 	public List<XnatAbstractresource> findByProjectAndSubjectAndExperimentAndScans(UserI user, String projectId, String subjectId, String assessorId, String scanId) {
 		return getXnatAbstractResourceData(user, projectId, subjectId, null, assessorId, scanId, null);
@@ -203,7 +224,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 		StringBuilder query = new StringBuilder();
 		 if (assesseds.size() > 0 || expts.size() > 0 || scans.size() > 0 || sub != null || proj != null) {
 	            try {
-	                 query = getFinalQuery(null, false, true, user, hasResourceIds, isInResource);
+	                 query = getFinalQuery(resourceIds, false, true, user, hasResourceIds, isInResource);
 	            } catch (Exception e) {
 	                log.error("", e);
 	            }
