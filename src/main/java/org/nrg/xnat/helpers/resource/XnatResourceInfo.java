@@ -11,18 +11,23 @@ package org.nrg.xnat.helpers.resource;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xft.security.UserI;
+import org.springframework.core.io.InputStreamResource;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.*;
 
 public class XnatResourceInfo implements Serializable {
     private static final long serialVersionUID = 42L;
-	private String description,format,content=null;
+	private String description,format,content, fileName, rename=null;
+	private Long fileSize;
 	private Number event_id=null;
 	private List<String> tags= new ArrayList<>();
 	private Map<String,String> meta= new HashMap<>();
 	private final Date lastModified,created;
 	private final UserI user;
+	private InputStreamResource resource;
+	private File file;
 	
 	public Date getLastModified() {
 		return lastModified;
@@ -72,6 +77,37 @@ public class XnatResourceInfo implements Serializable {
 		this.tags.add(tag);
 	}
 	
+	public String getFileName() {
+		return fileName;
+	}
+	public void setFileName(String fileName) {
+		this.fileName = fileName;
+	}
+	public String getRename() {
+		return rename;
+	}
+	public void setRename(String rename) {
+		this.rename = rename;
+	}
+	public Long getFileSize() {
+		return fileSize;
+	}
+	public void setFileSize(Long fileSize) {
+		this.fileSize = fileSize;
+	}
+	
+	public InputStreamResource getResource() {
+		return resource;
+	}
+	public void setResource(InputStreamResource resource) {
+		this.resource = resource;
+	}
+	public File getFile() {
+		return file;
+	}
+	public void setFile(File file) {
+		this.file = file;
+	}
 	public XnatResourceInfo(UserI user, Date created, Date lastModified){
 		this.created=created;
 		this.lastModified=lastModified;

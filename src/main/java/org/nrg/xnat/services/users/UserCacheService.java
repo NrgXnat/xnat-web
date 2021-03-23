@@ -6,7 +6,7 @@ import org.nrg.xft.security.UserI;
 
 public interface UserCacheService {
 	
-	public void findUserCacheResources(UserI user, HttpServletRequest request);
+	//public void findUserCacheResources(UserI user, HttpServletRequest request);
 
 	public void findUserCacheResourceByXname(String xName);
 

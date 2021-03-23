@@ -44,7 +44,8 @@ import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.helpers.FileMultipartWrapper;
+import org.nrg.xnat.helpers.FileResourceWrapper;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
 import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
@@ -59,6 +60,8 @@ import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -267,35 +270,34 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
              }
          }
 	}
-
+	
 	@Override
-	public void createResourceFile(UserI user, MultipartFile file, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags) throws Exception {
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String resourceId) throws Exception{
 		// step 1: get project data
 		if (Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
-
+		
 		// step 2: set resource_ids
-		_resourceIds = setResourcesIds(resourceId, user, false);
-
+		 _resourceIds = setResourcesIds(resourceId, user, false);
+		 
 		// Step 3: get resource data
-		XnatAbstractresource resource = null;
+			XnatAbstractresource xnatAbstractresource = null;
 
-		resource = getResourceData(user, _resourceIds);
-
+			xnatAbstractresource = getResourceData(user, _resourceIds);
+		
 		// step 4:
-		if (parent != null && security != null) {
+			if (parent != null && security != null) {
 				if (Permissions.canEdit(user, security)) {
-
 					verifyProjectIsNull();
-
-					final Object resourceIdentifier = verifyResourceIsNull(resource);
-
+					
+					final Object resourceIdentifier = verifyResourceIsNull(xnatAbstractresource);
+					
 					final boolean overwrite = true; // HC
 					final boolean extract = true; // HC
 
 					PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
 
-					workflow = verifyAndGetWorkflow(workflow, resource, user);
+					workflow = verifyAndGetWorkflow(workflow, xnatAbstractresource, user);
 
 					final boolean skipUpdateStats = false; // HC
 
@@ -306,55 +308,37 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 					final EventMetaI eventMeta = getEventMetaI(workflow, user);
 
 					final UpdateMeta updateMeta = new UpdateMeta(eventMeta, !(skipUpdateStats));
-
-					workflow = uploadFile(file, requestRename, overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, updateMeta, requestDesc, requestFormat, requestContent, requestTags, extract, isNew);
-
+					
+					workflow = uploadFile(xnatResourceInfo,overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, extract, isNew);
+				
 					if (StringUtils.isBlank(reference) && workflow != null && isNew)
 						WorkflowUtils.complete(workflow, eventMeta);
-
 				}
-		}
-	}
-	
-	private PersistentWorkflowI getWorkflow(PersistentWorkflowI workflow, boolean isNew, boolean skipUpdateStats, UserI user) throws JustificationAbsent, ActionNameAbsent, IDAbsent {
-		if (workflow == null && !skipUpdateStats) {
-			isNew = true;
-			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
-		}
-		return workflow;
+			}
+			return null;
 	}
 
-	private EventMetaI getEventMetaI(PersistentWorkflowI workflow, UserI user) {
-		final EventMetaI eventMeta;
-		if (workflow == null) {
-			eventMeta = EventUtils.DEFAULT_EVENT(user, null);
-		} else {
-			eventMeta = workflow.buildEvent();
-		}
-		return eventMeta;
-	}
-
-	private PersistentWorkflowI uploadFile(MultipartFile file, String requestRename, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, UpdateMeta updateMeta2, String requestDesc, String requestFormat, String requestContent, String[] requestTags, boolean extract, boolean isNew) throws Exception {
+	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew) {
 		try {
-			 final List<FileWriterWrapperI> writers = getFileWriters(file, file.getOriginalFilename());
+			 final List<FileWriterWrapperI> writers = getFileWriters(xnatResourceInfo);
 			 if (writers == null || writers.isEmpty()) {
-                    if (file.getSize() == 0) {
-                    	throw new DataFormatException("You tried to upload file " + file.getOriginalFilename() + " to this service, but didn't provide any data (found request entity size of 0). Please check the format of your service request.");
-                    } else {
-                    	throw new DataFormatException("You tried to upload file " + file.getOriginalFilename() + " a payload of " + CatalogUtils.formatSize(file.getSize()) + " to this service, but didn't provide any data. If you think you sent data to upload, you can try to upload file " + file.getOriginalFilename() + " with the query-string parameter inbody=true or use multipart/form-data encoding.");
-                    }
-                }
+                  if (xnatResourceInfo.getFileSize() == 0) {
+                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getFileName() + " to this service, but didn't provide any data (found request entity size of 0). Please check the format of your service request.");
+                  } else {
+                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getFileName() + " a payload of " + CatalogUtils.formatSize(xnatResourceInfo.getFileSize()) + " to this service, but didn't provide any data. If you think you sent data to upload, you can try to upload file " + xnatResourceInfo.getFileName() + " with the query-string parameter inbody=true or use multipart/form-data encoding.");
+                  }
+              }
 
 			final ResourceModifierA resourceModifier = buildResourceModifier(overwrite, updateMeta, user);
 			if (!async || StringUtils.isBlank(reference)) {
-				filePath = requestRename;
+				filePath = xnatResourceInfo.getRename();
 				type = "out";
-                    final List<String> duplicates = resourceModifier.addFile(writers, resourceIdentifier, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent,requestTags,user), extract);
-                    if (!overwrite && duplicates.size() > 0) {
-                    	 isNew = false;
-                    	throw new ResourceAlreadyExistsException("duplicate file", "");
-                    } else {
-                    }
+                  final List<String> duplicates = resourceModifier.addFile(writers, resourceIdentifier, type, filePath, buildResourceInfo(updateMeta, xnatResourceInfo, user), extract);
+                  if (!overwrite && duplicates.size() > 0) {
+                  	 isNew = false;
+                  	throw new ResourceAlreadyExistsException("duplicate file", "");
+                  } else {
+                  }
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
 					final UserProjectCache cache = XDAT.getContextService().getBeanSafely(UserProjectCache.class);
@@ -373,21 +357,42 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 				final MoveStoredFileRequest request;
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent, requestTags, user), extract, projectId);
+					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, xnatResourceInfo, user), extract, projectId);
 				} else {
-					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, requestDesc, requestFormat, requestContent, requestTags, user), extract);
+					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, xnatResourceInfo, user), extract);
 				}
 				XDAT.sendJmsRequest(request);
 			}
 		} catch (Exception e) {
 			log.error("Error occurred while trying to POST file", e);
-			throw e;
 		}
 		return workflow;
 	}
 
-	
-	
+	private List<FileWriterWrapperI> getFileWriters(XnatResourceInfo xnatResourceInfo) {
+		final List<FileWriterWrapperI> wrappers = new ArrayList<>();
+		wrappers.add(new FileResourceWrapper(xnatResourceInfo.getResource(), xnatResourceInfo.getFile(),xnatResourceInfo.getFile().getName()));
+		return wrappers;
+	}
+
+	private PersistentWorkflowI getWorkflow(PersistentWorkflowI workflow, boolean isNew, boolean skipUpdateStats, UserI user) throws JustificationAbsent, ActionNameAbsent, IDAbsent {
+		if (workflow == null && !skipUpdateStats) {
+			isNew = true;
+			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
+		}
+		return workflow;
+	}
+
+	private EventMetaI getEventMetaI(PersistentWorkflowI workflow, UserI user) {
+		final EventMetaI eventMeta;
+		if (workflow == null) {
+			eventMeta = EventUtils.DEFAULT_EVENT(user, null);
+		} else {
+			eventMeta = workflow.buildEvent();
+		}
+		return eventMeta;
+	}
+
 	private PersistentWorkflowI verifyAndGetWorkflow(PersistentWorkflowI workflow, XnatAbstractresource resource, UserI user) {
 		if (workflow == null && resource != null && "SNAPSHOTS".equals(resource.getLabel())) {
             if (getSecurityItem() instanceof XnatExperimentdata) {
@@ -435,19 +440,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
         }
 	}
 
-	public List<FileWriterWrapperI> getFileWriters(MultipartFile file, String fileName) throws IOException {
-		return getFileWritersAndLoadParams(file, fileName);
-	}
-
-	public List<FileWriterWrapperI> getFileWritersAndLoadParams(MultipartFile file, String fileName)
-			throws IOException {
-		final List<FileWriterWrapperI> wrappers = new ArrayList<>();
-		File f = new File(System.getProperty("java.io.tmpdir") + "/" + fileName);
-		file.transferTo(f);
-		wrappers.add(new FileMultipartWrapper(file, f, file.getOriginalFilename()));
-		return wrappers;
-	}
-	
 
 	public Integer getEventId() {
         final String id = getQueryVariable(EventUtils.EVENT_ID);
@@ -668,8 +660,5 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};
-	
-
-	
 
 }

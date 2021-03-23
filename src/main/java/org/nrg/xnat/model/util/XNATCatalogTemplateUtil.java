@@ -135,32 +135,30 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
         return builder.buildResourceModifier(overwrite, user, ci);
     }
 	
-	protected XnatResourceInfo buildResourceInfo(EventMetaI ci, String requestDesc, String requestFormat, String requestContent, String[] requestTags, UserI user ) {
+	protected XnatResourceInfo buildResourceInfo(EventMetaI ci,XnatResourceInfo xnatResourceInfo, UserI user ) {
         final String description;
-        if (requestDesc != null) {
-            description = requestDesc;
+        if (xnatResourceInfo.getDescription()!= null) {
+            description = xnatResourceInfo.getDescription();
         } else {
             description = null;
         }
 
         final String format;
-        if (requestFormat != null) {
-            format =requestFormat;
+        if (xnatResourceInfo.getFormat() != null) {
+            format =xnatResourceInfo.getFormat();
         } else {
             format = null;
         }
 
         final String content;
-        if (requestContent != null) {
-            content = requestContent;
+        if (xnatResourceInfo.getContent() != null) {
+            content = xnatResourceInfo.getContent();
         } else {
             content = null;
         }
 
-        String[] tags;
-        if (requestTags != null) {
-            tags = requestTags;
-        } else {
+        String[] tags = xnatResourceInfo.getTags().stream().toArray(String[] ::new); ;
+        if (tags == null) {
             tags = null;
         }
 

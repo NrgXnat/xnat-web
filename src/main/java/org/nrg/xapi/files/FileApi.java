@@ -4,9 +4,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
-
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
@@ -14,8 +18,12 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.services.files.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.InputStreamSource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -207,23 +215,42 @@ public class FileApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files"},
-    
                         consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
-    public void createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
+    public Integer createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
     		@ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
     		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
     		@ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
     		@ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
     		@ApiParam("The file format.") @RequestParam(name= "format",required = false) final String requestFormat,
     		@ApiParam("Thefile content.") @RequestParam(name= "content", required = false) final String requestContent,
-    		@ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final String []  requestTags) 
+    		@ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final List<String>  requestTags) 
     		throws Exception {
         log.debug("Controller Api- file project: {}", projectId);
+        
+        final InputStreamResource resource = new InputStreamResource(file.getInputStream(), StringUtils.defaultIfBlank(requestRename, file.getOriginalFilename()));
+        
+        XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,resource,file);
        
-         _fileService.createResourceFile(getSessionUser(),file , projectId, resourceId, requestRename, requestDesc, requestFormat, requestContent, requestTags);
-    }
+       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, resourceId);
+	}
 	
+	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, InputStreamResource resource, MultipartFile file) throws IllegalStateException, IOException {
+		 XnatResourceInfo xnatResourceInfo = new XnatResourceInfo(getSessionUser(), new Date(), new Date());
+        xnatResourceInfo.setContent(Objects.nonNull(requestContent)?requestContent :null);
+        xnatResourceInfo.setFormat(Objects.nonNull(requestFormat)?requestFormat :null);
+        xnatResourceInfo.setTags(Objects.nonNull(requestTags)?requestTags :null);
+        xnatResourceInfo.setDescription(Objects.nonNull(requestDesc)?requestDesc :null);
+        xnatResourceInfo.setFileName(Objects.nonNull(file.getOriginalFilename())?file.getOriginalFilename() :null);
+        xnatResourceInfo.setFileSize(Objects.nonNull(file.getSize())?file.getSize() :null);
+        xnatResourceInfo.setRename(Objects.nonNull(requestRename)?requestRename :null);
+        xnatResourceInfo.setResource(Objects.nonNull(resource)?resource :null);
+        File f = new File(System.getProperty("java.io.tmpdir") + "/" + file.getOriginalFilename());
+        file.transferTo(f);
+        xnatResourceInfo.setFile(f);
+		return xnatResourceInfo;
+	}
+
 	private final FileService _fileService;
 }

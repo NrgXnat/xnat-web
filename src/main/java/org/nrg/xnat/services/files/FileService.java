@@ -7,6 +7,8 @@ import javax.servlet.http.HttpServletRequest;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -32,7 +34,7 @@ public interface FileService {
 
 	List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) throws DataFormatException;
 	
-	public void createResourceFile(UserI user,  MultipartFile file, String projectId, String resourceId, String requestRename, String requestDesc, String requestFormat, String requestContent, String[] requestTags ) throws Exception;
-	
 	public void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception;
+
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String resourceId) throws Exception;
 }
