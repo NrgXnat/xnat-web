@@ -310,7 +310,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 						WorkflowUtils.complete(workflow, eventMeta);
 				}
 			}
-			return null;
+			return XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(resourceId, user, false).getXnatAbstractresourceId();
 	}
 
 	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew) {
