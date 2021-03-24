@@ -9,17 +9,24 @@
 
 package org.nrg.xnat.helpers.resource;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.restlet.util.FileWriterWrapperI;
+import org.nrg.xnat.restlet.util.FileWriterWrapperI.UPLOAD_TYPE;
 import org.springframework.core.io.InputStreamResource;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.util.*;
 
-public class XnatResourceInfo implements Serializable {
+public class XnatResourceInfo implements Serializable, FileWriterWrapperI {
     private static final long serialVersionUID = 42L;
-	private String description,format,content, fileName, rename=null;
+	private String description,format,content, name, nestedPath,rename=null;
 	private Long fileSize;
 	private Number event_id=null;
 	private List<String> tags= new ArrayList<>();
@@ -77,12 +84,6 @@ public class XnatResourceInfo implements Serializable {
 		this.tags.add(tag);
 	}
 	
-	public String getFileName() {
-		return fileName;
-	}
-	public void setFileName(String fileName) {
-		this.fileName = fileName;
-	}
 	public String getRename() {
 		return rename;
 	}
@@ -108,10 +109,29 @@ public class XnatResourceInfo implements Serializable {
 	public void setFile(File file) {
 		this.file = file;
 	}
+	
+	public void setName(String name) {
+		this.name = name;
+	}
+	
+	public void setNestedPath(String nestedPath) {
+		this.nestedPath = nestedPath;
+	}
 	public XnatResourceInfo(UserI user, Date created, Date lastModified){
 		this.created=created;
 		this.lastModified=lastModified;
 		this.user=user;
+		
+	}
+	
+	public XnatResourceInfo(UserI user, Date created, Date lastModified, InputStreamResource resource,  File file,  String name) {
+		this.created=created;
+		this.lastModified=lastModified;
+		this.user=user;
+		this.resource = resource;
+        this.name = name;
+        this.nestedPath = null;
+        this.file = file;
 	}
 
 	
@@ -163,4 +183,57 @@ public class XnatResourceInfo implements Serializable {
 	public Number getEvent_id() {
 		return event_id;
 	}
+	
+	@Override
+	public String getName() {
+		return name;
+	}
+
+	@Override
+	public String getNestedPath() {
+		return nestedPath;
+	}
+
+	@Override
+	public InputStream getInputStream() throws IOException {
+		 return resource.getInputStream();
+	}
+
+	@Override
+	public void delete() {
+		if (file != null) {
+			file.delete();
+		}
+	}
+
+	@Override
+	public UPLOAD_TYPE getType() {
+		 return null == resource ? FileWriterWrapperI.UPLOAD_TYPE.MULTIPART : FileWriterWrapperI.UPLOAD_TYPE.INBODY;
+	}
+	
+	@Override
+	public void write(File file) throws Exception {
+		if (null != resource) {
+            final FileOutputStream fw = new FileOutputStream(file);
+            IOException ioexception = null;
+            try {
+                if (file.length() >2000000) {
+                    IOUtils.copyLarge(resource.getInputStream(), fw);
+                } else {
+                    IOUtils.copy(resource.getInputStream(), fw);
+                }
+            } catch (IOException e) {
+                throw ioexception = e;
+            } finally {
+                try {
+                    fw.close();
+                } catch (IOException e) {
+                    throw null == ioexception ? e : ioexception;
+                }
+            }
+        } else {
+        	throw new FileNotFoundException("File is empty");
+        }
+	}
+
 }

@@ -1,7 +1,6 @@
 package org.nrg.xnat.services.files.impl;
 
 import java.io.File;
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -44,7 +43,6 @@ import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.helpers.FileResourceWrapper;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
@@ -60,13 +58,10 @@ import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -320,12 +315,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew) {
 		try {
-			 final List<FileWriterWrapperI> writers = getFileWriters(xnatResourceInfo);
+			 final List<FileWriterWrapperI> writers = getFileWriters(user,xnatResourceInfo);
 			 if (writers == null || writers.isEmpty()) {
                   if (xnatResourceInfo.getFileSize() == 0) {
-                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getFileName() + " to this service, but didn't provide any data (found request entity size of 0). Please check the format of your service request.");
+                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getName() + " to this service, but didn't provide any data (found request entity size of 0). Please check the format of your service request.");
                   } else {
-                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getFileName() + " a payload of " + CatalogUtils.formatSize(xnatResourceInfo.getFileSize()) + " to this service, but didn't provide any data. If you think you sent data to upload, you can try to upload file " + xnatResourceInfo.getFileName() + " with the query-string parameter inbody=true or use multipart/form-data encoding.");
+                  	throw new DataFormatException("You tried to upload file " + xnatResourceInfo.getName() + " a payload of " + CatalogUtils.formatSize(xnatResourceInfo.getFileSize()) + " to this service, but didn't provide any data. If you think you sent data to upload, you can try to upload file " + xnatResourceInfo.getName() + " with the query-string parameter inbody=true or use multipart/form-data encoding.");
                   }
               }
 
@@ -369,9 +364,9 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return workflow;
 	}
 
-	private List<FileWriterWrapperI> getFileWriters(XnatResourceInfo xnatResourceInfo) {
+	private List<FileWriterWrapperI> getFileWriters(UserI user, XnatResourceInfo xnatResourceInfo) {
 		final List<FileWriterWrapperI> wrappers = new ArrayList<>();
-		wrappers.add(new FileResourceWrapper(xnatResourceInfo.getResource(), xnatResourceInfo.getFile(),xnatResourceInfo.getFile().getName()));
+		wrappers.add(new XnatResourceInfo(user, xnatResourceInfo.getCreated(), xnatResourceInfo.getLastModified(), xnatResourceInfo.getResource(), xnatResourceInfo.getFile(),xnatResourceInfo.getFile().getName()));
 		return wrappers;
 	}
 

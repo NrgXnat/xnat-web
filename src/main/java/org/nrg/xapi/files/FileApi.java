@@ -214,7 +214,8 @@ public class FileApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files"},
+    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files",
+    							 "/subjects/{subjectId}/resources/{resourceId}/files"},
                         consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
@@ -242,7 +243,7 @@ public class FileApi extends AbstractXapiProjectRestController {
         xnatResourceInfo.setFormat(Objects.nonNull(requestFormat)?requestFormat :null);
         xnatResourceInfo.setTags(Objects.nonNull(requestTags)?requestTags :null);
         xnatResourceInfo.setDescription(Objects.nonNull(requestDesc)?requestDesc :null);
-        xnatResourceInfo.setFileName(Objects.nonNull(file.getOriginalFilename())?file.getOriginalFilename() :null);
+        xnatResourceInfo.setName(Objects.nonNull(file.getOriginalFilename())?file.getOriginalFilename() :null);
         xnatResourceInfo.setFileSize(Objects.nonNull(file.getSize())?file.getSize() :null);
         xnatResourceInfo.setRename(Objects.nonNull(requestRename)?requestRename :null);
         xnatResourceInfo.setResource(Objects.nonNull(resource)?resource :null);
