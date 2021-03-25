@@ -36,5 +36,5 @@ public interface FileService {
 	
 	public void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception;
 
-	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String resourceId) throws Exception;
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String subjectId, String experimentId, String resourceId) throws Exception;
 }

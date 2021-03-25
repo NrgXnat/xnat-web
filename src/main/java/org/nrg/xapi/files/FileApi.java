@@ -22,8 +22,6 @@ import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.services.files.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.InputStreamSource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -209,18 +207,19 @@ public class FileApi extends AbstractXapiProjectRestController {
 	        _fileService.deleteResourceFile(getSessionUser(), projectId,subjectId,experimentId,assessorId,scanId,type, resourceId);
 	    }
 	
-	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = void.class)
+	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = Integer.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created project."),
-                   @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
-                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
-                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files",
-    							 "/subjects/{subjectId}/resources/{resourceId}/files"},
-                        consumes = {MediaType.MULTIPART_FORM_DATA_VALUE},
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
+    @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
+    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
+    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files", "/subjects/{subjectId}/resources/{resourceId}/files",
+    		 					  "/experiments/{experimentId}/resources/{resourceId}/files", "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}/files",
+    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files"},
+     consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
     public Integer createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
     		@ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
+    		@ApiParam("The ID of the subject.") @PathVariable(required = false) final String  subjectId,
+    		@ApiParam("The ID of the experiment.") @PathVariable(required = false) final String  experimentId,
     		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
     		@ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
     		@ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
@@ -234,7 +233,7 @@ public class FileApi extends AbstractXapiProjectRestController {
         
         XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,resource,file);
        
-       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, resourceId);
+       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId, resourceId);
 	}
 	
 	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, InputStreamResource resource, MultipartFile file) throws IllegalStateException, IOException {

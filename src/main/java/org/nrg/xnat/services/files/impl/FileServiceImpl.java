@@ -19,6 +19,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
@@ -145,6 +146,9 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	
+	/**
+	 * Delete the files from specific resource
+	 */
 	@Override
 	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception {
 		proj = null;
@@ -195,6 +199,14 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 	}
 	
+	/**
+	 * 
+	 * @param work
+	 * @param catalogData
+	 * @param entries
+	 * @param user
+	 * @throws Exception
+	 */
 	private void deleteResourceFiles(PersistentWorkflowI work, CatalogData catalogData, Collection<CatEntryI> entries, UserI user) throws Exception {
 		try {
             long catSize = catalogData.catRes.getFileSize() == null ? 0 : (Long) catalogData.catRes.getFileSize();
@@ -232,6 +244,13 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		
 	}
 
+	/**
+	 * Validate the resource
+	 * 
+	 * @param user
+	 * @param resource
+	 * @throws Exception
+	 */
 	private void validateResource(UserI user, XnatAbstractresource resource) throws Exception {
 		if (resource == null || parent == null || security == null) {
             throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
@@ -256,6 +275,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		
 	}
 
+	/**
+	 * Verify the project is null 
+	 * 
+	 * @throws ElementNotFoundException
+	 */
 	private void verifyProjIsNull() throws ElementNotFoundException {
 		 if (proj == null) {
              if (parent.getItem().instanceOf("xnat:experimentData")) {
@@ -266,11 +290,19 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
          }
 	}
 	
+	/**
+	 * Create resource file and upload into the specific resource
+	 */
 	@Override
-	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String resourceId) throws Exception{
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId,String resourceId) throws Exception{
+		
 		// step 1: get project data
 		if (Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
+		if (Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(experimentId))
+			expts = getXnatExperimentData(experimentId, user, null, null);
 		
 		// step 2: set resource_ids
 		 _resourceIds = setResourcesIds(resourceId, user, false);
@@ -283,36 +315,77 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		// step 4:
 			if (parent != null && security != null) {
 				if (Permissions.canEdit(user, security)) {
-					verifyProjectIsNull();
-					
-					final Object resourceIdentifier = verifyResourceIsNull(xnatAbstractresource);
-					
-					final boolean overwrite = true; // HC
-					final boolean extract = true; // HC
-
-					PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
-
-					workflow = verifyAndGetWorkflow(workflow, xnatAbstractresource, user);
-
-					final boolean skipUpdateStats = false; // HC
-
-					boolean isNew = false;
-
-					workflow = getWorkflow(workflow, isNew, skipUpdateStats, user);
-
-					final EventMetaI eventMeta = getEventMetaI(workflow, user);
-
-					final UpdateMeta updateMeta = new UpdateMeta(eventMeta, !(skipUpdateStats));
-					
-					workflow = uploadFile(xnatResourceInfo,overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, extract, isNew);
-				
-					if (StringUtils.isBlank(reference) && workflow != null && isNew)
-						WorkflowUtils.complete(workflow, eventMeta);
-				}
+					Integer result=  resourceFileUpload(xnatAbstractresource, user, projectId, resourceId,xnatResourceInfo);
+					if(Objects.nonNull(result))
+						return result;
+					else
+						throw new InitializationException("Please check ..File Not Uploaded");
+						
 			}
-			return XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(resourceId, user, false).getXnatAbstractresourceId();
+		}
+			throw new InitializationException("Please check ... File Not Uploaded");
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param xnatAbstractresource
+	 * @param user
+	 * @param projectId
+	 * @param resourceId
+	 * @param xnatResourceInfo
+	 * @return
+	 * @throws Exception
+	 */
+	private Integer resourceFileUpload(XnatAbstractresource xnatAbstractresource, UserI user, String projectId, String resourceId, XnatResourceInfo xnatResourceInfo) throws Exception {
+		
+		verifyProjectIsNull();
+		
+		final Object resourceIdentifier = verifyResourceIsNull(xnatAbstractresource);
+		
+		final boolean overwrite = true; // HC
+		final boolean extract = true; // HC
+
+		PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
+
+		workflow = verifyAndGetWorkflow(workflow, xnatAbstractresource, user);
+
+		final boolean skipUpdateStats = false; // HC
+
+		boolean isNew = false;
+
+		if (workflow == null && !skipUpdateStats) {
+			isNew = true;
+			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
+		}
+
+		final EventMetaI eventMeta = getEventMetaI(workflow, user);
+
+		final UpdateMeta updateMeta = new UpdateMeta(eventMeta, !(skipUpdateStats));
+		
+		workflow = uploadFile(xnatResourceInfo,overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, extract, isNew);
+	
+		if (StringUtils.isBlank(reference) && workflow != null && isNew) {
+			WorkflowUtils.complete(workflow, eventMeta);
+			return XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(resourceId, user, false).getXnatAbstractresourceId();
+	}
+		return null;
+}
+
+	/**
+	 * Upload a resource file
+	 * 
+	 * @param xnatResourceInfo
+	 * @param overwrite
+	 * @param updateMeta
+	 * @param user
+	 * @param projectId
+	 * @param workflow
+	 * @param resourceIdentifier
+	 * @param extract
+	 * @param isNew
+	 * @return
+	 */
 	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew) {
 		try {
 			 final List<FileWriterWrapperI> writers = getFileWriters(user,xnatResourceInfo);
@@ -332,8 +405,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
                   if (!overwrite && duplicates.size() > 0) {
                   	 isNew = false;
                   	throw new ResourceAlreadyExistsException("duplicate file", "");
-                  } else {
-                  }
+                  } 
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
 					final UserProjectCache cache = XDAT.getContextService().getBeanSafely(UserProjectCache.class);
@@ -364,20 +436,26 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return workflow;
 	}
 
+	/**
+	 * Get the FileWriterWrapperI Object
+	 * 
+	 * @param user
+	 * @param xnatResourceInfo
+	 * @return
+	 */
 	private List<FileWriterWrapperI> getFileWriters(UserI user, XnatResourceInfo xnatResourceInfo) {
 		final List<FileWriterWrapperI> wrappers = new ArrayList<>();
 		wrappers.add(new XnatResourceInfo(user, xnatResourceInfo.getCreated(), xnatResourceInfo.getLastModified(), xnatResourceInfo.getResource(), xnatResourceInfo.getFile(),xnatResourceInfo.getFile().getName()));
 		return wrappers;
 	}
 
-	private PersistentWorkflowI getWorkflow(PersistentWorkflowI workflow, boolean isNew, boolean skipUpdateStats, UserI user) throws JustificationAbsent, ActionNameAbsent, IDAbsent {
-		if (workflow == null && !skipUpdateStats) {
-			isNew = true;
-			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
-		}
-		return workflow;
-	}
 
+	/**
+	 * 
+	 * @param workflow
+	 * @param user
+	 * @return
+	 */
 	private EventMetaI getEventMetaI(PersistentWorkflowI workflow, UserI user) {
 		final EventMetaI eventMeta;
 		if (workflow == null) {
@@ -388,6 +466,14 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return eventMeta;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param workflow
+	 * @param resource
+	 * @param user
+	 * @return
+	 */
 	private PersistentWorkflowI verifyAndGetWorkflow(PersistentWorkflowI workflow, XnatAbstractresource resource, UserI user) {
 		if (workflow == null && resource != null && "SNAPSHOTS".equals(resource.getLabel())) {
             if (getSecurityItem() instanceof XnatExperimentdata) {
@@ -403,6 +489,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return workflow;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param resource
+	 * @return
+	 */
 	private Object verifyResourceIsNull(XnatAbstractresource resource) {
 		final Object resourceIdentifier;
 		 if (resource == null) {
@@ -421,6 +513,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return resourceIdentifier;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @throws ElementNotFoundException
+	 */
 	private void verifyProjectIsNull() throws ElementNotFoundException {
 		if (proj == null) {
             if (parent.getItem().instanceOf("xnat:experimentData")) {
@@ -435,7 +532,10 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
         }
 	}
 
-
+    /**
+     * 
+     * @return
+     */
 	public Integer getEventId() {
         final String id = getQueryVariable(EventUtils.EVENT_ID);
         if (id != null) {
@@ -445,6 +545,13 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
         }
     }
 	
+	/**
+	 * 
+	 * 
+	 * @param user
+	 * @param _resourceIds
+	 * @return
+	 */
 	private XnatAbstractresource getResourceData(UserI user, List<String> _resourceIds) {
 		XnatAbstractresource resource = null;
 		  try {
@@ -503,6 +610,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return resource;
 	}
 
+	/**
+	 * 
+	 * 
+	 * @param resource
+	 * @return
+	 */
 	 @Nullable
 	    private XnatImageassessordata getAssessor(final @Nonnull XnatResourcecatalog resource) {
 	        try {
@@ -526,6 +639,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	        return null;
 	    }
 
+	
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
 	        _user = user;
@@ -650,8 +764,8 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	
 	private String filePath = "";
 	//private XnatAbstractresource resource = null;
-	private String reference;
-	private final boolean acceptNotFound = false;
+	private String reference = "";
+	//private final boolean acceptNotFound = false;
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};
