@@ -214,12 +214,21 @@ public class FileApi extends AbstractXapiProjectRestController {
     @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/resources/{resourceId}/files", "/subjects/{subjectId}/resources/{resourceId}/files",
     		 					  "/experiments/{experimentId}/resources/{resourceId}/files", "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}/files",
-    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files"},
+    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files",
+    							  "/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}/files",
+    							  "/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
+    							  "/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files",
+    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}/files",
+    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
+    							  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"},
      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
     public Integer createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
     		@ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
     		@ApiParam("The ID of the subject.") @PathVariable(required = false) final String  subjectId,
     		@ApiParam("The ID of the experiment.") @PathVariable(required = false) final String  experimentId,
+    		@ApiParam("The ID of the assessor.") @PathVariable(required = false) final String  assessorId,
+    		@ApiParam("The ID of the scan.") @PathVariable(required = false) final String  scanId,
+    		@ApiParam("The ID of the type") @PathVariable(required = false) final String  type,
     		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
     		@ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
     		@ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
@@ -233,7 +242,7 @@ public class FileApi extends AbstractXapiProjectRestController {
         
         XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,resource,file);
        
-       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId, resourceId);
+       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId,assessorId, scanId, type, resourceId);
 	}
 	
 	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, InputStreamResource resource, MultipartFile file) throws IllegalStateException, IOException {

@@ -294,15 +294,24 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * Create resource file and upload into the specific resource
 	 */
 	@Override
-	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId,String resourceId) throws Exception{
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception{
 		
-		// step 1: get project data
-		if (Objects.nonNull(projectId))
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
+		// step 1: get proj/sub/assesseds/expts/scans data
+		if(Objects.nonNull(projectId))
 			proj = getXnatProjectdata(projectId, user);
-		if (Objects.nonNull(subjectId))
+		if(Objects.nonNull(subjectId))
 			sub = getXnatSubjectdata(subjectId, user, proj);
-		if (Objects.nonNull(experimentId))
-			expts = getXnatExperimentData(experimentId, user, null, null);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
 		
 		// step 2: set resource_ids
 		 _resourceIds = setResourcesIds(resourceId, user, false);
@@ -343,8 +352,8 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		
 		final Object resourceIdentifier = verifyResourceIsNull(xnatAbstractresource);
 		
-		final boolean overwrite = true; // HC
-		final boolean extract = true; // HC
+		final boolean overwrite = false; // HC
+		final boolean extract = false; // HC
 
 		PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
 
@@ -363,7 +372,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 		final UpdateMeta updateMeta = new UpdateMeta(eventMeta, !(skipUpdateStats));
 		
-		workflow = uploadFile(xnatResourceInfo,overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, extract, isNew);
+		workflow = uploadFile(xnatResourceInfo,overwrite, updateMeta, user, projectId, workflow, resourceIdentifier, extract, isNew, type);
 	
 		if (StringUtils.isBlank(reference) && workflow != null && isNew) {
 			WorkflowUtils.complete(workflow, eventMeta);
@@ -385,9 +394,9 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * @param extract
 	 * @param isNew
 	 * @return
+	 * @throws Exception 
 	 */
-	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew) {
-		try {
+	private PersistentWorkflowI uploadFile(XnatResourceInfo xnatResourceInfo, boolean overwrite, UpdateMeta updateMeta, UserI user, String projectId, PersistentWorkflowI workflow, Object resourceIdentifier, boolean extract, boolean isNew, String type) throws Exception {
 			 final List<FileWriterWrapperI> writers = getFileWriters(user,xnatResourceInfo);
 			 if (writers == null || writers.isEmpty()) {
                   if (xnatResourceInfo.getFileSize() == 0) {
@@ -400,7 +409,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 			final ResourceModifierA resourceModifier = buildResourceModifier(overwrite, updateMeta, user);
 			if (!async || StringUtils.isBlank(reference)) {
 				filePath = xnatResourceInfo.getRename();
-				type = "out";
                   final List<String> duplicates = resourceModifier.addFile(writers, resourceIdentifier, type, filePath, buildResourceInfo(updateMeta, xnatResourceInfo, user), extract);
                   if (!overwrite && duplicates.size() > 0) {
                   	 isNew = false;
@@ -430,9 +438,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 				}
 				XDAT.sendJmsRequest(request);
 			}
-		} catch (Exception e) {
-			log.error("Error occurred while trying to POST file", e);
-		}
 		return workflow;
 	}
 
