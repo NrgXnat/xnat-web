@@ -11,6 +11,7 @@ package org.nrg.xnat.restlet.resources.search;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.security.XDATUser;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;

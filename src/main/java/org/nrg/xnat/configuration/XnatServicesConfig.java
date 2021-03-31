@@ -37,7 +37,7 @@ import static org.nrg.xft.identifier.IDGeneratorFactory.*;
                 "org.nrg.xnat.services.system.impl.hibernate", "org.nrg.xnat.services.triage",
                 "org.nrg.xnat.services.validation", "org.nrg.xnat.services.resources.impl",
                 "org.nrg.xnat.services.subjects.impl", "org.nrg.xnat.web.converters", "org.nrg.xnat.services.projects.impl","org.nrg.xnat.services.experiments.impl",
-				"org.nrg.xnat.services.users.impl","org.nrg.xnat.services.scans.impl","org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.runner.impl"})
+				"org.nrg.xnat.services.users.impl","org.nrg.xnat.services.scans.impl","org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.runner.impl", "org.nrg.xnat.services.par.impl"})
 public class XnatServicesConfig {
     @Bean
     public PermissionsServiceI permissionsService(final DataTypeAwareEventService eventService, final NamedParameterJdbcTemplate template) {
