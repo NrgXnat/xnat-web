@@ -9,10 +9,12 @@ import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 
 public interface PARService {
 
-	public void getParList(UserI user) throws InitializationException;
+	public List<ProjectAccessRequest> findAllProjectAccessRequests(UserI user) throws InitializationException;
 	
-	public ProjectAccessRequest getParResourceByParId(UserI user, Integer parId) throws DataFormatException;
+	public ProjectAccessRequest findParResourceByParId(UserI user, Integer parId) throws DataFormatException;
 	
-	public List<ProjectAccessRequest> getProjectParsByProjectId(UserI user, String projectId) throws DataFormatException;
+	public List<ProjectAccessRequest> findProjectParsByProjectId(UserI user, String projectId) throws DataFormatException;
+	
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId) throws Exception;
 	
 }

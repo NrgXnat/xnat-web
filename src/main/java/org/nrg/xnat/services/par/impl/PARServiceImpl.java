@@ -2,13 +2,17 @@ package org.nrg.xnat.services.par.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Hashtable;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xft.XFTTable;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.par.PARService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
@@ -30,35 +34,98 @@ public class PARServiceImpl implements PARService {
 	}
 
 	@Override
-	public void getParList(UserI user) throws InitializationException {
-		final Hashtable<String, Object> params = new Hashtable<>();
-		try {
-			final XFTTable table = XFTTable.Execute(String.format(PAR_QUERY, user.getEmail().toLowerCase()),
-					user.getDBName(), user.getLogin());
-
-			if (table != null) {
-				params.put("totalRecords", table.size());
-			}
-		} catch (Exception e) {
-			log.error("An error occurred attempting to access the project invitations for user " + user.getLogin(), e);
-			throw new InitializationException("An error occurred attempting to access the project invitations.");
-		}
+	public List<ProjectAccessRequest> findAllProjectAccessRequests(UserI user) throws InitializationException {
+		return _template.query(PAR_QUERY, new MapSqlParameterSource(),new ProjectAccessRequestRowMapper(user));
 	}
 
 	@Override
-	public ProjectAccessRequest getParResourceByParId(UserI user, Integer parId) throws DataFormatException {
+	public ProjectAccessRequest findParResourceByParId(UserI user, Integer parId) throws DataFormatException {
 		if(Objects.nonNull(parId))
 			return ProjectAccessRequest.RequestPARById(parId, user);
 		else throw new DataFormatException("parId is Missing");
 	}
 
 	@Override
-	public List<ProjectAccessRequest> getProjectParsByProjectId(UserI user, String projectId) throws DataFormatException {
+	public List<ProjectAccessRequest> findProjectParsByProjectId(UserI user, String projectId) throws DataFormatException {
 		if(Objects.nonNull(projectId))
 			return _template.query(PROJECT_PAR_QUERY + ID_WHERE_PAR_PROJECT, new MapSqlParameterSource("projectId", projectId),new ProjectAccessRequestRowMapper(user));
 		else throw new DataFormatException("ProjectId is Missing");
 	}
 	
+	@Override
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId) throws Exception {
+		ProjectAccessRequest par = getParObject(user,projectAccessRequest,parId);
+	       if (par != null) {
+	            if (par.getApproved() != null || par.getApprovalDate() != null) {
+	            	throw new NotFoundException("This project invitation has already been accepted.");
+	            } else {
+	                try {
+	                    if (getQueryVariable("accept") != null) {
+	                        par.process(user, true, getEventType(), getReason(), getComment());
+	                    } else if (getQueryVariable("decline") != null) {
+	                        par.process(user, false, getEventType(), getReason(), getComment());
+	                    }
+	                } catch (Exception e) {
+	                    log.error("Error trying to process PAR " + par.getRequestId(), e);
+	                }
+	            }
+	       }
+		return par;
+	}
+	
+	private String getComment() {
+		return null;
+	}
+
+	private String getReason() {
+		return null;
+	}
+
+	public EventUtils.TYPE getEventType() {
+        final String id = getQueryVariable(EventUtils.EVENT_TYPE);
+        if (id != null) {
+            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
+        } else {
+            return EventUtils.TYPE.WEB_SERVICE;
+        }
+    }
+
+	private String getQueryVariable(String string) {
+		return null;
+	}
+
+	private ProjectAccessRequest getParObject(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId ) throws Exception {
+		ProjectAccessRequest par = ProjectAccessRequest.RequestPARByGUID(projectAccessRequest.getGuid(), user);
+        if (par == null) {
+            par = ProjectAccessRequest.RequestPARById(parId, user);
+        }
+        if (par != null) {
+            final String projectId = par.getProjectId();
+            if (StringUtils.isBlank(projectId)) {
+                if (!Roles.isSiteAdmin(user)) 
+                	throw new InsufficientPrivilegesException("Only site admins can view this type of PAR.");
+                if (log.isWarnEnabled())
+                	log.warn("Attempt by user " + user.getLogin() + " to access PAR " + par.getRequestId());
+            } 
+	}else {
+        XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectAccessRequest.getProjectId(), null, false);
+        if (project == null) {
+        	 log.error("Found the PAR " + par.getRequestId() + " which is missing associated project " + par.getProjectId());
+        	throw new NotFoundException("The project associated with the project access request appears to be gone.");
+        } else {
+            if (!Roles.isSiteAdmin(user) && !project.canEdit(user) && !isParUser(user, par)) 
+            	throw new InsufficientPrivilegesException("You don't have the appropriate permissions to view this PAR (must be admin or have edit permissions on the associated project).");
+            if (log.isWarnEnabled()) {
+                log.warn("Attempt by user " + user.getLogin() + " to access PAR " + par.getRequestId() + " associated with project " + par.getProjectId());
+				}
+			}
+		}
+		return par;
+	}
+
+	private boolean isParUser(UserI user, ProjectAccessRequest par) {
+        return Objects.equals(par.getUserId(), user.getID()) || (par.getUserId() == null && StringUtils.equalsIgnoreCase(par.getEmail(), user.getEmail()));
+    }
 	
 	private static class ProjectAccessRequestRowMapper implements RowMapper<ProjectAccessRequest> {
 		ProjectAccessRequestRowMapper(final UserI user) {
