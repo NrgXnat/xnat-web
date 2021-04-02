@@ -15,6 +15,6 @@ public interface PARService {
 	
 	public List<ProjectAccessRequest> findProjectParsByProjectId(UserI user, String projectId) throws DataFormatException;
 	
-	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId) throws Exception;
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline) throws Exception;
 	
 }

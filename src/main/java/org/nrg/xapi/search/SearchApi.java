@@ -1,0 +1,57 @@
+package org.nrg.xapi.search;
+
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+
+import java.util.List;
+
+import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.rest.AbstractXapiProjectRestController;
+import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.om.XdatSearch;
+import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.security.services.RoleHolder;
+import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.services.search.SearchService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
+import lombok.extern.slf4j.Slf4j;
+
+@Api("XNAT Search Resource Management API")
+@XapiRestController
+@ResponseBody
+@Slf4j
+public class SearchApi extends AbstractXapiProjectRestController {
+	
+    @Autowired
+    public SearchApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final SearchService searchService) {
+        super(userManagementService, roleHolder);
+        _searchService = searchService;
+    }
+    
+    @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatSearch.class, responseContainer = "list")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+                   @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "/search/saved", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+    public ResponseEntity<List<XdatStoredSearch>> getAllSavedSearch() throws Exception {
+        log.debug("Controller Api- get xdatSearch saved {}");
+        List<XdatStoredSearch> xdatSearchs = _searchService.findAllSavedSearch(getSessionUser());
+        if (xdatSearchs == null) {
+            throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
+        }
+        return new ResponseEntity<>(xdatSearchs, HttpStatus.OK);
+    }
+    
+    private SearchService _searchService;
+
+}
+

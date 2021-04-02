@@ -18,6 +18,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -91,10 +92,12 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = PUT)
     public ProjectAccessRequest updateProjectAccessRequest(@ApiParam("The ID of the project to be updated") @PathVariable final Integer parId,
-                                         @ApiParam("The project to be updated.") @RequestBody final ProjectAccessRequest projectAccessRequest) throws Exception {
+    		@ApiParam("The ID of the project to be updated") @RequestParam final  String accept,
+    		@ApiParam("The ID of the project to be updated") @RequestParam final  String decline,
+    		@ApiParam("The project to be updated.") @RequestBody final ProjectAccessRequest projectAccessRequest) throws Exception {
         
         log.debug("Controller Api- Update ProjectAccessRequest {}", parId);
-        return _parService.update(getSessionUser(), projectAccessRequest, parId);
+        return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline);
     }
     
     private final PARService _parService;

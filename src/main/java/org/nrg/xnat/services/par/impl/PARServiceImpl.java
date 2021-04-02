@@ -53,16 +53,16 @@ public class PARServiceImpl implements PARService {
 	}
 	
 	@Override
-	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId) throws Exception {
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline) throws Exception {
 		ProjectAccessRequest par = getParObject(user,projectAccessRequest,parId);
 	       if (par != null) {
 	            if (par.getApproved() != null || par.getApprovalDate() != null) {
 	            	throw new NotFoundException("This project invitation has already been accepted.");
 	            } else {
 	                try {
-	                    if (getQueryVariable("accept") != null) {
+	                    if (accept != null) {
 	                        par.process(user, true, getEventType(), getReason(), getComment());
-	                    } else if (getQueryVariable("decline") != null) {
+	                    } else if (decline != null) {
 	                        par.process(user, false, getEventType(), getReason(), getComment());
 	                    }
 	                } catch (Exception e) {
