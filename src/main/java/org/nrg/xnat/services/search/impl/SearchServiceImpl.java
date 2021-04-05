@@ -1,20 +1,40 @@
 package org.nrg.xnat.services.search.impl;
 
+import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.om.XdatCriteria;
+import org.nrg.xdat.om.XdatCriteriaSet;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
+import org.nrg.xdat.om.XdatStoredSearchGroupid;
+import org.nrg.xdat.search.DisplaySearch;
 import org.nrg.xdat.security.XDATUser;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xft.XFT;
+import org.nrg.xft.XFTItem;
+import org.nrg.xft.event.EventDetails;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.EventUtils.CATEGORY;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.XFTInitException;
+import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.services.search.SearchService;
+import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -22,6 +42,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 public class SearchServiceImpl implements SearchService{
 	
@@ -102,10 +125,115 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XdatSearch> findSavedSearchBySearchId(UserI user, String searchId) {
-		return null;
+	public XdatStoredSearch findSavedSearchBySearchId(UserI user, String searchId) throws Exception {
+		 XdatStoredSearch xss            = null;
+		 String           sID            = searchId;
+		 boolean          loadedFromFile = false;
+		 
+		 xss = getXssData(xss , sID, user);
+		 if (xss != null) 
+			 verifyXss(xss, user);
+		 else xss = getXssDataAfterValidate(xss, sID, loadedFromFile, user );
+		 
+		 if (xss != null) {
+			 getXnatStoredSearchData();
+		 }
+		 
+		return xss;
 	}
 	
+	private void getXnatStoredSearchData() {
+		
+	}
+
+	/**
+     * Returns a file containing search xmls which was stored on the file system.  This provides a way to standardize search xmls outside of the database, for easy sharing across installations.
+     *
+     * @return The search XMLs stored on the file system.
+     */
+    private synchronized static File getFileSystemSearch(String name) {
+        if (!name.contains("..")) {
+            final File file = new File(new File(XFT.GetConfDir()).getParentFile().getParentFile(), "resources/searches/" + name);
+            if (file.exists()) {
+                return file;
+            }
+        }
+        return null;
+    }
+
+	
+	private XdatStoredSearch getXssDataAfterValidate(XdatStoredSearch xss, String sID, boolean loadedFromFile, UserI user) throws Exception {
+
+        //allow loading of saved searches from xml stored on hte file system
+        final File searchXml = getFileSystemSearch(sID);
+
+        if (searchXml != null) {
+           // if (mt.equals(MediaType.TEXT_XML) && (filepath == null || !filepath.startsWith("results")) && !this.hasQueryVariable("project")) {
+              //  return new FileRepresentation(searchXml, mt);
+           // } else {
+                    SAXReader reader = new SAXReader(user);
+                    XFTItem item = reader.parse(searchXml);
+                    xss = new XdatStoredSearch(item);
+
+                    loadedFromFile = true;
+
+                    if (this.getQueryVariable("project") != null) {
+                        final XdatCriteriaSet cs = new XdatCriteriaSet(user);
+                        cs.setMethod("OR");
+
+                        for (final String p :  org.springframework.util.StringUtils.commaDelimitedListToSet(getQueryVariable("project"))) {
+                            XdatCriteria c = new XdatCriteria(user);
+                            c.setSchemaField(xss.getRootElementName() + "/project");
+                            c.setComparisonType("=");
+                            c.setValue(p);
+                            cs.setCriteria(c);
+
+                            c = new XdatCriteria(user);
+                            c.setSchemaField(xss.getRootElementName() + "/sharing/share/project");
+                            c.setComparisonType("=");
+                            c.setValue(p);
+                            cs.setCriteria(c);
+                        }
+
+                        xss.setSearchWhere(cs);
+                    }
+                }
+           // }
+		return xss;
+	}
+
+	private void verifyXss(XdatStoredSearch xss, UserI user) throws InsufficientPrivilegesException {
+		if (!xss.hasAllowedUser(user.getLogin()) && !Permissions.canQuery(user, xss.getRootElementName())) {
+           throw new InsufficientPrivilegesException(user.getUsername());
+        }
+		
+	}
+
+	private XdatStoredSearch getXssData(XdatStoredSearch xss, String sID, UserI user) {
+		if (xss == null && sID != null) {
+            if (sID.startsWith("@")) {
+                try {
+                    String dv = this.getQueryVariable("dv");
+                    if (dv == null) {
+                        dv = "listing";
+                    }
+                    DisplaySearch ds = new DisplaySearch();
+                    ds.setUser(user);
+                    ds.setDisplay(dv);
+                    ds.setRootElement(sID.substring(1));
+                    xss = ds.convertToStoredSearch(sID);
+                    xss.setId(sID);
+                } catch (XFTInitException | ElementNotFoundException e) {
+                    log.error("", e);
+                }
+            } else {
+                xss = XdatStoredSearch.getXdatStoredSearchsById(sID, user, true);
+            }
+        }
+		return xss;
+	}
+
 	private final NamedParameterJdbcTemplate _template;
 
+	
 }

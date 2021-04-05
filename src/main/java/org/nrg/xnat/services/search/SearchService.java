@@ -2,6 +2,8 @@ package org.nrg.xnat.services.search;
 
 import java.util.List;
 
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
@@ -18,5 +20,5 @@ public interface SearchService {
 
 	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException;
 
-	public List<XdatSearch> findSavedSearchBySearchId(UserI user, String searchId);
+	public XdatStoredSearch  findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException, NotFoundException, Exception;
 }
