@@ -4,19 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-import org.nrg.xdat.model.XnatAbstractresourceI;
+import org.apache.commons.lang3.StringUtils;
+import org.nrg.xdat.model.XnatAbstractprojectassetI;
 import org.nrg.xdat.model.XnatInvestigatordataI;
 import org.nrg.xdat.model.XnatProjectdataAliasI;
-import org.nrg.xdat.om.XnatInvestigatordata;
+import org.nrg.xdat.om.XnatAbstractprojectasset;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResourcecatalog;
-import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.uri.URIManager;
@@ -27,6 +23,7 @@ import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -35,6 +32,7 @@ public class Project extends XnatModelObject {
     @JsonIgnore private XnatProjectdata xnatProjectdata;
     private List<Resource> resources;
     private List<Subject> subjects;
+    @JsonProperty("project-assets") private List<ProjectAsset> projectAssets;
     private String directory;
     private String title;
     @JsonProperty("running-title") private String runningTitle;
@@ -44,7 +42,6 @@ public class Project extends XnatModelObject {
     private List<String> aliases;
     private Investigator pi;
     private List<Investigator> investigators = new ArrayList<>();
-
 
     public Project() {}
 
@@ -79,6 +76,7 @@ public class Project extends XnatModelObject {
         populateProperties(preload);
     }
 
+
     private void populateProperties(final boolean preload) {
         this.id = xnatProjectdata.getId();
         this.xsiType = "xnat:projectData";
@@ -86,10 +84,12 @@ public class Project extends XnatModelObject {
         if(StringUtils.contains(this.xsiType, "arc:project")){
             this.reloadXnatProjectdata(xnatProjectdata.getUser());
         }
-        try { this.directory = xnatProjectdata.getRootArchivePath() + "arc001";} catch (NullPointerException e){log.error("Project could not get root archive path " + e.getMessage());}
+        try {
+            this.directory = xnatProjectdata.getRootArchivePath() + xnatProjectdata.getCurrentArc();
+        } catch (NullPointerException e){log.error("Project could not get root archive path " + e.getMessage());}
         try { this.accessibility = xnatProjectdata.getPublicAccessibility();} catch (Throwable e){log.error("Could not get project accessibility.", e.getMessage());}
 
-        this.label = !Strings.isNullOrEmpty(xnatProjectdata.getName()) ? xnatProjectdata.getName() : xnatProjectdata.getId();
+        this.label = StringUtils.defaultIfBlank(xnatProjectdata.getName(), xnatProjectdata.getId());
         this.title = xnatProjectdata.getName();
         this.runningTitle = xnatProjectdata.getDisplayID();
         this.description = xnatProjectdata.getDescription();
@@ -99,32 +99,35 @@ public class Project extends XnatModelObject {
 
         List<XnatInvestigatordataI> xnatInvestigators = xnatProjectdata.getInvestigators_investigator();
         if(xnatInvestigators != null && !xnatInvestigators.isEmpty()){
-            xnatInvestigators.forEach(i -> this.investigators.add(new Investigator((XnatInvestigatordata)i)));
+            xnatInvestigators.forEach(i -> this.investigators.add(new Investigator(i)));
         }
 
-        this.subjects = Lists.newArrayList();
+        this.subjects = new ArrayList<>();
         try {
             if (preload) {
-                for (final XnatSubjectdata subject : xnatProjectdata.getParticipants_participant()) {
-                    subjects.add(new Subject(subject, this.uri, xnatProjectdata.getRootArchivePath()));
-                }
+                subjects.addAll(xnatProjectdata.getParticipants_participant().stream().map(subject -> new Subject(subject, this.uri, xnatProjectdata.getRootArchivePath())).collect(Collectors.toList()));
+
             }
         } catch (Exception e) { log.error("Exception trying to load participants. " + e.getMessage()); };
 
-        this.resources = Lists.newArrayList();
+        this.resources = new ArrayList<>();
         try {
             if (preload) {
-                for (final XnatAbstractresourceI xnatAbstractresourceI : xnatProjectdata.getResources_resource()) {
-                    if (xnatAbstractresourceI instanceof XnatResourcecatalog) {
-                        resources.add(new Resource((XnatResourcecatalog) xnatAbstractresourceI, this.uri, xnatProjectdata.getRootArchivePath()));
-                    }
+                resources.addAll(xnatProjectdata.getResources_resource().stream().filter(XnatResourcecatalog.class::isInstance).map(resource -> new Resource((XnatResourcecatalog) resource, this.uri, xnatProjectdata.getRootArchivePath())).collect(Collectors.toList()));
                 }
+            } catch(Exception e) { log.error("Exception trying to load project resources. " + e.getMessage()) ;}
+
+        this.projectAssets = new ArrayList<>();
+        try {
+            if (preload) {
+                projectAssets.addAll(xnatProjectdata.getExperiments().stream().filter(XnatAbstractprojectasset.class::isInstance).map(asset -> new ProjectAsset((XnatAbstractprojectassetI) asset, this.uri, xnatProjectdata.getRootArchivePath())).collect(Collectors.toList()));
             }
-        } catch (Exception e) { log.error("Exception trying to load project resources. " + e.getMessage()) ;}
+        } catch(Exception e) { log.error("Exception trying to load project resources. " + e.getMessage()) ;}
+
     }
 
     public static Project populateSample() {
-        Project project = new Project();
+        final Project project = new Project();
         project.setId("SampleProjectID");
         project.setLabel("SampleProjectLabel");
         project.setXsiType("xnat:projectData");
@@ -143,7 +146,7 @@ public class Project extends XnatModelObject {
             @Override
             public Project apply(@Nullable URIManager.ArchiveItemURI uri) {
                 if (uri != null &&
-                        ProjectURII.class.isAssignableFrom(uri.getClass())) {
+                    ProjectURII.class.isAssignableFrom(uri.getClass())) {
                     return new Project((ProjectURII) uri, preload);
                 }
 
@@ -272,18 +275,23 @@ public class Project extends XnatModelObject {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), xnatProjectdata, directory, resources, subjects);
+        return Objects.hash(super.hashCode(), xnatProjectdata, projectAssets, directory, resources, subjects,
+                title, runningTitle, description, keywords, aliases, accessibility);
     }
-
 
     @Override
     public String toString() {
         return addParentPropertiesToString(MoreObjects.toStringHelper(this))
+                .add("title", title)
+                .add("running-title", runningTitle)
+                .add("description", description)
                 .add("directory", directory)
                 .add("resources", resources)
+                .add("project-assets", projectAssets)
                 .add("subjects", subjects)
                 .add("pi", pi)
                 .add("investigators", investigators)
                 .toString();
     }
+
 }

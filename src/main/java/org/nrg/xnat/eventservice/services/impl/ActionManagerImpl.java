@@ -5,7 +5,10 @@ import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xft.XFTItem;
+import org.nrg.xft.event.EventDetails;
+import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.security.UserI;
@@ -27,9 +30,13 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static org.nrg.xnat.eventservice.entities.TimedEventStatusEntity.Status.ACTION_CALLED;
 import static org.nrg.xnat.eventservice.entities.TimedEventStatusEntity.Status.ACTION_ERROR;
@@ -92,24 +99,41 @@ public class ActionManagerImpl implements ActionManager {
     @Override
     @Deprecated
     public List<Action> getActions(UserI user) {
+        return getActions(null, user);
+    }
+
+    @Override
+    public List<Action> getActions(List<String> xnatTypes, UserI user){
         List<Action> actions = new ArrayList<>();
         for(EventServiceActionProvider provider:getActionProviders()) {
-            Optional.ofNullable(provider.getActions(null, null, user)).ifPresent(actions::addAll);
-
+            Optional.ofNullable(provider.getActions(null, xnatTypes, user)).ifPresent(actions::addAll);
         }
         return actions;
     }
 
     @Override
-    public List<Action> getActions(String projectId, @Nonnull List<String> xnatTypes, UserI user) {
-        List<Action> actions = new ArrayList<>();
-        for (EventServiceActionProvider provider : getActionProviders()) {
-            try {
-                Optional.ofNullable(provider.getActions(projectId, xnatTypes, user)).ifPresent(actions::addAll);
-            }catch (Throwable e){
-                log.error("Exception attempting to get actions from " + provider.toString(), e.getCause());
-            }
+    public List<Action> getActions(@Nonnull String projectId, List<String> xnatTypes, UserI user) {
+        List<String> projectIds;
+        projectId = projectId.replaceAll("\\s+", "");
+        // If PID is a comma separated list, return the intersection of available actions
+        if(projectId.contains(",")) {
+            projectIds = Arrays.asList(projectId.split(","));
+        } else {
+            projectIds = Arrays.asList(projectId);
         }
+
+        List<Action> actions = null;
+        for(String pid : projectIds) {
+            List<Action> providerActions = new ArrayList<>();
+            getActionProviders().stream().forEach(provider ->
+                    Optional.ofNullable(provider.getActions(pid, xnatTypes, user))
+                            .ifPresent(providerActions::addAll));
+
+            // If actions is already populated, find the intersection of list elements
+            actions = actions == null ? providerActions :
+                    actions.stream().filter(a -> providerActions.contains(a)).collect(Collectors.toList());
+        }
+
         return actions;
     }
 
@@ -180,18 +204,48 @@ public class ActionManagerImpl implements ActionManager {
     //    WorkflowUtils.fail(workflow, event);
     //}
     @Override
-    public PersistentWorkflowI generateWorkflowEntryIfAppropriate(Subscription subscription, EventServiceEvent esEvent, UserI user) {
+    public PersistentWorkflowI generateWorkflowEntryIfAppropriate(Subscription subscription, Long deliveryId, EventServiceEvent esEvent, UserI user) {
         try {
-            if(esEvent.getObject() instanceof BaseElement && ((BaseElement)esEvent.getObject()).getItem() instanceof XFTItem) {
-                XFTItem eventXftItem = getRootWorkflowObject(esEvent);
-                log.debug("Attempting to create workflow entry for " + esEvent.getObject().getClass().getSimpleName() + " in subscription" + subscription.name() + ".");
-                final PersistentWorkflowI workflow = WorkflowUtils.buildOpenWorkflow(user, eventXftItem,
-                        EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.PROCESS,
-                                subscription.name().replaceAll("[^a-zA-Z0-9_ -]", "_"), "Event Service Action Called", subscription.actionKey()));
+            Object eventObject = esEvent.getObject(user);
+
+            if(eventObject instanceof BaseElement && ((BaseElement)eventObject).getItem() instanceof XFTItem) {
+                XFTItem eventXftItem = getRootWorkflowObject(((BaseElement)eventObject).getItem(), user);
+                String workflowActionLabel =
+                        subscription.name().replaceAll("[^a-zA-Z0-9_ -]", "_");
+                String workflowReasonLabel = "Event Service triggered.";
+                String workflowComment = "";
+                EventDetails eventDetails = EventUtils.newEventInstance(
+                        EventUtils.CATEGORY.DATA,
+                        EventUtils.TYPE.PROCESS,
+                        workflowActionLabel,
+                        workflowReasonLabel,
+                        workflowComment
+                );
+                if (log.isDebugEnabled()) {
+                    log.debug("Attempting to create workflow entry for " + esEvent.getObjectClass() + " in subscription" + subscription.name() + ".");
+                }
+                final PersistentWorkflowI workflow = WorkflowUtils.buildOpenWorkflow(user, eventXftItem, eventDetails);
+
                 if(workflow != null) {
-                    WorkflowUtils.save(workflow, workflow.buildEvent());
-                    log.debug("Created workflow " + workflow.getId());
-                    return workflow;
+                    Boolean successfulSave = false;
+                    AtomicInteger saveAttempts = new AtomicInteger(0);
+                    Exception wrkflwException = new Exception();
+                    // TODO: There must be a better way to create workflow entries with unique timestamps
+                    while (!successfulSave && saveAttempts.incrementAndGet() < 100)
+                    try {
+                        workflow.setLaunchTime(Calendar.getInstance().getTime());
+                        EventMetaI eventMetaI = workflow.buildEvent();
+                        WorkflowUtils.save(workflow, eventMetaI);
+                        successfulSave = true;
+                        log.debug("Created workflow " + workflow.getId());
+                    } catch (Exception e) {
+                        wrkflwException = e;
+                        log.debug("Event Service workflow save failed. Trying again.");
+                    }
+                    if (successfulSave) { return workflow; }
+                    else { throw wrkflwException; }
+                } else {
+                    log.error("Unable to create PersistentWorkflow entry for ES Event: " + esEvent.getDisplayName());
                 }
 
             }
@@ -204,20 +258,24 @@ public class ActionManagerImpl implements ActionManager {
         return null;
     }
 
-    private XFTItem getRootWorkflowObject(EventServiceEvent event){
-        XFTItem eventXftItem = ((BaseElement)event.getObject()).getItem();
-        if(event.getObject() != null && (event.getObject() instanceof XnatImagescandataI)){
+    private XFTItem getRootWorkflowObject(XFTItem eventObject, UserI user){
+        if(eventObject != null && (eventObject instanceof XnatImagescandataI)){
             // If the event object is a scan, the workflow will not show up anywhere.
             // If possible, we use its parent session as the root object instead.
-            if (eventXftItem.getParent() != null){
+            // Note that if we simply use  eventXftItem.getParent() as the parent session, xsiType is not retained
+            if (eventObject.getParent() != null){
                 try {
-                    eventXftItem = (XFTItem) eventXftItem.getParent();
+                     return XnatExperimentdata.getXnatExperimentdatasById(
+                             ((XnatImagescandataI)eventObject).getImageSessionId(),
+                             user,
+                             false)
+                                              .getItem();
                 }catch (Throwable t){
                     // just ignore and use the original item.
                 }
             }
         }
-        return eventXftItem;
+        return eventObject;
     }
 
     @Override
@@ -238,12 +296,12 @@ public class ActionManagerImpl implements ActionManager {
     @Override
     public void processEvent(Subscription subscription, EventServiceEvent esEvent, final UserI user, final Long deliveryId) {
         log.debug("ActionManager.processEvent started on Thread: " + Thread.currentThread().getName());
-        PersistentWorkflowI workflow = generateWorkflowEntryIfAppropriate(subscription, esEvent, user);
+        PersistentWorkflowI workflow = generateWorkflowEntryIfAppropriate(subscription, deliveryId, esEvent, user);
         EventServiceActionProvider provider = getActionProviderByKey(subscription.actionKey());
         if(provider!= null) {
             if(workflow !=null){
                 try {
-                    WorkflowUtils.setStep(workflow, (provider.getName() != null ? provider.getName() : "Provider") + " action called.");
+                    WorkflowUtils.setStep(workflow, (provider.getDisplayName() != null ? provider.getDisplayName() : "Provider") + " action called.");
                 } catch (Exception e) {
                     log.error("Workflow completion exception for workflow:" + workflow.getId());
                     log.error(e.getMessage());
@@ -274,7 +332,7 @@ public class ActionManagerImpl implements ActionManager {
             Subscription resolvedSubscription = eventPropertyService.resolveEventPropertyVariables(subscription, esEvent, user, deliveryId);
             try{
                 log.debug("Passing event/action processing off to action provider : " + provider.getName());
-                subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_CALLED, new Date(), "Event passed to Action Provider: " + provider.getName());
+                subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_CALLED, new Date(), "Event passed to Action Provider: " + provider.getDisplayName());
                 provider.processEvent(esEvent, resolvedSubscription, user, deliveryId);
                 SubscriptionDeliveryEntity delivery = subscriptionDeliveryEntityService.get(deliveryId);
                 if (workflow != null && delivery != null){

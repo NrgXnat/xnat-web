@@ -2,26 +2,32 @@ package org.nrg.xnat.eventservice.events;
 
 import org.nrg.framework.event.XnatEventServiceEvent;
 import org.nrg.xdat.model.XnatProjectdataI;
-import org.nrg.xnat.eventservice.listeners.EventServiceListener;
-import org.springframework.stereotype.Service;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xft.security.UserI;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Service
 @XnatEventServiceEvent(name="ProjectEvent")
-public class ProjectEvent extends CombinedEventServiceEvent<ProjectEvent, XnatProjectdataI>  {
+public class ProjectEvent extends AbstractEventServiceEvent<XnatProjectdataI> {
 
     public enum Status {CREATED, DELETED};
 
-    final String displayName = "Project Event";
-    final String description = "Project created or deleted.";
+    private final String displayName = "Project";
+    private final String description = "Project created or deleted.";
+    private String payloadId = null;
 
     public ProjectEvent(){};
 
-    public ProjectEvent(final XnatProjectdataI payload, final String eventUser, final Status status, final String projectId) {
-        super(payload, eventUser, status, projectId, (payload != null ? payload.getXSIType() : null));
+    public ProjectEvent(final XnatProjectdataI payload, final String eventUser, final Status status) {
+        super(payload, eventUser, status, payload.getId(), (payload != null ? payload.getXSIType() : null));
+        payloadId = payload.getId();
+    }
+
+    @Override
+    public XnatProjectdataI getObject(UserI user) {
+        return XnatProjectdata.getXnatProjectdatasById(payloadId, user, false);
     }
 
     @Override
@@ -39,10 +45,5 @@ public class ProjectEvent extends CombinedEventServiceEvent<ProjectEvent, XnatPr
     public List<String> getStatiStates() { return Arrays.stream(Status.values()).map(Status::name).collect(Collectors.toList()); }
 
     @Override
-    public EventServiceListener getInstance() {
-        return new ProjectEvent();
-    }
-
-    @Override
-    public EventScope getEventScope() { return EventScope.SITE; }
+    public List<EventScope> getEventScope() { return Arrays.asList(EventScope.SITE); }
 }

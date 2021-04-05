@@ -2,35 +2,32 @@ package org.nrg.xnat.eventservice.events;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.framework.event.XnatEventServiceEvent;
 import org.nrg.xdat.XDAT;
-import org.nrg.xft.event.entities.WorkflowStatusEvent;
-import org.nrg.xnat.eventservice.listeners.EventServiceListener;
-import org.springframework.stereotype.Service;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.security.UserI;
+import org.nrg.xnat.utils.WorkflowUtils;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-@Service
-@XnatEventServiceEvent(name="WorkflowStatusChangeEvent")
-public class WorkflowStatusChangeEvent extends CombinedEventServiceEvent<WorkflowStatusChangeEvent, WorkflowStatusEvent> {
+//@XnatEventServiceEvent(name="WorkflowStatusChangeEvent")
+public class WorkflowStatusChangeEvent extends AbstractEventServiceEvent<PersistentWorkflowI> {
 
     public enum Status {CHANGED}
 
-    final String displayName = "Workflow Status";
-    final String description = "XNAT Workflow status change detected.";
+    private final String displayName = "Workflow Status";
+    private final String description = "XNAT Workflow status change detected.";
+    private String payloadId = null;
 
-    final ObjectMapper mapper = XDAT.getContextService().getBeanSafely(ObjectMapper.class);
+    public WorkflowStatusChangeEvent() {};
 
-    public WorkflowStatusChangeEvent() {}
-
-    ;
-
-    public WorkflowStatusChangeEvent(final WorkflowStatusEvent payload, final String eventUser,
-                                     final WorkflowStatusChangeEvent.Status status, final String projectId) {
-        super(payload, eventUser, status, projectId);
+    public WorkflowStatusChangeEvent(final PersistentWorkflowI payload, final String eventUser,
+                                     final WorkflowStatusChangeEvent.Status status, final String projectId,
+                                     final String xsiType) {
+        super(payload, eventUser, status, projectId, xsiType);
+        payloadId = payload.getId();
     }
 
     @Override
@@ -38,6 +35,11 @@ public class WorkflowStatusChangeEvent extends CombinedEventServiceEvent<Workflo
 
     @Override
     public String getDescription() { return description; }
+
+    @Override
+    public PersistentWorkflowI getObject(UserI user) {
+        return WorkflowUtils.getUniqueWorkflow(user, payloadId);
+    }
 
     @Override
     public String getPayloadXnatType() { return "WorkflowStatusEvent"; }
@@ -49,34 +51,24 @@ public class WorkflowStatusChangeEvent extends CombinedEventServiceEvent<Workflo
     public List<String> getStatiStates() { return Arrays.stream(WorkflowStatusChangeEvent.Status.values()).map(WorkflowStatusChangeEvent.Status::name).collect(Collectors.toList()); }
 
     @Override
-    public EventServiceListener getInstance() {
-        return new WorkflowStatusChangeEvent();
-    }
-
-    @Override
     public Boolean filterablePayload() { return true;}
 
     @Override
     public Object getPayloadSignatureObject() {
         Object payloadSignatureObject = null;
-        try {
-            if (getObject() != null && mapper != null && mapper.canSerialize(getObject().getClass())) {
-                payloadSignatureObject = getObject();
+        if(payloadId != null) {
+            try {
+                final ObjectMapper mapper = XDAT.getContextService().getBeanSafely(ObjectMapper.class);
+                if (mapper != null && mapper.canSerialize(getObjectClass())) {
+                    payloadSignatureObject = getObject(null);
+                }
+            } catch (Exception e) {
+                log.error("Failed to return WorkflowStatusChangeEvent payload signature.\n" + e.getMessage());
             }
-        } catch (Exception e) {
-            log.error("Failed to return WorkflowStatusChangeEvent payload signature.\n" + e.getMessage());
         }
         return payloadSignatureObject;
+
     }
 
-    @Override
-    public String toString() {
-        return "WorkflowStatusChangeEvent{" +
-                "eventUser='" + eventUser + '\'' +
-                ", object=" + object.getClass().getSimpleName() +
-                ", eventCreatedTimestamp=" + eventCreatedTimestamp.toString() +
-                ", projectId='" + projectId + '\'' +
-                '}';
-    }
 
 }

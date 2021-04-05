@@ -9,9 +9,8 @@
 
 package org.nrg.xapi.rest.users;
 
-import static org.nrg.xapi.model.users.User.USER_ROW_MAPPER;
 import static org.nrg.xdat.security.helpers.AccessLevel.*;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.*;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 import io.swagger.annotations.*;
@@ -26,6 +25,7 @@ import org.nrg.xapi.authorization.UserGroupXapiAuthorization;
 import org.nrg.xapi.authorization.UserResourceXapiAuthorization;
 import org.nrg.xapi.exceptions.*;
 import org.nrg.xapi.model.users.User;
+import org.nrg.xapi.model.users.UserAuth;
 import org.nrg.xapi.model.users.UserFactory;
 import org.nrg.xapi.rest.*;
 import org.nrg.xdat.om.XdatUser;
@@ -43,6 +43,7 @@ import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.security.core.session.SessionInformation;
@@ -53,13 +54,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpSession;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpSession;
 
 @SuppressWarnings({"SqlNoDataSourceInspection", "SqlResolve"})
 @Api("User Management API")
@@ -122,6 +123,18 @@ public class UsersApi extends AbstractXapiRestController {
             throw new DataFormatException("The submitted username '" + username + "' is invalid.");
         }
         return _jdbcTemplate.queryForObject(QUERY_USER_PROFILE, new MapSqlParameterSource("username", username), USER_ROW_MAPPER);
+    }
+
+    @ApiOperation(value = "Get user auth details.", notes = "The user authDetails function returns info about authentication methods that can be used for a given XNAT account.", response = UserAuth.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "User auth info."),
+                   @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
+                   @ApiResponse(code = 403, message = "You do not have sufficient permissions to access the user profile."),
+                   @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "authDetails/{username}", produces = APPLICATION_JSON_VALUE, method = GET, restrictTo = Admin)
+    @AuthDelegate(UserResourceXapiAuthorization.class)
+    @ResponseBody
+    public List<UserAuth> usersAuthDetailsGet(@ApiParam(value = "ID of the user to fetch", required = true) @PathVariable("username") @Username final String username) {
+        return VALID_USERNAME.matcher(username).matches() ? _jdbcTemplate.query(QUERY_USER_AUTH, new MapSqlParameterSource("username", username), USER_AUTH_ROW_MAPPER) : Collections.emptyList();
     }
 
     @ApiOperation(value = "Get list of users who are enabled or who have interacted with the site somewhat recently.", notes = "The users' profiles function returns a list of all users of the XNAT system with brief information about each.", response = User.class, responseContainer = "List")
@@ -250,9 +263,14 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Not authorized to update this user."),
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "{username}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
-    public User updateUser(@ApiParam(value = "The username of the user to create or update.", required = true) @PathVariable("username") @Username final String username, @RequestBody final User model) throws NotFoundException, InitializationException, DataFormatException, NotModifiedException {
-        final UserI user = getUserI(username);
+    @XapiRequestMapping(value = "{username}", consumes = {APPLICATION_JSON_VALUE, MULTIPART_FORM_DATA_VALUE}, produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
+    public User updateUser(@ApiParam(value = "The username of the user to create or update.", required = true) @PathVariable("username") @Username final String username, @RequestBody final User model) throws NotFoundException, InitializationException, DataFormatException, NotModifiedException, UserInitException {
+        final UserI user;
+        try {
+            user = getUserManagementService().getUser(username);
+        } catch (UserNotFoundException e) {
+            throw new NotFoundException("User with username " + username + " was not found.");
+        }
         if (StringUtils.isNotBlank(model.getUsername()) && !StringUtils.equals(user.getUsername(), model.getUsername())) {
             throw new DataFormatException("Username must match");
         }
@@ -363,7 +381,7 @@ public class UsersApi extends AbstractXapiRestController {
             }
             return user.isEnabled();
         } catch (UserInitException e) {
-            throw new InitializationException("An error occurred initializing the user '" +  e);
+            throw new InitializationException("An error occurred initializing the user '" + e);
         } catch (UserNotFoundException e) {
             throw new NotFoundException(XdatUser.SCHEMA_ELEMENT_NAME, username);
         }
@@ -425,7 +443,7 @@ public class UsersApi extends AbstractXapiRestController {
         return getUserRoles(username);
     }
 
-    @ApiOperation(value = "Adds one or more roles to a user.", notes = "Assigns one or more new roles to a user.", response = String.class, responseContainer = "List")
+    @ApiOperation(value = "Adds one or more roles to a user.", notes = "Assigns one or more new roles to a user.")
     @ApiResponses({@ApiResponse(code = 200, message = "All specified user roles successfully added."),
                    @ApiResponse(code = 202, message = "Some user roles successfully added, but some may have failed. Check the return value for roles that the service was unable to add."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
@@ -433,8 +451,8 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
-    public Collection<String> usersIdAddRoles(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
-                                              @ApiParam(value = "The user's new roles.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, Exception {
+    public void usersIdAddRoles(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
+                                @ApiParam(value = "The user's new roles.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, DataFormatException {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String role : roles) {
@@ -445,25 +463,24 @@ public class UsersApi extends AbstractXapiRestController {
                 log.error("Error occurred adding role " + role + " to user " + username + ".", e);
             }
         }
-        if (failed.isEmpty()) {
-            Collections.emptyList();
+        if (!failed.isEmpty()) {
+            throw new DataFormatException("The following roles were not added to user " + username + ": " + StringUtils.join(failed, ", "));
         }
-        throw new Exception("The following roles were not added to user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
-    @ApiOperation(value = "Adds a role to a user.", notes = "Assigns a new role to a user.", response = Boolean.class)
+    @ApiOperation(value = "Adds a role to a user.", notes = "Assigns a new role to a user.")
     @ApiResponses({@ApiResponse(code = 200, message = "User role successfully added."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "Not authorized to add a role to this user."),
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles/{role}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Admin)
-    public Boolean usersIdAddRole(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
-                                  @ApiParam(value = "The user's new role.", required = true) @PathVariable("role") final String role) throws Exception, NotFoundException, InitializationException {
-        return usersIdAddRoles(username, Collections.singletonList(role)).isEmpty();
+    public void usersIdAddRole(@ApiParam(value = "ID of the user to add a role to", required = true) @PathVariable("username") @Username final String username,
+                               @ApiParam(value = "The user's new role.", required = true) @PathVariable("role") final String role) throws DataFormatException, NotFoundException, InitializationException {
+        usersIdAddRoles(username, Collections.singletonList(role));
     }
 
-    @ApiOperation(value = "Removes one or more roles from a user.", notes = "Removes one or more new roles from a user.", response = String.class, responseContainer = "List")
+    @ApiOperation(value = "Removes one or more roles from a user.", notes = "Removes one or more new roles from a user.")
     @ApiResponses({@ApiResponse(code = 200, message = "All specified user roles successfully removed."),
                    @ApiResponse(code = 202, message = "Some user roles successfully removed, but some may have failed. Check the return value for roles that the service was unable to remove."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
@@ -471,8 +488,8 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = Admin)
-    public Collection<String> usersIdRemoveRoles(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
-                                                 @ApiParam(value = "The roles to be removed.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, Exception {
+    public void usersIdRemoveRoles(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
+                                   @ApiParam(value = "The roles to be removed.", required = true) @RequestBody final List<String> roles) throws NotFoundException, InitializationException, DataFormatException {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String role : roles) {
@@ -483,22 +500,21 @@ public class UsersApi extends AbstractXapiRestController {
                 log.error("Error occurred remove role " + role + " from user " + user.getLogin() + ".", e);
             }
         }
-        if (failed.isEmpty()) {
-            Collections.emptyList();
+        if (!failed.isEmpty()) {
+            throw new DataFormatException("The following roles were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
         }
-        throw new Exception("The following roles were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
-    @ApiOperation(value = "Remove a user's role.", notes = "Removes a user's role.", response = Boolean.class)
+    @ApiOperation(value = "Remove a user's role.", notes = "Removes a user's role.")
     @ApiResponses({@ApiResponse(code = 200, message = "User role successfully removed."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "Not authorized to remove a role from this user."),
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/roles/{role}", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = Admin)
-    public Boolean usersIdRemoveRole(@ApiParam(value = "ID of the user to delete a role from", required = true) @PathVariable("username") @Username final String username,
-                                     @ApiParam(value = "The user role to delete.", required = true) @PathVariable("role") String role) throws Exception, NotFoundException, InitializationException {
-        return usersIdRemoveRoles(username, Collections.singletonList(role)).isEmpty();
+    public void usersIdRemoveRole(@ApiParam(value = "ID of the user to delete a role from", required = true) @PathVariable("username") @Username final String username,
+                                  @ApiParam(value = "The user role to delete.", required = true) @PathVariable("role") String role) throws DataFormatException, NotFoundException, InitializationException {
+        usersIdRemoveRoles(username, Collections.singletonList(role));
     }
 
     @ApiOperation(value = "Returns the groups for the user with the specified user ID.", notes = "Returns a collection of the user's groups.", response = Set.class)
@@ -512,7 +528,7 @@ public class UsersApi extends AbstractXapiRestController {
         return Groups.getGroupsForUser(getUserI(username)).keySet();
     }
 
-    @ApiOperation(value = "Adds the user to one or more groups.", notes = "Assigns the user to one or more new groups.", response = String.class, responseContainer = "List")
+    @ApiOperation(value = "Adds the user to one or more groups.", notes = "Assigns the user to one or more new groups.")
     @ApiResponses({@ApiResponse(code = 200, message = "User successfully added for all specified groups."),
                    @ApiResponse(code = 202, message = "User was successfully added to some of the specified groups, but some may have failed. Check the return value for groups that the service was unable to add."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
@@ -521,8 +537,8 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Authorizer)
     @AuthDelegate(UserGroupXapiAuthorization.class)
-    public Collection<String> usersIdAddGroups(@ApiParam(value = "ID of the user to add to the specified groups", required = true) @PathVariable("username") @Username final String username,
-                                               @ApiParam(value = "The groups to which the user should be added.", required = true) @UserGroup @RequestBody final List<String> groups) throws NotFoundException, InitializationException, Exception {
+    public void usersIdAddGroups(@ApiParam(value = "ID of the user to add to the specified groups", required = true) @PathVariable("username") @Username final String username,
+                                 @ApiParam(value = "The groups to which the user should be added.", required = true) @UserGroup @RequestBody final List<String> groups) throws NotFoundException, InitializationException, DataFormatException {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String group : groups) {
@@ -533,13 +549,12 @@ public class UsersApi extends AbstractXapiRestController {
                 log.error("Error occurred adding user " + user.getLogin() + " to group " + group + ".", e);
             }
         }
-        if (failed.isEmpty()) {
-            return Collections.emptyList();
+        if (!failed.isEmpty()) {
+            throw new DataFormatException("The following groups were not added to user " + username + ": " + StringUtils.join(failed, ", "));
         }
-        throw new Exception("The following groups were not added to user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
-    @ApiOperation(value = "Removes the user from one or more groups.", notes = "Removes the user from one or more groups.", response = String.class, responseContainer = "List")
+    @ApiOperation(value = "Removes the user from one or more groups.", notes = "Removes the user from one or more groups.")
     @ApiResponses({@ApiResponse(code = 200, message = "User successfully removed from all specified groups."),
                    @ApiResponse(code = 202, message = "User was successfully removed from some of the specified groups, but some may have failed. Check the return value for groups that the service was unable to remove."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
@@ -547,8 +562,8 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = User)
-    public Collection<String> usersIdRemoveGroups(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
-                                                  @ApiParam(value = "The groups from which the user should be removed.", required = true) @RequestBody final List<String> groups) throws NotFoundException, InitializationException, Exception {
+    public void usersIdRemoveGroups(@ApiParam(value = "ID of the user to remove role from", required = true) @PathVariable("username") @Username final String username,
+                                    @ApiParam(value = "The groups from which the user should be removed.", required = true) @RequestBody final List<String> groups) throws NotFoundException, InitializationException, DataFormatException {
         final UserI              user   = getUserI(username);
         final Collection<String> failed = new ArrayList<>();
         for (final String group : groups) {
@@ -559,13 +574,12 @@ public class UsersApi extends AbstractXapiRestController {
                 log.error("Error occurred adding user " + user.getLogin() + " to group " + group + ".", e);
             }
         }
-        if (failed.isEmpty()) {
-            return Collections.emptyList();
+        if (!failed.isEmpty()) {
+            throw new DataFormatException("The following groups were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
         }
-        throw new Exception("The following groups were not removed from user " + username + ": " + StringUtils.join(failed, ", "));
     }
 
-    @ApiOperation(value = "Adds a user to a group.", notes = "Assigns user to a group.", response = Boolean.class)
+    @ApiOperation(value = "Adds a user to a group.", notes = "Assigns user to a group.")
     @ApiResponses({@ApiResponse(code = 200, message = "User successfully added to group."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "Not authorized to assign this user to groups."),
@@ -573,19 +587,21 @@ public class UsersApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups/{group}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = Authorizer)
     @AuthDelegate(UserGroupXapiAuthorization.class)
-    public Boolean usersIdAddGroup(@ApiParam(value = "ID of the user to add to a group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The user's new group.", required = true) @UserGroup @PathVariable("group") final String group) throws Exception, NotFoundException, InitializationException {
-        return usersIdAddGroups(username, Collections.singletonList(group)).isEmpty();
+    public void usersIdAddGroup(@ApiParam(value = "ID of the user to add to a group", required = true) @PathVariable("username") @Username final String username,
+                                @ApiParam(value = "The user's new group.", required = true) @UserGroup @PathVariable("group") final String group) throws DataFormatException, NotFoundException, InitializationException {
+        usersIdAddGroups(username, Collections.singletonList(group));
     }
 
-    @ApiOperation(value = "Removes a user from a group.", notes = "Removes a user from a group.", response = Boolean.class)
+    @ApiOperation(value = "Removes a user from a group.", notes = "Removes a user from a group.")
     @ApiResponses({@ApiResponse(code = 200, message = "User's group successfully removed."),
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 403, message = "Not authorized to remove this user from groups."),
                    @ApiResponse(code = 404, message = "User not found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{username}/groups/{group}", produces = APPLICATION_JSON_VALUE, method = DELETE, restrictTo = User)
-    public Boolean usersIdRemoveGroup(@ApiParam(value = "ID of the user to remove from group", required = true) @PathVariable("username") @Username final String username, @ApiParam(value = "The group to remove the user from.", required = true) @PathVariable("group") final String group) throws Exception, NotFoundException, InitializationException {
-        return usersIdRemoveGroups(username, Collections.singletonList(group)).isEmpty();
+    public void usersIdRemoveGroup(@ApiParam(value = "ID of the user to remove from group", required = true) @PathVariable("username") @Username final String username,
+                                   @ApiParam(value = "The group to remove the user from.", required = true) @PathVariable("group") final String group) throws NotFoundException, InitializationException, DataFormatException {
+        usersIdRemoveGroups(username, Collections.singletonList(group));
     }
 
     @ApiOperation(value = "Returns list of projects that user has edit access.", notes = "Returns list of projects that user has edit access.", response = String.class, responseContainer = "List")
@@ -594,6 +610,13 @@ public class UsersApi extends AbstractXapiRestController {
         return _permissionsService.getUserEditableProjects(getSessionUser());
     }
 
+    @ApiOperation(value = "Returns username for signed-in user", response = String.class)
+    @XapiRequestMapping(value = "username", produces = TEXT_PLAIN_VALUE, method = GET, restrictTo = Authenticated)
+    public String getUsername() {
+        return getSessionUser().getUsername();
+    }
+
+    @SuppressWarnings("unused")
     public static class Event {
         public static String Added                 = "Added User";
         public static String Disabled              = "Disabled User";
@@ -724,7 +747,10 @@ public class UsersApi extends AbstractXapiRestController {
     private static final String                  QUERY_USER_PROFILES             = "SELECT enabled, login AS username, xdat_user_id AS id, firstname AS firstName, lastname AS lastName, email, verified, last_modified, auth.max_login AS lastSuccessfulLogin FROM xdat_user JOIN xdat_user_meta_data ON xdat_user.user_info=xdat_user_meta_data.meta_data_id JOIN (SELECT xdat_username, max(last_successful_login) max_login FROM xhbm_xdat_user_auth GROUP BY xdat_username) auth ON xdat_user.login=auth.xdat_username ORDER BY xdat_user.xdat_user_id";
     private static final String                  QUERY_CURRENT_USERS             = "SELECT enabled, login AS username, xdat_user_id AS id, firstname AS firstName, lastname AS lastName, email, verified, last_modified, auth.max_login AS lastSuccessfulLogin FROM xdat_user JOIN xdat_user_meta_data ON xdat_user.user_info=xdat_user_meta_data.meta_data_id JOIN (SELECT xdat_username, max(last_successful_login) max_login FROM xhbm_xdat_user_auth GROUP BY xdat_username) auth ON xdat_user.login=auth.xdat_username WHERE (xdat_user.enabled=1 OR (max_login > (CURRENT_DATE - (INTERVAL '1 year' * :maxLoginInterval)) OR (max_login IS NULL AND (xdat_user_meta_data.last_modified > (CURRENT_DATE - (INTERVAL '1 year' * :lastModifiedInterval)) ) ) )) ORDER BY xdat_user.xdat_user_id";
     private static final String                  QUERY_USER_PROFILE              = "SELECT enabled, login AS username, xdat_user_id AS id, firstname AS firstName, lastname AS lastName, email, verified, last_modified, auth.max_login AS lastSuccessfulLogin FROM xdat_user JOIN xdat_user_meta_data ON xdat_user.user_info=xdat_user_meta_data.meta_data_id JOIN (SELECT xdat_username, max(last_successful_login) max_login FROM xhbm_xdat_user_auth GROUP BY xdat_username) auth ON xdat_user.login=auth.xdat_username WHERE xdat_user.login=:username";
+    private static final String                  QUERY_USER_AUTH                 = "SELECT auth_method, auth_method_id, auth_user, failed_login_attempts, last_login_attempt, last_successful_login FROM xhbm_xdat_user_auth WHERE xdat_username=:username";
     private static final Pattern                 VALID_USERNAME                  = Pattern.compile("^[a-zA-Z0-9]+[a-zA-Z0-9._-]*$");
+    private static final RowMapper<User>         USER_ROW_MAPPER                 = org.nrg.xapi.model.users.User.USER_ROW_MAPPER;
+    private static final RowMapper<UserAuth>     USER_AUTH_ROW_MAPPER            = org.nrg.xapi.model.users.UserAuth.Mapper;
     private static final SessionInfoToIdFunction INFO_TO_ID_FUNCTION             = new SessionInfoToIdFunction(false);
     private static final SessionInfoToIdFunction INFO_TO_ID_INVALIDATOR_FUNCTION = new SessionInfoToIdFunction(true);
 

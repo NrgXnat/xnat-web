@@ -1,7 +1,7 @@
 package org.nrg.xnat.eventservice.events;
 
-import com.google.common.reflect.TypeToken;
 import org.nrg.framework.event.XnatEventServiceEvent;
+import org.nrg.xft.security.UserI;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -18,8 +18,6 @@ public class SampleEvent implements EventServiceEvent {
     Date eventDetectedTimestamp = new Date();
     UUID eventUUID = UUID.randomUUID();
     public enum Status {CREATED, UPDATED, DELETED};
-
-    private final TypeToken<String> typeToken = new TypeToken<String>(getClass()) { };
 
     public SampleEvent(){};
 
@@ -45,12 +43,12 @@ public class SampleEvent implements EventServiceEvent {
     }
 
     @Override
-    public Object getObject() {
+    public Object getObject(UserI user) {
         return Object.class;
     }
 
     @Override
-    public Class getObjectClass() { return typeToken.getRawType(); }
+    public Class getObjectClass() { return String.class; }
 
     @Override
     public String getPayloadXnatType() {
@@ -99,5 +97,5 @@ public class SampleEvent implements EventServiceEvent {
     public String getProjectId() { return null; }
 
     @Override
-    public EventScope getEventScope() {return EventScope.PROJECT;}
+    public List<EventScope> getEventScope() {return Arrays.asList(EventScope.PROJECT);}
 }

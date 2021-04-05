@@ -18,6 +18,7 @@ public interface ActionManager {
     @Deprecated
     List<Action> getActions(UserI user);
 
+    List<Action> getActions(List<String> xnatType, UserI user);
     List<Action> getActions(String projectId, List<String> xnatType, UserI user);
 
     List<Action> getActionsByProvider(String providerName, UserI user);
@@ -30,7 +31,7 @@ public interface ActionManager {
     boolean validateAction(String actionKey, String projectId, UserI user);
     boolean validateAction(String actionKey, List<String> projectIds, UserI user);
 
-    PersistentWorkflowI generateWorkflowEntryIfAppropriate(Subscription subscription, EventServiceEvent esEvent, UserI user);
+    PersistentWorkflowI generateWorkflowEntryIfAppropriate(Subscription subscription, Long deliveryId, EventServiceEvent esEvent, UserI user);
     void processEvent(Subscription subscription, EventServiceEvent esEvent, UserI user, Long deliveryId);
 
     @Async

@@ -190,6 +190,15 @@
             <fileNamePattern>${xnat.home}/logs/anon.log.%d{yyyy-MM-dd}</fileNamePattern>
         </rollingPolicy>
     </appender>
+    <appender name="snapshot" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${xnat.home}/logs/snapshot.log</File>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/snapshot.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
     <appender name="dicom" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${xnat.home}/logs/dicom.log</file>
         <append>true</append>
@@ -308,7 +317,16 @@
             <fileNamePattern>${xnat.home}/logs/jdbc.log.%d{yyyy-MM-dd}</fileNamePattern>
         </rollingPolicy>
     </appender>
-        <root level="ERROR">
+    <appender name="eventservice" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${xnat.home}/logs/eventservice.log</File>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/eventservice.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+    <root level="ERROR">
         <appender-ref ref="app"/>
     </root>
     <logger name="org.nrg.xft.search" additivity="false" level="ERROR">
@@ -422,7 +440,16 @@
     <logger name="org.nrg.dcm.id" additivity="false" level="WARN">
         <appender-ref ref="identifiers"/>
     </logger>
-    <logger name="org.nrg.dcm.edit" additivity="false" level="WARN">
+    <logger name="org.nrg.xnat.snapshot" additivity="false" level="WARN">
+        <appender-ref ref="snapshot"/>
+    </logger>
+    <logger name="org.nrg.dicom.dicomedit" additivity="false" level="WARN">
+        <appender-ref ref="anon"/>
+    </logger>
+    <logger name="org.nrg.dicom.pixeledit" additivity="false" level="WARN">
+        <appender-ref ref="anon"/>
+    </logger>
+    <logger name="org.nrg.dicom.mizer" additivity="false" level="WARN">
         <appender-ref ref="anon"/>
     </logger>
     <logger name="org.apache.regexp" additivity="false" level="ERROR">
@@ -524,10 +551,16 @@
     <logger name="avalon" additivity="false" level="ERROR">
         <appender-ref ref="avalon"/>
     </logger>
-    <logger name="org.nrg.xnat.turbine" additivity="false" level="ERROR">
+    <logger name="org.nrg.xdat.turbine" additivity="false" level="WARN">
+        <appender-ref ref="turbine"/>
+    </logger>
+    <logger name="org.nrg.xnat.turbine" additivity="false" level="WARN">
         <appender-ref ref="turbine"/>
     </logger>
     <logger name="JdbcLogger" additivity="false" level="DEBUG">
         <appender-ref ref="jdbc"/>
+    </logger>
+    <logger name="org.nrg.xnat.eventservice" additivity="false" level="ERROR">
+        <appender-ref ref="eventservice"/>
     </logger>
 </configuration>

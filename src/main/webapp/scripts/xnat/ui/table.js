@@ -519,8 +519,8 @@ var XNAT = getObject(XNAT);
                 height: opts.height || 'auto',
                 minHeight: opts.minHeight || 'auto',
                 maxHeight: opts.maxHeight || 'auto',
-                overflowX: opts.overflowX || 'hidden',
-                overflowY: opts.overflowY || 'auto'
+                width:  opts.width || '100%',
+                'overflow-y': 'auto'
             }
         });
         var tableWrapper = $tableWrapper[0];
@@ -584,8 +584,10 @@ var XNAT = getObject(XNAT);
                 var bodyRow$ = table$.find('tbody').first();
                 // var footerRow$ = table$.find('tfoot').first();
 
-                var headerCells$ = headerRow$.find('> th');
-                var bodyCells$ = bodyRow$.find('> td');
+                // var headerCells$ = headerRow$.find('> th');
+                // var bodyCells$ = bodyRow$.find('> td');
+                var headerCells$ = headerRow$.find('tr').first().find('th');
+                var bodyCells$ = bodyRow$.find('tr').first().find('td');
                 // var footerCells$ = footerRow$.find('> div');
 
                 //var colCount = headerCells$.length;
@@ -595,8 +597,8 @@ var XNAT = getObject(XNAT);
                 // should be able to just apply this to the header
                 //headerCells$.css('width', minWidth + 'px');
 
-                adjustCellWidths(headerCells$, bodyCells$);
-                adjustCellWidths(bodyCells$, headerCells$);
+                // adjustCellWidths(headerCells$, bodyCells$);
+                // adjustCellWidths(bodyCells$, headerCells$);
 
                 // match the body cells with the header cells
                 // adjustCellWidths(headerCells$, bodyCells$, footerCells$);
@@ -817,6 +819,7 @@ var XNAT = getObject(XNAT);
 
                     var tdElement = opts.items && opts.items[name] ? cloneObject(opts.items[name].th) || {} : {},
                         $filterInput = '',
+                        $filterSubmit = '',
                         tdContent = [];
 
                     // don't create a <td> for hidden items
@@ -837,10 +840,14 @@ var XNAT = getObject(XNAT);
 
                             $filterInput = $.spawn('input.filter-data', {
                                 type: 'text',
-                                title: name + ':filter',
+                                title: 'Use the enter key to filter on ' + name,
                                 placeholder: 'Filter ' + (opts.items[name].label ? ('by ' + opts.items[name].label) : ''),
-                                style: 'width: 90%;'
+                                style: 'width: 100%;'
                             });
+                            $filterSubmit = $.spawn(
+                                'div.filter-submit',
+                                '<i class="fa fa-arrow-right"></i>'
+                            );
                             filterInputs.push($filterInput);
 
                             if (typeof opts.filterAjax === 'function' || typeof opts.sortAndFilterAjax === 'function') {
@@ -850,19 +857,34 @@ var XNAT = getObject(XNAT);
 
                                 var filterFn = opts.filterAjax;
                                 if (typeof opts.sortAndFilterAjax === 'function') {
-                                    filterFn = function(fname, fval) {
+                                    filterFn = function(newTable, fname, fval) {
                                         opts.sortAndFilterAjax.call(newTable, "filter", fname, fval)
                                     };
                                 }
 
-                                $filterInput.on('keyup', function(){
-                                    var val = this.value;
-                                    setTimeout(function() {
-                                        filterFn.call(newTable, name, val);
-                                    }, 500);
+                                $filterSubmit.on('click',function(e){
+                                    // e.preventDefault();
+                                    var val = $(this).parents('td').find('.filter-data').val();
+                                    filterFn.call(newTable, name, val);
                                 });
-                            } else {
+
+                                $filterInput.on('keyup',function(e){
+                                    var val = this.value;
+                                    if (e.key === 'Enter' || e.keyCode === '13') {
+                                        filterFn.call(newTable, name, val);
+                                    }
+                                })
+
+                                // $filterInput.on('keyup', function(){
+                                //     var val = this.value;
+                                //     setTimeout(function() {
+                                //         filterFn.call(newTable, name, val);
+                                //     }, 500);
+                                // });
+                            }
+                            else {
                                 $filterInput.on('focus', function(){
+
                                     $(this).select();
                                     // clear all filters on focus
                                     //$table.find('input.filter-data').val('');
@@ -891,7 +913,7 @@ var XNAT = getObject(XNAT);
                                 });
                             }
 
-                            tdContent.push($filterInput[0]);
+                            tdContent.push($filterInput[0],$filterSubmit);
                         }
                     }
 
@@ -1621,14 +1643,17 @@ var XNAT = getObject(XNAT);
         });
         $container.on('click', dropdown + ' input', function () {
             ajaxTable.toggleColumn($container, this.id.replace("show-", ""), $(this).prop("checked"));
+            ajaxTable.resizeTableCols($container.find('table'),'reload');
             $button.click().click(); // keep it in view, but be sure to transform if table size changes
         });
     };
 
-    ajaxTable.resizeTableCols = function($table){
+    ajaxTable.resizeTableCols = function($table,reloadFF = false){
+        if (reloadFF) this.reload();
+        // if (reloadFF && navigator.userAgent.toLowerCase().indexOf('firefox') > -1) this.reload();
         if ($table.is(':hidden')) {
             $table.on('nowVisible', function() {
-                ajaxTable.resizeTableCols($(this));
+                ajaxTable.resizeTableCols($(this),'reload');
             });
         }
         let $headerCells = $table.find("thead tr:first").children(),
@@ -1636,21 +1661,41 @@ var XNAT = getObject(XNAT);
             $bodyCells = $table.find("tbody tr:first").children();
 
         // Set common width for thead & tbody cells (needed for scrollable tbody)
-        let colWidths = [];
+        let colWidths = [], pctWidths = [];
         $bodyCells.each(function (i, v) {
-            let wid = Math.max(
-                ajaxTable.cssToNumber($(v), "width"),
-                ajaxTable.cssToNumber($($headerCells[i]), "width")
-            );
-            $(v).css("width", wid);
-            $($headerCells[i]).css("width", wid);
-            $($filterCells[i]).css("width", wid);
-            colWidths.push(wid);
+            // ignore any columns that have been hidden
+            if ($(v).css('display') !== 'none') {
+                let wid = Math.max(
+                    ajaxTable.cssToNumber($(v), "width"),
+                    ajaxTable.cssToNumber($($headerCells[i]), "width")
+                );
+                if (wid){
+                    $(v).css("width", wid.toString()+'px');
+                    $($headerCells[i]).css("width", wid.toString()+'px');
+                    $($filterCells[i]).css("width", wid.toString()+'px');
+                    colWidths.push(wid);
+                }
+            } else {
+                colWidths.push(0);
+            }
         });
 
-        $table.find("tbody tr").each(function(rind, row) {
+        // convert pixel widths to percentages of available space
+        var availableWidth = $table.parents('.data-table-wrapper').width(),
+            interiorWidth;
+
+        if (colWidths.length){
+            interiorWidth = colWidths.reduce(function(interiorWidth,wid){ return interiorWidth += parseInt(wid) });
+            colWidths.forEach(function(wid,i){
+                var pct = (wid/interiorWidth);
+                pctWidths[i] = Math.max(100, Math.floor(availableWidth * pct));
+            });
+        }
+
+        $table.find("tr").each(function(rind, row) {
             $(row).children().each(function (i, v) {
-                $(v).css("width", colWidths[i]);
+                let wid = pctWidths[i];
+                if (wid) $(v).css("width", wid.toString()+'px');
             });
         });
     };

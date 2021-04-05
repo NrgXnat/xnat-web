@@ -3,18 +3,14 @@ package org.nrg.xnat.services.files.impl;
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import lombok.Singular;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
@@ -24,6 +20,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.CatEntryI;
+import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
@@ -59,6 +56,7 @@ import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamSource;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -445,15 +443,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * Get the FileWriterWrapperI Object
 	 * 
 	 * @param user
-	 * @param xnatResourceInfo
+	 * @param info
 	 * @return
 	 */
-	private List<FileWriterWrapperI> getFileWriters(UserI user, XnatResourceInfo xnatResourceInfo) {
-		final List<FileWriterWrapperI> wrappers = new ArrayList<>();
-		wrappers.add(new XnatResourceInfo(user, xnatResourceInfo.getCreated(), xnatResourceInfo.getLastModified(), xnatResourceInfo.getResource(), xnatResourceInfo.getFile(),xnatResourceInfo.getFile().getName()));
-		return wrappers;
+	private List<FileWriterWrapperI> getFileWriters(final UserI user, final XnatResourceInfo info) {
+		return Collections.singletonList(XnatResourceInfo.copy(info).username(user.getUsername()).build());
 	}
-
 
 	/**
 	 * 

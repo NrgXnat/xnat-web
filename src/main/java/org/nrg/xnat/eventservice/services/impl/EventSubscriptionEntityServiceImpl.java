@@ -2,9 +2,11 @@ package org.nrg.xnat.eventservice.services.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.InvalidPathException;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
@@ -12,9 +14,7 @@ import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
 import org.nrg.framework.exceptions.NotFoundException;
-import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.framework.services.ContextService;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -52,9 +52,13 @@ import javax.annotation.Nonnull;
 import javax.persistence.EntityNotFoundException;
 import javax.persistence.Transient;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -68,6 +72,8 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
     private ObjectMapper mapper;
     private UserManagementServiceI userManagementService;
     private SubscriptionDeliveryEntityService subscriptionDeliveryEntityService;
+    private Map<Long, ActiveRegistration> activeRegistrations = new HashMap<>();
+
 
     @Autowired
     public EventSubscriptionEntityServiceImpl(final EventBus eventBus,
@@ -141,24 +147,22 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
         try {
             // Check that event class has a valid default or custom listener
             Class<?> listenerClazz = null;
-            if(EventServiceListener.class.isAssignableFrom(clazz)) {
+            if(subscription.customListenerId() != null){
+                try {
+                    listenerClazz = Class.forName(subscription.customListenerId());
+                } catch (ClassNotFoundException e) {
+                    listenerErrorMessage = "Could not load custom listener class: " + subscription.customListenerId();
+                    throw new SubscriptionValidationException(listenerErrorMessage);
+                }
+            } else if(EventServiceListener.class.isAssignableFrom(clazz)) {
                 listenerClazz = clazz;
             } else {
-                if (subscription.customListenerId() == null) {
                     listenerErrorMessage = "Event class is not a listener and no custom listener found.";
-                } else {
-                    try {
-                        listenerClazz = Class.forName(subscription.customListenerId());
-                    } catch (ClassNotFoundException e) {
-                        listenerErrorMessage = "Could not load custom listerner class: " + subscription.customListenerId();
-                        throw new SubscriptionValidationException(listenerErrorMessage);
-                    }
-                }
             }
-            if(listenerClazz == null || !EventServiceListener.class.isAssignableFrom(listenerClazz) || contextService.getBean(listenerClazz) == null){
-                listenerErrorMessage = "Could not find bean of type EventServiceListener from: " + listenerClazz != null ? listenerClazz.getName() : "unknown";
-                throw new NoSuchBeanDefinitionException(listenerErrorMessage);
-            }
+            //if(listenerClazz == null || !EventServiceListener.class.isAssignableFrom(listenerClazz) ){
+            //    listenerErrorMessage = "Could not find bean of type EventServiceListener from: " + listenerClazz != null ? listenerClazz.getName() : "unknown";
+            //    throw new NoSuchBeanDefinitionException(listenerErrorMessage);
+            //}
         } catch (NoSuchBeanDefinitionException e) {
             log.error(listenerErrorMessage + "\n" + e.getMessage());
             throw new SubscriptionValidationException(listenerErrorMessage + "\n" + e.getMessage());
@@ -212,9 +216,14 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
     }
 
     @Override
+    public JsonPath compileJsonPathFilter(String jsonPathPredicate) throws InvalidPathException {
+        return JsonPath.compile("$[?(" + jsonPathPredicate + ")]");
+    }
+
+    @Override
     public Subscription activate(Subscription subscription) {
         try {
-            if(!Strings.isNullOrEmpty(subscription.listenerRegistrationKey())){
+            if(getActiveRegistrationSubscriptionIds().contains(subscription.id())){
                 log.debug("Deactivating active subscription before reactivating.");
                 deactivate(subscription);
             }
@@ -231,26 +240,23 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
             // Is event class a combined event/listener
                 listener = componentManager.getListener(eventType);
             }
+            if(listener == null){
+                // Default to the DefaultEventServiceListener
+                listener = componentManager.getListener("DefaultEventServiceListener");
+            }
             if(listener != null) {
                 EventServiceListener uniqueListener = listener.getInstance();
                 uniqueListener.setEventService(eventService);
                 Predicate predicate = new SubscriptionPredicate(subscription);
                 Selector predicateSelector = Selectors.predicate(predicate);
-                Registration registration = eventBus.on(predicateSelector, uniqueListener);
-                log.debug("Activated Reactor Registration: " + registration.hashCode() + "  RegistrationKey: " + (uniqueListener.getInstanceId() == null ? "" : uniqueListener.getInstanceId().toString()));
-                log.debug("Selector:\n" + ((SubscriptionPredicate) predicate).subscription.toString());
-                subscription = subscription.toBuilder()
-                                           .listenerRegistrationKey(uniqueListener.getInstanceId() == null ? "" : uniqueListener.getInstanceId().toString())
-                                           .active(true)
-                                           .registration(registration)
-                                           .build();
+                subscription = addActiveRegistration(predicateSelector, subscription, uniqueListener);
 
             } else {
                 log.error("Could not activate subscription:" + Long.toString(subscription.id()) + ". No appropriate listener found.");
                 throw new SubscriptionValidationException("Could not activate subscription. No appropriate listener found.");
             }
             update(subscription);
-            log.debug("Updated subscription: " + subscription.name() + " with registration key: " + subscription.listenerRegistrationKey());
+            log.debug("Updated subscription: " + subscription.name() + " with registration key.");
 
         }
         catch (Throwable e) {
@@ -260,7 +266,7 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
         return subscription;
     }
 
-    private String buildPayloadJsonPath(Subscription subscription, EventServiceEvent event){
+    private String buildPayloadJsonPath(Subscription subscription, @Nonnull EventServiceEvent event){
         String payloadJsonPath = null;
         if(event.filterablePayload() && !Strings.isNullOrEmpty(subscription.eventFilter().jsonPathFilter())){
             log.debug("Creating payload filter for Reactor Selector:");
@@ -279,20 +285,16 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                 throw new NotFoundException("Failed to deactivate subscription - Missing subscription ID");
             }
             log.debug("Deactivating subscription:" + Long.toString(subscription.id()));
+            removeActiveRegistration(subscription.id());
             SubscriptionEntity entity = fromPojoWithTemplate(subscription);
             if(entity != null && entity.getId() != 0) {
                 entity.setActive(false);
-                entity.setListenerRegistrationKey(null);
-                if(subscription.registration() != null) {
-                    subscription.registration().cancel();
-                    entity.setRegistration(null);
-                }
                 deactivatedSubscription = toPojo(entity);
                 update(entity);
                 log.debug("Deactivated subscription:" + Long.toString(subscription.id()));
             }
             else {
-                log.error("Failed to deactivate subscription - no entity found for id:" + Long.toString(subscription.id()));
+                log.debug("Failed to deactivate subscription - no entity found for id:" + Long.toString(subscription.id()));
                 throw new EntityNotFoundException("Could not retrieve EventSubscriptionEntity from id: " + subscription.id());
             }
         } catch(Throwable e){
@@ -307,22 +309,6 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
         Subscription saved = toPojo(create(fromPojo(subscription)));
         log.debug("Saved subscription with ID:" + Long.toString(saved.id()));
         return saved;
-    }
-
-    @Override
-    public void throwExceptionIfNameExists(Subscription subscription) throws NrgServiceRuntimeException {
-        String name = subscription.name();
-        SubscriptionEntity existing = null;
-        try {
-            existing = this.getDao().findByName(name);
-        } catch (Exception e) {
-            log.error("Could not check database for duplication subscription name.");
-            throw new NrgServiceRuntimeException("Could not check database for duplication subscription name.");
-        }
-        if (existing != null) {
-            log.error("Subscription with the name :" + name + " exists.");
-            throw new NrgServiceRuntimeException("Subscription with the name :" + name + " exists.");
-        }
     }
 
     @Override
@@ -369,9 +355,6 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
     @Override
     public Subscription update(final Subscription subscription) throws NotFoundException, SubscriptionValidationException{
         SubscriptionEntity subscriptionEntity = retrieve(subscription.id());
-        if(subscription.name() != null && !subscription.name().equals(subscriptionEntity.getName())){
-            throwExceptionIfNameExists(subscription);
-        }
         subscriptionEntity = SubscriptionEntity.fromPojoWithTemplate(subscription, subscriptionEntity);
         Subscription updatedSubscription = toPojo(subscriptionEntity);
         validate(updatedSubscription);
@@ -382,18 +365,19 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
     @Override
     public List<Subscription> getSubscriptions(String projectId) {
         List<Subscription> subscriptions = new ArrayList<>();
-        for (SubscriptionEntity se : super.getAll()) {
-            try {
-                List<String> projectIds = se.getEventServiceFilterEntity().getProjectIds();
-                if(!Strings.isNullOrEmpty(projectId) && projectIds != null && projectIds.contains(projectId)){
-                   subscriptions.add(getSubscription(se.getId()));
-                } else if(Strings.isNullOrEmpty(projectId) && (projectIds == null || projectIds.isEmpty())){
-                    subscriptions.add(getSubscription(se.getId()));
-                }
-            } catch (NotFoundException e) {
-                log.error("Could not find subscription for ID: " + Long.toString(se.getId()) + "\n" + e.getMessage());
-            }
-        }
+        super.getAll().stream()
+             .filter(se -> se.getEventServiceFilterEntity() == null ||
+                     se.getEventServiceFilterEntity().getProjectIds() == null ||
+                     se.getEventServiceFilterEntity().getProjectIds().isEmpty() ||
+                     se.getEventServiceFilterEntity().getProjectIds().contains(projectId))
+             .forEach(se -> {
+                 try {
+                     subscriptions.add(getSubscription(se.getId()));
+                 } catch (NotFoundException e) {
+                     log.error("Could not find subscription for ID: " + Long.toString(se.getId()) + "\n" + e.getMessage());
+
+                 }
+             });
         return subscriptions;
     }
 
@@ -411,12 +395,6 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
     }
 
     @Override
-    public List<Subscription> getSubscriptionsByKey(String key) throws NotFoundException {
-        List<SubscriptionEntity> subscriptionEntities = getDao().findByKey(key);
-        return toPojo(getDao().findByKey(key));
-    }
-
-    @Override
     public Subscription getSubscription(Long id) throws NotFoundException {
         Subscription subscription = toPojo(super.get(id));
         try {
@@ -427,7 +405,8 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
         return subscription;
     }
 
-    // Generate descriptive subscription name
+
+    // Generate descriptive subscription name - unique to project combination
     private String autoGenerateUniqueSubscriptionName(Subscription subscription){
         String uniqueName = Strings.isNullOrEmpty(subscription.name()) ? "" : subscription.name();
         try {
@@ -437,7 +416,8 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
             EventFilter eventFilter = subscription.eventFilter();
             String eventName = componentManager.getEvent(eventFilter.eventType()).getDisplayName();
             String status = eventFilter.status();
-            String forProject = eventFilter.projectIds() == null || eventFilter.projectIds().isEmpty() ? "Site" : StringUtils.join(eventFilter.projectIds(), ',');
+            String forProject = eventFilter.projectIds() == null || eventFilter.projectIds().isEmpty() ? "Site" :
+                    eventFilter.projectIds().size() == 1 ? eventFilter.projectIds().get(0) : "Multiple Projects";
             uniqueName += Strings.isNullOrEmpty(actionName) ? "Action" : actionName;
             uniqueName += " on ";
             uniqueName += Strings.isNullOrEmpty(eventName) ? "Event" : eventName;
@@ -446,7 +426,7 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
             uniqueName += forProject;
 
             String trialUniqueName = uniqueName;
-            for(Integer indx = 2; indx < 10000; indx++) {
+            for(Integer indx = 2; indx < 100000; indx++) {
                 if(this.getDao().findByName(trialUniqueName) == null){
                     return trialUniqueName;
                 }else {
@@ -490,17 +470,13 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                            .id(entity.getId())
                            .name(entity.getName())
                            .active(entity.getActive())
-                           .listenerRegistrationKey(entity.getListenerRegistrationKey())
                            .customListenerId(entity.getCustomListenerId())
                            .actionKey(entity.getActionKey())
                            .attributes(entity.getAttributes())
-                           .eventFilter(entity.getEventServiceFilterEntity() != null ? entity.getEventServiceFilterEntity().toPojo() : null)
+                           .eventFilter(entity.getEventServiceFilterEntity() != null ?
+                                   entity.getEventServiceFilterEntity().toPojo() : null)
                            .actAsEventUser(entity.getActAsEventUser())
                            .subscriptionOwner(entity.getSubscriptionOwner())
-                           .registration(entity.getRegistration() == null ?
-                                   null :
-                                   loadReactorRegistration(entity.getRegistration())
-                           )
                            .created(entity.getCreated())
                            .build();
     }
@@ -517,6 +493,7 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
         }
         return subscriptions;
     }
+
 
     class SubscriptionPredicate implements Predicate<Object> {
         Subscription subscription;
@@ -553,13 +530,19 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                     return false;
                 }
                 // Check for exclusion based on payload filter (if available)
-                if(!Strings.isNullOrEmpty(filter.jsonPathFilter()) && event.filterablePayload() && event.getPayloadSignatureObject() != null) {
+                if(!Strings.isNullOrEmpty(filter.jsonPathFilter()) && event.filterablePayload()) {
                     try {
-                        String payloadSignature = mapper.writeValueAsString(event.getPayloadSignatureObject());
-                        String jsonFilter = "$[?(" + subscription.eventFilter().jsonPathFilter() + ")]";
-                        List<String> filterResult = JsonPath.using(subscriptionConf).parse(payloadSignature).read(jsonFilter);
-                        if(filterResult.isEmpty()) {
-                            return false;
+                        Object payloadSignatureObject = event.getPayloadSignatureObject();
+                        if (payloadSignatureObject != null) {
+                            String jsonFilter = "$[?(" + subscription.eventFilter().jsonPathFilter() + ")]";
+                            List<String> filterResult =
+                                    JsonPath.using(subscriptionConf)
+                                            .parse(
+                                                    mapper.writeValueAsString(payloadSignatureObject))
+                                            .read(jsonFilter);
+                            if (filterResult.isEmpty()) {
+                                return false;
+                            }
                         }
                     } catch (JsonProcessingException e){
                         log.error("Exception attempting to filter EventService event on serialized payload.");
@@ -571,6 +554,100 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                 return false;
             }
             return true;
+        }
+    }
+
+
+    @Transient
+    @Override
+    public List<Subscription> getSubscriptionsByListenerId(UUID listenerId) throws NotFoundException {
+        List<Long> subscriptionIds = activeRegistrations.entrySet().stream()
+                                         .filter(ar -> ar.getValue().listenerId == listenerId)
+                                         .map(Map.Entry::getKey)
+                                         .collect(Collectors.toList());
+
+        List<Subscription> subscriptions = new ArrayList<>();
+        for(Long sid : subscriptionIds) {
+            SubscriptionEntity entity = getDao().findById(sid);
+            if (entity != null) { subscriptions.add(toPojo(entity)); }
+        }
+        return subscriptions;
+    }
+
+    @Transient
+    @Override
+    public Set<Long> getActiveRegistrationSubscriptionIds() {
+        return activeRegistrations.keySet();
+    }
+
+    @Override
+    public Integer getActiveRegistrationCriteriaHash(Long subscriptionId) {
+        return activeRegistrations.containsKey(subscriptionId) ?
+                activeRegistrations.get(subscriptionId).reactorCriteriaHash : null;
+    }
+
+    @Transient
+    @Override
+    public UUID getListenerId(Long subscriptionId) {
+        return activeRegistrations.containsKey(subscriptionId) ?
+                activeRegistrations.get(subscriptionId).listenerId : null;
+    }
+
+    @Transient
+    private Subscription addActiveRegistration(Selector selector, Subscription subscription, EventServiceListener listener) {
+        Registration registration = eventBus.on(selector, listener);
+        activeRegistrations.put(subscription.id(), new ActiveRegistration(registration, listener.getInstanceId(), subscription));
+        log.debug("Activated Reactor Registration: "
+                + registration.hashCode()
+                + "  RegistrationKey: "
+                + (listener.getInstanceId() == null ? "" : listener.getInstanceId().toString()));
+        log.debug("Selector:\n" + ((SubscriptionPredicate)selector.getObject()).subscription.toString());
+        return subscription.toBuilder()
+                                   .active(true)
+                                   .build();
+    }
+
+    @Transient
+    @Override
+    public void removeActiveRegistration(Long subscriptionId){
+        if(activeRegistrations.containsKey(subscriptionId)){
+            Registration reactorRegistration = activeRegistrations.get(subscriptionId).getRegistration();
+            if (reactorRegistration != null ) { reactorRegistration.cancel(); }
+            activeRegistrations.remove(subscriptionId);
+        }
+
+    }
+
+
+
+    private class ActiveRegistration {
+        final Registration registration;
+        final UUID listenerId;
+        final Integer registrationHash;
+        final Integer reactorCriteriaHash;
+
+
+        public Registration getRegistration() { return registration; }
+
+        public ActiveRegistration(@Nonnull Registration registration, @Nonnull UUID listenerId, @Nonnull Subscription subscription) {
+            this.registration = registration;
+            this.listenerId = listenerId;
+            this.registrationHash = registration.hashCode();
+            this.reactorCriteriaHash = subscription.eventFilter().getReactorCriteriaHash();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof ActiveRegistration)) return false;
+            ActiveRegistration that = (ActiveRegistration) o;
+            return Objects.equal(listenerId, that.listenerId) &&
+                    Objects.equal(registrationHash, that.registrationHash);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hashCode(listenerId, registrationHash);
         }
     }
 

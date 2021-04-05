@@ -32,13 +32,13 @@ import static org.nrg.xft.identifier.IDGeneratorFactory.*;
  * This configuration manages configuration and instantiation of core XNAT/XDAT/XFT services.
  */
 @Configuration
-@ComponentScan({"org.nrg.xft.identifier", "org.nrg.xnat.eventservice", "org.nrg.xnat.services.archive.impl",
-                "org.nrg.xnat.services.cache", "org.nrg.xnat.services.investigators.impl.xft",
-                "org.nrg.xnat.services.system.impl.hibernate", "org.nrg.xnat.services.triage",
-                "org.nrg.xnat.services.validation", "org.nrg.xnat.services.resources.impl",
-                "org.nrg.xnat.services.subjects.impl", "org.nrg.xnat.web.converters", "org.nrg.xnat.services.projects.impl","org.nrg.xnat.services.experiments.impl",
-				"org.nrg.xnat.services.users.impl","org.nrg.xnat.services.scans.impl","org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.runner.impl", 
-				"org.nrg.xnat.services.par.impl", "org.nrg.xnat.services.search.impl"})
+@ComponentScan({"org.nrg.xft.identifier", "org.nrg.xnat.eventservice", "org.nrg.xnat.services.archive.impl", "org.nrg.xnat.services.cache",
+                "org.nrg.xnat.services.experiments.impl", "org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.investigators.impl.xft",
+                "org.nrg.xnat.services.par.impl", "org.nrg.xnat.services.projects.impl", "org.nrg.xnat.services.resources.impl",
+                "org.nrg.xnat.services.runner.impl", "org.nrg.xnat.services.scans.impl", "org.nrg.xnat.services.subjects.impl",
+                "org.nrg.xnat.services.system.impl.hibernate", "org.nrg.xnat.services.triage", "org.nrg.xnat.services.users.impl",
+                "org.nrg.xnat.services.validation", "org.nrg.xnat.snapshot.generator.impl", "org.nrg.xnat.snapshot.services.impl",
+                "org.nrg.xnat.web.converters"})
 public class XnatServicesConfig {
     @Bean
     public PermissionsServiceI permissionsService(final DataTypeAwareEventService eventService, final NamedParameterJdbcTemplate template) {

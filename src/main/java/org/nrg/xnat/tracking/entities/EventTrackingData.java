@@ -8,6 +8,7 @@ import javax.persistence.*;
 
 @Slf4j
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"key", "userId"}))
 public class EventTrackingData extends AbstractHibernateEntity {
     private String key;
     @Nullable private String payload;
@@ -22,7 +23,7 @@ public class EventTrackingData extends AbstractHibernateEntity {
         this.userId = userId;
     }
 
-    @Column(unique = true, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     public String getKey() {
         return key;
     }

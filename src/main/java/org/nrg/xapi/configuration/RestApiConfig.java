@@ -35,8 +35,10 @@ import java.util.Locale;
 
 @Configuration
 @EnableSwagger2
-@ComponentScan(value = {"org.nrg.xapi.rest", "org.nrg.xnat.eventservice.rest", "org.nrg.xapi.archive", "org.nrg.xapi.resources","org.nrg.xapi.projects","org.nrg.xapi.subjects","org.nrg.xapi.experiments",
-						"org.nrg.xapi.users","org.nrg.xapi.scans","org.nrg.xapi.files", "org.nrg.xapi.runners", "org.nrg.xapi.pars","org.nrg.xapi.search"}, includeFilters = @Filter(ControllerAdvice.class))
+@ComponentScan(value = {"org.nrg.xapi.archive", "org.nrg.xapi.experiments", "org.nrg.xapi.files", "org.nrg.xapi.pars", "org.nrg.xapi.projects",
+                        "org.nrg.xapi.resources", "org.nrg.xapi.rest", "org.nrg.xapi.runners", "org.nrg.xapi.scans", "org.nrg.xapi.subjects",
+                        "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", "org.nrg.xnat.snapshot.rest"},
+               includeFilters = @Filter(ControllerAdvice.class))
 @Import(SpawnerConfig.class)
 @Slf4j
 public class RestApiConfig {

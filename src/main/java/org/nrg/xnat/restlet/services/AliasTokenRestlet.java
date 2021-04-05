@@ -48,30 +48,56 @@ public class AliasTokenRestlet extends SecureResource {
     public AliasTokenRestlet(Context context, Request request, Response response) throws ResourceException {
         super(context, request, response);
         getVariants().add(new Variant(MediaType.APPLICATION_JSON));
-        _operation = (String) getRequest().getAttributes().get(PARAM_OPERATION);
-        _username = (String) getRequest().getAttributes().get(PARAM_USERNAME);
-        _secret = (String) getRequest().getAttributes().get(PARAM_SECRET);
-
-        final String tokenId = (String) getRequest().getAttributes().get(PARAM_TOKEN);
-        if (StringUtils.isBlank(tokenId)) {
-            _token = null;
-        } else if (AliasToken.isAliasFormat(tokenId)) {
-            _token = tokenId;
-        } else if (NumberUtils.isCreatable(tokenId)) {
-            try {
-                _token = getService().get(NumberUtils.toLong(tokenId)).getAlias();
-            } catch (NotFoundException e) {
-                throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
-            }
-        } else {
-            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
-        }
 
         _serializer = XDAT.getSerializerService();
-        if (null == _serializer) {
+        if (_serializer == null) {
             getResponse().setStatus(Status.CLIENT_ERROR_FAILED_DEPENDENCY, "Serializer service was not properly initialized.");
             throw new ResourceException(Status.CLIENT_ERROR_FAILED_DEPENDENCY, "ERROR: Serializer service was not properly initialized.");
         }
+        _service = XDAT.getContextService().getBean(AliasTokenService.class);
+        if (_service == null) {
+            getResponse().setStatus(Status.CLIENT_ERROR_FAILED_DEPENDENCY, "Alias token service was not properly initialized.");
+            throw new ResourceException(Status.CLIENT_ERROR_FAILED_DEPENDENCY, "ERROR: Alias token service was not properly initialized.");
+        }
+
+        final String     tokenId = (String) getRequest().getAttributes().get(PARAM_TOKEN);
+        final AliasToken token;
+        if (StringUtils.isBlank(tokenId)) {
+            _token = null;
+            token = null;
+        } else if (AliasToken.isAliasFormat(tokenId)) {
+            token = _service.locateToken(tokenId);
+            if (token == null) {
+                getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the alias " + tokenId);
+                throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the alias " + tokenId);
+            }
+            _token = tokenId;
+        } else if (NumberUtils.isCreatable(tokenId)) {
+            try {
+                token = _service.get(NumberUtils.toLong(tokenId));
+                _token = token.getAlias();
+            } catch (NotFoundException e) {
+                getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
+                throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
+            }
+        } else {
+            getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
+            throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "Can't find an alias token with the ID " + tokenId);
+        }
+
+        final UserI user = getUser();
+        _username = StringUtils.defaultIfBlank((String) getRequest().getAttributes().get(PARAM_USERNAME), user.getUsername());
+        if (StringUtils.isBlank(_username) || StringUtils.equalsIgnoreCase(_username, "guest")) {
+            getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "The guest user can't request alias tokens");
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "The guest user can't request alias tokens");
+        }
+        final boolean siteAdmin = Roles.isSiteAdmin(user);
+        if ((!StringUtils.equalsIgnoreCase(_username, user.getUsername()) || token != null && !StringUtils.equalsIgnoreCase(token.getXdatUserId(), user.getUsername())) && !siteAdmin) {
+            getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Non-admin users can only request operations on alias tokens for their own account");
+            throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Non-admin users can only request operations on alias tokens for their own account");
+        }
+        _operation = (String) getRequest().getAttributes().get(PARAM_OPERATION);
+        _secret = (String) getRequest().getAttributes().get(PARAM_SECRET);
     }
 
     @Override
@@ -80,66 +106,66 @@ public class AliasTokenRestlet extends SecureResource {
 
         final boolean hasUsername = StringUtils.isNotBlank(_username);
         if (hasUsername && !StringUtils.equals(_username, user.getUsername()) && !Roles.isSiteAdmin(user)) {
+            getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Only admins can work with alias tokens for other users.");
             throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only admins can work with alias tokens for other users.");
         }
 
         switch (_operation) {
             case OP_ISSUE:
                 try {
-                    final AliasToken token = hasUsername ? getService().issueTokenForUser(_username) : getService().issueTokenForUser(user);
-                    return new StringRepresentation(_serializer.toJson(token));
+                    final AliasToken token = hasUsername ? _service.issueTokenForUser(_username) : _service.issueTokenForUser(user);
+                    return new StringRepresentation(_serializer.toJson(token), MediaType.APPLICATION_JSON);
                 } catch (Exception exception) {
+                    getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "An error occurred retrieving the user: " + _username);
                     throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "An error occurred retrieving the user: " + _username, exception);
                 }
 
             case OP_SHOW:
                 final String username = hasUsername ? _username : user.getUsername();
                 if (StringUtils.isBlank(username)) {
+                    getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND, "No user found.");
                     throw new ResourceException(Status.CLIENT_ERROR_NOT_FOUND, "No user found.");
                 }
-                final List<AliasToken> tokens = getService().findTokensForUser(username);
+                final List<AliasToken> tokens = _service.findTokensForUser(username);
                 try {
-                    return new StringRepresentation(_serializer.toJson(ObjectUtils.defaultIfNull(tokens, Collections.<AliasToken>emptyList())));
+                    return new StringRepresentation(_serializer.toJson(ObjectUtils.defaultIfNull(tokens, Collections.<AliasToken>emptyList())), MediaType.APPLICATION_JSON);
                 } catch (IOException e) {
+                    getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, "An error occurred returning alias tokens");
                     throw new ResourceException(Status.SERVER_ERROR_INTERNAL, "An error occurred returning alias tokens", e);
                 }
 
             case OP_VALIDATE:
                 if (StringUtils.isBlank(_token) || StringUtils.isBlank(_secret)) {
+                    getResponse().setStatus(Status.CLIENT_ERROR_UNAUTHORIZED, "You must specify both token and secret to validate a token.");
                     throw new ResourceException(Status.CLIENT_ERROR_UNAUTHORIZED, "You must specify both token and secret to validate a token.");
                 }
                 try {
                     final HashMap<String, String> results = new HashMap<>();
-                    results.put("valid", getService().validateToken(_token, _secret));
-                    return new StringRepresentation(_serializer.toJson(results));
+                    results.put("valid", _service.validateToken(_token, _secret));
+                    return new StringRepresentation(_serializer.toJson(results), MediaType.APPLICATION_JSON);
                 } catch (IOException exception) {
+                    getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, exception.toString());
                     throw new ResourceException(Status.SERVER_ERROR_INTERNAL, exception.toString());
                 }
 
             case OP_INVALIDATE:
-                getService().invalidateToken(_token);
-                return new StringRepresentation("{\"result\": \"OK\"}");
+                _service.invalidateToken(_token);
+                return new StringRepresentation("{\"result\": \"OK\"}", MediaType.APPLICATION_JSON);
 
             default:
+                getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST, "Unknown operation: " + _operation);
                 throw new ResourceException(Status.CLIENT_ERROR_BAD_REQUEST, "Unknown operation: " + _operation);
         }
     }
 
     @Override
-    public Representation represent(Variant variant) throws ResourceException {
+    public Representation represent(final Variant variant) throws ResourceException {
         return represent();
     }
 
-    private AliasTokenService getService() {
-        if (_service == null) {
-            _service = XDAT.getContextService().getBean(AliasTokenService.class);
-        }
-        return _service;
-    }
-
     private final SerializerService _serializer;
-    private       AliasTokenService _service;
-    private       String            _operation;
+    private final AliasTokenService _service;
+    private final String            _operation;
     private final String            _username;
     private final String            _token;
     private final String            _secret;

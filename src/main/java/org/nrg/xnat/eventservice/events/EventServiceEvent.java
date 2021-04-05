@@ -1,6 +1,7 @@
 package org.nrg.xnat.eventservice.events;
 
 import org.nrg.framework.event.EventI;
+import org.nrg.xft.security.UserI;
 
 import java.util.Date;
 import java.util.List;
@@ -18,8 +19,8 @@ public interface EventServiceEvent<ObjectT> extends EventI {
 
     String getDisplayName();
     String getDescription();
-     // Get payload object
-    ObjectT getObject();
+     // Load payload object
+    ObjectT getObject(UserI user);
      // Get class type of payload object
     Class getObjectClass();
      // Get string describing XNAT data type, e.g. xnat:imageSessionData
@@ -44,7 +45,7 @@ public interface EventServiceEvent<ObjectT> extends EventI {
     String getProjectId();
     // Get the event scope - project scoped events might be triggered from a certain project,
     // while SITE scoped events will never be confined to acting on a certain project. e.g. Project Created Event
-    EventScope getEventScope();
+    List<EventScope> getEventScope();
 
     String toString();
 }

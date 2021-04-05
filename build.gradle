@@ -8,41 +8,30 @@
  */
 buildscript {
     ext {
-        vXnat = "1.8.0-XAPI-SNAPSHOT"
-    }
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven { url "https://plugins.gradle.org/m2" }
-        maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }
-        maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot" }
-    }
-    dependencies {
-        classpath "com.bmuschko:gradle-cargo-plugin:2.7.1"
-        classpath "com.bmuschko:gradle-tomcat-plugin:2.5"
-        classpath "com.palantir.gradle.gitversion:gradle-git-version:0.12.3"
-        classpath "gradle.plugin.com.dorongold.plugins:task-tree:1.5"
-        classpath "io.franzbecker:gradle-lombok:4.0.0"
-        classpath "io.spring.gradle:dependency-management-plugin:1.0.9.RELEASE"
+        vXnat = "1.8.2-XAPI-SNAPSHOT"
     }
 }
 
-group "org.nrg.xnat"
-version = vXnat
+plugins {
+    id "eclipse"
+    id "groovy"
+    id "idea"
+    id "jacoco"
+    id "java-library"
+    id "maven-publish"
+    id "war"
+    id "com.bmuschko.cargo" version "2.8.0"
+    id "com.bmuschko.tomcat" version "2.5"
+    id "com.dorongold.task-tree" version "1.5"
+    id "com.palantir.git-version" version "0.12.1"
+    id "io.franzbecker.gradle-lombok" version "4.0.0"
+    id "io.spring.dependency-management" version "1.0.11.RELEASE"
+    id "net.linguica.maven-settings" version "0.5"
+}
 
-apply plugin: "eclipse"
-apply plugin: "groovy"
-apply plugin: "idea"
-apply plugin: "jacoco"
-apply plugin: "java-library"
-apply plugin: "maven-publish"
-apply plugin: "war"
-apply plugin: "com.bmuschko.cargo"
-apply plugin: "com.bmuschko.tomcat"
-apply plugin: "com.dorongold.task-tree"
-apply plugin: "com.palantir.git-version"
-apply plugin: "io.franzbecker.gradle-lombok"
-apply plugin: "io.spring.dependency-management"
+group "org.nrg.xnat"
+version vXnat
+description "XNAT is an open-source imaging informatics software platform dedicated to helping you perform imaging-based research. XNAT’s core functions manage importing, archiving, processing and securely distributing imaging and related study data. But its extended uses continue to evolve."
 
 repositories {
     mavenLocal()
@@ -164,10 +153,6 @@ dependencies {
     api "org.springframework:spring-core"
 
     implementation "org.nrg.xnat:spawner"
-
-    implementation("org.nrg.xnat:xnat-data-models") {
-        transitive = false
-    }
     implementation "org.nrg.xdat:core"
     implementation "org.nrg:framework"
     implementation "org.nrg:transaction"
@@ -208,6 +193,10 @@ dependencies {
     implementation "dcm4che:dcm4che-imageio-rle"
     implementation "dcm4che:dcm4che-iod"
     implementation "dcm4che:dcm4che-net"
+    implementation "net.imagej:ij"
+    implementation "org.dcm4che:dcm4che-core"
+    implementation "org.dcm4che:dcm4che-image"
+    implementation "org.dcm4che:dcm4che-imageio"
 
     implementation "org.springframework:spring-aop"
     implementation "org.springframework:spring-context-support"
@@ -247,6 +236,9 @@ dependencies {
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-hibernate4"
     implementation "com.fasterxml.jackson.datatype:jackson-datatype-guava"
+    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jdk8"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310"
     implementation "com.jayway.jsonpath:json-path"
     implementation "org.json:json"
     implementation "com.thoughtworks.xstream:xstream"
@@ -266,6 +258,7 @@ dependencies {
     implementation "org.apache.httpcomponents:httpclient"
     implementation "org.apache.httpcomponents:httpcore"
     implementation "org.apache.httpcomponents:httpcore-nio"
+    implementation "org.apache.commons:commons-pool2"
 
     implementation "org.codehaus.groovy:groovy-all"
     implementation "org.codehaus.groovy.modules.http-builder:http-builder"
@@ -302,29 +295,36 @@ dependencies {
     providedCompile "org.jetbrains:annotations"
     providedCompile "org.kohsuke.metainf-services:metainf-services"
 
-    runtimeOnly "org.nrg.xnatx.plugins:ximgview-plugin"
-    runtimeOnly "org.apache.activemq:activemq-core"
+    runtimeOnly "org.apache.activemq:activemq-broker"
+    runtimeOnly "org.apache.activemq:activemq-client"
+    runtimeOnly "org.apache.activemq:activemq-jaas"
+    runtimeOnly "org.apache.activemq:activemq-jdbc-store"
+    runtimeOnly "org.apache.activemq:activemq-kahadb-store"
+    runtimeOnly "org.apache.activemq:activemq-mqtt"
+    runtimeOnly "org.apache.activemq:activemq-openwire-legacy"
+    runtimeOnly "org.apache.activemq:activemq-spring"
+    runtimeOnly "org.apache.activemq:activemq-stomp"
+    runtimeOnly "org.apache.activemq.protobuf:activemq-protobuf"
     runtimeOnly "org.apache.ant:ant"
     runtimeOnly "axis:axis-ant"
     runtimeOnly "axis:axis-schema"
     runtimeOnly "cglib:cglib"
     runtimeOnly "org.hsqldb:hsqldb"
-    runtimeOnly "net.imagej:ij"
     runtimeOnly "com.sun.media:jai_imageio"
     runtimeOnly "net.bull.javamelody:javamelody-core"
     runtimeOnly "org.javassist:javassist"
     runtimeOnly "org.python:jython-standalone"
 
     tomcat "org.apache.tomcat.embed:tomcat-embed-core",
-           "org.apache.tomcat.embed:tomcat-embed-logging-juli",
-           "org.apache.tomcat.embed:tomcat-embed-jasper"
+            "org.apache.tomcat.embed:tomcat-embed-logging-juli",
+            "org.apache.tomcat.embed:tomcat-embed-jasper"
 
     cargo "org.codehaus.cargo:cargo-core-uberjar",
-          "org.codehaus.cargo:cargo-ant",
-          "org.slf4j:jcl-over-slf4j",
-          "org.slf4j:slf4j-api",
-          "ch.qos.logback:logback-classic",
-          "ch.qos.logback:logback-core"
+            "org.codehaus.cargo:cargo-ant",
+            "org.slf4j:jcl-over-slf4j",
+            "org.slf4j:slf4j-api",
+            "ch.qos.logback:logback-classic",
+            "ch.qos.logback:logback-core"
 
     testImplementation "org.nrg:test"
     testImplementation "junit:junit"
@@ -504,7 +504,7 @@ publishing {
             pom.withXml {
                 def root = asNode()
                 root.appendNode("name", "XNAT Server")
-                root.appendNode("description", "XNAT is an open-source imaging informatics software platform dedicated to helping you perform imaging-based research. XNAT’s core functions manage importing, archiving, processing and securely distributing imaging and related study data. But its extended uses continue to evolve.")
+                root.appendNode("description", project.description)
                 root.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
                 root.appendNode("inceptionYear", "2019")
 
@@ -534,7 +534,7 @@ publishing {
             pom.withXml {
                 def root = asNode()
                 root.appendNode("name", "XNAT Server")
-                root.appendNode("description", "XNAT is an open-source imaging informatics software platform dedicated to helping you perform imaging-based research. XNAT’s core functions manage importing, archiving, processing and securely distributing imaging and related study data. But its extended uses continue to evolve.")
+                root.appendNode("description", project.description)
                 root.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
                 root.appendNode("inceptionYear", "2019")
 
@@ -558,13 +558,9 @@ publishing {
     }
     repositories {
         maven {
-            credentials {
-                // These properties must be set in the ~/.gradle/gradle.properties file or passed on the Gradle command
-                // line in the form -PrepoUsername=foo -PrepoPassword=bar.
-                username propertyWithDefault("repoUsername", "username")
-                password propertyWithDefault("repoPassword", "password")
-            }
             url project.version.endsWith("-SNAPSHOT") ? "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot-local" : "https://nrgxnat.jfrog.io/nrgxnat/libs-release-local"
+            // The value for name must match <id> in ~/.m2/settings.xml
+            name = "XNAT_Artifactory"
         }
     }
 }

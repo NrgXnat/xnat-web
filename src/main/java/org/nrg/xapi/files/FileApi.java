@@ -1,16 +1,9 @@
 package org.nrg.xapi.files;
 
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-
-import org.apache.commons.lang3.StringUtils;
+import io.swagger.annotations.*;
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
@@ -21,7 +14,6 @@ import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.services.files.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,12 +22,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import lombok.extern.slf4j.Slf4j;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
 
 @Api("XNAT File Management API")
 @XapiRestController
@@ -238,27 +227,23 @@ public class FileApi extends AbstractXapiProjectRestController {
     		throws Exception {
         log.debug("Controller Api- file project: {}", projectId);
         
-        final InputStreamResource resource = new InputStreamResource(file.getInputStream(), StringUtils.defaultIfBlank(requestRename, file.getOriginalFilename()));
-        
-        XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,resource,file);
-       
+        XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,file);
+
        return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId,assessorId, scanId, type, resourceId);
 	}
 	
-	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, InputStreamResource resource, MultipartFile file) throws IllegalStateException, IOException {
-		 XnatResourceInfo xnatResourceInfo = new XnatResourceInfo(getSessionUser(), new Date(), new Date());
-        xnatResourceInfo.setContent(Objects.nonNull(requestContent)?requestContent :null);
-        xnatResourceInfo.setFormat(Objects.nonNull(requestFormat)?requestFormat :null);
-        xnatResourceInfo.setTags(Objects.nonNull(requestTags)?requestTags :null);
-        xnatResourceInfo.setDescription(Objects.nonNull(requestDesc)?requestDesc :null);
-        xnatResourceInfo.setName(Objects.nonNull(file.getOriginalFilename())?file.getOriginalFilename() :null);
-        xnatResourceInfo.setFileSize(Objects.nonNull(file.getSize())?file.getSize() :null);
-        xnatResourceInfo.setRename(Objects.nonNull(requestRename)?requestRename :null);
-        xnatResourceInfo.setResource(Objects.nonNull(resource)?resource :null);
-        File f = new File(System.getProperty("java.io.tmpdir") + "/" + file.getOriginalFilename());
-        file.transferTo(f);
-        xnatResourceInfo.setFile(f);
-		return xnatResourceInfo;
+	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, MultipartFile file) throws IllegalStateException, IOException {
+		return XnatResourceInfo.builder()
+							   .username(getSessionUser().getUsername())
+							   .created(new Date())
+							   .content(requestContent)
+							   .format(requestFormat)
+							   .tags(requestTags)
+							   .description(requestDesc)
+							   .name(file.getOriginalFilename())
+							   .fileSize(file.getSize())
+							   .rename(requestRename)
+							   .multipartFile(file).build();
 	}
 
 	private final FileService _fileService;

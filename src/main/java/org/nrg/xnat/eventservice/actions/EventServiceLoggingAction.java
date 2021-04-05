@@ -73,27 +73,26 @@ public class EventServiceLoggingAction extends SingleActionProvider {
 
     @Override
     public void processEvent(EventServiceEvent event, Subscription subscription, UserI user, final Long deliveryId) {
-        log.info("EventServiceLoggingAction called for RegKey " + subscription.listenerRegistrationKey());
+        log.info("EventServiceLoggingAction called for Subscription {}", subscription.name());
         try {
-
-            Object serializableObject = componentManager.getModelObject(event.getObject(), user);
-            if(serializableObject == null && event.getObject() != null && mapper.canDeserialize(mapper.getTypeFactory().constructType(event.getObject().getClass()))){
-                serializableObject = event.getObject();
+            Object payloadObject = event.getObject(user);
+            Object serializableObject = componentManager.getModelObject(payloadObject, user);
+            if(serializableObject == null && payloadObject != null && mapper.canDeserialize(mapper.getTypeFactory().constructType(event.getObjectClass()))){
+                serializableObject = payloadObject;
             }
 
             if(serializableObject != null){
-                subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_STEP, new Date(), "Filterable Event Payload Type: " + serializableObject.getClass().getSimpleName(), serializableObject);
+                subscriptionDeliveryEntityService.addPayload(deliveryId, serializableObject);
+                subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_STEP, new Date(), "Filterable Event Payload Type: " + serializableObject.getClass().getSimpleName());
                 if(log.isDebugEnabled()) {
-                    String jsonString = mapper.writeValueAsString(serializableObject);
-                    log.debug("Subscription: " + mapper.writeValueAsString(subscription));
-                    log.debug("Event: " + event.toString());
-                    log.debug("Event Payload:");
-                    log.debug(jsonString);
+                    log.debug("Subscription: {}", mapper.writeValueAsString(subscription));
+                    log.debug("Event: {}", event.toString());
+                    log.debug("Event Payload: {}", mapper.writeValueAsString(serializableObject));
                 }
             }
             subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_COMPLETE, new Date(), "Logging action completed successfully.");
         } catch (Throwable e) {
-            log.error("Could not write subscription values to log. ", e.getMessage());
+            log.error("Could not write subscription values to log.", e);
             subscriptionDeliveryEntityService.addStatus(deliveryId, ACTION_FAILED, new Date(), "Could not write subscription values to log. " + e.getMessage());
         }
 

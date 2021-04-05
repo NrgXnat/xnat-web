@@ -1,24 +1,19 @@
 package org.nrg.xnat.model.util;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-
-import javax.annotation.Nonnull;
-
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.action.ClientException;
 import org.nrg.xdat.XDAT;
-import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatImageassessordata;
-import org.nrg.xdat.om.XnatImagesessiondata;
-import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.*;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.event.EventMetaI;
@@ -32,17 +27,10 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.experimental.Accessors;
-import lombok.extern.slf4j.Slf4j;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import javax.annotation.Nonnull;
 
 @Slf4j
 @Getter
@@ -56,8 +44,8 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
 	}
 
 	public List<String> setResourcesIds(String requestedResourceId, UserI user, final boolean allowAll) {
-		_resourceIds = new ArrayList<String>();
-		final List<String> requestedResources = StringUtils.isNotBlank(requestedResourceId) ? Arrays.asList(requestedResourceId.split("\\s*,\\s*")) : Collections.<String>emptyList();
+		_resourceIds = new ArrayList<>();
+		final List<String> requestedResources = StringUtils.isNotBlank(requestedResourceId) ? Arrays.asList(requestedResourceId.split("\\s*,\\s*")) : Collections.emptyList();
 		if (!requestedResources.isEmpty()) {
 			// Separate numeric and non-numeric IDs to start. Non-numeric IDs get qualified  by project/experiment/etc later.
 			_resourceIds.addAll(Lists.newArrayList( Iterables.filter(requestedResources, Predicates.not(Predicates.containsPattern("^\\d+$")))));
@@ -150,20 +138,19 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
             format = null;
         }
 
-        final String content;
-        if (xnatResourceInfo.getContent() != null) {
-            content = xnatResourceInfo.getContent();
-        } else {
-            content = null;
-        }
-
-        String[] tags = xnatResourceInfo.getTags().stream().toArray(String[] ::new); ;
-        if (tags == null) {
-            tags = null;
-        }
-
-        Date d = EventUtils.getEventDate(ci, false);
-        return XnatResourceInfo.buildResourceInfo(description, format, content, tags, user, d, d, EventUtils.getEventId(ci));
+		final String       content = Optional.ofNullable(xnatResourceInfo.getContent()).orElse(null);
+		final List<String> tags    = xnatResourceInfo.getTags();
+		final Date         date    = EventUtils.getEventDate(ci, false);
+		return XnatResourceInfo.builder()
+							   .description(description)
+							   .format(format)
+							   .content(content)
+							   .tags(tags)
+							   .username(user.getUsername())
+							   .created(date)
+							   .lastModified(date)
+							   .eventId(EventUtils.getEventId(ci))
+							   .build();
     }
 	
 	@Data
