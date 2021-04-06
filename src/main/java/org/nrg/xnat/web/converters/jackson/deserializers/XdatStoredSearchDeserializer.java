@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
+import org.nrg.xft.ItemI;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -19,6 +22,7 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
     @Override
     protected XdatStoredSearch deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XdatStoredSearch search = new XdatStoredSearch();
+        
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
