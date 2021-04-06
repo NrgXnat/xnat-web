@@ -7,15 +7,20 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.om.XdatCriteria;
 import org.nrg.xdat.om.XdatCriteriaSet;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
+import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xdat.search.DisplaySearch;
+import org.nrg.xdat.security.SecurityManager;
 import org.nrg.xdat.security.XDATUser;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
@@ -24,13 +29,14 @@ import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
+import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.event.EventDetails;
-import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
-import org.nrg.xft.event.EventUtils.CATEGORY;
 import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
+import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.services.search.SearchService;
@@ -69,12 +75,12 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException {
+	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException, DataFormatException {
 		String query = getSavedSearchQuery(user);
 		return _template.query(query, new MapSqlParameterSource(),new XdatStoredSearchRowMapper(user));
 	}
 
-	private String getSavedSearchQuery(UserI user) throws UserNotFoundException, UserInitException {
+	private String getSavedSearchQuery(UserI user) throws UserNotFoundException, UserInitException, DataFormatException {
 		  String    usernameToGetListFor = getQueryVariable("user");
 	        String    getAllBundles = getQueryVariable("all");
 	        UserI     userToGetListFor;
@@ -93,9 +99,8 @@ public class SearchServiceImpl implements SearchService{
 	                        query += " AND xss.tag IS NOT NULL";
 	                    } else {
 	                        if (!Permissions.getAllProjectIds(XDAT.getContextService().getBean(JdbcTemplate.class)).contains(includeTagged)) {
-	                            //logger.error("", new Exception("Unknown tag: " + includeTagged));
-	                           // getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
-	                            return null;
+	                            log.error("", new Exception("Unknown tag: " + includeTagged));
+	                            throw new DataFormatException("");
 	                        }
 	                        query += " AND xss.tag='" + includeTagged + "'";
 	                    }
@@ -232,8 +237,93 @@ public class SearchServiceImpl implements SearchService{
         }
 		return xss;
 	}
+	
+	@Override
+	public void deleteSavedSearchBySearchId(UserI user, String searchId) throws SQLException, Exception {
+		if (Objects.nonNull(searchId)) {
+
+			XdatStoredSearch search = XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+
+			if (search != null) {
+				XdatStoredSearchAllowedUser mine = null;
+				XdatStoredSearchGroupid group = null;
+
+				mine = getXdatStoredSearch(mine, search, user);
+
+				group = getXdatStoredSearchGroupid(group, search, user);
+
+				deleteStoredSearch(mine, search, group, user);
+			}
+		}
+	}
+
+	private void deleteStoredSearch(XdatStoredSearchAllowedUser mine, XdatStoredSearch search, XdatStoredSearchGroupid group, UserI user) throws SQLException, Exception {
+		if (mine != null) {
+            if (search.getAllowedUser().size() > 1 || search.getAllowedGroups_groupid().size() > 0) {
+                SaveItemHelper.authorizedDelete(mine.getItem(), user, newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed user from stored search"));
+            } else {
+                SaveItemHelper.authorizedDelete(search.getItem(), user, newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search"));
+            }
+        } else if (group != null) {
+            if (search.getAllowedUser().size() > 0 || search.getAllowedGroups_groupid().size() > 1) {
+                SaveItemHelper.authorizedDelete(group.getItem(), user, newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed group from stored search"));
+            } else {
+                SaveItemHelper.authorizedDelete(search.getItem(), user, newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search"));
+            }
+        } else if (Roles.isSiteAdmin(user)) {
+            SaveItemHelper.authorizedDelete(search.getItem(), user, newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search"));
+        } else {
+        	throw new InsufficientPrivilegesException(user.getUsername());
+        }
+	}
+
+	private XdatStoredSearchGroupid getXdatStoredSearchGroupid(XdatStoredSearchGroupid group, XdatStoredSearch search, UserI user) {
+		 for (XdatStoredSearchGroupid ag : search.getAllowedGroups_groupid()) {
+             if (Groups.isMember(user, ag.getGroupid())) {
+                 group = ag;
+                 break;
+             }
+         }
+		return group;
+	}
+
+	private XdatStoredSearchAllowedUser getXdatStoredSearch(XdatStoredSearchAllowedUser mine, XdatStoredSearch search, UserI user) {
+		 for (XdatStoredSearchAllowedUser au : search.getAllowedUser()) {
+             if (au.getLogin().equals(user.getLogin())) {
+                 mine = au;
+                 break;
+             }
+         }
+		return mine;
+	}
+
+	private EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
+		 return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
+	}
+	
+	public EventUtils.TYPE getEventType() {
+		final String id = getQueryVariable(EventUtils.EVENT_TYPE);
+		if (id != null) {
+			return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
+		} else {
+			return EventUtils.TYPE.WEB_SERVICE;
+		}
+	}
+
+	public String getAction() {
+		return getQueryVariable(EventUtils.EVENT_ACTION);
+	}
+
+	public String getReason() {
+		return getQueryVariable(EventUtils.EVENT_REASON);
+	}
+
+	public String getComment() {
+		return getQueryVariable(EventUtils.EVENT_COMMENT);
+	}
 
 	private final NamedParameterJdbcTemplate _template;
 
+	
 	
 }

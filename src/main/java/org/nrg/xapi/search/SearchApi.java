@@ -2,15 +2,21 @@ package org.nrg.xapi.search;
 
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.List;
 
+import javax.persistence.QueryHint;
+
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.search.SearchService;
@@ -19,6 +25,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -69,7 +77,18 @@ public class SearchApi extends AbstractXapiProjectRestController {
     }
     
     
+    @ApiOperation(value = "Delete an existing search saved", notes = "Deletes the specified search saved.")
+    @ApiResponses({@ApiResponse(code = 200, message = "Deleted the specified search saved."),
+                   @ApiResponse(code = 403, message = "The user doesn't have permission to delete search saved in the specified search saved"),
+                   @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = "/search/saved/{searchId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+    public void deleteProject(@ApiParam("The ID of the search saved to be deleted") @PathVariable(required = false) final String searchId) throws Exception {
+        log.debug("Controller Api- Delete search saved {}", searchId);
+        _searchService.deleteSavedSearchBySearchId(getSessionUser(), searchId);
+    }
+    
+    
     private SearchService _searchService;
-
 }
 
