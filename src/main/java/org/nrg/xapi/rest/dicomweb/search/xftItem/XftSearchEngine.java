@@ -15,6 +15,7 @@ import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +37,17 @@ public class XftSearchEngine implements SearchEngineI {
     private final NamedParameterJdbcTemplate _jdbcTemplate;
     private final DateTimeService _dateTimeService;
     private final QueryParamToCriteriaService _queryParamService;
+    private final CatalogService _catalogService;
     private static final Logger _log = LoggerFactory.getLogger("dicomweb");
 
     @Autowired
-    public XftSearchEngine(final UserManagementServiceI userManagementService, NamedParameterJdbcTemplate jdbcTemplate) {
+    public XftSearchEngine(final UserManagementServiceI userManagementService,
+                           final CatalogService catalogService,
+                           NamedParameterJdbcTemplate jdbcTemplate) {
         this._dateTimeService = new DateTimeService();
         this._queryParamService = new QueryParamToCriteriaService( _dateTimeService);
         this._jdbcTemplate = jdbcTemplate;
+        this._catalogService = catalogService;
     }
 
     @Override
@@ -85,8 +90,8 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsSex( session.getSubjectData().getGender());
             response.setPatientsBirthDate( session.getSubjectData().getDOB());
             response.setStudyID( session.getStudyId());
-            response.setNumberOfStudyRelatedSeries( countSeries( user, session));
-            response.setNumberOfStudyRelatedInstances( countStudyInstances( user, session));
+            response.setNumberOfStudyRelatedSeries( countSeries( session));
+            response.setNumberOfStudyRelatedInstances( countStudyInstances( session));
             response.setReferringPhysiciansName("");
             responses.add( response);
         }
@@ -258,8 +263,8 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsSex( scandata.getImageSessionData().getSubjectData().getGender());
             response.setPatientsBirthDate( scandata.getImageSessionData().getSubjectData().getDOB());
             response.setStudyID( scandata.getImageSessionData().getStudyId());
-            response.setNumberOfStudyRelatedSeries( countSeries( user, scandata.getImageSessionData()));
-            response.setNumberOfStudyRelatedInstances( countStudyInstances( user, scandata.getImageSessionData()));
+            response.setNumberOfStudyRelatedSeries( countSeries( scandata.getImageSessionData()));
+            response.setNumberOfStudyRelatedInstances( countStudyInstances( scandata.getImageSessionData()));
             response.setReferringPhysiciansName("");
 
             responses.add( response);
@@ -298,8 +303,8 @@ public class XftSearchEngine implements SearchEngineI {
                 response.setPatientsSex(session.getSubjectData().getGender());
                 response.setPatientsBirthDate(session.getSubjectData().getDOBDisplay());
                 response.setStudyID(session.getStudyId());
-                response.setNumberOfStudyRelatedSeries(countSeries(user, session));
-                response.setNumberOfStudyRelatedInstances(countStudyInstances(user, session));
+                response.setNumberOfStudyRelatedSeries( countSeries( session));
+                response.setNumberOfStudyRelatedInstances( countStudyInstances( session));
 
                 responses.add(response);
             }
@@ -321,10 +326,13 @@ public class XftSearchEngine implements SearchEngineI {
         return sb.toString();
     }
 
-    private int countSeries( UserI user, XnatImagesessiondata session) {
+    private int countSeries1( UserI user, XnatImagesessiondata session) {
         ArrayList<XnatImagescandata> imagescandata = XnatImagescandata.getXnatImagescandatasByField("xnat:imagescandata/image_session_id", session.getId(), user, false);
-
         return imagescandata.size();
+    }
+    private int countSeries( XnatImagesessiondata session) {
+        List<XnatImagescandataI> scans = session.getScans_scan();
+        return scans.size();
     }
 
     /**
@@ -335,11 +343,25 @@ public class XftSearchEngine implements SearchEngineI {
      * @return number of instances in the session to which the user has access.
      * @throws Exception if error reading scan catalog.
      */
-    private int countStudyInstances( UserI user, XnatImagesessiondata session) throws Exception {
+    private int countStudyInstances1( UserI user, XnatImagesessiondata session) throws Exception {
         ArrayList<XnatImagescandata> imagescandata = XnatImagescandata.getXnatImagescandatasByField("xnat:imagescandata/image_session_id", session.getId(), user, false);
 
         int count = 0;
         for( XnatImagescandata scan: imagescandata) {
+            Integer n = scan.getInstanceCount();
+            if( n == null) {
+                n = getInstanceCount( session.getArchiveRootPath(), scan );
+            }
+            count += n;
+        }
+        return count;
+    }
+
+    private int countStudyInstances( XnatImagesessiondata session) throws Exception {
+        List<XnatImagescandataI> scans = session.getScans_scan();
+
+        int count = 0;
+        for( XnatImagescandataI scan: scans) {
             Integer n = scan.getInstanceCount();
             if( n == null) {
                 n = getInstanceCount( session.getArchiveRootPath(), scan );
