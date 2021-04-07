@@ -324,6 +324,135 @@ public class SearchServiceImpl implements SearchService{
 
 	private final NamedParameterJdbcTemplate _template;
 
-	
-	
+	@Override
+	public XdatStoredSearch updateStoredSearch(UserI user,XdatStoredSearch xdatStoredSearch, String searchId, Boolean saveAs) throws Exception {
+		 boolean isNew = false;
+
+         if (xdatStoredSearch.getId() == null || !xdatStoredSearch.getId().equals(searchId)) {
+        	 xdatStoredSearch.setId(searchId);
+             isNew = true;
+         } else {
+             XFTItem xss = xdatStoredSearch.getCurrentDBVersion(false);
+             if (xss == null) {
+                 isNew = true;
+             } else if (saveAs) {
+                 while (xss != null) {
+                	 xdatStoredSearch.setId(xdatStoredSearch.getId() + "_1");
+                     xss = xdatStoredSearch.getCurrentDBVersion(false);
+                 }
+                 isNew = true;
+             }
+         }
+         
+         if (isNew && xdatStoredSearch.getTag() != null) {
+             CriteriaCollection cc = new CriteriaCollection("AND");
+             cc.addClause("xdat:stored_search/tag", xdatStoredSearch.getTag());
+             cc.addClause("xdat:stored_search/brief-description", xdatStoredSearch.getBriefDescription());
+             ItemCollection result = ItemSearch.GetItems(cc, user, false);
+             if (result.size() > 0) {
+                 isNew = false;
+                 xdatStoredSearch.setId(result.getFirst().getStringProperty("ID"));
+             }
+         }
+         
+         verfiyPermission(user, xdatStoredSearch);
+         
+         isNew = getIsNew(xdatStoredSearch, isNew, user);
+
+         xdatStoredSearch= getXdatStoredSearchWithSaveAs(xdatStoredSearch, saveAs);
+         
+         boolean found = false;
+         
+         found = getFoundWithUser(xdatStoredSearch, found, user);
+         
+         found = getFoundWithSearchGroup(xdatStoredSearch, found, user);
+
+         xdatStoredSearch= getXdatStoredSearchWithNotIsNewAndNotFound(isNew, found, xdatStoredSearch, user);
+
+         xdatStoredSearch= getXdatStoredSearchWithIsNewAndNotFound(isNew, found, xdatStoredSearch, user);
+         
+         try {
+             SaveItemHelper.unauthorizedSave(xdatStoredSearch, user, false, true, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, (isNew) ? "Creating new stored search" : "Modified existing stored search"));
+         } catch (Exception e) {
+             log.error("", e);
+           throw new InitializationException("Something went worng");
+         }
+		return XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+	}
+
+	private boolean getIsNew(XdatStoredSearch xdatStoredSearch, boolean isNew, UserI user) throws Exception {
+		final boolean isPrimary = (xdatStoredSearch.getTag() != null && (xdatStoredSearch.getId().equals(xdatStoredSearch.getTag() + "_" + xdatStoredSearch.getRootElementName()))) ||
+                (org.apache.commons.lang3.StringUtils.isNotBlank(xdatStoredSearch.getBriefDescription()) && xdatStoredSearch.getBriefDescription().equals(DisplayManager.GetInstance().getPluralDisplayNameForElement(xdatStoredSearch.getRootElementName())));
+
+		if (isNew && isPrimary) {
+			if (!Permissions.can(user, "xnat:projectData/ID", xdatStoredSearch.getTag(), SecurityManager.DELETE)) {
+				isNew = false;
+			}
+		}
+		return isNew;
+	}
+
+	private void verfiyPermission(UserI user, XdatStoredSearch xdatStoredSearch) throws InsufficientPrivilegesException {
+		if (!Permissions.canQuery(user, xdatStoredSearch.getRootElementName())) {
+			throw new InsufficientPrivilegesException(user.getUsername());
+		}
+	}
+
+	private boolean getFoundWithSearchGroup(XdatStoredSearch xdatStoredSearch, boolean found, UserI user) {
+		for (XdatStoredSearchGroupid ag : xdatStoredSearch.getAllowedGroups_groupid()) {
+            if (Groups.isMember(user, ag.getGroupid())) {
+                found = true;
+            }
+        }
+		return found;
+	}
+
+	private boolean getFoundWithUser(XdatStoredSearch xdatStoredSearch, boolean found, UserI user) {
+		for (XdatStoredSearchAllowedUser au : xdatStoredSearch.getAllowedUser()) {
+            if (au.getLogin().equals(user.getLogin())) {
+                found = true;
+            }
+        }
+		return found;
+	}
+
+	private XdatStoredSearch getXdatStoredSearchWithSaveAs(XdatStoredSearch xdatStoredSearch, Boolean saveAs) {
+		if (saveAs) {
+            while (xdatStoredSearch.getAllowedGroups_groupid().size() > 0) {
+           	 xdatStoredSearch.removeAllowedGroups_groupid(0);
+            }
+
+            while (xdatStoredSearch.getAllowedUser().size() > 0) {
+           	 xdatStoredSearch.removeAllowedUser(0);
+            }
+        }
+		return xdatStoredSearch;
+	}
+
+	private XdatStoredSearch getXdatStoredSearchWithNotIsNewAndNotFound(boolean isNew, boolean found, XdatStoredSearch xdatStoredSearch, UserI user) throws Exception {
+		 if (!found && !isNew) {
+             if (xdatStoredSearch.getTag() != null && !xdatStoredSearch.getTag().equals("")) {
+                 if (!Permissions.canEdit(user, "xnat:projectData/ID", xdatStoredSearch.getTag())) {
+                	 throw new InsufficientPrivilegesException(user.getUsername());
+                 } else {
+                     XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
+                     au.setLogin(user.getLogin());
+                     xdatStoredSearch.setAllowedUser(au);
+                 }
+             } else {
+            	 throw new InsufficientPrivilegesException(user.getUsername());
+             }
+         }
+		return xdatStoredSearch;
+	}
+
+	private XdatStoredSearch getXdatStoredSearchWithIsNewAndNotFound(boolean isNew, boolean found, XdatStoredSearch xdatStoredSearch, UserI user) throws Exception {
+		if (isNew && !found) {
+            XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
+            au.setLogin(user.getLogin());
+            xdatStoredSearch.setAllowedUser(au);
+        }
+		return xdatStoredSearch;
+	}
+
 }

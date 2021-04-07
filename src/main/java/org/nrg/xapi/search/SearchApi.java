@@ -88,6 +88,21 @@ public class SearchApi extends AbstractXapiProjectRestController {
         _searchService.deleteSavedSearchBySearchId(getSessionUser(), searchId);
     }
     
+    @ApiOperation(value = "Update an existing search saved", notes = "Updates the submitted search saved.", response = XnatProjectdata.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated search saved."),
+                   @ApiResponse(code = 403, message = "The user doesn't have permission to edit search saved in the specified search saved"),
+                   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = "/search/saved/{searchId}",
+                        consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+                        produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+                        method = PUT)
+    public XdatStoredSearch updateProject(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
+    		@ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
+            @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch) throws Exception {
+        log.debug("Controller Api- Update search saved {}",searchId );
+        return _searchService.updateStoredSearch(getSessionUser(), xdatStoredSearch, searchId, saveAs);
+    }
     
     private SearchService _searchService;
 }

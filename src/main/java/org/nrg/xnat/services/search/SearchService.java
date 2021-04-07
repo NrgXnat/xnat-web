@@ -28,4 +28,6 @@ public interface SearchService {
 	public XdatStoredSearch  findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException, NotFoundException, Exception;
 
 	public void deleteSavedSearchBySearchId(UserI user, String searchId) throws SQLException, Exception;
+	
+	public XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs) throws XFTInitException, ElementNotFoundException, FieldNotFoundException, Exception;
 }
