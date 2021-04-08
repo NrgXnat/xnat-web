@@ -22,6 +22,12 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
     @Override
     protected XdatStoredSearch deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XdatStoredSearch search = new XdatStoredSearch();
+        XdatStoredSearchAllowedUser xdatStoredSearchAllowedUser = new XdatStoredSearchAllowedUser();
+        try {
+        	search.setAllowedUser((ItemI)xdatStoredSearchAllowedUser);
+        } catch (Exception e) {
+            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
+        }
         
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
@@ -53,6 +59,9 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
                     break;
                 case "sortByElementName":
                 	search.setSortBy_elementName(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "login":
+                	xdatStoredSearchAllowedUser.setLogin(Objects.nonNull(parser.getText())?parser.getText():"");
                     break;
             }
         }

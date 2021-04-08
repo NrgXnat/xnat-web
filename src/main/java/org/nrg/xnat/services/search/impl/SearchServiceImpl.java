@@ -3,8 +3,11 @@ package org.nrg.xnat.services.search.impl;
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
@@ -20,11 +23,13 @@ import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
 import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xdat.search.DisplaySearch;
+import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xdat.security.SecurityManager;
 import org.nrg.xdat.security.XDATUser;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.XFT;
@@ -40,13 +45,13 @@ import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.services.search.SearchService;
-import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+
 
 
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +70,43 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XdatSearch> findAllSearchElements(UserI user) {
+	public List<XdatSearch> findAllSearchElements(UserI user, String secured, String readable, String used) throws Exception  {
+		final Map<String, ElementSecurity> allES    = new HashMap<>(ElementSecurity.GetElementSecurities());
+		allES.keySet().removeAll(
+				allES.entrySet().stream().filter(a->{
+					try {
+						return a.getValue().getElementName().startsWith("xdat:");
+					} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
+						e1.printStackTrace();
+					}
+					return false;
+				}).map(e -> e.getKey()).collect(Collectors.toList()));
+		
+		if (secured != null) {
+			allES.keySet().removeAll(allES.entrySet().stream().filter(a -> !a.getValue().isSecure())
+					.map(e -> e.getKey()).collect(Collectors.toList()));
+		}
+		
+		final Map<String, Long> counts = readable != null ? UserHelper.getUserHelperService(user).getReadableCounts() : XDAT.getTotalCounts();
+		
+		if (used != null) {
+			allES.keySet().removeAll(allES.entrySet().stream().filter(a -> {
+				try {
+					return !counts.containsKey(a.getValue().getElementName());
+				} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
+					e1.printStackTrace();
+				}
+				return false;
+			}).map(e -> e.getKey()).collect(Collectors.toList()));
+		}
+		
+		allES.entrySet().forEach(t->{
+			try {
+				log.debug("allES filter Values "+t.getValue().getElementName());
+			} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
+				e1.printStackTrace();
+			}
+		});
 		return null;
 	}
 

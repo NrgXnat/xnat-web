@@ -19,8 +19,8 @@ public interface SearchService {
 
 	public List<XdatSearch> findAllSearch(UserI user);
 
-	public List<XdatSearch> findAllSearchElements(UserI user);
-
+	public List<XdatSearch> findAllSearchElements(UserI user,String secured, String readable, String used) throws Exception;
+	
 	public XdatSearch findSearchByElement(UserI user, String element);
 
 	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException, DataFormatException;

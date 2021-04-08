@@ -26,7 +26,11 @@ public class XdatStoredSearchSerializer extends AbstractBaseElementSerializer<Xd
         writeNonBlankField(generator, "id", search.getId());
         writeNonBlankField(generator, "tag", search.getTag());
         writeNonBlankField(generator, "sortByElementName", search.getSortBy_elementName());
-        
+        generator.writeArrayFieldStart("login");
+        for(final XdatStoredSearchAllowedUser user : search.getAllowedUser()) {
+        	generator.writeString(user.getLogin());
+        }
+        generator.writeEndArray();
     }
 }
 
