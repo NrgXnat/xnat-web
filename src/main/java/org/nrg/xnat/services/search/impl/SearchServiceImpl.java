@@ -3,7 +3,9 @@ package org.nrg.xnat.services.search.impl;
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -14,13 +16,17 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayManager;
+import org.nrg.xdat.display.ElementDisplay;
+import org.nrg.xdat.display.SQLQueryField;
 import org.nrg.xdat.om.XdatCriteria;
 import org.nrg.xdat.om.XdatCriteriaSet;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
+import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xdat.search.DisplaySearch;
 import org.nrg.xdat.security.ElementSecurity;
@@ -44,6 +50,9 @@ import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
+import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -70,27 +79,42 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XdatSearch> findAllSearchElements(UserI user, String secured, String readable, String used) throws Exception  {
-		final Map<String, ElementSecurity> allES    = new HashMap<>(ElementSecurity.GetElementSecurities());
-		allES.keySet().removeAll(
-				allES.entrySet().stream().filter(a->{
-					try {
-						return a.getValue().getElementName().startsWith("xdat:");
-					} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
-						e1.printStackTrace();
-					}
-					return false;
-				}).map(e -> e.getKey()).collect(Collectors.toList()));
+	public List<SearchElementDto> findAllSearchElements(UserI user, String secured, String readable, String used) throws Exception {
+		Map<String, ElementSecurity> elementSecurities    = new HashMap<>(ElementSecurity.GetElementSecurities());
 		
-		if (secured != null) {
-			allES.keySet().removeAll(allES.entrySet().stream().filter(a -> !a.getValue().isSecure())
-					.map(e -> e.getKey()).collect(Collectors.toList()));
-		}
+		elementSecurities = filterElementSecurityWithXdat(elementSecurities);
+		
+		elementSecurities = filterElementSecurityWithSecured(elementSecurities, secured);
+		
 		
 		final Map<String, Long> counts = readable != null ? UserHelper.getUserHelperService(user).getReadableCounts() : XDAT.getTotalCounts();
 		
+		elementSecurities = filterElementSecurityWithUsed(elementSecurities, used, counts);
+		
+		
+		List<SearchElementDto>elementDtos = getXnatSearchElement(elementSecurities, counts);
+				
+		
+		return elementDtos;
+	}
+
+	private List<SearchElementDto> getXnatSearchElement(Map<String, ElementSecurity> elementSecurities, Map<String, Long> counts) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
+		List<SearchElementDto>elementDtos = new ArrayList<SearchElementDto>();
+		for(ElementSecurity es: elementSecurities.values()){
+			SearchElementDto elementDto = new SearchElementDto();
+			elementDto.setSingular(Objects.nonNull(es.getSingularDescription())?es.getSingularDescription():es.getElementName());
+			elementDto.setPlural(Objects.nonNull(es.getPluralDescription())?es.getPluralDescription():es.getElementName());
+			elementDto.setSecured(Objects.nonNull(es.isSecure())? true: false);
+			elementDto.setElementName(es.getElementName());
+			elementDto.setCount(Objects.nonNull(counts.get(es.getElementName()))?counts.get(es.getElementName()):0L);
+			elementDtos.add(elementDto);
+		}
+		return elementDtos;
+	}
+
+	private Map<String, ElementSecurity> filterElementSecurityWithUsed(Map<String, ElementSecurity> elementSecurities, String used, Map<String, Long> counts) {
 		if (used != null) {
-			allES.keySet().removeAll(allES.entrySet().stream().filter(a -> {
+			elementSecurities.keySet().removeAll(elementSecurities.entrySet().stream().filter(a -> {
 				try {
 					return !counts.containsKey(a.getValue().getElementName());
 				} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
@@ -99,20 +123,58 @@ public class SearchServiceImpl implements SearchService{
 				return false;
 			}).map(e -> e.getKey()).collect(Collectors.toList()));
 		}
-		
-		allES.entrySet().forEach(t->{
-			try {
-				log.debug("allES filter Values "+t.getValue().getElementName());
-			} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
-				e1.printStackTrace();
-			}
-		});
-		return null;
+		return elementSecurities;
+	}
+
+	private Map<String, ElementSecurity> filterElementSecurityWithSecured(Map<String, ElementSecurity> elementSecurities, String secured) {
+		if (secured != null) {
+			elementSecurities.keySet().removeAll(elementSecurities.entrySet().stream().filter(a -> !a.getValue().isSecure())
+					.map(e -> e.getKey()).collect(Collectors.toList()));
+		}
+		return elementSecurities;
+	}
+
+	private Map<String, ElementSecurity> filterElementSecurityWithXdat(Map<String, ElementSecurity> elementSecurities) {
+		elementSecurities.keySet().removeAll(
+				elementSecurities.entrySet().stream().filter(a->{
+					try {
+						return a.getValue().getElementName().startsWith("xdat:");
+					} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e1) {
+						e1.printStackTrace();
+					}
+					return false;
+				}).map(e -> e.getKey()).collect(Collectors.toList()));
+		return elementSecurities;
 	}
 
 	@Override
-	public XdatSearch findSearchByElement(UserI user, String element) {
-		return null;
+	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException  {
+		ArrayList<String> elementNames=XftStringUtils.CommaDelimitedStringToArrayList(elementName);
+		List<XnatSearchElementDto>elementDtos = new ArrayList<XnatSearchElementDto>();
+		for (String en : elementNames) {
+			SchemaElement se = SchemaElement.GetElement(en);
+			ElementDisplay ed = se.getDisplay();
+
+			ArrayList displays = ed.getSortedFields();
+			Iterator iter = displays.iterator();
+			while (iter.hasNext()) {
+				XnatSearchElementDto elementDto = new XnatSearchElementDto();
+				DisplayField df = (DisplayField) iter.next();
+				if (df.isSearchable()) {
+					elementDto.setDescription((df.getDescription()==null)?(df.getHeader()==null)?df.getId():df.getHeader():df.getDescription());
+					elementDto.setElementName(se.getFullXMLName());
+					elementDto.setFieldId(df.getId());
+					elementDto.setHeader(df.getHeader());
+					elementDto.setRequiresValue((df instanceof SQLQueryField)?true:false);
+					elementDto.setSrc(0);
+					elementDto.setSummary(df.getSummary());
+					elementDto.setType(df.getDataType());
+					elementDtos.add(elementDto);
+				}
+			}
+			
+		}
+		return elementDtos;
 	}
 
 	@Override

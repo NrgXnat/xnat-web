@@ -36,8 +36,8 @@ import java.util.Locale;
 @Configuration
 @EnableSwagger2
 @ComponentScan(value = {"org.nrg.xapi.archive", "org.nrg.xapi.experiments", "org.nrg.xapi.files", "org.nrg.xapi.pars", "org.nrg.xapi.projects",
-                        "org.nrg.xapi.resources", "org.nrg.xapi.rest", "org.nrg.xapi.runners", "org.nrg.xapi.scans", "org.nrg.xapi.subjects",
-                        "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", "org.nrg.xnat.snapshot.rest"},
+                        "org.nrg.xapi.resources", "org.nrg.xapi.rest", "org.nrg.xapi.runners", "org.nrg.xapi.scans", "org.nrg.xapi.search", 
+                        "org.nrg.xapi.subjects", "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", "org.nrg.xnat.snapshot.rest"},
                includeFilters = @Filter(ControllerAdvice.class))
 @Import(SpawnerConfig.class)
 @Slf4j
