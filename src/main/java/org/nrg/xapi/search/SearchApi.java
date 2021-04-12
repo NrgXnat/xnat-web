@@ -16,6 +16,7 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -112,6 +113,20 @@ public class SearchApi extends AbstractXapiProjectRestController {
     		@RequestParam(required = false) final String used) throws Exception {
         log.debug("Controller Api- get xdatSearch element saved {}");
         List<SearchElementDto> xdatSearchs = _searchService.findAllSearchElements(getSessionUser(),secured,readable,used);
+        if (xdatSearchs == null) {
+            throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
+        }
+        return new ResponseEntity<>(xdatSearchs, HttpStatus.OK);
+    }
+    
+    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+                   @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "/search/element/{elementName}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+    public ResponseEntity<List<XnatSearchElementDto>> getAllSearchElementByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws Exception {
+        log.debug("Controller Api- get xdatSearch element saved {}");
+        List<XnatSearchElementDto> xdatSearchs = _searchService.findSearchElementByElementName(getSessionUser(), elementName);
         if (xdatSearchs == null) {
             throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
         }

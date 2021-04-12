@@ -5,19 +5,25 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONObject;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.display.DisplayField;
+import org.nrg.xdat.display.DisplayFieldReferenceI;
 import org.nrg.xdat.display.DisplayManager;
+import org.nrg.xdat.display.DisplayVersion;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
 import org.nrg.xdat.om.XdatCriteria;
@@ -43,15 +49,19 @@ import org.nrg.xft.XFTItem;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
+import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.DisplayFieldReferenceIDto;
+import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -148,33 +158,104 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException  {
+	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, SQLException, DBPoolException, FieldNotFoundException, DisplayFieldNotFoundException  {
 		ArrayList<String> elementNames=XftStringUtils.CommaDelimitedStringToArrayList(elementName);
+		DisplayVersionDto element = new DisplayVersionDto();
 		List<XnatSearchElementDto>elementDtos = new ArrayList<XnatSearchElementDto>();
 		for (String en : elementNames) {
 			SchemaElement se = SchemaElement.GetElement(en);
 			ElementDisplay ed = se.getDisplay();
-
 			ArrayList displays = ed.getSortedFields();
 			Iterator iter = displays.iterator();
-			while (iter.hasNext()) {
-				XnatSearchElementDto elementDto = new XnatSearchElementDto();
-				DisplayField df = (DisplayField) iter.next();
-				if (df.isSearchable()) {
-					elementDto.setDescription((df.getDescription()==null)?(df.getHeader()==null)?df.getId():df.getHeader():df.getDescription());
-					elementDto.setElementName(se.getFullXMLName());
-					elementDto.setFieldId(df.getId());
-					elementDto.setHeader(df.getHeader());
-					elementDto.setRequiresValue((df instanceof SQLQueryField)?true:false);
-					elementDto.setSrc(0);
-					elementDto.setSummary(df.getSummary());
-					elementDto.setType(df.getDataType());
-					elementDtos.add(elementDto);
-				}
-			}
+			
+			elementDtos = getVersionElementData(ed.getVersions(), elementDtos);
+
+			elementDtos = getXnatSearchElements(iter, elementDtos,se);
+			
+			List<List> custom_fields =UserHelper.getUserHelperService(user).getQueryResultsAsArrayList("SELECT DISTINCT ON (name) dtp.xnat_projectdata_id AS project, fdgf.name, fdgf.datatype AS type FROM xnat_abstractprotocol dtp LEFT JOIN xnat_datatypeprotocol_fieldgroups dtp_fg ON dtp.xnat_abstractprotocol_id=dtp_fg.xnat_datatypeprotocol_xnat_abstractprotocol_id LEFT JOIN xnat_fielddefinitiongroup fdg  ON dtp_fg.xnat_fielddefinitiongroup_xnat_fielddefinitiongroup_id=fdg.xnat_fielddefinitiongroup_id LEFT JOIN xnat_fielddefinitiongroup_field fdgf ON fdg.xnat_fielddefinitiongroup_id=fdgf.fields_field_xnat_fielddefiniti_xnat_fielddefinitiongroup_id WHERE dtp.data_type='" + en + "' AND fdgf.type='custom'");
+
+			DisplayField pi=ed.getProjectIdentifierField();
+			
+			elementDtos = getXnatSearchDataElements(se, user,elementDtos, custom_fields, pi);
 			
 		}
 		return elementDtos;
+	}
+
+	private List<XnatSearchElementDto> getVersionElementData(Hashtable<String, DisplayVersion> versions, List<XnatSearchElementDto> elementDtos) throws DisplayFieldNotFoundException {
+		List<DisplayVersionDto>displayVersionDtos = new ArrayList<>();  
+		XnatSearchElementDto elementDto = new XnatSearchElementDto();
+		for (Entry<String, DisplayVersion> entry : versions.entrySet()) {
+			  DisplayVersionDto displayVersionDto = new DisplayVersionDto();
+			  List<DisplayFieldReferenceIDto>fields = new ArrayList<>();
+			  displayVersionDto.setName(entry.getKey());
+			  displayVersionDto.setLightColor(Objects.isNull(entry.getValue().getLightColor())  || !entry.getValue().getLightColor().equals("")?entry.getValue().getLightColor():null);
+			  displayVersionDto.setDarkColor(Objects.isNull(entry.getValue().getDarkColor())  || !entry.getValue().getDarkColor().equals("")?entry.getValue().getDarkColor():null);
+			  displayVersionDto.setDefaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder())  || !entry.getValue().getDefaultSortOrder().equals("")?entry.getValue().getDefaultSortOrder():null);
+			  displayVersionDto.setOrderBy(Objects.isNull(entry.getValue().getDefaultOrderBy())  || !entry.getValue().getDefaultOrderBy().equals("")?entry.getValue().getDefaultOrderBy():null);
+			  for (DisplayFieldReferenceI field : entry.getValue().getAllFields()) {
+				  DisplayFieldReferenceIDto displayFieldReferenceIDto = new DisplayFieldReferenceIDto();
+				  displayFieldReferenceIDto.setId(field.getId());
+				  displayFieldReferenceIDto.setElementName(Objects.isNull(field.getElementName())  || !field.getElementName().equals("")?field.getElementName():null);
+				  displayFieldReferenceIDto.setValue(Objects.isNull(field.getValue()) || !field.getValue().equals("")?field.getValue():null);
+				  displayFieldReferenceIDto.setVisible(field.isVisible()?true:false);
+				  displayFieldReferenceIDto.setType(Objects.isNull(field.getType())|| !field.getType().equals("")?field.getType():null);
+				  displayFieldReferenceIDto.setHeader(Objects.isNull(field.getHeader()) || !field.getHeader().equals("")?field.getHeader():null);
+				  fields.add(displayFieldReferenceIDto);
+				  displayVersionDto.setFields(Objects.nonNull(fields) || !fields.isEmpty()?fields: new ArrayList<>());
+			  }
+			  displayVersionDtos.add(displayVersionDto);
+			  
+		  }
+		elementDto.setVersion(displayVersionDtos);
+		elementDtos.add(elementDto);
+		return elementDtos;
+	}
+
+	private List<XnatSearchElementDto> getXnatSearchDataElements(SchemaElement se, UserI user, List<XnatSearchElementDto> elementDtos, List<List> custom_fields, DisplayField pi) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
+		if(GenericWrapperElement.GetFieldForXMLPath(se.getFullXMLName() + "/project")!=null){
+			List<Object> av=Permissions.getAllowedValues(user,se.getFullXMLName(), se.getFullXMLName() + "/project", "read");
+			for(Object o:av){
+				XnatSearchElementDto elementDto = new XnatSearchElementDto();
+				elementDto = getElementDto(pi.getId() + "=" + o,o.toString(),"Label within the " + o + " project.", "string", false, "Label within the " + o + " project.", se.getFullXMLName(), 2);
+				elementDtos.add(elementDto);
+				 for(List cf:custom_fields){
+					 if(cf.get(0).equals(o)){
+						 XnatSearchElementDto element = new XnatSearchElementDto();
+						 elementDto = getElementDto(se.getSQLName().toUpperCase() + "_FIELD_MAP=" + cf.get(1).toString().toLowerCase(), cf.get(1).toString(), "Custom Field: "  + cf.get(1),cf.get(2).toString(), false, "Custom Field: "  + cf.get(1),se.getFullXMLName(), 1);
+						 elementDtos.add(element);
+					 }
+				 }
+			}
+		}
+		return elementDtos;
+	}
+
+	private List<XnatSearchElementDto> getXnatSearchElements(Iterator iter, List<XnatSearchElementDto> elementDtos, SchemaElement se) {
+		while (iter.hasNext()) {
+			XnatSearchElementDto elementDto = new XnatSearchElementDto();
+			DisplayField df = (DisplayField) iter.next();
+			if (df.isSearchable()) {
+				String desciption = (df.getDescription()==null)?(df.getHeader()==null)?df.getId():df.getHeader():df.getDescription();
+				boolean requiredValues = (df instanceof SQLQueryField)?true:false;
+				elementDto = getElementDto(df.getId(),df.getHeader(),df.getSummary(),df.getDataType(),requiredValues,desciption,se.getFullXMLName(),0 );
+				elementDtos.add(elementDto);
+			}
+		}
+		return elementDtos;
+	}
+
+	private XnatSearchElementDto getElementDto(String fieldId, String header, String summary, String dataType, boolean requiredValues, String desciption, String elementName, int src) {
+		XnatSearchElementDto elementDto = new XnatSearchElementDto();
+		elementDto.setFieldId(Objects.nonNull(fieldId)?fieldId:"");
+		elementDto.setHeader(Objects.nonNull(header)?header:"");
+		elementDto.setSummary(Objects.nonNull(summary)?summary:"");
+		elementDto.setType(Objects.nonNull(dataType)?dataType:"");
+		elementDto.setRequiresValue(requiredValues);
+		elementDto.setDescription(Objects.nonNull(desciption)?desciption:"");
+		elementDto.setElementName(Objects.nonNull(elementName)?elementName:"");
+		elementDto.setSrc(src);
+		return elementDto;
 	}
 
 	@Override

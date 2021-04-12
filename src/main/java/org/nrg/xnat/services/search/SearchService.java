@@ -6,6 +6,7 @@ import java.util.List;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
@@ -16,6 +17,7 @@ import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 
 public interface SearchService {
@@ -24,7 +26,7 @@ public interface SearchService {
 
 	public List<SearchElementDto> findAllSearchElements(UserI user,String secured, String readable, String used) throws Exception;
 	
-	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException ;
+	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, SQLException, DBPoolException, FieldNotFoundException, DisplayFieldNotFoundException ;
 
 	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException, DataFormatException;
 

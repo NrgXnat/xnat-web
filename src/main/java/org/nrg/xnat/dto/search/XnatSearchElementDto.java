@@ -1,12 +1,13 @@
 package org.nrg.xnat.dto.search;
 
 import java.io.Serializable;
+import java.util.List;
 
 import org.json.JSONObject;
 import org.nrg.xdat.display.ElementDisplay;
 
-public class XnatSearchElementDto implements Serializable{
-	
+public class XnatSearchElementDto implements Serializable {
+
 	private static final long serialVersionUID = -7765541182699651606L;
 	private String summary;
 	private String fieldId;
@@ -16,7 +17,7 @@ public class XnatSearchElementDto implements Serializable{
 	private String type;
 	private String description;
 	private Integer src;
-	private JSONObject versions;
+	private List<DisplayVersionDto> version;
 
 	public String getSummary() {
 		return summary;
@@ -82,13 +83,12 @@ public class XnatSearchElementDto implements Serializable{
 		this.src = src;
 	}
 
-	public JSONObject getVersions() {
-		return versions;
+	public List<DisplayVersionDto> getVersion() {
+		return version;
 	}
 
-	public void setVersions(JSONObject versions) {
-		this.versions = versions;
+	public void setVersion(List<DisplayVersionDto> version) {
+		this.version = version;
 	}
-	
 
 }
