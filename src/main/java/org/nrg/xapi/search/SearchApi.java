@@ -4,19 +4,26 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xft.exception.DBPoolException;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.FieldNotFoundException;
+import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xnat.dto.search.DisplayVersionDto;
+import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.VersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,7 +55,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     }
     
     @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatSearch.class, responseContainer = "list")
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+    @ApiResponses({@ApiResponse(code = 200, message = "nullReturns the requested xdatSearch."),
                    @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
@@ -127,6 +134,20 @@ public class SearchApi extends AbstractXapiProjectRestController {
     public ResponseEntity<List<XnatSearchElementDto>> getAllSearchElementByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws Exception {
         log.debug("Controller Api- get xdatSearch element saved {}");
         List<XnatSearchElementDto> xdatSearchs = _searchService.findSearchElementByElementName(getSessionUser(), elementName);
+        if (xdatSearchs == null) {
+            throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
+        }
+        return new ResponseEntity<>(xdatSearchs, HttpStatus.OK);
+    }
+    
+    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+                   @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "/search/element/{elementName}/versions", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+    public ResponseEntity<DisplayVersionDto> findSearchElementVersionByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException, XFTInitException, ElementNotFoundException, FieldNotFoundException, SQLException, DBPoolException, DisplayFieldNotFoundException {
+        log.debug("Controller Api- get xdatSearch element saved {}");
+        DisplayVersionDto xdatSearchs = _searchService.findSearchElementVersionByElementName(getSessionUser(), elementName);
         if (xdatSearchs == null) {
             throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
         }

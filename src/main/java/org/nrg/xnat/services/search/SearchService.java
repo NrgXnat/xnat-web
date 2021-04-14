@@ -16,8 +16,9 @@ import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.dto.search.SearchElementDto;
 import org.nrg.xnat.dto.search.DisplayVersionDto;
+import org.nrg.xnat.dto.search.SearchElementDto;
+import org.nrg.xnat.dto.search.VersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 
 public interface SearchService {
@@ -35,4 +36,10 @@ public interface SearchService {
 	public void deleteSavedSearchBySearchId(UserI user, String searchId) throws SQLException, Exception;
 	
 	public XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs) throws XFTInitException, ElementNotFoundException, FieldNotFoundException, Exception;
+	
+	public DisplayVersionDto findSearchElementVersionByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, DisplayFieldNotFoundException;
+
+	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
+	
+	public XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
 }

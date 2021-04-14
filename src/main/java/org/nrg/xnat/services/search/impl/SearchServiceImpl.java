@@ -46,12 +46,14 @@ import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
+import org.nrg.xft.XFTTool;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
+import org.nrg.xft.exception.InvalidValueException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
@@ -62,8 +64,10 @@ import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.dto.search.SearchElementDto;
 import org.nrg.xnat.dto.search.DisplayFieldReferenceIDto;
 import org.nrg.xnat.dto.search.DisplayVersionDto;
+import org.nrg.xnat.dto.search.VersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.services.search.SearchService;
+import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -160,7 +164,7 @@ public class SearchServiceImpl implements SearchService{
 	@Override
 	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, SQLException, DBPoolException, FieldNotFoundException, DisplayFieldNotFoundException  {
 		ArrayList<String> elementNames=XftStringUtils.CommaDelimitedStringToArrayList(elementName);
-		DisplayVersionDto element = new DisplayVersionDto();
+		VersionDto element = new VersionDto();
 		List<XnatSearchElementDto>elementDtos = new ArrayList<XnatSearchElementDto>();
 		for (String en : elementNames) {
 			SchemaElement se = SchemaElement.GetElement(en);
@@ -183,16 +187,24 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	private List<XnatSearchElementDto> getVersionElementData(Hashtable<String, DisplayVersion> versions, List<XnatSearchElementDto> elementDtos) throws DisplayFieldNotFoundException {
-		List<DisplayVersionDto>displayVersionDtos = new ArrayList<>();  
 		XnatSearchElementDto elementDto = new XnatSearchElementDto();
+		DisplayVersionDto displayVersionDto = getDisplayVersions(versions);
+		elementDto.setDisplayVersion(displayVersionDto);
+		elementDtos.add(elementDto);
+		return elementDtos;
+	}
+
+	private DisplayVersionDto getDisplayVersions(Hashtable<String, DisplayVersion> versions) throws DisplayFieldNotFoundException {
+		List<VersionDto>versionDtos = new ArrayList<>();
+		DisplayVersionDto displayVersionDto = new DisplayVersionDto();
 		for (Entry<String, DisplayVersion> entry : versions.entrySet()) {
-			  DisplayVersionDto displayVersionDto = new DisplayVersionDto();
+			  VersionDto versionDto = new VersionDto();
 			  List<DisplayFieldReferenceIDto>fields = new ArrayList<>();
-			  displayVersionDto.setName(entry.getKey());
-			  displayVersionDto.setLightColor(Objects.isNull(entry.getValue().getLightColor())  || !entry.getValue().getLightColor().equals("")?entry.getValue().getLightColor():null);
-			  displayVersionDto.setDarkColor(Objects.isNull(entry.getValue().getDarkColor())  || !entry.getValue().getDarkColor().equals("")?entry.getValue().getDarkColor():null);
-			  displayVersionDto.setDefaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder())  || !entry.getValue().getDefaultSortOrder().equals("")?entry.getValue().getDefaultSortOrder():null);
-			  displayVersionDto.setOrderBy(Objects.isNull(entry.getValue().getDefaultOrderBy())  || !entry.getValue().getDefaultOrderBy().equals("")?entry.getValue().getDefaultOrderBy():null);
+			  versionDto.setName(entry.getKey());
+			  versionDto.setLightColor(Objects.isNull(entry.getValue().getLightColor())  || !entry.getValue().getLightColor().equals("")?entry.getValue().getLightColor():null);
+			  versionDto.setDarkColor(Objects.isNull(entry.getValue().getDarkColor())  || !entry.getValue().getDarkColor().equals("")?entry.getValue().getDarkColor():null);
+			  versionDto.setDefaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder())  || !entry.getValue().getDefaultSortOrder().equals("")?entry.getValue().getDefaultSortOrder():null);
+			  versionDto.setOrderBy(Objects.isNull(entry.getValue().getDefaultOrderBy())  || !entry.getValue().getDefaultOrderBy().equals("")?entry.getValue().getDefaultOrderBy():null);
 			  for (DisplayFieldReferenceI field : entry.getValue().getAllFields()) {
 				  DisplayFieldReferenceIDto displayFieldReferenceIDto = new DisplayFieldReferenceIDto();
 				  displayFieldReferenceIDto.setId(field.getId());
@@ -202,14 +214,14 @@ public class SearchServiceImpl implements SearchService{
 				  displayFieldReferenceIDto.setType(Objects.isNull(field.getType())|| !field.getType().equals("")?field.getType():null);
 				  displayFieldReferenceIDto.setHeader(Objects.isNull(field.getHeader()) || !field.getHeader().equals("")?field.getHeader():null);
 				  fields.add(displayFieldReferenceIDto);
-				  displayVersionDto.setFields(Objects.nonNull(fields) || !fields.isEmpty()?fields: new ArrayList<>());
+				  versionDto.setFields(Objects.nonNull(fields) || !fields.isEmpty()?fields: new ArrayList<>());
 			  }
-			  displayVersionDtos.add(displayVersionDto);
+			  versionDtos.add(versionDto);
+			  displayVersionDto.setVersions(versionDtos);
 			  
 		  }
-		elementDto.setVersion(displayVersionDtos);
-		elementDtos.add(elementDto);
-		return elementDtos;
+		return displayVersionDto;
+		
 	}
 
 	private List<XnatSearchElementDto> getXnatSearchDataElements(SchemaElement se, UserI user, List<XnatSearchElementDto> elementDtos, List<List> custom_fields, DisplayField pi) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
@@ -256,6 +268,14 @@ public class SearchServiceImpl implements SearchService{
 		elementDto.setElementName(Objects.nonNull(elementName)?elementName:"");
 		elementDto.setSrc(src);
 		return elementDto;
+	}
+	
+	@Override
+	public DisplayVersionDto findSearchElementVersionByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, DisplayFieldNotFoundException {
+		SchemaElement se = SchemaElement.GetElement(elementName);
+		ElementDisplay ed = se.getDisplay();
+		DisplayVersionDto displayVersionDto  = getDisplayVersions(ed.getVersions());
+		return displayVersionDto;
 	}
 
 	@Override
@@ -638,5 +658,123 @@ public class SearchServiceImpl implements SearchService{
         }
 		return xdatStoredSearch;
 	}
+
+	@Override
+	public XdatStoredSearch create(UserI user, XdatStoredSearch search) {
+		return null;
+	}
+	
+	@Override
+	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code) {
+		try {
+			if (XFTTool.ValidateElementName(elementName))
+			{
+				try {
+					XFTItem found=XFTItem.NewItem(elementName, user);
+					SchemaElement se = SchemaElement.GetElement(elementName);
+					if ((!secure) && se.hasField(se.getFullXMLName() + "/project") && se.hasField(se.getFullXMLName() + "/sharing/share/project")){
+					    found.setProperty("secure", Boolean.TRUE);
+						found.setProperty("primary_security_fields.primary_security_field__0",se.getFullXMLName() + "/project");
+					    found.setProperty("primary_security_fields.primary_security_field__1",se.getFullXMLName() + "/sharing/share/project");
+					}
+
+					setBooleanProperty(found, "browseable", true);
+					setBooleanProperty(found, "searchable", true);
+					setBooleanProperty(found, "secure_read", true);
+					setBooleanProperty(found, "secure_edit", true);
+					setBooleanProperty(found, "secure_create", true);
+					setBooleanProperty(found, "secure_delete", true);
+					setBooleanProperty(found, "accessible", true);
+
+					setBooleanProperty(found, "secondary_password", false);
+					setBooleanProperty(found, "secure_ip", false);
+					setBooleanProperty(found, "quarantine", false);
+					setBooleanProperty(found, "pre_load", false);
+
+					if(singular !=null)
+						found.setProperty("singular", singular);
+					if(plural !=null)
+						found.setProperty("plural", plural);
+					if(code !=null)
+						found.setProperty("code", code);
+			
+
+					int count=0;
+
+					setAction(found, count++, "edit", "Edit", "e.gif", "edit",null);
+
+					setAction(found, count++, "xml", "View XML", "r.gif", null,null);
+
+					setAction(found, count++, "xml_file", "Download XML", "save.gif", null,null);
+
+					setAction(found, count++, "email_report", "Email", "right2.gif", null,"always");
+
+				} catch (ElementNotFoundException e) {
+					log.error("",e);
+				} catch (FieldNotFoundException e) {
+					log.error("",e);
+				} catch (InvalidValueException e) {
+					log.error("",e);
+		}
+			}else{
+				return;
+	}
+		} catch (XFTInitException e) {
+			log.error("",e);
+			return;
+		}
+	}
+	
+	private void setBooleanProperty(XFTItem found,String field,boolean _default) {
+		try {
+			if(_default && !isQueryVariableFalse(field)){
+				found.setProperty(field, Boolean.TRUE);
+			}else if(!_default && !isQueryVariableTrue(field)){
+				found.setProperty(field, Boolean.FALSE);
+			}else if(_default){
+				found.setProperty(field, Boolean.FALSE);
+			}else
+				found.setProperty(field, Boolean.TRUE);
+		} catch (XFTInitException e) {
+			log.error("",e);
+		} catch (ElementNotFoundException e) {
+			log.error("",e);
+		} catch (FieldNotFoundException e) {
+			log.error("",e);
+		} catch (InvalidValueException e) {
+			log.error("",e);
+		}
+	}
+	
+	private void setAction(XFTItem found,int count,String action_name,String display_name, String img, String secureAccess, String popup){
+		try {
+			found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".element_action_name",action_name);
+			found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".display_name",display_name);
+			found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".sequence",new Integer(count));
+			if(img!=null)
+				found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".image",img);
+			if(secureAccess!=null)
+				found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".secureAccess",secureAccess);
+			if(popup!=null)
+				found.setProperty("xdat:element_security.element_actions.element_action__"+count + ".popup",popup);
+		} catch (XFTInitException e) {
+			log.error("",e);
+		} catch (ElementNotFoundException e) {
+			log.error("",e);
+		} catch (FieldNotFoundException e) {
+			log.error("",e);
+		} catch (InvalidValueException e) {
+			log.error("",e);
+		}
+	}
+
+	private boolean isQueryVariableTrue(String field) {
+		return false;
+	}
+
+	private boolean isQueryVariableFalse(String field) {
+		return false;
+	}
+
 
 }

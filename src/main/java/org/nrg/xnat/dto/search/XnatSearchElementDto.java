@@ -17,7 +17,7 @@ public class XnatSearchElementDto implements Serializable {
 	private String type;
 	private String description;
 	private Integer src;
-	private List<DisplayVersionDto> version;
+	private DisplayVersionDto displayVersion;
 
 	public String getSummary() {
 		return summary;
@@ -83,12 +83,12 @@ public class XnatSearchElementDto implements Serializable {
 		this.src = src;
 	}
 
-	public List<DisplayVersionDto> getVersion() {
-		return version;
+	public DisplayVersionDto getDisplayVersion() {
+		return displayVersion;
 	}
 
-	public void setVersion(List<DisplayVersionDto> version) {
-		this.version = version;
+	public void setDisplayVersion(DisplayVersionDto displayVersion) {
+		this.displayVersion = displayVersion;
 	}
 
 }
