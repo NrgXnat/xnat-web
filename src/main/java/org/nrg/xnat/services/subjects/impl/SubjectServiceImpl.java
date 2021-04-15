@@ -53,6 +53,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
@@ -69,8 +70,9 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
     @Override
-    public XnatSubjectdata findById(final UserI user, final String subjectId) {
-        return XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+    public Optional<XnatSubjectdata> findById(final UserI user, final String subjectId) {
+    	Optional<XnatSubjectdata> xnatSubjectdata = null;
+    	return xnatSubjectdata.of(XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false));
     }
 
     @Override
@@ -85,7 +87,7 @@ public class SubjectServiceImpl implements SubjectService {
     
     @Override
     public void deleteById(final UserI user, final String subjectId) throws ClientException {
-        delete(user, findById(user, subjectId));
+        delete(user, findById(user, subjectId).get());
     }
 
     @Override

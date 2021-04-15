@@ -7,11 +7,12 @@ import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface SubjectService {
     List<XnatSubjectdata> getAll(UserI user);
 
-    XnatSubjectdata findById(UserI user, String subjectId);
+    Optional<XnatSubjectdata> findById(UserI user, String subjectId);
 
     List<XnatSubjectdata> findByProject(UserI user, String projectId);
 

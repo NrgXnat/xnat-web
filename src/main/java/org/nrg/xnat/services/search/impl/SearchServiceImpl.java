@@ -18,6 +18,7 @@ import org.json.JSONObject;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.display.DisplayField;
@@ -32,6 +33,7 @@ import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xdat.search.DisplaySearch;
@@ -50,6 +52,8 @@ import org.nrg.xft.XFTTool;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
@@ -74,8 +78,7 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
-
-
+import org.xml.sax.SAXException;
 
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
@@ -776,5 +779,61 @@ public class SearchServiceImpl implements SearchService{
 		return false;
 	}
 
+	@Override
+	public XdatStoredSearch findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException {
+		XdatStoredSearch xdatStoredSearch = new XdatStoredSearch();
+		XnatProjectdata xnatProjectdata = new XnatProjectdata();
 
+		if (Objects.isNull(projectId) || projectId.isEmpty())
+			throw new DataFormatException("ProjectId is null or empty");
+		if (Objects.isNull(searchId) || searchId.isEmpty())
+			throw new DataFormatException("searchId is null or empty");
+
+		xnatProjectdata = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+
+		if (Objects.isNull(xnatProjectdata))
+			throw new NotFoundException("No Project with XnatProjectdata was found {} " + projectId);
+
+		if (searchId.startsWith("@")) 
+			xdatStoredSearch = xnatProjectdata.getDefaultSearch(searchId.substring(1));
+		else 
+			xdatStoredSearch = XdatStoredSearch.getXdatStoredSearchsById(xdatStoredSearch, user, true);
+		
+		if(Objects.isNull(xdatStoredSearch))
+			throw new NotFoundException("No saved search with XdatStoredSearch was found {} " + searchId); 
+		
+		return xdatStoredSearch;
+	}
+
+	@Override
+	public void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws Exception {
+		if(searchId!=null){
+				XdatStoredSearch search = XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+
+				if(search!=null){
+					XdatStoredSearchAllowedUser mine=null;
+					for(XdatStoredSearchAllowedUser au : search.getAllowedUser()){
+						if(au.getLogin().equals(user.getLogin())){
+							mine=au;
+							break;
+						}
+					}
+					
+					if(mine!=null){
+						PersistentWorkflowI wrk= PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, search.getItem(), EventUtils.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, EventUtils.TYPE.WEB_SERVICE, "Deleted Project stored search"));
+						try {
+							if(search.getAllowedUser().size()>1 || search.getAllowedGroups_groupid().size()>0){
+								SaveItemHelper.authorizedDelete(mine.getItem(), user,wrk.buildEvent());
+							}else{
+								SaveItemHelper.authorizedDelete(search.getItem(), user,wrk.buildEvent());
+							}
+							PersistentWorkflowUtils.complete(wrk, wrk.buildEvent());
+						} catch (Exception e) {
+							PersistentWorkflowUtils.fail(wrk, wrk.buildEvent());
+							throw e;
+					}
+				}
+			}
+		}
+	}
 }

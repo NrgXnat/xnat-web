@@ -3,6 +3,9 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.nrg.xdat.om.XdatCriteria;
+import org.nrg.xdat.om.XdatCriteriaSet;
+import org.nrg.xdat.om.XdatSearchField;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xft.ItemI;
@@ -23,8 +26,17 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
     protected XdatStoredSearch deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XdatStoredSearch search = new XdatStoredSearch();
         XdatStoredSearchAllowedUser xdatStoredSearchAllowedUser = new XdatStoredSearchAllowedUser();
+        XdatSearchField seachField = new XdatSearchField();
+        XdatCriteriaSet searchWhere = new XdatCriteriaSet();
+        XdatCriteriaSet child = new XdatCriteriaSet();
+        XdatCriteria criteria = new XdatCriteria();
+        
         try {
         	search.setAllowedUser((ItemI)xdatStoredSearchAllowedUser);
+        	search.setSearchField((ItemI)seachField);
+        	search.setSearchWhere((ItemI)searchWhere);
+        	searchWhere.setChildSet((ItemI)child);
+        	child.setCriteria((ItemI)criteria);
         } catch (Exception e) {
             log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
         }
@@ -60,8 +72,29 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
                 case "sortByElementName":
                 	search.setSortBy_elementName(Objects.nonNull(parser.getText())?parser.getText():"");
                     break;
-                case "login":
-                	xdatStoredSearchAllowedUser.setLogin(Objects.nonNull(parser.getText())?parser.getText():"");
+                case "elementName":
+                	seachField.setElementName(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "field":
+                	seachField.setFieldId(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "sequence":
+                	seachField.setSequence(Objects.nonNull(parser.getIntValue())?parser.getIntValue():null);
+                    break;
+                case "type":
+                	seachField.setType(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "header":
+                	seachField.setHeader(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "schemaField":
+                	criteria.setSchemaField(Objects.nonNull(parser.getText())?parser.getText():null);
+                    break;
+                case "comparison":
+                	criteria.setComparisonType(Objects.nonNull(parser.getText())?parser.getText():"");
+                    break;
+                case "value":
+                	criteria.setValue(Objects.nonNull(parser.getText())?parser.getText():"");
                     break;
             }
         }

@@ -8,8 +8,10 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.action.ClientException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -42,23 +44,21 @@ public class SubjectApi extends AbstractXapiProjectRestController {
 
     @ApiOperation(value = "Gets the requested  subject", notes = "Returns the  subject with the specified ID", response = XnatSubjectdata.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested subject."),
+    	           @ApiResponse(code = 403, message = "The user has insufficient privileges to access the requested subject."),
                    @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public ResponseEntity<XnatSubjectdata> getSubjectBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
+    public XnatSubjectdata getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws InsufficientPrivilegesException,NotFoundException {
         log.debug("Controller Api- get subjects by subjectId");
-        XnatSubjectdata xnatSubject = _subjectService.findById(getSessionUser(), subjectId);
-        if (xnatSubject == null) {
-            throw new NotFoundException("No Subject with ID was found.");
-        }
-        return new ResponseEntity<>(xnatSubject, HttpStatus.OK);
+        return _subjectService.findById(getSessionUser(), subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId));
     }
 
     @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
+    	 		   @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public ResponseEntity<List<XnatSubjectdata>> getAllSubjectList() throws Exception {
+    public ResponseEntity<List<XnatSubjectdata>> getAllSubject() throws NotFoundException {
         log.debug("Controller Api- get subjects");
         List<XnatSubjectdata> xnatSubjects = _subjectService.getAll(getSessionUser());
         if (xnatSubjects == null) {
@@ -70,9 +70,10 @@ public class SubjectApi extends AbstractXapiProjectRestController {
 
     @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
+    	           @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public ResponseEntity<List<XnatSubjectdata>> getAllSubjectListByProjectId(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String projectId) throws Exception {
+    public ResponseEntity<List<XnatSubjectdata>> getAllByProjectId(@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String projectId) throws NotFoundException {
         log.debug("Controller Api- get subjects");
         List<XnatSubjectdata> xnatSubjects = _subjectService.findByProject(getSessionUser(), projectId);
         if (xnatSubjects == null) {
@@ -83,10 +84,11 @@ public class SubjectApi extends AbstractXapiProjectRestController {
 
     @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
+    	           @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public ResponseEntity<XnatSubjectdata> getAllSubjectListByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-                                                                                    @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws Exception {
+                                                                                    @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws NotFoundException {
         log.debug("Controller Api- get subjects");
         XnatSubjectdata xnatSubject = _subjectService.findByProjectAndSubject(getSessionUser(), projectId, subjectId);
         if (xnatSubject == null) {
@@ -152,7 +154,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = DELETE)
     public void deleteSubject(@ApiParam("The project containing the subject to be deleted") @PathVariable(required = false) final String projectId,
-                              @ApiParam("The ID of the subject to be deleted") @PathVariable final String subjectId) throws Exception {
+                              @ApiParam("The ID of the subject to be deleted") @PathVariable final String subjectId) throws ClientException  {
         log.debug("Controller Api- Delete subject {} in project {}", subjectId, StringUtils.defaultIfBlank(projectId, "N/A"));
         _subjectService.deleteById(getSessionUser(), subjectId);
     }

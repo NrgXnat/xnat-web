@@ -42,4 +42,8 @@ public interface SearchService {
 	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
 	
 	public XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
+	
+	public XdatStoredSearch findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException;
+
+	public void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws Exception;
 }

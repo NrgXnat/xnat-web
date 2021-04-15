@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -73,7 +74,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public ResponseEntity<XdatStoredSearch> getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable(required = false) final String searchId) throws Exception {
+    public ResponseEntity<XdatStoredSearch> getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId) throws Exception {
         log.debug("Controller Api- get xdatSearch saved {}");
         XdatStoredSearch xdatSearchs = _searchService.findSavedSearchBySearchId(getSessionUser(), searchId);
         if (xdatSearchs == null) {
@@ -154,6 +155,33 @@ public class SearchApi extends AbstractXapiProjectRestController {
         return new ResponseEntity<>(xdatSearchs, HttpStatus.OK);
     }
     
+    @ApiOperation(value = "Gets the requested saved search", notes = "Returns the  xdat saved search", response = XdatSearch.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+    	 		   @ApiResponse(code = 400, message = "The requested projectId or searchId missing."),
+                   @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+    public ResponseEntity<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
+    		@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws DataFormatException, NotFoundException {
+        log.debug("Controller Api- get xdatSearch element saved {}");
+        XdatStoredSearch xdatSearchs = _searchService.findSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId);
+        if (xdatSearchs == null) {
+            throw new NotFoundException("No ProjectAccessRequest with projectId {}" + " was found.");
+        }
+        return new ResponseEntity<>(xdatSearchs, HttpStatus.OK);
+    }
+    
+    
+    @ApiOperation(value = "Delete the requested saved search", notes = "Returns the  xdat saved search")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
+                   @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = DELETE)
+    public void  deleteSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
+    		@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws Exception {
+        log.debug("Controller Api- get xdatSearch element saved {}");
+         _searchService.deleteSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId);
+    }
     
     private SearchService _searchService;
 }
