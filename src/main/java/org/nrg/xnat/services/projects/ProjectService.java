@@ -4,6 +4,7 @@ import org.nrg.action.ActionException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
@@ -12,17 +13,18 @@ import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ProjectService {
-    List<XnatProjectdata> getAll(UserI user);
+    public Optional<List<XnatProjectdata>> findAll(UserI user) throws NotFoundException;
 
-    XnatProjectdata findById(UserI user, String projectId);
+    public Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-    XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-    XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
-    void deleteById(UserI user, String projectId) throws DataFormatException, InitializationException;
+    public void deleteById(UserI user, String projectId) throws DataFormatException, InitializationException, NotFoundException;
 
-    void delete(UserI user, XnatProjectdata project) throws DataFormatException, InitializationException;
+    public void delete(UserI user, XnatProjectdata project) throws DataFormatException, InitializationException;
 }

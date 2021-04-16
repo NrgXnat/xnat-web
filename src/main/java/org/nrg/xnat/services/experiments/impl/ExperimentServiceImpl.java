@@ -6,10 +6,10 @@ import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ActionException;
-import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.transaction.TransactionException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
@@ -58,6 +58,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -69,28 +70,55 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public List<XnatExperimentdata> getAll(UserI user) {
-        return XnatExperimentdata.getAllXnatExperimentdatas(user, false);
+    public Optional<List<XnatExperimentdata>> findAll(UserI user) throws NotFoundException {
+    	List<XnatExperimentdata> experiments = XnatExperimentdata.getAllXnatExperimentdatas(user, false);
+    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+        return Optional.of(experiments);
     }
 
     @Override
-    public XnatExperimentdata findById(UserI user, String experimentId) {
-        return XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+    public Optional<XnatExperimentdata> findById(UserI user, String experimentId) throws DataFormatException, NotFoundException {
+    	if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found");
+    	XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+    	if(Objects.isNull(experiment))
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+        return Optional.of(experiment);
     }
 
     @Override
-    public List<XnatExperimentdata> findByProject(UserI user, String projectId) {
-        return _template.query(PROJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId), new ExperimentRowMapper(user));
+    public Optional<List<XnatExperimentdata>> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+    	if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found");
+    	List<XnatExperimentdata> experiments = _template.query(PROJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId), new ExperimentRowMapper(user));
+    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+        return Optional.of(experiments);
     }
 
     @Override
-    public List<XnatExperimentdata> findByProjectAndSubject(UserI user, String projectId, String subjectId) {
-        return _template.query(PROJECT_SUBJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new ExperimentRowMapper(user));
+    public Optional<List<XnatExperimentdata>> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+    	if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found");
+    	if(Objects.isNull(subjectId))
+    		throw new DataFormatException("The requested subjectId wasn't found");
+    	List<XnatExperimentdata> experiments = _template.query(PROJECT_SUBJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new ExperimentRowMapper(user));
+    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(experiments);
     }
 
     @Override
-    public XnatExperimentdata findByIdAndProject(UserI user, String experimentId, String projectId) {
-        return _template.queryForObject(PROJECT_AND_EXPERIMENT_QUERY + BY_PRO_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId).addValue("projectId", projectId), new ExperimentRowMapper(user));
+    public Optional<XnatExperimentdata> findByIdAndProjectId(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException {
+    	if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found");
+    	if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found");
+    	XnatExperimentdata experiment = _template.queryForObject(PROJECT_AND_EXPERIMENT_QUERY + BY_PRO_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId).addValue("projectId", projectId), new ExperimentRowMapper(user));
+    	if(Objects.isNull(experiment))
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+        return Optional.of(experiment);
     }
 
     @Override
@@ -790,13 +818,13 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException {
-        delete(user, findById(user, experimentId), projectId);
+    public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
+        delete(user, findById(user, experimentId).get(), projectId);
     }
 
     @SuppressWarnings("unused")
     @Override
-    public void delete(UserI user, XnatExperimentdata experiment, String projectId) throws DataFormatException, NotFoundException {
+    public void delete(UserI user, XnatExperimentdata experiment, String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
 		if (Objects.isNull(experiment)) {
 			throw new NotFoundException("The experiment not found");
 		}
@@ -818,7 +846,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 
     }
 
-    protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item) {
+    protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item) throws org.nrg.framework.exceptions.NotFoundException {
         if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
             throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
         }
@@ -863,8 +891,6 @@ public class ExperimentServiceImpl implements ExperimentService {
             }
         } catch (PersistentWorkflowUtils.EventRequirementAbsent e) {
             log.error("Forbidden: " + e.getMessage(), e);
-        } catch (NotFoundException e) {
-            log.error("Not Found: " + e.getMessage(), e);
         } catch (IllegalArgumentException e) {
             log.error("Bad Request Found: " + e.getMessage(), e);
         }
@@ -901,7 +927,7 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public List<XnatExperimentdata> findByProjectAndLabel(UserI user, String projectId, String label) {
+    public Optional<List<XnatExperimentdata>> findAllByProjectIdAndLabel(UserI user, String projectId, String label) {
         return null;
     }
 

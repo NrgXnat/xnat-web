@@ -18,9 +18,7 @@ import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -40,29 +38,23 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 
     @ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
+    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested project wasn't found."),
                    @ApiResponse(code = 404, message = "The requested project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public ResponseEntity<XnatProjectdata> getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
+    public XnatProjectdata getById(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
         log.debug("Controller Api- get project by ID {}", projectId);
-        XnatProjectdata xnatProject = _projectService.findById(getSessionUser(), projectId);
-        if (xnatProject == null) {
-            throw new NotFoundException("No Project with ID " + projectId + " was found.");
-        }
-        return new ResponseEntity<>(xnatProject, HttpStatus.OK);
+        return _projectService.findById(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
 
     @ApiOperation(value = "Get list of projects", notes = "The projects function returns a list of all projects configured in the XNAT system.", response = XnatProjectdata.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public ResponseEntity<List<XnatProjectdata>> getAllProjectList() throws Exception {
-        log.debug("Controller Api- get projects");
-        List<XnatProjectdata> xnatProjects = _projectService.getAll(getSessionUser());
-        if (xnatProjects == null) {
-            throw new NotFoundException("No Project with XnatProjectdata was found.");
-        }
-        return new ResponseEntity<>(xnatProjects, HttpStatus.OK);
+    public List<XnatProjectdata> getAllProjects() throws Exception {
+        log.debug("Controller Api- getAll projects");
+        return _projectService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME));
     }
 
     @ApiOperation(value = "Create a new project", notes = "Creates the submitted project.", response = XnatProjectdata.class)
@@ -103,7 +95,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId) throws Exception {
+    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable final String projectId) throws Exception {
         log.debug("Controller Api- Delete project {}", projectId);
         _projectService.deleteById(getSessionUser(), projectId);
     }

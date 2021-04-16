@@ -11,6 +11,7 @@ import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.ArcProject;
@@ -32,7 +33,6 @@ import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
-import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
@@ -43,38 +43,36 @@ import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
-import org.restlet.data.Status;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import static org.nrg.xdat.om.base.auto.AutoXnatProjectdata.SCHEMA_ELEMENT_NAME;
-import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
-import static org.restlet.data.Status.CLIENT_ERROR_CONFLICT;
-import static org.restlet.data.Status.CLIENT_ERROR_EXPECTATION_FAILED;
-import static org.restlet.data.Status.CLIENT_ERROR_FORBIDDEN;
-import static org.restlet.data.Status.SERVER_ERROR_INTERNAL;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 @Service
 @Slf4j
 public class ProjectServiceImpl implements ProjectService {
 	
     @Override
-    public List<XnatProjectdata> getAll(final UserI user) {
-        return XnatProjectdata.getAllXnatProjectdatas(user, false);
+    public Optional<List<XnatProjectdata>> findAll(final UserI user) throws NotFoundException {
+    	List<XnatProjectdata> projects= XnatProjectdata.getAllXnatProjectdatas(user, false);
+    	if(Objects.isNull(projects) || projects.isEmpty())
+    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(projects);
     }
 
     @Override
-    public XnatProjectdata findById(final UserI user, final String projectId) {
-        if (Objects.nonNull(projectId)) {
-            return XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
-        } else {
-            throw new NullPointerException("ProjectId is Null");
-        }
+    public  Optional<XnatProjectdata> findById(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
+    	if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+    	XnatProjectdata proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+    	if(Objects.isNull(proj))
+    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId) ;
+    	return Optional.of(proj);
     }
 
     @Override
@@ -316,8 +314,8 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public void deleteById(final UserI user, final String projectId) throws DataFormatException, InitializationException {
-        delete(user, findById(user, projectId));
+    public void deleteById(final UserI user, final String projectId) throws DataFormatException, InitializationException, NotFoundException {
+        delete(user, findById(user, projectId).get());
     }
 
     @Override

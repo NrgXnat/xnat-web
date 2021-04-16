@@ -2,6 +2,8 @@ package org.nrg.xnat.services.subjects;
 
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
@@ -10,19 +12,20 @@ import java.util.List;
 import java.util.Optional;
 
 public interface SubjectService {
-    List<XnatSubjectdata> getAll(UserI user);
+	
+    public Optional<List<XnatSubjectdata>> findAll(UserI user) throws NotFoundException;
 
-    Optional<XnatSubjectdata> findById(UserI user, String subjectId);
+    public Optional<XnatSubjectdata> findById(UserI user, String subjectId) throws DataFormatException, NotFoundException;
 
-    List<XnatSubjectdata> findByProject(UserI user, String projectId);
+    public Optional<List<XnatSubjectdata>> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-    XnatSubjectdata findByProjectAndSubject(UserI user, String projectId, String subjectId);
+    public Optional<XnatSubjectdata> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
 
-    XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException, ActionException, Exception;
+    public XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata) throws XftItemException, ActionException, Exception;
     
-    XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata, String label) throws XftItemException, Exception;
+    public XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata, String label) throws XftItemException, Exception;
 
-    void deleteById(UserI user, String subjectId) throws ClientException;
+    public void deleteById(UserI user, String subjectId) throws ClientException, DataFormatException, NotFoundException;
 
-    void delete(UserI user, XnatSubjectdata subject) throws ClientException;
+    public void delete(UserI user, XnatSubjectdata subject) throws ClientException, DataFormatException, NotFoundException;
 }
