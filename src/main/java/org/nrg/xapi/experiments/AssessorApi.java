@@ -5,19 +5,16 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.experiments.AssessorService;
-import org.nrg.xnat.services.experiments.ExperimentService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -43,61 +40,53 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 	
 	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
-	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+					@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId  wasn't found."),
+					@ApiResponse(code = 404, message = "The requested assessors wasn't found."),			
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatImageassessordata>> getAssessorListByProjectAndSubjectAndExperiment(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
-			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
-		log.debug("Controller Api- get xnatImageassessordatas");
-		List<XnatImageassessordata> xnatImageassessordatas = _assessorService.findByProjectAndSubjectAndExperiment(getSessionUser(), projectId, subjectId,experimentId );
-		if (xnatImageassessordatas == null) {
-			throw new NotFoundException("No xnatImageassessordatas with data was found.");
-		}
-		return new ResponseEntity<>(xnatImageassessordatas, HttpStatus.OK);
+	public List<XnatImageassessordata> getAllByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
+		log.debug("Controller Api- getAllByProjectIdAndSubjectIdAndExperimentId {} ", experimentId);
+		return _assessorService.findAllByProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId,experimentId ).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
 	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
-	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+					@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId or assessorId  wasn't found."),
+					@ApiResponse(code = 404, message = "The requested assessor wasn't found."),			
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors/{assessorId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<XnatImageassessordata> getAssessorByIdAndProjectAndSubjectAndExperimentAndAssessor(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
-			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
-			@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId) throws Exception {
-		log.debug("Controller Api- get xnatImageassessordatas");
-		XnatImageassessordata xnatImageassessordata = _assessorService.findByIdAndProjectAndSubjectAndExperiment(getSessionUser(), projectId, subjectId,experimentId, assessorId);
-		if (xnatImageassessordata == null) {
-			throw new NotFoundException("No xnatImageassessordatas with data was found.");
-		}
-		return new ResponseEntity<>(xnatImageassessordata, HttpStatus.OK);
+	public XnatImageassessordata getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+			@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId) throws NotFoundException, DataFormatException  {
+		log.debug("Controller Api- get getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId {}", assessorId);
+		return _assessorService.findByIdAndProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId,experimentId, assessorId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, assessorId));
 	}
 	
 	
 	@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a list of all assessors configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured assessors."),
-	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+					@ApiResponse(code = 400, message = "The requested experimentId wasn't found."),
+					@ApiResponse(code = 404, message = "The requested assessors wasn't found."),		
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<List<XnatImageassessordata>> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
-		log.debug("Controller Api- get xnatImageassessordatas");
-		List<XnatImageassessordata> xnatImageassessordatas = _assessorService.findByExperiment(getSessionUser(), experimentId);
-		if (xnatImageassessordatas == null) {
-			throw new NotFoundException("No xnatImageassessordatas with data was found.");
-		}
-		return new ResponseEntity<>(xnatImageassessordatas, HttpStatus.OK);
+	public List<XnatImageassessordata> getAllByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
+		log.debug("Controller Api-  getAllByExperimentId {}", experimentId);
+		return _assessorService.findAllByExperimentId(getSessionUser(), experimentId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
 	@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a list of all assessors configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured assessors."),
-	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+					@ApiResponse(code = 400, message = "The requested either assessorId or experimentId wasn't found."),
+					@ApiResponse(code = 404, message = "The requested assessor wasn't found."),			
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<XnatImageassessordata> getByAssessorAndExperiment(@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
-			@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId) throws Exception {
-		log.debug("Controller Api- get xnatImageassessordatas");
-		XnatImageassessordata xnatImageassessordata = _assessorService.findByIdAndExperiment(getSessionUser(), assessorId, experimentId);
-		if (xnatImageassessordata == null) {
-			throw new NotFoundException("No xnatImageassessordatas with data was found.");
-		}
-		return new ResponseEntity<>(xnatImageassessordata, HttpStatus.OK);
+	public XnatImageassessordata getByAssessorIdAndExperimentId(@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId,
+			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
+		log.debug("Controller Api- getByAssessorIdAndExperimentId {}", assessorId);
+		return _assessorService.findByIdAndExperimentId(getSessionUser(), assessorId, experimentId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
 	private final AssessorService _assessorService;

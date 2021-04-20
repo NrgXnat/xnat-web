@@ -3,7 +3,11 @@ package org.nrg.xnat.services.experiments.impl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.experiments.AssessorService;
@@ -22,23 +26,55 @@ public class AssessorServiceImpl implements AssessorService {
 	}
 
 	@Override
-	public List<XnatImageassessordata> findByProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId) {
-		return _template.query(PROJECT_SUBJECT_AND_EXPERIMENT_QUERY + BY_PRO_SUB_EXP_ID_WHERE, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId),new AssessorRowMapper(user));
+	public Optional<List<XnatImageassessordata>> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(Objects.isNull(subjectId))
+    		throw new DataFormatException("The requested subjectId wasn't found ");
+		if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found ");
+		List<XnatImageassessordata> assessors = _template.query(PROJECT_SUBJECT_AND_EXPERIMENT_QUERY + BY_PRO_SUB_EXP_ID_WHERE, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId),new AssessorRowMapper(user));
+		if(Objects.isNull(assessors) || assessors.isEmpty())
+    		throw new  NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(assessors);
 	}
 	
 	@Override
-	public XnatImageassessordata findByIdAndProjectAndSubjectAndExperiment(UserI user, String projectId, String subjectId, String experimentId, String assessorId) {
-		return _template.queryForObject(PROJECT_SUBJECT_AND_EXPERIMENT_QUERY + BY_PRO_SUB_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessorId", assessorId),new AssessorRowMapper(user));
+	public Optional<XnatImageassessordata> findByIdAndProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String assessorId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(Objects.isNull(subjectId))
+    		throw new DataFormatException("The requested subjectId wasn't found ");
+		if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found ");
+		if(Objects.isNull(assessorId))
+    		throw new DataFormatException("The requested assessorId wasn't found ");
+		XnatImageassessordata assessor = _template.queryForObject(PROJECT_SUBJECT_AND_EXPERIMENT_QUERY + BY_PRO_SUB_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessorId", assessorId),new AssessorRowMapper(user));
+		if(Objects.isNull(assessor))
+    		throw new  NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(assessor);
 	}
 	
 	@Override
-	public List<XnatImageassessordata> findByExperiment(UserI user, String experimentId) {
-		return _template.query(EXPERIMENT_QUERY + BY_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId),new AssessorRowMapper(user));
+	public Optional<List<XnatImageassessordata>> findAllByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found ");
+		List<XnatImageassessordata> assessors = _template.query(EXPERIMENT_QUERY + BY_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId),new AssessorRowMapper(user));
+		if(Objects.isNull(assessors) || assessors.isEmpty())
+    		throw new  NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(assessors);
 	}
 	
 	@Override
-	public XnatImageassessordata findByIdAndExperiment(UserI user, String assessorId, String experimentId) {
-		return _template.queryForObject(EXPERIMENT_QUERY + BY_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("assessorId", assessorId).addValue("experimentId", experimentId),new AssessorRowMapper(user));
+	public Optional<XnatImageassessordata> findByIdAndExperimentId(UserI user, String assessorId, String experimentId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(experimentId))
+    		throw new DataFormatException("The requested experimentId wasn't found ");
+		if(Objects.isNull(assessorId))
+    		throw new DataFormatException("The requested assessorId wasn't found ");
+		XnatImageassessordata assessor = _template.queryForObject(EXPERIMENT_QUERY + BY_EXP_ID_WHERE + BY_ASS_ID_WHERE, new MapSqlParameterSource("assessorId", assessorId).addValue("experimentId", experimentId),new AssessorRowMapper(user));
+		if(Objects.isNull(assessor))
+    		throw new  NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(assessor);
 	}
 	
 	private static class AssessorRowMapper implements RowMapper<XnatImageassessordata> {
