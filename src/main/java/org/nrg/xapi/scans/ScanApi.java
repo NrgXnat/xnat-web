@@ -107,7 +107,6 @@ public class ScanApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 			@ApiParam(value = "The ID of the scan.") @PathVariable final Integer scanId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api- getByProjectIdAndSubjectIdAndExperimentIdAndScanId {} {} {} {}", projectId, subjectId, experimentId, scanId);
 		log.debug("User {} requested project with ID {}, subject with ID {}, experiment with ID {} and scan with ID {}", getSessionUser().getUsername(), projectId, subjectId, experimentId, scanId);
 		return _scanService.findByProjectIdAndSubjectIdAndExperimentIdAndScanId(getSessionUser(),projectId,subjectId , experimentId, scanId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, experimentId));
 	}

@@ -1,6 +1,7 @@
 package org.nrg.xnat.services.search.impl;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
@@ -33,6 +35,7 @@ import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.search.CriteriaCollection;
@@ -91,40 +94,56 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XdatSearch> findAllSearch(UserI user) {
-		return XdatSearch.getAllXdatSearchs(user, false);
+	public Optional<List<XdatSearch>> findAllSearch(UserI user) throws NotFoundException {
+		List<XdatSearch> searches = XdatSearch.getAllXdatSearchs(user, false);
+		if (Objects.isNull(searches) || searches.isEmpty())
+			throw new NotFoundException(XdatSearch.SCHEMA_ELEMENT_NAME);
+		return Optional.of(searches);
 	}
 
 	@Override
-	public List<SearchElementDto> findAllSearchElements(UserI user, String secured, String readable, String used) throws Exception {
-		Map<String, ElementSecurity> elementSecurities    = new HashMap<>(ElementSecurity.GetElementSecurities());
+	public Optional<List<SearchElementDto>> findAllSearchElements(UserI user, String secured, String readable, String used) throws NotFoundException {
+		Map<String, ElementSecurity> elementSecurities = null;
+		List<SearchElementDto>elementDtos = new ArrayList<>();
+		try {
+			elementSecurities = new HashMap<>(ElementSecurity.GetElementSecurities());
+		} catch (Exception e) {
+			 log.error("User {} searched for a elementSecurities but that doesn't exist", user.getUsername());
+			e.printStackTrace();
+		}
+
+		if(Objects.nonNull(elementSecurities)) {
+			elementSecurities = filterElementSecurityWithXdat(elementSecurities);
+			
+			elementSecurities = filterElementSecurityWithSecured(elementSecurities, secured);
+			
+			
+			final Map<String, Long> counts = readable != null ? UserHelper.getUserHelperService(user).getReadableCounts() : XDAT.getTotalCounts();
+			
+			elementSecurities = filterElementSecurityWithUsed(elementSecurities, used, counts);
+			
+			try {
+				elementDtos = getXnatSearchElement(elementSecurities, counts);
+			} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e) {
+				 log.error("User {} searched for a SearchElements but that doesn't exist", user.getUsername());
+				e.printStackTrace();
+			}
+		}
+		if(Objects.isNull(elementDtos) || elementDtos.isEmpty())
+			throw new NotFoundException(ElementSecurity.SCHEMA_ELEMENT_NAME);
 		
-		elementSecurities = filterElementSecurityWithXdat(elementSecurities);
-		
-		elementSecurities = filterElementSecurityWithSecured(elementSecurities, secured);
-		
-		
-		final Map<String, Long> counts = readable != null ? UserHelper.getUserHelperService(user).getReadableCounts() : XDAT.getTotalCounts();
-		
-		elementSecurities = filterElementSecurityWithUsed(elementSecurities, used, counts);
-		
-		
-		List<SearchElementDto>elementDtos = getXnatSearchElement(elementSecurities, counts);
-				
-		
-		return elementDtos;
+		return Optional.of(elementDtos);
 	}
 
 	private List<SearchElementDto> getXnatSearchElement(Map<String, ElementSecurity> elementSecurities, Map<String, Long> counts) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
 		List<SearchElementDto>elementDtos = new ArrayList<SearchElementDto>();
 		for(ElementSecurity es: elementSecurities.values()){
-			SearchElementDto elementDto = new SearchElementDto();
-			elementDto.setSingular(Objects.nonNull(es.getSingularDescription())?es.getSingularDescription():es.getElementName());
-			elementDto.setPlural(Objects.nonNull(es.getPluralDescription())?es.getPluralDescription():es.getElementName());
-			elementDto.setSecured(Objects.nonNull(es.isSecure())? true: false);
-			elementDto.setElementName(es.getElementName());
-			elementDto.setCount(Objects.nonNull(counts.get(es.getElementName()))?counts.get(es.getElementName()):0L);
-			elementDtos.add(elementDto);
+			elementDtos.add(SearchElementDto.builder().singular(Objects.nonNull(es.getSingularDescription())?es.getSingularDescription():es.getElementName())
+					.plural(Objects.nonNull(es.getPluralDescription())?es.getPluralDescription():es.getElementName())
+					.secured(Objects.nonNull(es.isSecure())? true: false)
+					.elementName(es.getElementName())
+					.count(Objects.nonNull(counts.get(es.getElementName()))?counts.get(es.getElementName()):0L)
+					.build());
 		}
 		return elementDtos;
 	}
@@ -165,65 +184,76 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, SQLException, DBPoolException, FieldNotFoundException, DisplayFieldNotFoundException  {
+	public Optional<List<XnatSearchElementDto>> findAllSearchElementsByElementName(UserI user, String elementName){
 		ArrayList<String> elementNames=XftStringUtils.CommaDelimitedStringToArrayList(elementName);
-		VersionDto element = new VersionDto();
 		List<XnatSearchElementDto>elementDtos = new ArrayList<XnatSearchElementDto>();
 		for (String en : elementNames) {
-			SchemaElement se = SchemaElement.GetElement(en);
+			SchemaElement se = null;
+			try {
+				se = SchemaElement.GetElement(en);
+			} catch (XFTInitException | ElementNotFoundException e) {
+				e.printStackTrace();
+			}
 			ElementDisplay ed = se.getDisplay();
 			ArrayList displays = ed.getSortedFields();
 			Iterator iter = displays.iterator();
 			
-			elementDtos = getVersionElementData(ed.getVersions(), elementDtos);
+			try {
+				elementDtos = getVersionElementData(ed.getVersions(), elementDtos);
+			} catch (DisplayFieldNotFoundException e) {
+				e.printStackTrace();
+			}
 
 			elementDtos = getXnatSearchElements(iter, elementDtos,se);
 			
-			List<List> custom_fields =UserHelper.getUserHelperService(user).getQueryResultsAsArrayList("SELECT DISTINCT ON (name) dtp.xnat_projectdata_id AS project, fdgf.name, fdgf.datatype AS type FROM xnat_abstractprotocol dtp LEFT JOIN xnat_datatypeprotocol_fieldgroups dtp_fg ON dtp.xnat_abstractprotocol_id=dtp_fg.xnat_datatypeprotocol_xnat_abstractprotocol_id LEFT JOIN xnat_fielddefinitiongroup fdg  ON dtp_fg.xnat_fielddefinitiongroup_xnat_fielddefinitiongroup_id=fdg.xnat_fielddefinitiongroup_id LEFT JOIN xnat_fielddefinitiongroup_field fdgf ON fdg.xnat_fielddefinitiongroup_id=fdgf.fields_field_xnat_fielddefiniti_xnat_fielddefinitiongroup_id WHERE dtp.data_type='" + en + "' AND fdgf.type='custom'");
+			List<List> custom_fields = null;
+			try {
+				custom_fields = UserHelper.getUserHelperService(user).getQueryResultsAsArrayList("SELECT DISTINCT ON (name) dtp.xnat_projectdata_id AS project, fdgf.name, fdgf.datatype AS type FROM xnat_abstractprotocol dtp LEFT JOIN xnat_datatypeprotocol_fieldgroups dtp_fg ON dtp.xnat_abstractprotocol_id=dtp_fg.xnat_datatypeprotocol_xnat_abstractprotocol_id LEFT JOIN xnat_fielddefinitiongroup fdg  ON dtp_fg.xnat_fielddefinitiongroup_xnat_fielddefinitiongroup_id=fdg.xnat_fielddefinitiongroup_id LEFT JOIN xnat_fielddefinitiongroup_field fdgf ON fdg.xnat_fielddefinitiongroup_id=fdgf.fields_field_xnat_fielddefiniti_xnat_fielddefinitiongroup_id WHERE dtp.data_type='" + en + "' AND fdgf.type='custom'");
+			} catch (SQLException | DBPoolException e) {
+				e.printStackTrace();
+			}
 
 			DisplayField pi=ed.getProjectIdentifierField();
 			
-			elementDtos = getXnatSearchDataElements(se, user,elementDtos, custom_fields, pi);
-			
+			try {
+				elementDtos = getXnatSearchDataElements(se, user,elementDtos, custom_fields, pi);
+			} catch (XFTInitException | ElementNotFoundException | FieldNotFoundException e) {
+				e.printStackTrace();
+			}
 		}
-		return elementDtos;
+		return Optional.of(elementDtos);
 	}
 
 	private List<XnatSearchElementDto> getVersionElementData(Hashtable<String, DisplayVersion> versions, List<XnatSearchElementDto> elementDtos) throws DisplayFieldNotFoundException {
-		XnatSearchElementDto elementDto = new XnatSearchElementDto();
 		DisplayVersionDto displayVersionDto = getDisplayVersions(versions);
-		elementDto.setDisplayVersion(displayVersionDto);
-		elementDtos.add(elementDto);
+		elementDtos.add(XnatSearchElementDto.builder().displayVersion(displayVersionDto).build());
 		return elementDtos;
 	}
 
 	private DisplayVersionDto getDisplayVersions(Hashtable<String, DisplayVersion> versions) throws DisplayFieldNotFoundException {
 		List<VersionDto>versionDtos = new ArrayList<>();
-		DisplayVersionDto displayVersionDto = new DisplayVersionDto();
 		for (Entry<String, DisplayVersion> entry : versions.entrySet()) {
-			  VersionDto versionDto = new VersionDto();
 			  List<DisplayFieldReferenceIDto>fields = new ArrayList<>();
-			  versionDto.setName(entry.getKey());
-			  versionDto.setLightColor(Objects.isNull(entry.getValue().getLightColor())  || !entry.getValue().getLightColor().equals("")?entry.getValue().getLightColor():null);
-			  versionDto.setDarkColor(Objects.isNull(entry.getValue().getDarkColor())  || !entry.getValue().getDarkColor().equals("")?entry.getValue().getDarkColor():null);
-			  versionDto.setDefaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder())  || !entry.getValue().getDefaultSortOrder().equals("")?entry.getValue().getDefaultSortOrder():null);
-			  versionDto.setOrderBy(Objects.isNull(entry.getValue().getDefaultOrderBy())  || !entry.getValue().getDefaultOrderBy().equals("")?entry.getValue().getDefaultOrderBy():null);
 			  for (DisplayFieldReferenceI field : entry.getValue().getAllFields()) {
-				  DisplayFieldReferenceIDto displayFieldReferenceIDto = new DisplayFieldReferenceIDto();
-				  displayFieldReferenceIDto.setId(field.getId());
-				  displayFieldReferenceIDto.setElementName(Objects.isNull(field.getElementName())  || !field.getElementName().equals("")?field.getElementName():null);
-				  displayFieldReferenceIDto.setValue(Objects.isNull(field.getValue()) || !field.getValue().equals("")?field.getValue():null);
-				  displayFieldReferenceIDto.setVisible(field.isVisible()?true:false);
-				  displayFieldReferenceIDto.setType(Objects.isNull(field.getType())|| !field.getType().equals("")?field.getType():null);
-				  displayFieldReferenceIDto.setHeader(Objects.isNull(field.getHeader()) || !field.getHeader().equals("")?field.getHeader():null);
-				  fields.add(displayFieldReferenceIDto);
-				  versionDto.setFields(Objects.nonNull(fields) || !fields.isEmpty()?fields: new ArrayList<>());
+				  fields.add(DisplayFieldReferenceIDto.builder()
+						  .id(field.getId())
+						  .elementName(Objects.isNull(field.getElementName())  || !field.getElementName().equals("")?field.getElementName():null)
+						  .value(Objects.isNull(field.getValue()) || !field.getValue().equals("")?field.getValue():null)
+						  .visible(field.isVisible()?true:false)
+						  .type(Objects.isNull(field.getType())|| !field.getType().equals("")?field.getType():null)
+						  .header(Objects.isNull(field.getHeader()) || !field.getHeader().equals("")?field.getHeader():null)
+						  .build());
 			  }
-			  versionDtos.add(versionDto);
-			  displayVersionDto.setVersions(versionDtos);
-			  
+			  versionDtos.add(VersionDto.builder()
+					  .name(entry.getKey())
+					  .lightColor(Objects.isNull(entry.getValue().getLightColor())  || !entry.getValue().getLightColor().equals("")?entry.getValue().getLightColor():null)
+					  .darkColor(Objects.isNull(entry.getValue().getDarkColor())  || !entry.getValue().getDarkColor().equals("")?entry.getValue().getDarkColor():null)
+					  .defaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder())  || !entry.getValue().getDefaultSortOrder().equals("")?entry.getValue().getDefaultSortOrder():null)
+					  .orderBy(Objects.isNull(entry.getValue().getDefaultOrderBy())  || !entry.getValue().getDefaultOrderBy().equals("")?entry.getValue().getDefaultOrderBy():null)
+					  .fields(Objects.nonNull(fields) || !fields.isEmpty()?fields: new ArrayList<>())
+					  .build());
 		  }
-		return displayVersionDto;
+		return DisplayVersionDto.builder().versions(versionDtos).build();
 		
 	}
 
@@ -261,30 +291,43 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	private XnatSearchElementDto getElementDto(String fieldId, String header, String summary, String dataType, boolean requiredValues, String desciption, String elementName, int src) {
-		XnatSearchElementDto elementDto = new XnatSearchElementDto();
-		elementDto.setFieldId(Objects.nonNull(fieldId)?fieldId:"");
-		elementDto.setHeader(Objects.nonNull(header)?header:"");
-		elementDto.setSummary(Objects.nonNull(summary)?summary:"");
-		elementDto.setType(Objects.nonNull(dataType)?dataType:"");
-		elementDto.setRequiresValue(requiredValues);
-		elementDto.setDescription(Objects.nonNull(desciption)?desciption:"");
-		elementDto.setElementName(Objects.nonNull(elementName)?elementName:"");
-		elementDto.setSrc(src);
-		return elementDto;
+		return XnatSearchElementDto.builder()
+		.fieldId(Objects.nonNull(fieldId)?fieldId:"")
+		.header(Objects.nonNull(header)?header:"")
+		.summary(Objects.nonNull(summary)?summary:"")
+		.type(Objects.nonNull(dataType)?dataType:"")
+		.requiresValue(requiredValues)
+		.description(Objects.nonNull(desciption)?desciption:"")
+		.elementName(Objects.nonNull(elementName)?elementName:"")
+		.src(src).build();
 	}
 	
 	@Override
-	public DisplayVersionDto findSearchElementVersionByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, DisplayFieldNotFoundException {
-		SchemaElement se = SchemaElement.GetElement(elementName);
+	public Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException {
+		SchemaElement se = null;
+		try {
+			se = SchemaElement.GetElement(elementName);
+		} catch (XFTInitException | ElementNotFoundException e) {
+		}
 		ElementDisplay ed = se.getDisplay();
 		DisplayVersionDto displayVersionDto  = getDisplayVersions(ed.getVersions());
-		return displayVersionDto;
+		if(Objects.isNull(displayVersionDto))
+			throw new  NotFoundException(ElementSecurity.SCHEMA_ELEMENT_NAME) ;
+		return Optional.of(displayVersionDto);
 	}
 
 	@Override
-	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException, DataFormatException {
-		String query = getSavedSearchQuery(user);
-		return _template.query(query, new MapSqlParameterSource(),new XdatStoredSearchRowMapper(user));
+	public Optional<List<XdatStoredSearch>> findAllSavedSearch(UserI user) throws NotFoundException  {
+		String query = null;
+		try {
+			query = getSavedSearchQuery(user);
+		} catch (UserNotFoundException | DataFormatException | UserInitException e) {
+			e.printStackTrace();
+		}
+		List<XdatStoredSearch> savedSearches= _template.query(query, new MapSqlParameterSource(),new XdatStoredSearchRowMapper(user));
+		if(Objects.isNull(savedSearches) || savedSearches.isEmpty())
+			throw new  NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME) ;
+		return Optional.of(savedSearches);
 	}
 
 	private String getSavedSearchQuery(UserI user) throws UserNotFoundException, UserInitException, DataFormatException {
@@ -337,7 +380,7 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public XdatStoredSearch findSavedSearchBySearchId(UserI user, String searchId) throws Exception {
+	public Optional<XdatStoredSearch> findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException{
 		 XdatStoredSearch xss            = null;
 		 String           sID            = searchId;
 		 boolean          loadedFromFile = false;
@@ -351,7 +394,7 @@ public class SearchServiceImpl implements SearchService{
 			 getXnatStoredSearchData();
 		 }
 		 
-		return xss;
+		return Optional.of(xss);
 	}
 	
 	private void getXnatStoredSearchData() {
@@ -374,7 +417,7 @@ public class SearchServiceImpl implements SearchService{
     }
 
 	
-	private XdatStoredSearch getXssDataAfterValidate(XdatStoredSearch xss, String sID, boolean loadedFromFile, UserI user) throws Exception {
+	private XdatStoredSearch getXssDataAfterValidate(XdatStoredSearch xss, String sID, boolean loadedFromFile, UserI user)  {
 
         //allow loading of saved searches from xml stored on hte file system
         final File searchXml = getFileSystemSearch(sID);
@@ -384,7 +427,12 @@ public class SearchServiceImpl implements SearchService{
               //  return new FileRepresentation(searchXml, mt);
            // } else {
                     SAXReader reader = new SAXReader(user);
-                    XFTItem item = reader.parse(searchXml);
+                    XFTItem item = null;
+					try {
+						item = reader.parse(searchXml);
+					} catch (IOException | SAXException e) {
+						e.printStackTrace();
+					}
                     xss = new XdatStoredSearch(item);
 
                     loadedFromFile = true;
@@ -392,7 +440,7 @@ public class SearchServiceImpl implements SearchService{
                     if (this.getQueryVariable("project") != null) {
                         final XdatCriteriaSet cs = new XdatCriteriaSet(user);
                         cs.setMethod("OR");
-
+                        try {
                         for (final String p :  org.springframework.util.StringUtils.commaDelimitedListToSet(getQueryVariable("project"))) {
                             XdatCriteria c = new XdatCriteria(user);
                             c.setSchemaField(xss.getRootElementName() + "/project");
@@ -408,6 +456,8 @@ public class SearchServiceImpl implements SearchService{
                         }
 
                         xss.setSearchWhere(cs);
+                        }catch (Exception e) {
+						}
                     }
                 }
            // }
@@ -780,19 +830,19 @@ public class SearchServiceImpl implements SearchService{
 	}
 
 	@Override
-	public XdatStoredSearch findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException {
+	public Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException {
 		XdatStoredSearch xdatStoredSearch = new XdatStoredSearch();
 		XnatProjectdata xnatProjectdata = new XnatProjectdata();
 
 		if (Objects.isNull(projectId) || projectId.isEmpty())
-			throw new DataFormatException("ProjectId is null or empty");
+			throw new DataFormatException("The requested projectId wasn't found");
 		if (Objects.isNull(searchId) || searchId.isEmpty())
-			throw new DataFormatException("searchId is null or empty");
+			throw new DataFormatException("The searchId projectId wasn't found");
 
 		xnatProjectdata = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 
 		if (Objects.isNull(xnatProjectdata))
-			throw new NotFoundException("No Project with XnatProjectdata was found {} " + projectId);
+			throw new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME , projectId);
 
 		if (searchId.startsWith("@")) 
 			xdatStoredSearch = xnatProjectdata.getDefaultSearch(searchId.substring(1));
@@ -802,7 +852,7 @@ public class SearchServiceImpl implements SearchService{
 		if(Objects.isNull(xdatStoredSearch))
 			throw new NotFoundException("No saved search with XdatStoredSearch was found {} " + searchId); 
 		
-		return xdatStoredSearch;
+		return Optional.of(xdatStoredSearch);
 	}
 
 	@Override

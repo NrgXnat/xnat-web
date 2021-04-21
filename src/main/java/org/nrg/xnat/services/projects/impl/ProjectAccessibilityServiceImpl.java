@@ -1,8 +1,10 @@
 package org.nrg.xnat.services.projects.impl;
 
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
@@ -24,20 +26,33 @@ import lombok.extern.slf4j.Slf4j;
 public class ProjectAccessibilityServiceImpl implements ProjectAccessibilityService {
 
 	@Override
-	public String findByProjectId(UserI user, String projectId) throws Exception {
+	public Optional<String> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException{
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		
 		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
-		if (Objects.nonNull(project))
-			return getProjectAccessibility(project);
-		else
+		
+		if(Objects.isNull(project))
+			throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId);
+		
+		String result = getProjectAccessibility(project);
+		if(Objects.isNull(result))
 			throw new NotFoundException( "An error occurred trying to retrieve the accessibility setting for the project '{}'", project.getId());
+		
+    	return Optional.of(result);
 	}
 
-	private String getProjectAccessibility(XnatProjectdata project) throws Exception {
-		return project.getPublicAccessibility();
+	private String getProjectAccessibility(XnatProjectdata project)  {
+		try {
+			return project.getPublicAccessibility();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	@Override
-	public String findByProjectIdAndAccessLevel(UserI user, String projectId, String accessLevel) throws NotFoundException, Exception {
+	public Optional<String> findByProjectIdAndAccessLevel(UserI user, String projectId, String accessLevel) throws NotFoundException, DataFormatException {
 		return findByProjectId(user, projectId);
 	}
 

@@ -2,6 +2,7 @@ package org.nrg.xnat.services.search;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -23,27 +24,27 @@ import org.nrg.xnat.dto.search.XnatSearchElementDto;
 
 public interface SearchService {
 
-	public List<XdatSearch> findAllSearch(UserI user);
+	public Optional<List<XdatSearch>> findAllSearch(UserI user) throws NotFoundException;
 
-	public List<SearchElementDto> findAllSearchElements(UserI user,String secured, String readable, String used) throws Exception;
+	public Optional<List<SearchElementDto>> findAllSearchElements(UserI user,String secured, String readable, String used) throws NotFoundException ;
 	
-	public List<XnatSearchElementDto> findSearchElementByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, SQLException, DBPoolException, FieldNotFoundException, DisplayFieldNotFoundException ;
+	public Optional<List<XnatSearchElementDto>> findAllSearchElementsByElementName(UserI user, String elementName) ;
 
-	public List<XdatStoredSearch> findAllSavedSearch(UserI user) throws UserNotFoundException, UserInitException, DataFormatException;
+	public Optional<List<XdatStoredSearch>> findAllSavedSearch(UserI user) throws NotFoundException;
 
-	public XdatStoredSearch  findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException, NotFoundException, Exception;
+	public Optional<XdatStoredSearch>  findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException;
 
 	public void deleteSavedSearchBySearchId(UserI user, String searchId) throws SQLException, Exception;
 	
 	public XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs) throws XFTInitException, ElementNotFoundException, FieldNotFoundException, Exception;
 	
-	public DisplayVersionDto findSearchElementVersionByElementName(UserI user, String elementName) throws XFTInitException, ElementNotFoundException, DisplayFieldNotFoundException;
+	public Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
 
 	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
 	
 	public XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
 	
-	public XdatStoredSearch findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException;
+	public Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
 
 	public void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws Exception;
 }

@@ -38,7 +38,7 @@ public class XdatStoredSearchDeserializer extends AbstractBaseElementDeserialize
         	searchWhere.setChildSet((ItemI)child);
         	child.setCriteria((ItemI)criteria);
         } catch (Exception e) {
-            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
+            log.error("An error occurred trying to set XdatStoredSearchAllowedUser data while deserializing an object. Sorry about that.", e);
         }
         
         while (parser.nextToken() != JsonToken.END_OBJECT) {

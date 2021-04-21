@@ -1,11 +1,18 @@
 package org.nrg.xnat.dto.search;
 
 import java.io.Serializable;
-import java.util.List;
 
-import org.json.JSONObject;
-import org.nrg.xdat.display.ElementDisplay;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.ToString;
 
+@Data
+@Builder
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class XnatSearchElementDto implements Serializable {
 
 	private static final long serialVersionUID = -7765541182699651606L;
@@ -18,77 +25,5 @@ public class XnatSearchElementDto implements Serializable {
 	private String description;
 	private Integer src;
 	private DisplayVersionDto displayVersion;
-
-	public String getSummary() {
-		return summary;
-	}
-
-	public void setSummary(String summary) {
-		this.summary = summary;
-	}
-
-	public String getFieldId() {
-		return fieldId;
-	}
-
-	public void setFieldId(String fieldId) {
-		this.fieldId = fieldId;
-	}
-
-	public String getHeader() {
-		return header;
-	}
-
-	public void setHeader(String header) {
-		this.header = header;
-	}
-
-	public Boolean getRequiresValue() {
-		return requiresValue;
-	}
-
-	public void setRequiresValue(Boolean requiresValue) {
-		this.requiresValue = requiresValue;
-	}
-
-	public String getElementName() {
-		return elementName;
-	}
-
-	public void setElementName(String elementName) {
-		this.elementName = elementName;
-	}
-
-	public String getType() {
-		return type;
-	}
-
-	public void setType(String type) {
-		this.type = type;
-	}
-
-	public String getDescription() {
-		return description;
-	}
-
-	public void setDescription(String description) {
-		this.description = description;
-	}
-
-	public Integer getSrc() {
-		return src;
-	}
-
-	public void setSrc(Integer src) {
-		this.src = src;
-	}
-
-	public DisplayVersionDto getDisplayVersion() {
-		return displayVersion;
-	}
-
-	public void setDisplayVersion(DisplayVersionDto displayVersion) {
-		this.displayVersion = displayVersion;
-	}
 
 }

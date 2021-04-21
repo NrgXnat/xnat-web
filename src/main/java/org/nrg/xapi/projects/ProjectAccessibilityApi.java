@@ -9,6 +9,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -44,32 +45,26 @@ public class ProjectAccessibilityApi extends AbstractXapiProjectRestController {
 
 	
 	 @ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = String.class, responseContainer = "single")
-	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
-	 @ApiResponse(code = 404, message = "The requested project wasn't found."),
-	 @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project accessibility."),
+		 			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+		 			@ApiResponse(code = 404, message = "The requested project wasn't found."),
+		 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	 @XapiRequestMapping(value = "/projects/{projectId}/accessibility", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	 public ResponseEntity<String> getProjectAccessbilityByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId) throws Exception {
-		log.debug("Controller Api- get project by ID {}", projectId);
-		String xnatProject = _projectAccessibilityService.findByProjectId(getSessionUser(), projectId);
-		if (xnatProject == null) {
-			throw new NotFoundException("No Project with ID " + projectId + " was found.");
-		}
-		return new ResponseEntity<>(xnatProject, HttpStatus.OK);
+	 public String getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
+		log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
+		return _projectAccessibilityService.findByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	 
 	 @ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = String.class, responseContainer = "single")
 	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
-	 @ApiResponse(code = 404, message = "The requested project wasn't found."),
-	 @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+		 			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+		 			@ApiResponse(code = 404, message = "The requested project wasn't found."),
+		 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	 @XapiRequestMapping(value = "/projects/{projectId}/accessibility/{accessLevel}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	 public ResponseEntity<String> getProjectAccessbilityByProjectIdAndAccessLevel(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-			 @ApiParam(value = "The access level of the project.") @PathVariable(required = false) final String accessLevel) throws Exception {
-		log.debug("Controller Api- get project by ID {}", projectId);
-		String xnatProject = _projectAccessibilityService.findByProjectIdAndAccessLevel(getSessionUser(), projectId, accessLevel);
-		if (xnatProject == null) {
-			throw new NotFoundException("No Project with ID " + projectId + " was found.");
-		}
-		return new ResponseEntity<>(xnatProject, HttpStatus.OK);
+	 public String getByProjectIdAndAccessLevel(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+			 @ApiParam(value = "The access level of the project.") @PathVariable final String accessLevel) throws NotFoundException, DataFormatException  {
+		 log.debug("User {} requested project with ID {} and access level {}", getSessionUser().getUsername(), projectId, accessLevel);
+		 return _projectAccessibilityService.findByProjectIdAndAccessLevel(getSessionUser(), projectId, accessLevel).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	 
 	 @ApiOperation(value = "Update an existing project accessibility ", notes = "Updates the submitted project accessibility.", response = XnatProjectdata.class)
