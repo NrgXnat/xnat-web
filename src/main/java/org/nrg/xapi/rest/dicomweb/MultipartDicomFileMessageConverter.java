@@ -91,17 +91,18 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
                 throw new UnsupportedTransferSyntaxException( tsuid);
             }
 
-            HttpHeaders headers = new HttpHeaders();
+            HttpHeaders outputHeaders = outputMessage.getHeaders();
             Map<String,String> contentTypeArgs = new HashMap<>(1);
             String boundary = getBoundary();
+            contentTypeArgs.put("type", "\""+partMediaType.toString()+"\"");
             contentTypeArgs.put("boundary", boundary);
             MediaType mediaType = new MediaType( "multipart", "related", contentTypeArgs );
-            headers.setContentType( mediaType);
+            outputHeaders.setContentType( mediaType);
 
             int frameNumber = getFrameNumber( request);
             String contentLocation = getContentLocation( request);
 
-            // write preamble, just CRLF if empty.
+            // write preamble, just CRLF if preamble is empty.
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
@@ -113,16 +114,23 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
                     handleNoConverterFound(dicomPart.getClass(), partMediaType);
                 }
 
+//                tsuid = dicomPart.getTransferSyntaxUID();
+                DicomObjectI dcmOut = transCoder.transcode( dicomPart, tsuid);
+
                 outputMessage.getBody().write( ("--"+ boundary + "\r\n").getBytes());
                 outputMessage.getBody().write( ("Content-Location: " + contentLocation + "\r\n").getBytes());
-
-//                outputMessage.getBody().write( ("Content-Type: application/dicom\r\n\r\n").getBytes());
-//                transCoder.transcode( dicomPart, tsuid, outputMessage.getBody());
+                outputMessage.getBody().write( ("Content-Type: application/dicom\r\n").getBytes());
+                outputMessage.getBody().write( ("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
+                dcmOut.write( outputMessage.getBody());
 
 //                converter.write( dicomPart, MediaType.APPLICATION_OCTET_STREAM, outputMessage);
-                writeFrameToPart( dicomPart, frameNumber, outputMessage);
+//                writeFrameToPart( dicomPart, frameNumber, outputMessage);
+
+//                converter.write( dicomPart, new MediaType("application","dicom"), outputMessage);
+
+                outputMessage.getBody().write( ("\r\n--"+ boundary + "--\r\n\r\n").getBytes());
+
             }
-            outputMessage.getBody().write( ("\r\n--"+ boundary + "--\r\n\r\n").getBytes());
 
         } catch (IOException e) {
             String msg = "Error streaming dicom.";
@@ -152,9 +160,9 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
                 return converter;
             }
         }
-        return null;
+//        return null;
 
-//        return new DicomObjectMessageConverter();
+        return new DicomObjectMessageConverter();
     }
 
     @Override

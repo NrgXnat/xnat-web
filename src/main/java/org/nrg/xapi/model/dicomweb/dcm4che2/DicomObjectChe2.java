@@ -51,6 +51,9 @@ public class DicomObjectChe2 implements DicomObjectI {
     }
 
     @Override
+    public int getLength() { return 0;}
+
+    @Override
     public String getTransferSyntaxUID() {
         return null;
     }

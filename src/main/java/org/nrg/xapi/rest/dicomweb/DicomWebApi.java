@@ -21,6 +21,7 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xapi.rest.dicomweb.populate.PopulatorI;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
+import org.nrg.xapi.rest.dicomweb.search.SearchException;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -35,7 +36,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -92,10 +92,11 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed QIDO-RS query."),
             @ApiResponse(code = 204, message = "No matches."),
             @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 409, message = "Conflict - same study instance uid in multiple projects."),
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "studies", produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<? extends QIDOResponse>> doSearchForStudies( @RequestParam final MultiValueMap<String,String> allRequestParams) throws NrgServiceException {
+    public ResponseEntity<List<? extends QIDOResponse>> doSearchForStudies( @RequestParam final MultiValueMap<String,String> allRequestParams) throws NrgServiceException, UserNotFoundException, UserInitException, SearchException {
         Set<String> paramNames = allRequestParams.keySet();
 
         if (paramNames == null || paramNames.isEmpty()) {
@@ -106,26 +107,15 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
 
         QueryParameters dicomQueryParams = new QueryParameters( allRequestParams);
         List<? extends QIDOResponse> qidoResponses = null;
-        try {
-            user = getUser();
-            qidoResponses = _searchEngine.searchForStudies( dicomQueryParams, user);
+        user = getUser();
+        qidoResponses = _searchEngine.searchForStudies(dicomQueryParams, user);
 
-            if( qidoResponses.isEmpty()) {
-                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-            }
-
-            qidoResponses.forEach( response -> response.setRetrieveURL( getRetrieveStudyURL( ((QIDOResponseStudy)response).getStudyInstanceUID())));
-            return new ResponseEntity<List<? extends QIDOResponse>>(qidoResponses, HttpStatus.OK );
-
-        } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to SearchForStudies.", user.getLogin());
-            _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried QIDO SearchForSeries with params: {1}", user.getLogin(), allRequestParams);
-            _log.error(msg, e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        if (qidoResponses.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
+
+        qidoResponses.forEach(response -> response.setRetrieveURL(getRetrieveStudyURL(((QIDOResponseStudy) response).getStudyInstanceUID())));
+        return new ResponseEntity<>(qidoResponses, HttpStatus.OK);
     }
 
     @ApiOperation(value = "QIDO-RS SearchForSeries with Study Instance UID.", response = QIDOResponse.class)

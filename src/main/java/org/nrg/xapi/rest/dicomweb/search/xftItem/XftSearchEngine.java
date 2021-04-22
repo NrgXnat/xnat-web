@@ -1,14 +1,19 @@
 package org.nrg.xapi.rest.dicomweb.search.xftItem;
 
+import org.nrg.action.ClientException;
 import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
+import org.nrg.xapi.rest.dicomweb.mediator.Conflict;
+import org.nrg.xapi.rest.dicomweb.mediator.Mediator;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
+import org.nrg.xapi.rest.dicomweb.search.SearchException;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.bean.CatDcmcatalogBean;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.collections.ItemCollection;
@@ -26,6 +31,9 @@ import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -38,16 +46,19 @@ public class XftSearchEngine implements SearchEngineI {
     private final DateTimeService _dateTimeService;
     private final QueryParamToCriteriaService _queryParamService;
     private final CatalogService _catalogService;
+    private final Mediator _mediator;
     private static final Logger _log = LoggerFactory.getLogger("dicomweb");
 
     @Autowired
     public XftSearchEngine(final UserManagementServiceI userManagementService,
                            final CatalogService catalogService,
-                           NamedParameterJdbcTemplate jdbcTemplate) {
+                           NamedParameterJdbcTemplate jdbcTemplate,
+                           final Mediator mediator) {
         this._dateTimeService = new DateTimeService();
         this._queryParamService = new QueryParamToCriteriaService( _dateTimeService);
         this._jdbcTemplate = jdbcTemplate;
         this._catalogService = catalogService;
+        this._mediator = mediator;
     }
 
     @Override
@@ -61,60 +72,76 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
+    public List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapStudy(queryParameters);
 
         ItemCollection ic;
-        if( cc.size() == 0) {
-            ic = ItemSearch.GetAllItems("xnat:imageSessionData", user, false);
+        try {
+            if (cc.size() == 0) {
+                ic = ItemSearch.GetAllItems("xnat:imageSessionData", user, false);
+            } else {
+                ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
+            }
         }
-        else {
-            ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
+
+        List<XnatImagesessiondata> sessions =  ic.getItems().stream().map( XnatImagesessiondata::new).collect(Collectors.toList());
+        Optional<List<Conflict>> conflicts = _mediator.getConflicts( sessions);
+
+        if( conflicts.isPresent()) {
+            throw new SearchException( SearchException.Type.STUDY_INSTANCE_UID_CONFLICT, "This query matches study-instance UID in multiple projects.");
         }
 
         QIDOStudyResponseList responses = new QIDOStudyResponseList();
 //        List<QIDOResponse> responses = new ArrayList();
 
-        for( ItemI item: ic.getItems()) {
+        for (ItemI item : ic.getItems()) {
             XnatImagesessiondata session = new XnatImagesessiondata(item);
             QIDOResponseStudy response = new QIDOResponseStudy();
-            response.setStudyDate( session.getExperimentdata().getDate());
-            response.setStudyTime( session.getExperimentdata().getTime());
-            response.setAccessionNumber( session.getDcmaccessionnumber());
-            response.setInstanceAvailability( "ONLINE");
-            response.setStudyInstanceUID( session.getUid());
-            response.setPatientID( session.getDcmpatientid());
+            response.setStudyDate(session.getExperimentdata().getDate());
+            response.setStudyTime(session.getExperimentdata().getTime());
+            response.setAccessionNumber(session.getDcmaccessionnumber());
+            response.setInstanceAvailability("ONLINE");
+            response.setStudyInstanceUID(session.getUid());
+            response.setPatientID(session.getDcmpatientid());
 //            response.setPatientsName( session.getSubjectData().getLabel());
-            response.setPatientsName( session.getDcmpatientname());
-            response.setModalitiesInStudy( getModalitiesInStudy( session));
-            response.setPatientsSex( session.getSubjectData().getGender());
-            response.setPatientsBirthDate( session.getSubjectData().getDOB());
-            response.setStudyID( session.getStudyId());
-            response.setNumberOfStudyRelatedSeries( countSeries( session));
-            response.setNumberOfStudyRelatedInstances( countStudyInstances( session));
+            response.setPatientsName(session.getDcmpatientname());
+            response.setModalitiesInStudy(getModalitiesInStudy(session));
+            response.setPatientsSex(session.getSubjectData().getGender());
+            response.setPatientsBirthDate(session.getSubjectData().getDOB());
+            response.setStudyID(session.getStudyId());
+            response.setNumberOfStudyRelatedSeries(countSeries(session));
+            try {
+                response.setNumberOfStudyRelatedInstances(countStudyInstances(session));
+            } catch (BaseXnatExperimentdata.UnknownPrimaryProjectException e) {
+                throw new SearchException( SearchException.Type.UNEXPECTED, e);
+            }
             response.setReferringPhysiciansName("");
-            responses.add( response);
+            responses.add(response);
         }
 
         // ItemSearch is not doing combined date-time search. ItemSearch searches by study date.
         // Do combined date-time matching here by filtering responses.
-        if( queryParameters.hasStudyTime() && queryParameters.hasStudyDate()) {
+        if (queryParameters.hasStudyTime() && queryParameters.hasStudyDate()) {
             ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
             String studyDateRangeString = queryParameters.getStudyDateRange();
             String studyTimeRangeString = queryParameters.getStudyTimeRange();
-            Interval queryInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings( studyDateRangeString, studyTimeRangeString, zoneOffset);
+            Interval queryInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings(studyDateRangeString, studyTimeRangeString, zoneOffset);
             responses = responses.stream()
-                    .filter( response -> {
+                    .filter(response -> {
                         String responseDateRangeString = response.getStudyDate();
                         String responseTimeRangeString = response.getStudyTime();
-                        Interval responseInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings( responseDateRangeString, responseTimeRangeString, zoneOffset);
-                        return _dateTimeService.hasOverlap( responseInterval, queryInterval);})
-                    .collect(Collectors.toCollection( QIDOStudyResponseList::new));
+                        Interval responseInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings(responseDateRangeString, responseTimeRangeString, zoneOffset);
+                        return _dateTimeService.hasOverlap(responseInterval, queryInterval);
+                    })
+                    .collect(Collectors.toCollection(QIDOStudyResponseList::new));
         }
 
-        int from = Math.min( responses.size(), queryParameters.getOffset());
-        int to = Math.min( responses.size(), from + queryParameters.getLimit());
-        return responses.subList( from, to);
+        int from = Math.min(responses.size(), queryParameters.getOffset());
+        int to = Math.min(responses.size(), from + queryParameters.getLimit());
+        return responses.subList(from, to);
     }
 
     @Override
@@ -195,7 +222,8 @@ public class XftSearchEngine implements SearchEngineI {
         XnatImagesessiondata session = getSession( studyInstanceUID, user);
         XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
 
-        List<DicomObjectI> instances = getInstances( session.getArchiveRootPath(), scan);
+//        List<DicomObjectI> instances = getInstances( session.getArchiveRootPath(), scan);
+        List<DicomObjectI> instances = getInstances( scan);
 
         return instances;
     }
@@ -206,7 +234,8 @@ public class XftSearchEngine implements SearchEngineI {
         List<DicomObjectI> instances = new ArrayList<>();
         XnatImagesessiondata session = getSession( studyInstanceUID, user);
         for( XnatImagescandataI scan: session.getScans_scan()) {
-            instances.addAll( getInstances( session.getArchiveRootPath(), scan));
+//            instances.addAll( getInstances( session.getArchiveRootPath(), scan));
+            instances.addAll( getInstances( scan));
         }
 
         return instances;
@@ -357,7 +386,7 @@ public class XftSearchEngine implements SearchEngineI {
         return count;
     }
 
-    private int countStudyInstances( XnatImagesessiondata session) throws Exception {
+    private int countStudyInstances( XnatImagesessiondata session) throws BaseXnatExperimentdata.UnknownPrimaryProjectException {
         List<XnatImagescandataI> scans = session.getScans_scan();
 
         int count = 0;
@@ -504,36 +533,45 @@ public class XftSearchEngine implements SearchEngineI {
         return (file == null)? null: DicomObjectFactory.create( file);
     }
 
-    private List<DicomObjectI> getInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {
-        List<DicomObjectI> instances = new ArrayList<>();
-        for( XnatAbstractresourceI resourceI: imageScanData.getFile()) {
-            if( XnatResourcecatalog.class.isInstance( resourceI)) {
-                XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
-                if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
-                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
-                    File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
-                    String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
-                    if( CatDcmcatalogBean.class.isInstance( catalog1)) {
-                        CatDcmcatalogBean dcmcatalog = (CatDcmcatalogBean) catalog1;
-                        for( CatEntryI entry: CatalogUtils.getEntriesByFilter(dcmcatalog, new CatalogUtils.CatEntryFilterI() {
-                            @Override
-                            public boolean accept(CatEntryI entry) {
-                                return true;
-                            }
-                        })) {
-                            CatDcmentryI dcmentry = (CatDcmentryI) entry;
-                            if( dcmentry != null) {
-                                File file = CatalogUtils.getFile( dcmentry, scanRootPath, null);
-                                if( file != null) {
-                                    instances.add( DicomObjectFactory.create(file));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return instances;
+//    private List<DicomObjectI> getInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {
+//        List<DicomObjectI> instances = new ArrayList<>();
+//        for( XnatAbstractresourceI resourceI: imageScanData.getFile()) {
+//            if( XnatResourcecatalog.class.isInstance( resourceI)) {
+//                XnatResourcecatalog catResource = (XnatResourcecatalog) resourceI;
+//                if( ("RAW".equals( catResource.getContent()) || "secondary".equals( catResource.getContent())) && "DICOM".equals( catResource.getFormat())) {
+//                    CatCatalogBean catalog1 = CatalogUtils.getCatalog(null, catResource, null);
+//                    File catalogFile = CatalogUtils.getCatalogFile( archiveRootPath, catResource);
+//                    String scanRootPath = catalogFile.getParentFile().getAbsolutePath();
+//                    if( CatDcmcatalogBean.class.isInstance( catalog1)) {
+//                        CatDcmcatalogBean dcmcatalog = (CatDcmcatalogBean) catalog1;
+//                        for( CatEntryI entry: CatalogUtils.getEntriesByFilter(dcmcatalog, new CatalogUtils.CatEntryFilterI() {
+//                            @Override
+//                            public boolean accept(CatEntryI entry) {
+//                                return true;
+//                            }
+//                        })) {
+//                            CatDcmentryI dcmentry = (CatDcmentryI) entry;
+//                            if( dcmentry != null) {
+//                                File file = CatalogUtils.getFile( dcmentry, scanRootPath, null);
+//                                if( file != null) {
+//                                    instances.add( DicomObjectFactory.create(file));
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//        }
+//        return instances;
+//    }
+
+    private List<DicomObjectI> getInstances(XnatImagescandataI scandata) throws ClientException, IOException {
+        XnatResourcecatalog dicomResourceCatalog = _catalogService.getDicomResourceCatalog(scandata.getImageSessionId(), scandata.getId());
+        Path resourceDir = Paths.get(dicomResourceCatalog.getUri()).getParent();
+        return Files.list(resourceDir)
+                .filter(path -> path.getFileName().toString().endsWith(".dcm"))
+                .map(path -> DicomObjectFactory.createQuiet(path.toFile()))
+                .collect(Collectors.toList());
     }
 
     private int getInstanceCount( String archiveRootPath, XnatImagescandataI imageScanData) {

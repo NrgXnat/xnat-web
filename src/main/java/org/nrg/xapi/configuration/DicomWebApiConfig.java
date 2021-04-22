@@ -11,6 +11,8 @@ package org.nrg.xapi.configuration;
 
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
 import org.nrg.xapi.model.dicomweb.framegrabber.basic.BasicFrameGrabber;
+import org.nrg.xapi.rest.dicomweb.mediator.BaseMediator;
+import org.nrg.xapi.rest.dicomweb.mediator.Mediator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -22,5 +24,8 @@ public class DicomWebApiConfig {
     public FrameGrabber getFrameGrabber() {
         return new BasicFrameGrabber();
     }
+
+    @Bean
+    public Mediator getMediator() { return new BaseMediator(); }
 
 }

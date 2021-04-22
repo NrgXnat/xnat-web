@@ -3,15 +3,12 @@ package org.nrg.xapi.rest.dicomweb;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nrg.xdat.security.XDATUser;
-import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.collections.ItemCollection;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.config.TestConfig;
-import org.nrg.xnat.configuration.ApplicationConfig;
+import org.nrg.xnat.config.TestDicomWebConfig;
 import org.postgresql.ds.PGPoolingDataSource;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -24,7 +21,7 @@ import javax.sql.DataSource;
 import static org.junit.Assert.fail;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {TestConfig.class})
+@ContextConfiguration(classes = {TestDicomWebConfig.class})
 public class PopulateInstances {
 //    @Autowired
 //    private NamedParameterJdbcTemplate jdbcTemplate;

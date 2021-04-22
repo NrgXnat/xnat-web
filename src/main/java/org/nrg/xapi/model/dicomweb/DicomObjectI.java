@@ -27,6 +27,8 @@ public interface DicomObjectI {
     byte[] getPixelsForFrame( int frameNumber) throws IOException;
 
     byte[] getPixels() throws IOException;
+    int getLength();
+
     String getTransferSyntaxUID();
     String getStudyInstanceUID();
     String getSeriesInstanceUID();
