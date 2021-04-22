@@ -195,8 +195,9 @@ dependencies {
     implementation "org.dcm4che:dcm4che-core"
     implementation "org.dcm4che:dcm4che-image"
     implementation "org.dcm4che:dcm4che-imageio"
-
-    implementation "org.dcm4che:dcm4che-all:3.3.8"
+    implementation "org.dcm4che:dcm4che-json"
+    implementation "org.dcm4che:dcm4che-imageio-opencv:5.22.6"
+    implementation "org.weasis.opencv:weasis-opencv-core:3.6.0"
 
     implementation "org.springframework:spring-aop"
     implementation "org.springframework:spring-context-support"

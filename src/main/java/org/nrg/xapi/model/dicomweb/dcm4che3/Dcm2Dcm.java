@@ -130,15 +130,15 @@ public class Dcm2Dcm {
 
     private String adjustTransferSyntax(String tsuid, int bitsStored) {
         switch (tstype) {
-        case JPEG_BASELINE:
-            if (bitsStored > 8)
-                return UID.JPEGExtended24;
-            break;
-        case JPEG_EXTENDED:
-            if (bitsStored <= 8)
-                return UID.JPEGBaseline1;
-            break;
-        default:
+            case JPEG_BASELINE:
+                if (bitsStored > 8)
+                    return UID.JPEGExtended12Bit;
+                break;
+            case JPEG_EXTENDED:
+                if (bitsStored <= 8)
+                    return UID.JPEGBaseline8Bit;
+                break;
+            default:
         }
         return tsuid;
     }

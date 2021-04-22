@@ -11,10 +11,7 @@ package org.nrg.xnat.configuration;
 
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.dcm4che3.TransCoderChe3;
-import org.nrg.xapi.rest.dicomweb.Dicom2OctetStreamMessageConverter;
-import org.nrg.xapi.rest.dicomweb.Dicom2XmlMessageConverter;
-import org.nrg.xapi.rest.dicomweb.MultipartDicomFileMessageConverter;
-import org.nrg.xapi.rest.dicomweb.MultipartDicomMessageConverter;
+import org.nrg.xapi.rest.dicomweb.*;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -90,6 +87,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     public void configureMessageConverters(final List<HttpMessageConverter<?>> converters) {
         converters.add(stringHttpMessageConverter());
         converters.add(mappingJackson2HttpMessageConverter());
+        converters.add(dicomObjectMessageConverter());
         converters.add(dicom2XmlMessageConverter());
         converters.add(dicom2OctetStreamMessageConverter());
         converters.add(marshallingHttpMessageConverter());
@@ -126,6 +124,11 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Bean
     public Dicom2XmlMessageConverter dicomMessageConverter() {
         return new Dicom2XmlMessageConverter();
+    }
+
+    @Bean
+    public DicomObjectMessageConverter dicomObjectMessageConverter() {
+        return new DicomObjectMessageConverter();
     }
 
     @Bean

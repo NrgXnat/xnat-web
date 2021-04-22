@@ -2,6 +2,7 @@ package org.nrg.xapi.model.dicomweb.dcm4che3;
 
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
+import org.dcm4che3.io.DicomEncodingOptions;
 import org.dcm4che3.io.DicomInputStream;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
@@ -18,13 +19,18 @@ public class DicomObjectChe3 implements DicomObjectI{
 
     public DicomObjectChe3(File file, FrameGrabber frameGrabber) throws IOException {
         this.file = file;
-        readHeader();
+        readAll();
         this.frameGrabber = frameGrabber;
     }
 
     // TODO: leak attributes which is bad.  clean this up. Used as quick fix for json serializing these objects.
     public Attributes getAttributes() {
         return attributes;
+    }
+
+    public int getLength() {
+        attributes.calcLength( DicomEncodingOptions.DEFAULT, true);
+        return attributes.getLength();
     }
 
     /**
@@ -102,10 +108,16 @@ public class DicomObjectChe3 implements DicomObjectI{
         return frameGrabber.getPixelsForFrame( this, frameNumber);
     }
 
-    private void readHeader() throws IOException {
+//    private void readHeader() throws IOException {
+//        DicomInputStream dis = new DicomInputStream( file);
+//        attributes = dis.getFileMetaInformation();
+//        attributes.addAll( dis.readDataset( -1, Tag.PixelData));
+//    }
+
+    private void readAll() throws IOException {
         DicomInputStream dis = new DicomInputStream( file);
         attributes = dis.getFileMetaInformation();
-        attributes.addAll( dis.readDataset( -1, Tag.PixelData));
+        attributes.addAll( dis.readDataset( -1, -1));
     }
 
     @Override

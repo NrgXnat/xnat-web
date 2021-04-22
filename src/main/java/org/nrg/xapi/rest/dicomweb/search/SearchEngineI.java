@@ -14,7 +14,7 @@ public interface SearchEngineI {
 
     DicomObjectI[] getStudyAsArray(String studyInstanceUID) throws IOException;
 
-    List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws Exception;
+    List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws SearchException;
 
     List<? extends QIDOResponse> searchForSeries(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception;
 

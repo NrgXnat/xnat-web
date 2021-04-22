@@ -5,4 +5,5 @@ public class TransCoderException extends RuntimeException {
     public TransCoderException( String msg, Exception e) {
         super( msg, e);
     }
+    public TransCoderException( Exception e) { super( e);}
 }

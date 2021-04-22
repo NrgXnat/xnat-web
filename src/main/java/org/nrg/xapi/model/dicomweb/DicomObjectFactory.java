@@ -23,4 +23,12 @@ public class DicomObjectFactory {
         return new DicomObjectChe3(f, frameGrabber);
     }
 
+    public static DicomObjectI createQuiet(File f) {
+        try {
+            return new DicomObjectChe3(f, frameGrabber);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
 }
