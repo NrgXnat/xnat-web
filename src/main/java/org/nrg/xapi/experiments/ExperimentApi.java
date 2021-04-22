@@ -50,7 +50,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 			        @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public XnatExperimentdata getById(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api- get experiment by experimentId {}" , experimentId);
+		log.debug("User {} requested experiment with ID {} }", getSessionUser().getUsername(), experimentId);
 		return _experimentService.findById(getSessionUser(), experimentId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 
@@ -60,7 +60,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllExperiments() throws NotFoundException {
-		log.debug("Controller Api- get experiments");
+		log.debug("User {} requested experiments }", getSessionUser().getUsername());
 		return  _experimentService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME));
 	}
 	
@@ -71,7 +71,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	               @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws Exception {
-		log.debug("Controller Api- get experiments");
+		log.debug("User {} requested experiment with projectId {} }", getSessionUser().getUsername(), projectId);
 		return _experimentService.findAllByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	
@@ -84,7 +84,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public XnatExperimentdata getByIdAndProject(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
 			                                    @ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api- get experiments");
+		log.debug("User {} requested experiment with projectId {} and with ID {} }", getSessionUser().getUsername(), projectId, experimentId);
 		return _experimentService.findByIdAndProjectId(getSessionUser(), experimentId, projectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	
@@ -97,7 +97,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId, 
 															      @ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws Exception {
-		log.debug("Controller Api- get experiments");
+		log.debug("User {} requested experiment with projectId {} and with subjectId {}}", getSessionUser().getUsername(), projectId, subjectId);
 		return _experimentService.findAllByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	

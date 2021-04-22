@@ -3,7 +3,11 @@ package org.nrg.xnat.services.users.impl;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserService;
@@ -21,18 +25,35 @@ public class UserServiceImpl implements UserService{
 		_template = template;
 	}
 	@Override
-	public List<XdatUsergroup> findByProject(UserI user, String projectId) {
-		return _template.query(USER_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new UserRowMapper(user));
+	public Optional<List<XdatUsergroup>> findByProject(UserI user, String projectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		List<XdatUsergroup> users = _template.query(USER_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new UserRowMapper(user));
+		if(Objects.isNull(users) || users.isEmpty())
+    		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, projectId) ;
+    	return Optional.of(users);
 	}
 	
 	@Override
-	public List<XdatUsergroup> getUserGroupByProject(UserI user, String projectId) {
-		return _template.query(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId), new UserGroupRowMapper(user));
+	public Optional<List<XdatUsergroup>> findUserGroupByProject(UserI user, String projectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		List<XdatUsergroup> userGroups = _template.query(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId), new UserGroupRowMapper(user));
+		if(Objects.isNull(userGroups) || userGroups.isEmpty())
+    		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, projectId) ;
+    	return Optional.of(userGroups);
 	}
 	
 	@Override
-	public XdatUsergroup getUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) {
-		return _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
+	public Optional<XdatUsergroup> findUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(Objects.isNull(groupId))
+    		throw new DataFormatException("The requested groupId wasn't found ");
+		XdatUsergroup userGroup = _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
+		if(Objects.isNull(userGroup))
+    		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, groupId) ;
+    	return Optional.of(userGroup);
 	}
 	
 	private static class UserRowMapper implements RowMapper<XdatUsergroup> {

@@ -1,8 +1,12 @@
 package org.nrg.xnat.services.users.impl;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import javax.servlet.http.HttpSession;
 
 import org.apache.commons.lang3.BooleanUtils;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserSessionService;
 import org.springframework.stereotype.Service;
@@ -11,9 +15,13 @@ import org.springframework.stereotype.Service;
 public class UserSessionServiceImpl implements UserSessionService {
 	
 	@Override
-	public String getJession(UserI user, HttpSession session, String csrf) {
+	public Optional<String> findJsession(UserI user, HttpSession session, String csrf) throws NotFoundException {
 		_includeXnatCsrfToken = BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBoolean(csrf), false);
-		 return sessionIdRepresentation(session);
+		String jsession = sessionIdRepresentation(session);
+		if (Objects.isNull(jsession))
+			throw new NotFoundException("Jsession was not found");
+
+		return Optional.of(jsession);
 	}
 
 	private String sessionIdRepresentation(HttpSession session) {

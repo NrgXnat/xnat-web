@@ -47,7 +47,7 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 	public List<XnatImageassessordata> getAllByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
-		log.debug("Controller Api- getAllByProjectIdAndSubjectIdAndExperimentId {} ", experimentId);
+		log.debug("User {} requested assessor with projectId {} , with subjectId {} and with experimentId {} }", getSessionUser().getUsername(), projectId, subjectId, experimentId);
 		return _assessorService.findAllByProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId,experimentId ).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
@@ -61,7 +61,7 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 			@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api- get getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId {}", assessorId);
+		log.debug("User {} requested assessor with projectId {} , with subjectId {} , with experimentId {} and with assessorId {}  }", getSessionUser().getUsername(), projectId, subjectId, experimentId, assessorId);
 		return _assessorService.findByIdAndProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId,experimentId, assessorId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, assessorId));
 	}
 	
@@ -73,7 +73,7 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatImageassessordata> getAllByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api-  getAllByExperimentId {}", experimentId);
+		log.debug("User {} requested assessor with experimentId {} }", getSessionUser().getUsername(), experimentId);
 		return _assessorService.findAllByExperimentId(getSessionUser(), experimentId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
@@ -85,7 +85,7 @@ public class AssessorApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public XnatImageassessordata getByAssessorIdAndExperimentId(@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
-		log.debug("Controller Api- getByAssessorIdAndExperimentId {}", assessorId);
+		log.debug("User {} requested assessor with experimentId {} and with assessorId {}  }", getSessionUser().getUsername(), experimentId, assessorId);
 		return _assessorService.findByIdAndExperimentId(getSessionUser(), assessorId, experimentId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	

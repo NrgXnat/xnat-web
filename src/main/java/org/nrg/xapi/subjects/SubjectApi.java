@@ -48,7 +48,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public XnatSubjectdata getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws InsufficientPrivilegesException,NotFoundException, DataFormatException {
-        log.debug("Controller Api- get subjects by subjectId");
+    	log.debug("User {} requested subject with ID {}", getSessionUser().getUsername(), subjectId);
         return _subjectService.findById(getSessionUser(), subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId));
     }
 
@@ -59,7 +59,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatSubjectdata> getAllSubjects() throws NotFoundException {
-        log.debug("Controller Api- getAll subjects");
+    	log.debug("User {} requested subject", getSessionUser().getUsername());
         return _subjectService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME));
     }
 
@@ -71,7 +71,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatSubjectdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
-        log.debug("Controller Api- get subjects");
+    	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
         return _subjectService.findAllByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
 
@@ -83,7 +83,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public XnatSubjectdata getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
                                                           @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
-        log.debug("Controller Api- get subjects");
+    	log.debug("User {} requested project with ID {} and subject with ID {}", getSessionUser().getUsername(), projectId, subjectId);
        return  _subjectService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
 

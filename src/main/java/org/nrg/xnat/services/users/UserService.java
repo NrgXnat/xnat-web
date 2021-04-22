@@ -1,14 +1,18 @@
 package org.nrg.xnat.services.users;
 
 import java.util.List;
+import java.util.Optional;
+
+import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xft.security.UserI;
 
 public interface UserService {
 
-	public List<XdatUsergroup> findByProject(UserI user, String projectId);
+	public Optional<List<XdatUsergroup>> findByProject(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-	public List<XdatUsergroup> getUserGroupByProject(UserI sessionUser, String projectId);
+	public Optional<List<XdatUsergroup>> findUserGroupByProject(UserI sessionUser, String projectId) throws DataFormatException, NotFoundException;
 	
-	public XdatUsergroup getUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId);
+	public Optional<XdatUsergroup> findUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId) throws DataFormatException, NotFoundException;
 }

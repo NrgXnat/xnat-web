@@ -4,10 +4,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -34,22 +34,31 @@ public class PARServiceImpl implements PARService {
 	}
 
 	@Override
-	public List<ProjectAccessRequest> findAllProjectAccessRequests(UserI user) throws InitializationException {
-		return _template.query(PAR_QUERY, new MapSqlParameterSource(),new ProjectAccessRequestRowMapper(user));
+	public Optional<List<ProjectAccessRequest>> findAll(UserI user) throws NotFoundException  {
+		List<ProjectAccessRequest> pars = _template.query(PAR_QUERY, new MapSqlParameterSource(),new ProjectAccessRequestRowMapper(user));
+		if(Objects.isNull(pars) || pars.isEmpty())
+    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(pars);
 	}
 
 	@Override
-	public ProjectAccessRequest findParResourceByParId(UserI user, Integer parId) throws DataFormatException {
-		if(Objects.nonNull(parId))
-			return ProjectAccessRequest.RequestPARById(parId, user);
-		else throw new DataFormatException("parId is Missing");
+	public Optional<ProjectAccessRequest> findByParId(UserI user, Integer parId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(parId))
+			throw new DataFormatException("The requested parId wasn't found ");
+		ProjectAccessRequest par = ProjectAccessRequest.RequestPARById(parId, user);
+		if(Objects.isNull(par))
+    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		return Optional.of(par);
 	}
 
 	@Override
-	public List<ProjectAccessRequest> findProjectParsByProjectId(UserI user, String projectId) throws DataFormatException {
-		if(Objects.nonNull(projectId))
-			return _template.query(PROJECT_PAR_QUERY + ID_WHERE_PAR_PROJECT, new MapSqlParameterSource("projectId", projectId),new ProjectAccessRequestRowMapper(user));
-		else throw new DataFormatException("ProjectId is Missing");
+	public Optional<List<ProjectAccessRequest>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+			throw new DataFormatException("The requested projectId wasn't found ");
+		List<ProjectAccessRequest> pars = _template.query(PROJECT_PAR_QUERY + ID_WHERE_PAR_PROJECT, new MapSqlParameterSource("projectId", projectId),new ProjectAccessRequestRowMapper(user));
+		if(Objects.isNull(pars) || pars.isEmpty())
+    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+    	return Optional.of(pars);
 	}
 	
 	@Override

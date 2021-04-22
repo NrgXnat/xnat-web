@@ -44,7 +44,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public XnatProjectdata getById(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
-        log.debug("Controller Api- get project by ID {}", projectId);
+    	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
         return _projectService.findById(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
 
@@ -53,7 +53,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatProjectdata> getAllProjects() throws Exception {
-        log.debug("Controller Api- getAll projects");
+    	log.debug("User {} requested projects", getSessionUser().getUsername());
         return _projectService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME));
     }
 

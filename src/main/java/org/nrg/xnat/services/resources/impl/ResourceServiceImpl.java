@@ -260,7 +260,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public Optional<List<XnatAbstractresource>> findByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
+	public Optional<List<XnatAbstractresource>> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
 		List<XnatAbstractresource> resources = new ArrayList<>();
 		if(Objects.isNull(projectId))
     		throw new DataFormatException("The requested projectId wasn't found ");
