@@ -1,38 +1,33 @@
 package org.nrg.xnat.services.files;
 
 import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.MultipartHttpServletRequest;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 public interface FileService {
 	
-	List<XnatResourcecatalog> findByProject(UserI user, String projectId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findBySubject(UserI user, String subjectId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByProjectAndSubject(UserI user, String projectId, String subjectId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByProjectAndResource(UserI user, String projectId, Integer resourceId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByExperimentAndAssessors(UserI user, String experimentId, String assessorId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByExperiment(UserI user, String experimentId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException;
 
-	List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) throws DataFormatException;
+	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException;
 	
 	public void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception;
 

@@ -10,7 +10,6 @@ import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import lombok.Singular;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
@@ -20,7 +19,6 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.CatEntryI;
-import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
@@ -36,9 +34,6 @@ import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
@@ -56,7 +51,6 @@ import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.InputStreamSource;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -73,76 +67,110 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProject(UserI user, String projectId) throws DataFormatException {
+	public Optional<List<XnatResourcecatalog>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId))
-			throw new DataFormatException("Projectid is missing");
-		
-		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
+			throw new DataFormatException("The requested projectId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findBySubject(UserI user, String subjectId) throws DataFormatException {
+	public Optional<List<XnatResourcecatalog>> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(subjectId))
-			throw new DataFormatException("subjectId is missing");
-		
-		return _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+			throw new DataFormatException("The requested subjectId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectAndSubject(UserI user, String projectId, String subjectId) throws DataFormatException {
-		if(Objects.isNull(projectId) && Objects.isNull(subjectId) )
-			throw new DataFormatException("either projectId or subjectId is missing");
-		
-		return _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
+	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+			throw new DataFormatException("The requested projectId wasn't found");
+		if(Objects.isNull(subjectId))
+			throw new DataFormatException("The requested subjectId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectAndResource(UserI user, String projectId, Integer resourceId) throws DataFormatException {
-		if(Objects.isNull(projectId) && Objects.isNull(resourceId) )
-			throw new DataFormatException("either projectId or resourceId is missing");
-		return _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+	public  Optional<List<XnatResourcecatalog>>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+			throw new DataFormatException("The requested projectId wasn't found");
+		if(Objects.isNull(resourceId) )
+			throw new DataFormatException("The requested resourceId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findBySubjectAndResource(UserI user, String subjectId, Integer resourceId) throws DataFormatException {
-		if(Objects.isNull(subjectId) && Objects.isNull(resourceId) )
-			throw new DataFormatException("either subjectId or resourceId is missing");
-		
-		return _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+	public Optional<List<XnatResourcecatalog>> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(subjectId))
+			throw new DataFormatException("The requested subjectId wasn't found");
+		if(Objects.isNull(resourceId) )
+			throw new DataFormatException("The requested resourceId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByExperimentAndAssessors(UserI user, String experimentId, String assessorId) throws DataFormatException {
-		if(Objects.isNull(experimentId) && Objects.isNull(assessorId) )
-			throw new DataFormatException("either experimentId or assessorId is missing");
-		
-		return _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
-	}
-	
-	@Override
-	public List<XnatResourcecatalog> findByIdAndProjectAndSubjectAndExperimentAndAssessors(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException {
-		if(Objects.isNull(projectId) && Objects.isNull(subjectId)&& Objects.isNull(experimentId) && Objects.isNull(assessedId) )
-			throw new DataFormatException("either projectId or subjectId or experimentId or assessedId  is missing");
-		
-		return _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
-	}
-	
-	@Override
-	public List<XnatResourcecatalog> findByExperiment(UserI user, String experimentId) throws DataFormatException {
+	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(experimentId))
-			throw new DataFormatException("experimentId is missing");
-		
-		return _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
+			throw new DataFormatException("The requested experimentId wasn't found");
+		if(Objects.isNull(assessorId))
+			throw new DataFormatException("The requested assessorId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
+    	return Optional.of(resourceCatlogs);
+	}
+	
+	@Override
+	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId))
+			throw new DataFormatException("The requested projectId wasn't found");
+		if(Objects.isNull(subjectId))
+			throw new DataFormatException("The requested subjectId wasn't found");
+		if(Objects.isNull(experimentId))
+			throw new DataFormatException("The requested experimentId wasn't found");
+		if(Objects.isNull(assessedId))
+			throw new DataFormatException("The requested assessorId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
+    	return Optional.of(resourceCatlogs);
+	}
+	
+	@Override
+	public Optional<List<XnatResourcecatalog>> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(experimentId))
+			throw new DataFormatException("The requested experimentId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId) ;
+    	return Optional.of(resourceCatlogs);
 	}
 
 	@Override
-	public List<XnatResourcecatalog> findByExperimentAndResource(UserI user, String experimentId, Integer resourceId) throws DataFormatException {
-		if(Objects.isNull(experimentId) && Objects.isNull(resourceId) )
-			throw new DataFormatException("either experimentId or resourceId is missing");
-		
-		return _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
+	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(experimentId))
+			throw new DataFormatException("The requested experimentId wasn't found");
+		if( Objects.isNull(resourceId) )
+			throw new DataFormatException("The requested resourceId wasn't found");
+		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+    	return Optional.of(resourceCatlogs);
 	}
-	
 	
 	/**
 	 * Delete the files from specific resource
@@ -758,14 +786,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 	private final NamedParameterJdbcTemplate _template;
 	
-	//private static final List<Variant> VARIANTS             = Arrays.asList(new Variant(MediaType.APPLICATION_JSON), new Variant(MediaType.TEXT_HTML), new Variant(MediaType.TEXT_XML), new Variant(MediaType.IMAGE_JPEG));
     private static final Pattern       PATTERN_ASSESSOR_URI = Pattern.compile("/assessors/([^/]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern       PATTERN_ARCHIVE_URI  = Pattern.compile("/archive/([^/]+)");
 	
 	private String filePath = "";
-	//private XnatAbstractresource resource = null;
 	private String reference = "";
-	//private final boolean acceptNotFound = false;
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};

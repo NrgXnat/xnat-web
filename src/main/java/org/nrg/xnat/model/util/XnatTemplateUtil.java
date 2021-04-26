@@ -485,7 +485,7 @@ public class XnatTemplateUtil {
 		}
 	}
 
-	private String[] getQueryVariables(String string) {
+	protected String[] getQueryVariables(String string) {
 		return null;
 	}
 
