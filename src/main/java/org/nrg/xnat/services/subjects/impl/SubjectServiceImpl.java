@@ -106,7 +106,6 @@ public class SubjectServiceImpl implements SubjectService {
         delete(user, findById(user, subjectId).get());
     }
 
-    @Override
     public void delete(final UserI user, final XnatSubjectdata subject) throws ClientException, DataFormatException, NotFoundException {
         log.debug("User {} is deleting the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         if(Objects.nonNull(subject)) {
@@ -129,8 +128,6 @@ public class SubjectServiceImpl implements SubjectService {
 
         private final UserI _user;
     }
-    
-    
     
     
     @Override

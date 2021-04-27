@@ -818,13 +818,12 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
-        delete(user, findById(user, experimentId).get(), projectId);
+    public void deleteById(UserI user, String experimentId, String projectId, String filepath) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
+        delete(user, findById(user, experimentId).get(), projectId,filepath);
     }
 
     @SuppressWarnings("unused")
-    @Override
-    public void delete(UserI user, XnatExperimentdata experiment, String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
+    public void delete(UserI user, XnatExperimentdata experiment, String projectId, String filepath) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
 		if (Objects.isNull(experiment)) {
 			throw new NotFoundException("The experiment not found");
 		}
@@ -842,20 +841,20 @@ public class ExperimentServiceImpl implements ExperimentService {
             }
         }
 
-        deleteItem(user, project, experiment);
+        deleteItem(user, project, experiment, filepath);
 
     }
 
-    protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item) throws org.nrg.framework.exceptions.NotFoundException {
+    protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item, String filepath) throws org.nrg.framework.exceptions.NotFoundException {
         if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
             throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
         }
 
         try {
-            XnatProjectUtil           xnatProjectUtil = new XnatProjectUtil();
-            final XnatProjectdata     newProject      = xnatProjectUtil.getProjectFromFilePath(proj, (ArchivableItem) item, user);
-            final PersistentWorkflowI wrk             = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType())));
-            final EventMetaI          c               = wrk.buildEvent();
+            SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+            final XnatProjectdata  newProject  = secureResoureUtil.getProjectFromFilePath(proj, (ArchivableItem) item,filepath, user);
+            final PersistentWorkflowI wrk  = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType())));
+            final EventMetaI c   = wrk.buildEvent();
 
             try {
                 final boolean                      removeFiles = isQueryVariableTrue("removeFiles");

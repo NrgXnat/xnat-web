@@ -24,9 +24,9 @@ public interface ExperimentService {
 
 	public XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId, String projectId, String subjectId) throws Exception;
 
-	public void deleteById(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
+	public void deleteById(UserI user, String experimentId, String projectId, String filepath) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
 	
-    void delete(UserI user, XnatExperimentdata xnatExperimentdata,  String projectId) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
+    //public void delete(UserI user, XnatExperimentdata xnatExperimentdata,  String projectId, String filepath) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
 
 	public Optional<XnatExperimentdata> findByIdAndProjectId(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException;
 }

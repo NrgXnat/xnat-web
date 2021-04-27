@@ -26,6 +26,4 @@ public interface SubjectService {
     public XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata, String label) throws XftItemException, Exception;
 
     public void deleteById(UserI user, String subjectId) throws ClientException, DataFormatException, NotFoundException;
-
-    public void delete(UserI user, XnatSubjectdata subject) throws ClientException, DataFormatException, NotFoundException;
 }

@@ -16,15 +16,14 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProjectService {
+	
     public Optional<List<XnatProjectdata>> findAll(UserI user) throws NotFoundException;
 
     public Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType ) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
-    public void deleteById(UserI user, String projectId) throws DataFormatException, InitializationException, NotFoundException;
-
-    public void delete(UserI user, XnatProjectdata project) throws DataFormatException, InitializationException;
+    public void deleteById(UserI user, String projectId,  boolean removeFiles) throws DataFormatException, InitializationException, NotFoundException;
 }

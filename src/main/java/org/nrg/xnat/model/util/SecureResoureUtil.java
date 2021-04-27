@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
+import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatImagescandataI;
@@ -74,6 +75,11 @@ public class SecureResoureUtil {
         }
         return true;
     }
+	 public boolean update(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, final EventDetails event,  UserI user) throws Exception {
+	        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(getEventId(),user, item.getItem(), event);
+	        final EventMetaI meta = workflow.buildEvent();
+	        return update(item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
+	    }
 	
 	public boolean update(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, final PersistentWorkflowI workflow, final EventMetaI meta, UserI user) throws Exception {
         return createOrUpdateImpl(false, item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
@@ -264,6 +270,24 @@ public class SecureResoureUtil {
         MaterializedView.deleteByUser(user);
     }
 	
+    public XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, String filepath, UserI user) throws NotFoundException {
+        if (filepath != null && !filepath.equals("")) {
+            if (filepath.startsWith("projects/")) {
+                final String          newProjectId = filepath.substring(9);
+                final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
+                if (newProject == null) {
+                    throw new NotFoundException(newProjectId);
+                }
+                return newProject;
+            } else {
+                throw new IllegalArgumentException("Illegal file path '" + filepath + "' does not start with 'projects/'.");
+            }
+        } else if (!item.getProject().equals(project.getId())) {
+            return project;
+        }
+        return null;
+    }
+    
 	
 	 protected    List<String> actions = null;
 	 public boolean containsAction(final String name) {

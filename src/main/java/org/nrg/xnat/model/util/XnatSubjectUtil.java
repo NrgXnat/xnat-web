@@ -2,21 +2,12 @@ package org.nrg.xnat.model.util;
 
 import static org.nrg.xft.event.XftItemEventI.DELETE;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
-import org.nrg.action.ServerException;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -24,7 +15,6 @@ import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatProjectparticipantI;
-import org.nrg.xdat.om.XnatDemographicdata;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -33,10 +23,7 @@ import org.nrg.xdat.om.XnatPvisitdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
-import org.nrg.xdat.turbine.utils.PopulateItem;
-import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
-import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.db.ViewManager;
@@ -44,34 +31,18 @@ import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
-import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.IDAbsent;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
-import org.nrg.xft.exception.ElementNotFoundException;
-import org.nrg.xft.exception.FieldNotFoundException;
-import org.nrg.xft.exception.XFTInitException;
-import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xnat.archive.Rename;
 import org.nrg.xnat.exceptions.InvalidArchiveStructure;
-import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
-import org.restlet.data.Form;
 import org.restlet.data.Status;
-import org.springframework.security.oauth2.provider.ClientAlreadyExistsException;
-import org.xml.sax.SAXException;
-import org.xml.sax.SAXParseException;
-
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

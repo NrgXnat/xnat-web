@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -108,9 +109,10 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/experiments/{experimentId}","/experiments/{experimentId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
     public void deleteProject(@ApiParam("The ID of the experiment to be deleted") @PathVariable final String projectId,
-    		@ApiParam("The ID of the experiment to be deleted") @PathVariable final String experimentId) throws Exception {
+    		@ApiParam("The ID of the experiment to be deleted") @PathVariable final String experimentId,
+    		@ApiParam("The file path value") @RequestParam(name = "filepath", required = false )String filepath) throws Exception {
         log.debug("Controller Api- Delete experiment {}", projectId);
-        _experimentService.deleteById(getSessionUser(), experimentId, projectId);
+        _experimentService.deleteById(getSessionUser(), experimentId, projectId, filepath);
     }
 	
 	 @ApiOperation(value = "Update an existing experiment", notes = "Updates the submitted experiment.", response = XnatSubjectassessordata.class)
