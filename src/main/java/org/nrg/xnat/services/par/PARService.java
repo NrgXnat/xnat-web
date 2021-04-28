@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 
 public interface PARService {
@@ -16,6 +17,6 @@ public interface PARService {
 	
 	public Optional<List<ProjectAccessRequest>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException ;
 	
-	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline) throws Exception;
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline, XnatEventUtil event) throws NotFoundException;
 	
 }

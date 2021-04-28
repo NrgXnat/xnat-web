@@ -38,7 +38,6 @@ import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.archive.ValidationException;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.model.util.SecureResoureUtil;
-import org.nrg.xnat.model.util.XnatProjectUtil;
 import org.nrg.xnat.restlet.actions.FixScanTypes;
 import org.nrg.xnat.restlet.actions.PullSessionDataFromHeaders;
 import org.nrg.xnat.restlet.util.XNATRestConstants;
@@ -208,9 +207,9 @@ public class ExperimentServiceImpl implements ExperimentService {
 					throw new DataFormatException(vr.toFullString());
 				}
 
-                secureResoureUtil.create(expt, false, allowDataDeletion, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(expt.getXSIType(), (existing == null))), user);
+                //secureResoureUtil.create(expt, false, allowDataDeletion, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(expt.getXSIType(), (existing == null))), user);
 
-                secureResoureUtil.postSaveManageStatus(expt, user);
+                //secureResoureUtil.postSaveManageStatus(expt, user);
 
                 if (Permissions.canEdit(user, expt.getItem()) && (isQueryVariableTrue(XNATRestConstants.TRIGGER_PIPELINES) || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES))) {
                     _pipelineService.launchAutoRun(expt, isQueryVariableTrue(XNATRestConstants.SUPRESS_EMAIL), user);
@@ -251,7 +250,7 @@ public class ExperimentServiceImpl implements ExperimentService {
                     subject.setProject(proj.getId());
                     subject.setLabel(expt.getSubjectId());
                     subject.setId(newSubjectId);
-                    secureResoureUtil.create(subject, false, true, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT), user);
+                   // secureResoureUtil.create(subject, false, true, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT), user);
                     expt.setSubjectId(subject.getId());
                 }
             }
@@ -419,7 +418,7 @@ public class ExperimentServiceImpl implements ExperimentService {
                     throw e1;
                 }
 
-                secureResoureUtil.postSaveManageStatus(experiment, user);
+                //secureResoureUtil.postSaveManageStatus(experiment, user);
 
                 verifyPermission(user, experiment, secureResoureUtil);
 

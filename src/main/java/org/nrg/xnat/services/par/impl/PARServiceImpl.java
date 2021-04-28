@@ -14,6 +14,7 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.par.PARService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -62,17 +63,23 @@ public class PARServiceImpl implements PARService {
 	}
 	
 	@Override
-	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline) throws Exception {
-		ProjectAccessRequest par = getParObject(user,projectAccessRequest,parId);
+	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline, XnatEventUtil event) throws NotFoundException {
+		XnatEventUtil xnatEventUtil = new XnatEventUtil();
+		ProjectAccessRequest par = null;
+		try {
+			par = getParObject(user,projectAccessRequest,parId);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
 	       if (par != null) {
 	            if (par.getApproved() != null || par.getApprovalDate() != null) {
 	            	throw new NotFoundException("This project invitation has already been accepted.");
 	            } else {
 	                try {
 	                    if (accept != null) {
-	                        par.process(user, true, getEventType(), getReason(), getComment());
+	                        par.process(user, true, xnatEventUtil.getEventTypedData(event.getEventId()),event.getEventReason(), event.getEventComment());
 	                    } else if (decline != null) {
-	                        par.process(user, false, getEventType(), getReason(), getComment());
+	                        par.process(user, false, xnatEventUtil.getEventTypedData(event.getEventId()), event.getEventReason(), event.getEventComment());
 	                    }
 	                } catch (Exception e) {
 	                    log.error("Error trying to process PAR " + par.getRequestId(), e);
@@ -82,27 +89,6 @@ public class PARServiceImpl implements PARService {
 		return par;
 	}
 	
-	private String getComment() {
-		return null;
-	}
-
-	private String getReason() {
-		return null;
-	}
-
-	public EventUtils.TYPE getEventType() {
-        final String id = getQueryVariable(EventUtils.EVENT_TYPE);
-        if (id != null) {
-            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
-        } else {
-            return EventUtils.TYPE.WEB_SERVICE;
-        }
-    }
-
-	private String getQueryVariable(String string) {
-		return null;
-	}
-
 	private ProjectAccessRequest getParObject(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId ) throws Exception {
 		ProjectAccessRequest par = ProjectAccessRequest.RequestPARByGUID(projectAccessRequest.getGuid(), user);
         if (par == null) {

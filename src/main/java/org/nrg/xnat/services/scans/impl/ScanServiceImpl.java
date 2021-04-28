@@ -146,7 +146,7 @@ public class ScanServiceImpl implements ScanService {
 	        	if (!Permissions.canDelete(user, session) || prevent_delete) 
 	        		throw new InsufficientPrivilegesException("User account doesn't have permission to modify this session.");
 	        
-	        	secureResoureUtil.delete(session, scan, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType())), user);
+	        	//secureResoureUtil.delete(session, scan, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType())), user);
 
 	            // Above "delete" removes resources, but leaves dangling scan directory
 	            XNATUtils.removeScanDir(session, scan);

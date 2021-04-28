@@ -23,6 +23,7 @@ import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.exception.XftItemException;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -78,12 +79,19 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     public XnatProjectdata createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdata project,
     									 @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
     									 @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
-    									 @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType) throws UserNotFoundException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException, ActionException, UserInitException  {
+    									 @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
+    									 @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    									 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    									 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    									 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    									 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws UserNotFoundException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException, ActionException, UserInitException  {
         log.debug("User {} requested to create project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.create(getSessionUser(), project,allowDataDelete, accessibility, xsiType);
+        return _projectService.create(getSessionUser(), project,allowDataDelete, accessibility, xsiType,  new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
 
-    @ApiOperation(value = "Update an existing project", notes = "Updates the submitted project.", response = XnatProjectdata.class)
+   
+
+	@ApiOperation(value = "Update an existing project", notes = "Updates the submitted project.", response = XnatProjectdata.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated project."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit projects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
@@ -96,12 +104,17 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                                          @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
                                          @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
                                          @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
-                                         @ApiParam("The testHyphen value ") @RequestParam(name = "testHyphen", required = false)boolean testHyphen) throws InsufficientPrivilegesException, InitializationException, Exception  {
+                                         @ApiParam("The testHyphen value ") @RequestParam(name = "testHyphen", required = false)boolean testHyphen,
+                                         @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    									 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    									 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    									 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    									 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws InsufficientPrivilegesException, InitializationException, Exception  {
         if (!StringUtils.equals(projectId, project.getId())) {
             throw new DataFormatException("You specified the project " + projectId + " in your request but the project ID is " + project.getProject() + ". These values must be the same.");
         }
         log.debug("User {} requested to update project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.update(getSessionUser(), project, filepath,allowDataDelete,accessibility,testHyphen,xsiType);
+        return _projectService.update(getSessionUser(), project, filepath,allowDataDelete,accessibility,testHyphen,xsiType, new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
     @ApiOperation(value = "Delete an existing project", notes = "Deletes the specified project.")
@@ -112,10 +125,15 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "{projectId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
     public void deleteById(@ApiParam("The ID of the project to be deleted") @PathVariable final String projectId,
-    						@ApiParam("The removeFiles value ") @RequestParam(name = "removeFiles", defaultValue = "false")boolean removeFiles) throws DataFormatException, InitializationException, NotFoundException  {
+    						@ApiParam("The removeFiles value ") @RequestParam(name = "removeFiles", defaultValue = "false")boolean removeFiles,
+    						@ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+							@ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+							@ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+							@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+							@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException, InitializationException, NotFoundException  {
     	 log.debug("User {} requested to delete project with ID {}", getSessionUser().getUsername(), projectId);
-        _projectService.deleteById(getSessionUser(), projectId, removeFiles);
+    	 _projectService.deleteById(getSessionUser(), projectId, removeFiles, new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
-
+    
     private final ProjectService _projectService;
 }

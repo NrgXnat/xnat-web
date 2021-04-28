@@ -12,6 +12,7 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.par.PARService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,12 +83,16 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = PUT)
     public ProjectAccessRequest updateProjectAccessRequest(@ApiParam("The ID of the project to be updated") @PathVariable final Integer parId,
-    		@ApiParam("The ID of the project to be updated") @RequestParam final  String accept,
-    		@ApiParam("The ID of the project to be updated") @RequestParam final  String decline,
-    		@ApiParam("The project to be updated.") @RequestBody final ProjectAccessRequest projectAccessRequest) throws Exception {
-        
-        log.debug("Controller Api- Update ProjectAccessRequest {}", parId);
-        return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline);
+    													   @ApiParam("The ID of the project to be updated") @RequestParam final  String accept,
+    													   @ApiParam("The ID of the project to be updated") @RequestParam final  String decline,
+    													   @ApiParam("The project to be updated.") @RequestBody final ProjectAccessRequest projectAccessRequest,
+    													   @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    													   @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    													   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    													   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Deleted")String eventAction,
+    													   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException  {
+    	log.debug("User {} requested to update projectAccessRequest with ID {}", getSessionUser().getUsername(), parId);
+        return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline, new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
     
     private final PARService _parService;

@@ -37,8 +37,6 @@ import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.WorkflowUtils;
-import org.restlet.data.Method;
-import org.restlet.data.Status;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;

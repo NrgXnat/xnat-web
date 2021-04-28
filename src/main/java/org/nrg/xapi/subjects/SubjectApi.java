@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
@@ -18,6 +19,7 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.subjects.SubjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -97,8 +99,14 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
     public XnatSubjectdata createSubject(@ApiParam("The project in which the subject should be created") @PathVariable final String projectId,
-                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdata subject, @RequestParam String label) throws Exception {
-        log.debug("Controller Api- Create subject: {}", subject);
+                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdata subject, 
+                                         @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
+                                         @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+             							 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+             							 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+             							 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+             							 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
+    	log.debug("User {} requested to create subject with ID {}", getSessionUser().getUsername(), subject.getId());
         final boolean subjectHasProject = StringUtils.isNotBlank(subject.getProject());
         final boolean hasProject        = StringUtils.isNotBlank(projectId);
         if (!subjectHasProject && !hasProject) {
@@ -110,7 +118,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         if (!subjectHasProject) {
             subject.setProject(projectId);
         }
-         return _subjectService.create(getSessionUser(), subject);
+         return _subjectService.create(getSessionUser(), subject, new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     @ApiOperation(value = "Update an existing subject", notes = "Updates the submitted subject.", response = XnatSubjectdata.class)
@@ -124,15 +132,24 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         method = PUT)
     public XnatSubjectdata updateSubject(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
                                          @ApiParam("The ID of the subject to be updated") @PathVariable final String subjectId,
-                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdata subject, @RequestParam String label) throws Exception {
-        if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(subject.getProject(), projectId)) {
+                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdata subject, 
+                                         @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
+                                         @ApiParam("The primary value.")@RequestParam (name = "primary", defaultValue = "false")boolean primary,
+                                         @ApiParam("The gender value.")@RequestParam (name = "gender", required = false)String gender,
+                                         @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+             							 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+             							 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+             							 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+             							 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
+    	log.debug("User {} requested to update subject with ID {}", getSessionUser().getUsername(), subjectId);
+    	if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(subject.getProject(), projectId)) {
             throw new DataFormatException("You specified the project " + projectId + " in your request but the subject is assigned to project " + subject.getProject() + ". These values must be the same.");
         }
         if (!StringUtils.equals(subjectId, subject.getId())) {
             throw new DataFormatException("You specified the subject ID " + subjectId + " in your request but the subject to be updated has the ID " + subject.getId() + ". These values must be the same.");
         }
         log.debug("Controller Api- Update subject {} (ID {}) in project {}", subject.getLabel(), subjectId, subject.getProject());
-        return _subjectService.update(getSessionUser(), subject, label);
+        return _subjectService.update(getSessionUser(), subject, label, primary, gender,new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     @ApiOperation(value = "Delete an existing subject", notes = "Deletes the specified subject.")
@@ -144,9 +161,15 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = DELETE)
     public void deleteSubject(@ApiParam("The project containing the subject to be deleted") @PathVariable final String projectId,
-                              @ApiParam("The ID of the subject to be deleted") @PathVariable final String subjectId) throws ClientException, DataFormatException, NotFoundException  {
-        log.debug("Controller Api- Delete subject {} in project {}", subjectId, StringUtils.defaultIfBlank(projectId, "N/A"));
-        _subjectService.deleteById(getSessionUser(), subjectId);
+                              @ApiParam("The ID of the subject to be deleted") @PathVariable final String subjectId,
+                              @ApiParam("The removeFiles value ") @RequestParam(name = "removeFiles", defaultValue = "false")boolean removeFiles,
+      						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+  							  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+  							  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+  							  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Deleted")String eventAction,
+  							  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException  {
+    	log.debug("User {} requested to delete subject with ID {}", getSessionUser().getUsername(), subjectId);
+        _subjectService.deleteById(getSessionUser(), subjectId, removeFiles, new XnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     

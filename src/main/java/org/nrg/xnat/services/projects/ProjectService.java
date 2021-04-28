@@ -11,6 +11,7 @@ import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,9 +22,9 @@ public interface ProjectService {
 
     public Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType ) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
-    public void deleteById(UserI user, String projectId,  boolean removeFiles) throws DataFormatException, InitializationException, NotFoundException;
+    public void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
 }
