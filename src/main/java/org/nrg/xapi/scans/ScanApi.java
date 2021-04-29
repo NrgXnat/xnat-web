@@ -13,10 +13,12 @@ import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatScscandata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.scans.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -117,13 +119,19 @@ public class ScanApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified scan or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}",
-    		"/experiments/{assessedId}/scans/{scanId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteProject(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
-    		@ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
-    		@ApiParam("The ID of the experiment to be deleted") @PathVariable final String assessedId,
-    		@ApiParam("The ID of the scan to be deleted") @PathVariable final Integer scanId) throws Exception {
+    							 "/experiments/{assessedId}/scans/{scanId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
+    public void deleteScan(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
+    						  @ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
+    						  @ApiParam("The ID of the experiment to be deleted") @PathVariable final String assessedId,
+    						  @ApiParam("The ID of the scan to be deleted") @PathVariable final Integer scanId,
+    						  @ApiParam("The file path value") @RequestParam(name = "filepath", defaultValue = "" )String filepath,
+    						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+							  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+							  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+							  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Deleted")String eventAction,
+							  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
         log.debug("Controller Api- Delete scan {}", assessedId);
-        _scanService.deleteById(getSessionUser(), assessedId, scanId);
+        _scanService.deleteById(getSessionUser(), assessedId, scanId, filepath,  XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
 	
 	private final ScanService _scanService;

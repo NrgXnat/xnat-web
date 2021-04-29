@@ -118,7 +118,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         if (!subjectHasProject) {
             subject.setProject(projectId);
         }
-         return _subjectService.create(getSessionUser(), subject, new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
+         return _subjectService.create(getSessionUser(), subject, XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     @ApiOperation(value = "Update an existing subject", notes = "Updates the submitted subject.", response = XnatSubjectdata.class)
@@ -149,7 +149,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
             throw new DataFormatException("You specified the subject ID " + subjectId + " in your request but the subject to be updated has the ID " + subject.getId() + ". These values must be the same.");
         }
         log.debug("Controller Api- Update subject {} (ID {}) in project {}", subject.getLabel(), subjectId, subject.getProject());
-        return _subjectService.update(getSessionUser(), subject, label, primary, gender,new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
+        return _subjectService.update(getSessionUser(), subject, label, primary, gender,XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     @ApiOperation(value = "Delete an existing subject", notes = "Deletes the specified subject.")

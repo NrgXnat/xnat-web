@@ -64,7 +64,6 @@ public class PARServiceImpl implements PARService {
 	
 	@Override
 	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline, XnatEventUtil event) throws NotFoundException {
-		XnatEventUtil xnatEventUtil = new XnatEventUtil();
 		ProjectAccessRequest par = null;
 		try {
 			par = getParObject(user,projectAccessRequest,parId);
@@ -77,9 +76,9 @@ public class PARServiceImpl implements PARService {
 	            } else {
 	                try {
 	                    if (accept != null) {
-	                        par.process(user, true, xnatEventUtil.getEventTypedData(event.getEventId()),event.getEventReason(), event.getEventComment());
+	                        par.process(user, true, XnatEventUtil.getEventTypedData(event.getEventId()),event.getEventReason(), event.getEventComment());
 	                    } else if (decline != null) {
-	                        par.process(user, false, xnatEventUtil.getEventTypedData(event.getEventId()), event.getEventReason(), event.getEventComment());
+	                        par.process(user, false, XnatEventUtil.getEventTypedData(event.getEventId()), event.getEventReason(), event.getEventComment());
 	                    }
 	                } catch (Exception e) {
 	                    log.error("Error trying to process PAR " + par.getRequestId(), e);

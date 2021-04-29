@@ -8,6 +8,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface ScanService {
 	
@@ -23,8 +24,6 @@ public interface ScanService {
 
 	public Optional<XnatImagescandata> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException;
 
-	public void deleteById(UserI user, String assessedId, Integer scanId) throws NotFoundException, DataFormatException, InitializationException;
-	
-	public void delete(UserI user, XnatImagescandata scan,  String assessedId, Integer scanIds) throws NotFoundException, DataFormatException, InitializationException;
+	public void deleteById(UserI user, String assessedId, Integer scanId, String filepath, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException;
 	
 }

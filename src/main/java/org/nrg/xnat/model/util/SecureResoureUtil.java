@@ -6,8 +6,6 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.framework.exceptions.NotFoundException;
@@ -84,8 +82,7 @@ public class SecureResoureUtil {
         return true;
     }
 	 public boolean update(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, final EventDetails event,  XnatEventUtil xnatEvent,UserI user) throws Exception {
-		 XnatEventUtil xnatEventUtil = new XnatEventUtil(); 
-		 final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(xnatEvent.getEventId()),user, item.getItem(), event);
+		 final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(xnatEvent.getEventId()),user, item.getItem(), event);
 	        final EventMetaI meta = workflow.buildEvent();
 	        return update(item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
 	    }
@@ -95,8 +92,7 @@ public class SecureResoureUtil {
     }
 	
 	public boolean create(final ArchivableItem item, boolean overwriteSecurity, boolean allowDataDeletion, EventDetails event,XnatEventUtil xnatEvent, UserI user) throws Exception {
-		 XnatEventUtil xnatEventUtil = new XnatEventUtil(); 
-		final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(xnatEvent.getEventId()), user, item.getItem(),event);
+		final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(xnatEvent.getEventId()), user, item.getItem(),event);
 		final EventMetaI meta = workflow.buildEvent();
 		return create(item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
 	}
@@ -105,7 +101,245 @@ public class SecureResoureUtil {
 		return createOrUpdateImpl(true, item, overwriteSecurity, allowDataDeletion, workflow, meta, user);
 	}
 
-	private boolean createOrUpdateImpl(final boolean isCreate, final ArchivableItem item,
+	public boolean create(final ArchivableItem parent, final ItemI sub, final boolean overwriteSecurity, final boolean allowDataDeletion, final EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
+		final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(xnatEvent.getEventId()), user, parent.getItem(), event);
+        final EventMetaI          meta     = workflow.buildEvent();
+
+        try {
+            if (SaveItemHelper.authorizedSave(sub, user, false, false, meta)) {
+                WorkflowUtils.complete(workflow, meta);
+                Users.clearCache(user);
+                MaterializedView.deleteByUser(user);
+                return true;
+            }
+            return false;
+        } catch (Exception e) {
+            WorkflowUtils.fail(workflow, meta);
+            throw e;
+        }
+    }
+	 
+	public void postSaveManageStatus(ItemI i, UserI user, XnatEventUtil event) throws InsufficientPrivilegesException, Exception {
+			if (isQueryVariableTrue("activate")) {
+				if (Permissions.canActivate(user, i.getItem())) {
+					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user,
+							i.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Activated", event));
+					try {
+						i.activate(user);
+						WorkflowUtils.complete(wrk, wrk.buildEvent());
+					} catch (Exception e) {
+						log.error("", e);
+						WorkflowUtils.fail(wrk, wrk.buildEvent());
+					}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+			}
+
+			if (isQueryVariableTrue(ViewManager.QUARANTINE)) {
+				if (Permissions.canActivate(user, i.getItem())) {
+					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user,
+							i.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Quarantined", event));
+					try {
+						i.quarantine(user);
+						WorkflowUtils.complete(wrk, wrk.buildEvent());
+					} catch (Exception e) {
+						log.error("", e);
+						WorkflowUtils.fail(wrk, wrk.buildEvent());
+					}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+			}
+
+			if (isQueryVariableTrue("_lock")) {
+				if (Permissions.canActivate(user, i.getItem())) {
+					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user,
+							i.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Locked", event));
+					try {
+						i.lock(user);
+						WorkflowUtils.complete(wrk, wrk.buildEvent());
+					} catch (Exception e) {
+						log.error("", e);
+						WorkflowUtils.fail(wrk, wrk.buildEvent());
+					}
+				} else {
+					throw new InsufficientPrivilegesException("Specified user account has insufficient activation privileges for experiments in this project.");
+				}
+			} else if (isQueryVariableTrue("_unlock")) {
+				if (Permissions.canActivate(user, i.getItem())) {
+					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user,
+							i.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Unlocked", event));
+					try {
+						i.activate(user);
+						WorkflowUtils.complete(wrk, wrk.buildEvent());
+					} catch (Exception e) {
+						log.error("", e);
+						WorkflowUtils.fail(wrk, wrk.buildEvent());
+					}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+				
+			} else if (isQueryVariableTrue("_obsolete")) {
+				if (Permissions.canActivate(user, i.getItem())) {
+					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user,
+							i.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Obsoleted", event));
+					try {
+						i.getItem().setStatus(user, ViewManager.OBSOLETE);
+						WorkflowUtils.complete(wrk, wrk.buildEvent());
+					} catch (Exception e) {
+						log.error("", e);
+						WorkflowUtils.fail(wrk, wrk.buildEvent());
+					}
+				} else 
+					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
+				
+			}
+	}
+	 public void delete(ArchivableItem parent, ItemI item, EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
+	        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(xnatEvent.getEventId()), user, parent.getXSIType(), parent.getId(), parent.getProject(), event);
+	        final EventMetaI          ci       = workflow.buildEvent();
+
+	        try {
+	            XNATUtils.delete(parent, item, ci, isQueryVariableTrue("removeFiles"));
+	            WorkflowUtils.complete(workflow, ci);
+	        } catch (Exception e) {
+	            WorkflowUtils.fail(workflow, ci);
+	            throw e;
+	        }
+
+	        Users.clearCache(user);
+	        MaterializedView.deleteByUser(user);
+	    }
+		
+	    public XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, String filepath, UserI user) throws NotFoundException {
+	        if (filepath != null && !filepath.equals("")) {
+	            if (filepath.startsWith("projects/")) {
+	                final String          newProjectId = filepath.substring(9);
+	                final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
+	                if (newProject == null) {
+	                    throw new NotFoundException(newProjectId);
+	                }
+	                return newProject;
+	            } else {
+	                throw new IllegalArgumentException("Illegal file path '" + filepath + "' does not start with 'projects/'.");
+	            }
+	        } else if (!item.getProject().equals(project.getId())) {
+	            return project;
+	        }
+	        return null;
+	    }
+	    
+	    public void validateSubject(final XnatSubjectdata subject) throws Exception {
+	        if (StringUtils.isNotBlank(subject.getLabel()) && !XftStringUtils.isValidId(subject.getId())) 
+	        	throw new DataFormatException("Invalid character in subject label.");
+
+	        final ValidationResults results = subject.validate();
+	        if (results != null && !results.isValid()) 
+	        	throw new ClientException(results.toFullString());
+	    }
+		
+	    public void deleteItem(final XnatProjectdata proj, final BaseElement item, boolean removeFiles, UserI user, XnatEventUtil event) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
+	    	if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
+	            throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
+	        }
+
+	        try {
+	            final XnatProjectdata     newProject = getProjectFromFilePath(proj, (ArchivableItem) item, user);
+	            final PersistentWorkflowI wrk        = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType()), event));
+	            final EventMetaI   c          = wrk.buildEvent();
+
+	            try {
+	                final XnatProjectdata              project     = (newProject != null) ? newProject : proj;
+	                final Class<? extends BaseElement> itemType    = item.getClass();
+
+	                final String message;
+	                if (XnatPvisitdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatPvisitdata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatImagesessiondata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatImagesessiondata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatSubjectdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatSubjectdata) item).delete(project, user, removeFiles, c);
+	                } else if (XnatExperimentdata.class.isAssignableFrom(itemType)) {
+	                    message = ((XnatExperimentdata) item).delete(project, user, removeFiles, c);
+	                } else {
+	                    message = null;
+	                }
+	                if (message != null) {
+	                    WorkflowUtils.fail(wrk, c);
+	                    throw new InsufficientPrivilegesException("The user { } has insufficient privileges to access the requested subject", user.getUsername());
+	                } else {
+	                    XDAT.triggerXftItemEvent(item, DELETE, ImmutableMap.of("target", project.getId()));
+	                    WorkflowUtils.complete(wrk, c);
+	                }
+	            } catch (Exception e) {
+	                try {
+	                    WorkflowUtils.fail(wrk, c);
+	                } catch (Exception e1) {
+	                    log.error("", e1);
+	                }
+	                log.error("", e);
+	                throw new InitializationException(e.getMessage());
+	            }
+	        } catch (PersistentWorkflowUtils.EventRequirementAbsent e) {
+	            log.error("Forbidden: " + e.getMessage(), e);
+	            throw new InsufficientPrivilegesException("The user { } has insufficient privileges to access the requested subject", user.getUsername());
+	        } catch (NotFoundException e) {
+	        	throw new NotFoundException("Unable to identify project: " + e.getMessage());
+	        } catch (IllegalArgumentException e) {
+	        	throw new DataFormatException("The requested object wasn't found");
+	        }
+	    }
+	
+	public void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final String newLabel, XnatEventUtil event) throws Exception {
+        shareExperimentToProject(user, newProject, experiment, new XnatExperimentdataShare(user), newLabel, event);
+    }
+
+    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, XnatEventUtil event) throws Exception {
+        shareExperimentToProject(user, newProject, experiment, shared, newLabel, true, event);
+    }
+
+    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, boolean shareAllScans, XnatEventUtil event) throws Exception {
+    	final String newProjectId = newProject.getId();
+
+        shared.setProject(newProjectId);
+        shared.setProperty("sharing_share_xnat_experimentda_id", experiment.getId());
+        if(StringUtils.isNotBlank(newLabel)) {
+            shared.setLabel(newLabel);
+        }
+        if (shareAllScans) {
+            if (experiment instanceof XnatImagesessiondata) {
+                for (XnatImagescandataI scan : ((XnatImagesessiondata) experiment).getScans_scan()) {
+                    shareScanToProject(user, newProject, (XnatImagescandata) scan, event);
+                }
+            }
+        }
+        BaseXnatExperimentdata.SaveSharedProject(shared, experiment, user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
+        XDAT.triggerXftItemEvent(experiment, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
+    }
+    
+    protected void shareScanToProject(final UserI user, final XnatProjectdata newProject, final XnatImagescandata scan, XnatEventUtil event)
+            throws Exception {
+        XnatImagescandataShare shared = new XnatImagescandataShare(user);
+        final String newProjectId = newProject.getId();
+
+        shared.setProject(newProjectId);
+        shared.setProperty("sharing_share_xnat_imagescandat_xnat_imagescandata_id", scan.getXnatImagescandataId());
+        shared.setLabel(scan.getId());
+        BaseXnatImagescandata.SaveSharedProject(shared, scan, user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
+        XDAT.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
+    }
+	
+    
+   
+    protected XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, final UserI user) throws NotFoundException {
+        final String newProjectId = project.getId();
+        final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
+        if (newProject == null) {
+            throw new NotFoundException(newProjectId);
+        }
+        return newProject;
+    }
+    
+    private boolean createOrUpdateImpl(final boolean isCreate, final ArchivableItem item,
 			final boolean overwriteSecurity, final boolean allowDataDeletion, final PersistentWorkflowI workflow,
 			final EventMetaI meta, UserI user) throws Exception {
 		try {
@@ -127,252 +361,6 @@ public class SecureResoureUtil {
 			throw e;
 		}
 	}
-	
-	public boolean create(final ArchivableItem parent, final ItemI sub, final boolean overwriteSecurity, final boolean allowDataDeletion, final EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
-		XnatEventUtil xnatEventUtil = new XnatEventUtil();
-		final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(xnatEvent.getEventId()), user, parent.getItem(), event);
-        final EventMetaI          meta     = workflow.buildEvent();
-
-        try {
-            if (SaveItemHelper.authorizedSave(sub, user, false, false, meta)) {
-                WorkflowUtils.complete(workflow, meta);
-                Users.clearCache(user);
-                MaterializedView.deleteByUser(user);
-                return true;
-            }
-            return false;
-        } catch (Exception e) {
-            WorkflowUtils.fail(workflow, meta);
-            throw e;
-        }
-    }
-	 
-	public void postSaveManageStatus(ItemI i, UserI user, XnatEventUtil event) throws InsufficientPrivilegesException, Exception {
-		XnatEventUtil xnatEventUtil = new XnatEventUtil();
-			if (isQueryVariableTrue("activate")) {
-				if (Permissions.canActivate(user, i.getItem())) {
-					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(event.getEventId()), user,
-							i.getItem(), xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Activated", event));
-					try {
-						i.activate(user);
-						WorkflowUtils.complete(wrk, wrk.buildEvent());
-					} catch (Exception e) {
-						log.error("", e);
-						WorkflowUtils.fail(wrk, wrk.buildEvent());
-					}
-				} else 
-					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
-			}
-
-			if (isQueryVariableTrue(ViewManager.QUARANTINE)) {
-				if (Permissions.canActivate(user, i.getItem())) {
-					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(event.getEventId()), user,
-							i.getItem(), xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Quarantined", event));
-					try {
-						i.quarantine(user);
-						WorkflowUtils.complete(wrk, wrk.buildEvent());
-					} catch (Exception e) {
-						log.error("", e);
-						WorkflowUtils.fail(wrk, wrk.buildEvent());
-					}
-				} else 
-					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
-			}
-
-			if (isQueryVariableTrue("_lock")) {
-				if (Permissions.canActivate(user, i.getItem())) {
-					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(event.getEventId()), user,
-							i.getItem(), xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Locked", event));
-					try {
-						i.lock(user);
-						WorkflowUtils.complete(wrk, wrk.buildEvent());
-					} catch (Exception e) {
-						log.error("", e);
-						WorkflowUtils.fail(wrk, wrk.buildEvent());
-					}
-				} else {
-					throw new InsufficientPrivilegesException("Specified user account has insufficient activation privileges for experiments in this project.");
-				}
-			} else if (isQueryVariableTrue("_unlock")) {
-				if (Permissions.canActivate(user, i.getItem())) {
-					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(event.getEventId()), user,
-							i.getItem(), xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Unlocked", event));
-					try {
-						i.activate(user);
-						WorkflowUtils.complete(wrk, wrk.buildEvent());
-					} catch (Exception e) {
-						log.error("", e);
-						WorkflowUtils.fail(wrk, wrk.buildEvent());
-					}
-				} else 
-					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
-				
-			} else if (isQueryVariableTrue("_obsolete")) {
-				if (Permissions.canActivate(user, i.getItem())) {
-					PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(event.getEventId()), user,
-							i.getItem(), xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, "Obsoleted", event));
-					try {
-						i.getItem().setStatus(user, ViewManager.OBSOLETE);
-						WorkflowUtils.complete(wrk, wrk.buildEvent());
-					} catch (Exception e) {
-						log.error("", e);
-						WorkflowUtils.fail(wrk, wrk.buildEvent());
-					}
-				} else 
-					throw new InsufficientPrivilegesException("Specified user  account has insufficient activation privileges for experiments in this project.");
-				
-			}
-	}
-	
-	
-	
-	public void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final String newLabel, XnatEventUtil event) throws Exception {
-        shareExperimentToProject(user, newProject, experiment, new XnatExperimentdataShare(user), newLabel, event);
-    }
-
-    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, XnatEventUtil event) throws Exception {
-        shareExperimentToProject(user, newProject, experiment, shared, newLabel, true, event);
-    }
-
-    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, boolean shareAllScans, XnatEventUtil event) throws Exception {
-        XnatEventUtil xnatEventUtil = new XnatEventUtil();
-    	final String newProjectId = newProject.getId();
-
-        shared.setProject(newProjectId);
-        shared.setProperty("sharing_share_xnat_experimentda_id", experiment.getId());
-        if(StringUtils.isNotBlank(newLabel)) {
-            shared.setLabel(newLabel);
-        }
-        if (shareAllScans) {
-            if (experiment instanceof XnatImagesessiondata) {
-                for (XnatImagescandataI scan : ((XnatImagesessiondata) experiment).getScans_scan()) {
-                    shareScanToProject(user, newProject, (XnatImagescandata) scan, event);
-                }
-            }
-        }
-        BaseXnatExperimentdata.SaveSharedProject(shared, experiment, user, xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
-        XDAT.triggerXftItemEvent(experiment, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
-    }
-    
-    protected void shareScanToProject(final UserI user, final XnatProjectdata newProject, final XnatImagescandata scan, XnatEventUtil event)
-            throws Exception {
-    	XnatEventUtil xnatEventUtil = new XnatEventUtil();
-        XnatImagescandataShare shared = new XnatImagescandataShare(user);
-        final String newProjectId = newProject.getId();
-
-        shared.setProject(newProjectId);
-        shared.setProperty("sharing_share_xnat_imagescandat_xnat_imagescandata_id", scan.getXnatImagescandataId());
-        shared.setLabel(scan.getId());
-        BaseXnatImagescandata.SaveSharedProject(shared, scan, user, xnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
-        XDAT.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
-    }
-	
-    
-    public void delete(ArchivableItem parent, ItemI item, EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
-    	XnatEventUtil xnatEventUtil = new  XnatEventUtil();
-        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(xnatEventUtil.getEventId(xnatEvent.getEventId()), user, parent.getXSIType(), parent.getId(), parent.getProject(), event);
-        final EventMetaI          ci       = workflow.buildEvent();
-
-        try {
-            XNATUtils.delete(parent, item, ci, isQueryVariableTrue("removeFiles"));
-            WorkflowUtils.complete(workflow, ci);
-        } catch (Exception e) {
-            WorkflowUtils.fail(workflow, ci);
-            throw e;
-        }
-
-        Users.clearCache(user);
-        MaterializedView.deleteByUser(user);
-    }
-	
-    public XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, String filepath, UserI user) throws NotFoundException {
-        if (filepath != null && !filepath.equals("")) {
-            if (filepath.startsWith("projects/")) {
-                final String          newProjectId = filepath.substring(9);
-                final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
-                if (newProject == null) {
-                    throw new NotFoundException(newProjectId);
-                }
-                return newProject;
-            } else {
-                throw new IllegalArgumentException("Illegal file path '" + filepath + "' does not start with 'projects/'.");
-            }
-        } else if (!item.getProject().equals(project.getId())) {
-            return project;
-        }
-        return null;
-    }
-    
-    public void validateSubject(final XnatSubjectdata subject) throws Exception {
-        if (StringUtils.isNotBlank(subject.getLabel()) && !XftStringUtils.isValidId(subject.getId())) 
-        	throw new DataFormatException("Invalid character in subject label.");
-
-        final ValidationResults results = subject.validate();
-        if (results != null && !results.isValid()) 
-        	throw new ClientException(results.toFullString());
-    }
-	
-    public void deleteItem(final XnatProjectdata proj, final BaseElement item, boolean removeFiles, UserI user, XnatEventUtil event) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
-       XnatEventUtil xnatEvent = new XnatEventUtil();
-    	if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
-            throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
-        }
-
-        try {
-            final XnatProjectdata     newProject = getProjectFromFilePath(proj, (ArchivableItem) item, user);
-            final PersistentWorkflowI wrk        = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), xnatEvent.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType()), event));
-            final EventMetaI   c          = wrk.buildEvent();
-
-            try {
-                final XnatProjectdata              project     = (newProject != null) ? newProject : proj;
-                final Class<? extends BaseElement> itemType    = item.getClass();
-
-                final String message;
-                if (XnatPvisitdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatPvisitdata) item).delete(project, user, removeFiles, c);
-                } else if (XnatImagesessiondata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatImagesessiondata) item).delete(project, user, removeFiles, c);
-                } else if (XnatSubjectdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatSubjectdata) item).delete(project, user, removeFiles, c);
-                } else if (XnatExperimentdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatExperimentdata) item).delete(project, user, removeFiles, c);
-                } else {
-                    message = null;
-                }
-                if (message != null) {
-                    WorkflowUtils.fail(wrk, c);
-                    throw new InsufficientPrivilegesException("The user { } has insufficient privileges to access the requested subject", user.getUsername());
-                } else {
-                    XDAT.triggerXftItemEvent(item, DELETE, ImmutableMap.of("target", project.getId()));
-                    WorkflowUtils.complete(wrk, c);
-                }
-            } catch (Exception e) {
-                try {
-                    WorkflowUtils.fail(wrk, c);
-                } catch (Exception e1) {
-                    log.error("", e1);
-                }
-                log.error("", e);
-                throw new InitializationException(e.getMessage());
-            }
-        } catch (PersistentWorkflowUtils.EventRequirementAbsent e) {
-            log.error("Forbidden: " + e.getMessage(), e);
-            throw new InsufficientPrivilegesException("The user { } has insufficient privileges to access the requested subject", user.getUsername());
-        } catch (NotFoundException e) {
-        	throw new NotFoundException("Unable to identify project: " + e.getMessage());
-        } catch (IllegalArgumentException e) {
-        	throw new DataFormatException("The requested object wasn't found");
-        }
-    }
-    
-    protected XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, final UserI user) throws NotFoundException {
-        final String newProjectId = project.getId();
-        final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
-        if (newProject == null) {
-            throw new NotFoundException(newProjectId);
-        }
-        return newProject;
-    }
     
   //=================Used In experiment========================== 
 	protected List<String> actions = null;
@@ -398,6 +386,9 @@ public class SecureResoureUtil {
 	public String[] getQueryVariables(String key) {
 		return getVariablesFromForm(getQueryVariableForm(), key);
 	}
+	public boolean isQueryVariableTrue(String key) {
+		return isQueryVariableTrueHelper(getQueryVariable(key));
+	}
 
 	private Form f = null;
 
@@ -417,8 +408,9 @@ public class SecureResoureUtil {
 	        }
 	        return null;
 	    }
+	
+		
 //=================Used In experiment========================== 
-	 
 //	 public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
 //	        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, "", "");
 //	    }
@@ -427,9 +419,7 @@ public class SecureResoureUtil {
 //	        return "Deleted"; //HC
 //	        		//getQueryVariable(EventUtils.EVENT_ACTION);
 //	    }
-	public boolean isQueryVariableTrue(String key) {
-		return isQueryVariableTrueHelper(getQueryVariable(key));
-	}
+	
 
 	protected static boolean isQueryVariableTrueHelper(final Object queryVariableObj) {
 		if (queryVariableObj == null) {

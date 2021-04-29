@@ -92,7 +92,7 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
     													   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Deleted")String eventAction,
     													   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException  {
     	log.debug("User {} requested to update projectAccessRequest with ID {}", getSessionUser().getUsername(), parId);
-        return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline, new XnatEventUtil().getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
+        return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline, XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
     
     private final PARService _parService;

@@ -20,12 +20,11 @@ import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
-import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
-import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.SecureResoureUtil;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.scans.ScanService;
 import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -121,12 +120,12 @@ public class ScanServiceImpl implements ScanService {
 	
 	
 	@Override
-	public void deleteById(UserI user, String assessedId, Integer scanId) throws NotFoundException, DataFormatException, InitializationException {
-		delete(user, findByAssessedIdAndScanId(user,assessedId, scanId ).get(), assessedId, scanId );
+	public void deleteById(UserI user, String assessedId, Integer scanId,String filepath,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
+		delete(user, findByAssessedIdAndScanId(user,assessedId, scanId ).get(), assessedId, scanId,filepath, event );
 	}
 	
-	@Override
-	public void delete(UserI user, XnatImagescandata scan, String assessedId, Integer scanId) throws NotFoundException, DataFormatException, InitializationException {
+
+	public void delete(UserI user, XnatImagescandata scan, String assessedId, Integer scanId, String filepath, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
 		SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
 		if (assessedId != null) 
 			session = (XnatImagesessiondata) XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
@@ -136,7 +135,6 @@ public class ScanServiceImpl implements ScanService {
 		 if (scan == null)  
 			 throw new NotFoundException("Unable to find the specified scan.");
 
-	        String filepath = "";
 			if (filepath != null && !filepath.equals("")) 
 				throw new DataFormatException("Bad request");
 			
@@ -146,7 +144,7 @@ public class ScanServiceImpl implements ScanService {
 	        	if (!Permissions.canDelete(user, session) || prevent_delete) 
 	        		throw new InsufficientPrivilegesException("User account doesn't have permission to modify this session.");
 	        
-	        	//secureResoureUtil.delete(session, scan, newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType())), user);
+	        	secureResoureUtil.delete(session, scan, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
 
 	            // Above "delete" removes resources, but leaves dangling scan directory
 	            XNATUtils.removeScanDir(session, scan);
@@ -180,25 +178,25 @@ public class ScanServiceImpl implements ScanService {
 		}
 	}
 	
-	 public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
-	        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
-	    }
-	
-	private String getComment() {
-		return null;
-	}
+//	 public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
+//	        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
+//	    }
+//	
+//	private String getComment() {
+//		return null;
+//	}
+//
+//	private String getReason() {
+//		return null;
+//	}
+//
+//	private String getAction() {
+//		 return "Deleted";
+//	}
 
-	private String getReason() {
-		return null;
-	}
-
-	private String getAction() {
-		 return "Deleted";
-	}
-
-	private TYPE getEventType() {
-		return EventUtils.TYPE.WEB_FORM;
-	}
+//	private TYPE getEventType() {
+//		return EventUtils.TYPE.WEB_FORM;
+//	}
 
 	private static class ImageScanRowMapper implements RowMapper<XnatImagescandata> {
 

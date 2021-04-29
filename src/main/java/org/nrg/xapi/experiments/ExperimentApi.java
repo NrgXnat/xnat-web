@@ -17,6 +17,7 @@ import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.experiments.ExperimentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -108,26 +109,43 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified experiment or experiment doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = {"/projects/{projectId}/experiments/{experimentId}","/experiments/{experimentId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteProject(@ApiParam("The ID of the experiment to be deleted") @PathVariable final String projectId,
-    		@ApiParam("The ID of the experiment to be deleted") @PathVariable final String experimentId,
-    		@ApiParam("The file path value") @RequestParam(name = "filepath", required = false )String filepath) throws Exception {
-        log.debug("Controller Api- Delete experiment {}", projectId);
-        _experimentService.deleteById(getSessionUser(), experimentId, projectId, filepath);
+    public void deleteExperiment(@ApiParam("The ID of the experiment to be deleted") @PathVariable final String projectId,
+    						  @ApiParam("The ID of the experiment to be deleted") @PathVariable final String experimentId,
+    						  @ApiParam("The file path value") @RequestParam(name = "filepath", required = false )String filepath,
+    						  @ApiParam("The removeFiles value ") @RequestParam(name = "removeFiles", defaultValue = "false")boolean removeFiles,
+    						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    						  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    						  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    						  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    						  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException  {
+		log.debug("User {} delete experiment with projectId {} and with experimentId {}}", getSessionUser().getUsername(), projectId, experimentId);
+        _experimentService.deleteById(getSessionUser(), experimentId, projectId, filepath,removeFiles,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
-	
+
 	 @ApiOperation(value = "Update an existing experiment", notes = "Updates the submitted experiment.", response = XnatSubjectassessordata.class)
-	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated experiment."),
-	    @ApiResponse(code = 403, message = "The user doesn't have permission to edit experiment in the specified project"),
-	    @ApiResponse(code = 404, message = "The specified experiment doesn't exist"),
-	    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated experiment."),
+		 			@ApiResponse(code = 403, message = "The user doesn't have permission to edit experiment in the specified project"),
+		 			@ApiResponse(code = 404, message = "The specified experiment doesn't exist"),
+		 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	    @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}"},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = PUT)
 	    public XnatExperimentdata updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
-	    		@ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,                            
-	    		@ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
-	            @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment) throws Exception {
+	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,                            
+	    										   @ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
+	    										   @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment,
+	    										   @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
+	    										   @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
+	    										   @ApiParam("The filepath value.")@RequestParam (name = "filepath",defaultValue = "")String filepath,
+	    										   @ApiParam("The primary value.")@RequestParam (name = "primary", required = false)String primary,
+	    										   @ApiParam("The moveAssessors value.")@RequestParam (name = "moveAssessors", required = false)String moveAssessors,
+	    										   @ApiParam("The overwrite value.")@RequestParam (name = "overwrite", defaultValue = "false")boolean overwrite,
+	    										   @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+	    										   @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+	    										   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+	    										   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException  {
 	        if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(experiment.getProject(), projectId)) {
 	            throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
 	        }
@@ -135,22 +153,29 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	            throw new DataFormatException("You specified the subject ID " + experimentId + " in your request but the experiment to be updated has the ID " + experiment.getId() + ". These values must be the same.");
 	        }
 	        log.debug("Controller Api- Update experiment {} (ID {}) in project {}", experiment.getLabel(), experimentId, experiment.getProject());
-	        return _experimentService.update(getSessionUser(), experiment, experimentId,projectId, subjectId);
+	        return _experimentService.update(getSessionUser(), experiment, experimentId,projectId, subjectId,allowDataDelete,label, primary,moveAssessors,overwrite,filepath,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
 	 
 	 
 	 @ApiOperation(value = "Create a new experiment", notes = "Creates the submitted experiment.", response = XnatExperimentdata.class)
 	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created experiment."),
-	    @ApiResponse(code = 403, message = "The user doesn't have permission to create experiment in the specified project"),
-	    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
-	    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+	    			   @ApiResponse(code = 403, message = "The user doesn't have permission to create experiment in the specified project"),
+	    			   @ApiResponse(code = 404, message = "The specified project doesn't exist"),
+	    			   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	    @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments"},
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
 	    public XnatExperimentdata createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable final String projectId,
-	    		@ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,
-	            @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment) throws Exception {
+	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,
+	    										   @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment,
+	    										   @ApiParam("The xsiType value") @RequestParam(name = "xsiType", required = false )String xsiType,
+	    										   @ApiParam("The allowDataDelete value") @RequestParam(name = "allowDataDelete", defaultValue = "false" )String allowDataDelete,
+	    										   @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+	    										   @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+	    										   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+	    										   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException, NotFoundException  {
 	        final boolean experimentHasProject = StringUtils.isNotBlank(experiment.getProject());
 	        final boolean hasProject        = StringUtils.isNotBlank(projectId);
 	        if (!experimentHasProject && !hasProject) {
@@ -162,7 +187,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	        if (!experimentHasProject) {
 	        	experiment.setProject(projectId);
 	        }
-	         return _experimentService.create(getSessionUser(), experiment, projectId, subjectId);
+	         return _experimentService.create(getSessionUser(), experiment, projectId, subjectId,xsiType,allowDataDelete,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
 	
 

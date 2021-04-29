@@ -86,7 +86,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     									 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
     									 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws UserNotFoundException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException, ActionException, UserInitException  {
         log.debug("User {} requested to create project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.create(getSessionUser(), project,allowDataDelete, accessibility, xsiType,  new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+        return _projectService.create(getSessionUser(), project,allowDataDelete, accessibility, xsiType,  XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
 
    
@@ -114,7 +114,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
             throw new DataFormatException("You specified the project " + projectId + " in your request but the project ID is " + project.getProject() + ". These values must be the same.");
         }
         log.debug("User {} requested to update project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.update(getSessionUser(), project, filepath,allowDataDelete,accessibility,testHyphen,xsiType, new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+        return _projectService.update(getSessionUser(), project, filepath,allowDataDelete,accessibility,testHyphen,xsiType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
     @ApiOperation(value = "Delete an existing project", notes = "Deletes the specified project.")
@@ -132,7 +132,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 							@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
 							@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException, InitializationException, NotFoundException  {
     	 log.debug("User {} requested to delete project with ID {}", getSessionUser().getUsername(), projectId);
-    	 _projectService.deleteById(getSessionUser(), projectId, removeFiles, new XnatEventUtil().getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+    	 _projectService.deleteById(getSessionUser(), projectId, removeFiles, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
     private final ProjectService _projectService;
