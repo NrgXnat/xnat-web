@@ -13,6 +13,7 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.files.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -24,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 
 @Api("XNAT File Management API")
 @XapiRestController
@@ -45,7 +47,8 @@ public class FileApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatResourcecatalog> getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with ProjectId {}", getSessionUser().getUsername(), projectId);
-		return _fileService.findByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId));
+
+		return _fileService.findByProjectId(getSessionUser(), projectId);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -56,7 +59,8 @@ public class FileApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatResourcecatalog> getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with subjectId {}", getSessionUser().getUsername(), subjectId);
-	  return _fileService.findBySubjectId(getSessionUser(), subjectId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId));
+		return _fileService.findBySubjectId(getSessionUser(), subjectId);
+		
 	}
 	
 	
@@ -69,7 +73,7 @@ public class FileApi extends AbstractXapiProjectRestController {
 	public List<XnatResourcecatalog> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
 																@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested  resource catalog with ProjectID {} and subjectId {}", getSessionUser().getUsername(), projectId);
-		return _fileService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId));
+		return  _fileService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -81,7 +85,8 @@ public class FileApi extends AbstractXapiProjectRestController {
 	public List<XnatResourcecatalog> getByProjectIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
 																 @ApiParam(value = "The ID of the resource.") @PathVariable  final Integer resourceId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with ProjectID {}", getSessionUser().getUsername(), projectId);
-		return _fileService.findByProjectIdAndResourceId(getSessionUser(), projectId, resourceId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId));
+		return _fileService.findByProjectIdAndResourceId(getSessionUser(), projectId, resourceId);
+		
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -93,7 +98,8 @@ public class FileApi extends AbstractXapiProjectRestController {
 	public List<XnatResourcecatalog> getBySubjectIdAndResourceId(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 																 @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with subjectId {} and resourceId {}", getSessionUser().getUsername(),subjectId, resourceId);
-		return _fileService.findBySubjectIdAndResourceId(getSessionUser(), subjectId, resourceId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId));
+		return _fileService.findBySubjectIdAndResourceId(getSessionUser(), subjectId, resourceId);
+		
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -105,7 +111,7 @@ public class FileApi extends AbstractXapiProjectRestController {
 	public List<XnatResourcecatalog> getByExperimentIdAndAssessorId(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
 																	@ApiParam(value = "The ID of the assessorId.") @PathVariable(required = false) final String assessorId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with experimentId {} and with assessorId {}", getSessionUser().getUsername(),experimentId, assessorId);
-		return _fileService.findByExperimentIdAndAssessorId(getSessionUser(), experimentId, assessorId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId));
+		return _fileService.findByExperimentIdAndAssessorId(getSessionUser(), experimentId, assessorId);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  files with the specified  projectId and subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -119,7 +125,7 @@ public class FileApi extends AbstractXapiProjectRestController {
 																							@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 																							@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested  resource catalog with projectId {}, with subjectId {} , with experimentId {} and with assessedId {} ", getSessionUser().getUsername(), projectId, subjectId, experimentId, assessedId);
-		return _fileService.findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(getSessionUser(),projectId, subjectId, experimentId, assessedId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId));
+		return _fileService.findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(getSessionUser(),projectId, subjectId, experimentId, assessedId);
 	}
 	
 	
@@ -131,7 +137,7 @@ public class FileApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatResourcecatalog> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested  resource catalog with experimentId {}", getSessionUser().getUsername(), experimentId);
-		return _fileService.findByExperimentId(getSessionUser(), experimentId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId));
+		return _fileService.findByExperimentId(getSessionUser(), experimentId);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  experimentId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -143,7 +149,7 @@ public class FileApi extends AbstractXapiProjectRestController {
 	public List<XnatResourcecatalog> getByExperimentIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
 																	@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested  resource catalog with experimentId {} and resourceId {} ", getSessionUser().getUsername(), experimentId, resourceId);
-		return _fileService.findByExperimentIdAndResourceId(getSessionUser(), experimentId, resourceId).orElseThrow(() -> new NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId));
+		return _fileService.findByExperimentIdAndResourceId(getSessionUser(), experimentId, resourceId);
 	}
 	
 	 @ApiOperation(value = "Delete an existing resource file", notes = "Deletes the specified resource file.")
@@ -158,14 +164,19 @@ public class FileApi extends AbstractXapiProjectRestController {
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
 				     				 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
 	    public void deleteProject(@ApiParam("The ID of the resource file to be deleted") @PathVariable(required = false) final String projectId,
-	    		@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
-	    		@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
-	    		@ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
-	    		@ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
-	    		@ApiParam(value = "The label of the type.") @RequestParam(required = false) final String type,
-	    		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId) throws Exception {
+	    						  @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+	    						  @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+	    						  @ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
+	    						  @ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
+	    						  @ApiParam(value = "The label of the type.") @RequestParam(required = false) final String type,
+	    						  @ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
+	    						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+	    						  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+	    						  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+	    						  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+	    						  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
 	        log.debug("Controller Api- Delete project {}", projectId);
-	        _fileService.deleteResourceFile(getSessionUser(), projectId,subjectId,experimentId,assessorId,scanId,type, resourceId);
+	        _fileService.deleteResourceFile(getSessionUser(), projectId,subjectId,experimentId,assessorId,scanId,type, resourceId,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
 	
 	@ApiOperation(value = "Create a new resource file", notes = "Creates the submitted resource file.", response = Integer.class)
@@ -184,24 +195,29 @@ public class FileApi extends AbstractXapiProjectRestController {
     							  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"},
      consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
     public Integer createResourceFile(@ApiParam("The resource file to be created.")  @RequestParam MultipartFile file,
-    		@ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
-    		@ApiParam("The ID of the subject.") @PathVariable(required = false) final String  subjectId,
-    		@ApiParam("The ID of the experiment.") @PathVariable(required = false) final String  experimentId,
-    		@ApiParam("The ID of the assessor.") @PathVariable(required = false) final String  assessorId,
-    		@ApiParam("The ID of the scan.") @PathVariable(required = false) final String  scanId,
-    		@ApiParam("The ID of the type") @PathVariable(required = false) final String  type,
-    		@ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
-    		@ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
-    		@ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
-    		@ApiParam("The file format.") @RequestParam(name= "format",required = false) final String requestFormat,
-    		@ApiParam("Thefile content.") @RequestParam(name= "content", required = false) final String requestContent,
-    		@ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final List<String>  requestTags) 
+    								  @ApiParam("The ID of the project.") @PathVariable(required = false) final String  projectId,
+    								  @ApiParam("The ID of the subject.") @PathVariable(required = false) final String  subjectId,
+    								  @ApiParam("The ID of the experiment.") @PathVariable(required = false) final String  experimentId,
+    								  @ApiParam("The ID of the assessor.") @PathVariable(required = false) final String  assessorId,
+    								  @ApiParam("The ID of the scan.") @PathVariable(required = false) final String  scanId,
+    								  @ApiParam("The ID of the type") @PathVariable(required = false) final String  type,
+    								  @ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
+    								  @ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
+    								  @ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
+    								  @ApiParam("The file format.") @RequestParam(name= "format",required = false) final String requestFormat,
+    								  @ApiParam("Thefile content.") @RequestParam(name= "content", required = false) final String requestContent,
+    								  @ApiParam("The file tags.") @RequestParam(name= "tags",required = false) final List<String>  requestTags,
+    								  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    								  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    								  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    								  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    								  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) 
     		throws Exception {
         log.debug("Controller Api- file project: {}", projectId);
         
         XnatResourceInfo xnatResourceInfo = getXnatResourceInfo(requestContent,requestFormat,requestTags, requestDesc,requestRename,file);
 
-       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId,assessorId, scanId, type, resourceId);
+       return _fileService.createResourceFile(getSessionUser(), xnatResourceInfo, projectId, subjectId,experimentId,assessorId, scanId, type, resourceId, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	}
 	
 	private XnatResourceInfo getXnatResourceInfo(String requestContent, String requestFormat, List<String> requestTags, String requestDesc, String requestRename, MultipartFile file) throws IllegalStateException, IOException {

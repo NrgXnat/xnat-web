@@ -40,6 +40,7 @@ import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
 import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.presentation.ChangeSummaryBuilderA;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.cache.UserProjectCache;
@@ -67,27 +68,27 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId))
 			throw new DataFormatException("The requested projectId wasn't found");
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(subjectId))
 			throw new DataFormatException("The requested subjectId wasn't found");
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId))
 			throw new DataFormatException("The requested projectId wasn't found");
 		if(Objects.isNull(subjectId))
@@ -95,11 +96,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public  Optional<List<XnatResourcecatalog>>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public  List<XnatResourcecatalog>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId))
 			throw new DataFormatException("The requested projectId wasn't found");
 		if(Objects.isNull(resourceId) )
@@ -107,11 +108,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(subjectId))
 			throw new DataFormatException("The requested subjectId wasn't found");
 		if(Objects.isNull(resourceId) )
@@ -119,11 +120,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(experimentId))
 			throw new DataFormatException("The requested experimentId wasn't found");
 		if(Objects.isNull(assessorId))
@@ -131,11 +132,11 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId))
 			throw new DataFormatException("The requested projectId wasn't found");
 		if(Objects.isNull(subjectId))
@@ -147,21 +148,21 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(experimentId))
 			throw new DataFormatException("The requested experimentId wasn't found");
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 
 	@Override
-	public Optional<List<XnatResourcecatalog>> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public List<XnatResourcecatalog> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(experimentId))
 			throw new DataFormatException("The requested experimentId wasn't found");
 		if( Objects.isNull(resourceId) )
@@ -169,14 +170,14 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-    	return Optional.of(resourceCatlogs);
+    	return resourceCatlogs;
 	}
 	
 	/**
 	 * Delete the files from specific resource
 	 */
 	@Override
-	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception {
+	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception {
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
@@ -218,7 +219,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 			throw new NotFoundException("Resource file not found");
 
 		// Step 8: get or create workflow data
-		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(getEventId(), user, security.getItem(),newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE));
+		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user, security.getItem(),XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE,event));
 
 		// Step 9: delete resource file
 		deleteResourceFiles(work, catalogData, entries, user);
@@ -320,7 +321,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * Create resource file and upload into the specific resource
 	 */
 	@Override
-	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId) throws Exception{
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception{
 		
 		proj = null;
 		sub = null;
@@ -350,7 +351,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		// step 4:
 			if (parent != null && security != null) {
 				if (Permissions.canEdit(user, security)) {
-					Integer result=  resourceFileUpload(xnatAbstractresource, user, projectId, resourceId,xnatResourceInfo);
+					Integer result=  resourceFileUpload(xnatAbstractresource, user, projectId, resourceId,xnatResourceInfo,event);
 					if(Objects.nonNull(result))
 						return result;
 					else
@@ -372,7 +373,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * @return
 	 * @throws Exception
 	 */
-	private Integer resourceFileUpload(XnatAbstractresource xnatAbstractresource, UserI user, String projectId, String resourceId, XnatResourceInfo xnatResourceInfo) throws Exception {
+	private Integer resourceFileUpload(XnatAbstractresource xnatAbstractresource, UserI user, String projectId, String resourceId, XnatResourceInfo xnatResourceInfo, XnatEventUtil event) throws Exception {
 		
 		verifyProjectIsNull();
 		
@@ -381,7 +382,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		final boolean overwrite = false; // HC
 		final boolean extract = false; // HC
 
-		PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, getEventId());
+		PersistentWorkflowI workflow = PersistentWorkflowUtils.getWorkflowByEventId(user, XnatEventUtil.getEventId(event.getEventId()));
 
 		workflow = verifyAndGetWorkflow(workflow, xnatAbstractresource, user);
 
@@ -391,7 +392,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
 		if (workflow == null && !skipUpdateStats) {
 			isNew = true;
-			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.UPLOAD_FILE));
+			workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, (event.getEventAction() != null) ? event.getEventAction() : EventUtils.UPLOAD_FILE, event));
 		}
 
 		final EventMetaI eventMeta = getEventMetaI(workflow, user);
@@ -564,14 +565,14 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
      * 
      * @return
      */
-	public Integer getEventId() {
-        final String id = getQueryVariable(EventUtils.EVENT_ID);
-        if (id != null) {
-            return Integer.valueOf(id);
-        } else {
-            return null;
-        }
-    }
+//	public Integer getEventId() {
+//        final String id = getQueryVariable(EventUtils.EVENT_ID);
+//        if (id != null) {
+//            return Integer.valueOf(id);
+//        } else {
+//            return null;
+//        }
+//    }
 	
 	/**
 	 * 

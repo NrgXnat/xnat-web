@@ -9,5 +9,5 @@ import org.nrg.xft.security.UserI;
 
 public interface ProjectArchiveService {
 
-	public Optional<ArcProject> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
+	 Optional<ArcProject> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
 }

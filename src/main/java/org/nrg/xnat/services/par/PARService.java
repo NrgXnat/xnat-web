@@ -11,12 +11,12 @@ import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 
 public interface PARService {
 
-	public Optional<List<ProjectAccessRequest>> findAll(UserI user) throws NotFoundException;
+	 Optional<List<ProjectAccessRequest>> findAll(UserI user) throws NotFoundException;
 	
-	public Optional<ProjectAccessRequest> findByParId(UserI user, Integer parId) throws DataFormatException, NotFoundException;
+	 Optional<ProjectAccessRequest> findByParId(UserI user, Integer parId) throws DataFormatException, NotFoundException;
 	
-	public Optional<List<ProjectAccessRequest>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException ;
+	 Optional<List<ProjectAccessRequest>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException ;
 	
-	public ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline, XnatEventUtil event) throws NotFoundException;
+	 ProjectAccessRequest update(UserI user, ProjectAccessRequest projectAccessRequest, Integer parId, String accept, String decline, XnatEventUtil event) throws NotFoundException;
 	
 }

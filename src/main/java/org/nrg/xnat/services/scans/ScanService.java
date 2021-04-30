@@ -12,18 +12,18 @@ import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface ScanService {
 	
-	public Optional<List<XnatImagescandata>> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
+	 Optional<List<XnatImagescandata>> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-	public Optional<List<XnatImagescandata>> findAllScanTypes(UserI user) throws NotFoundException;
+	 Optional<List<XnatImagescandata>> findAllScanTypes(UserI user) throws NotFoundException;
 	
-	public Optional<List<XnatImagescandata>> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException;
+	 Optional<List<XnatImagescandata>> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException;
 
-	public Optional<XnatImagescandata> findByAssessedIdAndScanId(UserI user, String assessedId, Integer scanId) throws DataFormatException, NotFoundException;
+	 Optional<XnatImagescandata> findByAssessedIdAndScanId(UserI user, String assessedId, Integer scanId) throws DataFormatException, NotFoundException;
 
-	public Optional<List<XnatImagescandata>> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
+	 Optional<List<XnatImagescandata>> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
 
-	public Optional<XnatImagescandata> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException;
+	 Optional<XnatImagescandata> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException;
 
-	public void deleteById(UserI user, String assessedId, Integer scanId, String filepath, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException;
+	 void deleteById(UserI user, String assessedId, Integer scanId, String filepath, boolean removeFiles,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException;
 	
 }

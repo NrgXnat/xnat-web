@@ -194,12 +194,12 @@ public class SecureResoureUtil {
 				
 			}
 	}
-	 public void delete(ArchivableItem parent, ItemI item, EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
+	 public void delete(ArchivableItem parent, ItemI item, boolean removeFiles, EventDetails event, XnatEventUtil xnatEvent, UserI user) throws Exception {
 	        final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(xnatEvent.getEventId()), user, parent.getXSIType(), parent.getId(), parent.getProject(), event);
 	        final EventMetaI          ci       = workflow.buildEvent();
 
 	        try {
-	            XNATUtils.delete(parent, item, ci, isQueryVariableTrue("removeFiles"));
+	            XNATUtils.delete(parent, item, ci, removeFiles);
 	            WorkflowUtils.complete(workflow, ci);
 	        } catch (Exception e) {
 	            WorkflowUtils.fail(workflow, ci);

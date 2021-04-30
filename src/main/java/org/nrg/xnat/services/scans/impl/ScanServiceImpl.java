@@ -120,12 +120,12 @@ public class ScanServiceImpl implements ScanService {
 	
 	
 	@Override
-	public void deleteById(UserI user, String assessedId, Integer scanId,String filepath,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
-		delete(user, findByAssessedIdAndScanId(user,assessedId, scanId ).get(), assessedId, scanId,filepath, event );
+	public void deleteById(UserI user, String assessedId, Integer scanId,String filepath,boolean removeFiles,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
+		delete(user, findByAssessedIdAndScanId(user,assessedId, scanId ).get(), assessedId, scanId,filepath,removeFiles, event );
 	}
 	
 
-	public void delete(UserI user, XnatImagescandata scan, String assessedId, Integer scanId, String filepath, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
+	public void delete(UserI user, XnatImagescandata scan, String assessedId, Integer scanId, String filepath,boolean removeFiles, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
 		SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
 		if (assessedId != null) 
 			session = (XnatImagesessiondata) XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
@@ -144,7 +144,7 @@ public class ScanServiceImpl implements ScanService {
 	        	if (!Permissions.canDelete(user, session) || prevent_delete) 
 	        		throw new InsufficientPrivilegesException("User account doesn't have permission to modify this session.");
 	        
-	        	secureResoureUtil.delete(session, scan, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
+	        	secureResoureUtil.delete(session, scan, removeFiles,XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
 
 	            // Above "delete" removes resources, but leaves dangling scan directory
 	            XNATUtils.removeScanDir(session, scan);

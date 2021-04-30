@@ -9,9 +9,9 @@ import org.nrg.xft.security.UserI;
 
 public interface ProjectAccessibilityService {
 	
-	public Optional<String> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
+	 Optional<String> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
 	
-	public Optional<String> findByProjectIdAndAccessLevel(UserI user, String projectId, String accessLevel) throws NotFoundException, DataFormatException;
+	 Optional<String> findByProjectIdAndAccessLevel(UserI user, String projectId, String accessLevel) throws NotFoundException, DataFormatException;
 	
-	public String update(UserI user, String access, String projectId) throws NotFoundException, InsufficientPrivilegesException, Exception;
+	 String update(UserI user, String access, String projectId) throws NotFoundException, InsufficientPrivilegesException, Exception;
 }

@@ -1,5 +1,6 @@
 package org.nrg.xnat.dto.search;
 
+import java.io.Serializable;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -13,8 +14,8 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class VersionDto {
-
+public class VersionDto implements Serializable {
+	private static final long serialVersionUID = -2361324617208025730L;
 	private String name;
 	private String orderBy;
 	private String lightColor;

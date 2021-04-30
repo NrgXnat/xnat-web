@@ -124,6 +124,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
     						  @ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
     						  @ApiParam("The ID of the experiment to be deleted") @PathVariable final String assessedId,
     						  @ApiParam("The ID of the scan to be deleted") @PathVariable final Integer scanId,
+    						  @ApiParam("The removeFiles value") @RequestParam(name = "removeFiles", defaultValue = "true" )Boolean removeFiles,
     						  @ApiParam("The file path value") @RequestParam(name = "filepath", defaultValue = "" )String filepath,
     						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
 							  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
@@ -131,7 +132,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 							  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Deleted")String eventAction,
 							  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
         log.debug("Controller Api- Delete scan {}", assessedId);
-        _scanService.deleteById(getSessionUser(), assessedId, scanId, filepath,  XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+        _scanService.deleteById(getSessionUser(), assessedId, scanId, filepath,removeFiles, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
 	
 	private final ScanService _scanService;

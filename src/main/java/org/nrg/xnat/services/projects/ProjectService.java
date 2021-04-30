@@ -18,13 +18,13 @@ import java.util.Optional;
 
 public interface ProjectService {
 	
-    public Optional<List<XnatProjectdata>> findAll(UserI user) throws NotFoundException;
+     Optional<List<XnatProjectdata>> findAll(UserI user) throws NotFoundException;
 
-    public Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
+     Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-    public XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+     XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-    public XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+     XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
-    public void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
+     void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
 }
