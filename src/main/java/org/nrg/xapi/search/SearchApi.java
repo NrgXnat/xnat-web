@@ -4,10 +4,12 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
@@ -18,9 +20,12 @@ import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.SearchElementDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -53,9 +58,11 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XdatStoredSearch> getAllSavedSearches() throws NotFoundException {
+    public List<XdatStoredSearch> getAllSavedSearches(@ApiParam(value = "The username seach value.") @RequestParam(name= "username", required = false )  final String username,
+    												  @ApiParam(value = "The getAllBundles seach value.") @RequestParam(name= "allBundles", required = false )  final String allBundles,
+    												  @ApiParam(value = "The includeTag seach value.") @RequestParam(name= "includeTag", required = false )  final String includeTag) throws NotFoundException {
         log.debug("User {} requested XdatStoredSearch ", getSessionUser().getUsername());
-        return _searchService.findAllSavedSearch(getSessionUser()).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME));
+        return _searchService.findAllSavedSearch(getSessionUser(), username, allBundles,includeTag );
     }
 
     @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatSearch.class, responseContainer = "list")
@@ -64,9 +71,11 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public XdatStoredSearch getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId) throws NotFoundException, InsufficientPrivilegesException {
+    public XdatStoredSearch getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
+    												 @ApiParam(value = "The dv seach value.") @RequestParam(name= "dv", required = false )  final String dv,
+    												 @ApiParam(value = "The project seach value.") @RequestParam(name= "project", required = false )  final String project) throws NotFoundException, InsufficientPrivilegesException {
     	log.debug("User {} requested search with ID {}", getSessionUser().getUsername(), searchId);
-    	return _searchService.findSavedSearchBySearchId(getSessionUser(), searchId).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, searchId));
+    	return _searchService.findSavedSearchBySearchId(getSessionUser(), searchId,dv, project).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, searchId));
     }
     
     @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
@@ -77,7 +86,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     public List<SearchElementDto> getAllSearchElements(@RequestParam(required = false) final String secured,@RequestParam(required = false) final String readable,
     												   @RequestParam(required = false) final String used) throws NotFoundException {
     	log.debug("User {} requested search elements ", getSessionUser().getUsername());
-    	return _searchService.findAllSearchElements(getSessionUser(),secured,readable,used).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME));
+    	return _searchService.findAllSearchElements(getSessionUser(),secured,readable,used);
     }
     
     @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
@@ -87,7 +96,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/search/elements/{elementName}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatSearchElementDto> getAllSearchElementByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException  {
     	log.debug("User {} requested search elements with ELEMENT NAME {} ", getSessionUser().getUsername(), elementName);
-    	return _searchService.findAllSearchElementsByElementName(getSessionUser(), elementName).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, elementName));
+    	return _searchService.findAllSearchElementsByElementName(getSessionUser(), elementName);
     }
     
     @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
@@ -122,10 +131,15 @@ public class SearchApi extends AbstractXapiProjectRestController {
                         produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
                         method = PUT)
     public XdatStoredSearch updateProject(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
-    		@ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
-            @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch) throws Exception {
-        log.debug("Controller Api- Update search saved {}",searchId );
-        return _searchService.updateStoredSearch(getSessionUser(), xdatStoredSearch, searchId, saveAs);
+    									  @ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
+    									  @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch,
+    									  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+     									  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+     									  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+     									  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+     									  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws InitializationException  {
+        log.debug("Updating saved search with search ID {}",searchId );
+        return _searchService.updateStoredSearch(getSessionUser(), xdatStoredSearch, searchId, saveAs,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
     
@@ -135,9 +149,14 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteProject(@ApiParam("The ID of the search saved to be deleted") @PathVariable final String searchId) throws Exception {
-        log.debug("Controller Api- Delete search saved {}", searchId);
-        _searchService.deleteSavedSearchBySearchId(getSessionUser(), searchId);
+    public void deleteProject(@ApiParam("The ID of the search saved to be deleted") @PathVariable final String searchId,
+    						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    						  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    						  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    						  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    						  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws SQLException {
+        log.debug("Deleting saved search Id {}", searchId);
+        _searchService.deleteSavedSearchBySearchId(getSessionUser(), searchId,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
     @ApiOperation(value = "Delete the requested saved search", notes = "Returns the  xdat saved search")
@@ -146,11 +165,16 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = DELETE)
     public void  deleteSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
-    		@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws Exception {
-        log.debug("Controller Api- get xdatSearch element saved {}");
+    													 @ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+    													 @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+    			    									 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+    			    									 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+    			    									 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+    			    									 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws JustificationAbsent, ActionNameAbsent{
+        log.debug("Deleting search ID {} for Project {}",searchId, projectId);
          _searchService.deleteSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId);
     }
     
-    private SearchService _searchService;
+    private final SearchService _searchService;
 }
 

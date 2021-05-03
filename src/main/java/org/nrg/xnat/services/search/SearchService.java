@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
@@ -12,6 +13,8 @@ import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
@@ -21,30 +24,31 @@ import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.SearchElementDto;
 import org.nrg.xnat.dto.search.VersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
+import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface SearchService {
 
-	public Optional<List<XdatSearch>> findAllSearch(UserI user) throws NotFoundException;
+	 List<XdatSearch> findAllSearch(UserI user) throws NotFoundException;
 
-	public Optional<List<SearchElementDto>> findAllSearchElements(UserI user,String secured, String readable, String used) throws NotFoundException ;
+	 List<SearchElementDto> findAllSearchElements(UserI user,String secured, String readable, String used) throws NotFoundException ;
 	
-	public Optional<List<XnatSearchElementDto>> findAllSearchElementsByElementName(UserI user, String elementName) ;
+	 List<XnatSearchElementDto> findAllSearchElementsByElementName(UserI user, String elementName) ;
 
-	public Optional<List<XdatStoredSearch>> findAllSavedSearch(UserI user) throws NotFoundException;
+	 List<XdatStoredSearch> findAllSavedSearch(UserI user,String username, String allBundles, String includeTag) throws NotFoundException;
 
-	public Optional<XdatStoredSearch>  findSavedSearchBySearchId(UserI user, String searchId) throws InsufficientPrivilegesException;
+	 Optional<XdatStoredSearch>  findSavedSearchBySearchId(UserI user, String searchId, String dv,String project) throws InsufficientPrivilegesException;
 
-	public void deleteSavedSearchBySearchId(UserI user, String searchId) throws SQLException, Exception;
+	 void deleteSavedSearchBySearchId(UserI user, String searchId,  XnatEventUtil event) throws SQLException;
 	
-	public XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs) throws XFTInitException, ElementNotFoundException, FieldNotFoundException, Exception;
-	
-	public Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
+	 XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs, XnatEventUtil event) throws InitializationException;
+	 
+	 Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
 
-	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
+	 void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
 	
-	public XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
+	 XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
 	
-	public Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
+	 Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
 
-	public void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws Exception;
+	 void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws JustificationAbsent, ActionNameAbsent ;
 }

@@ -1,9 +1,6 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
-import java.util.ArrayList;
-
-import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xdat.om.XdatCriteria;
 import org.nrg.xdat.om.XdatCriteriaSet;
 import org.nrg.xdat.om.XdatSearchField;

@@ -11,6 +11,7 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
+import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.projects.ProjectAccessibilityService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -71,10 +72,15 @@ public class ProjectAccessibilityApi extends AbstractXapiProjectRestController {
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = PUT)
 	    public String updateProject(@ApiParam("The ID of the project to be updated") @PathVariable final String projectId,
-	                                @ApiParam("The project access to be updated.") @RequestParam(name= "access") final String access) throws Exception {
+	                                @ApiParam("The project access to be updated.") @RequestParam(name= "access") final String access,
+	                                @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+									@ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+									@ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+									@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+									@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
 	        
-	        log.debug("Controller Api- Update project {}", projectId);
-	        return _projectAccessibilityService.update(getSessionUser(),access, projectId);
+	        log.debug("updating project accessibility with project ID {}", projectId);
+	        return _projectAccessibilityService.update(getSessionUser(),access, projectId,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
 	 
 	 private final ProjectAccessibilityService _projectAccessibilityService;

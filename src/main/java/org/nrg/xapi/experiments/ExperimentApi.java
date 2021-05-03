@@ -72,7 +72,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 				   @ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 	               @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatExperimentdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws Exception {
+	public List<XnatExperimentdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} }", getSessionUser().getUsername(), projectId);
 		return _experimentService.findAllByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
@@ -98,7 +98,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested experiment wasn't found.")})
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId, 
-															      @ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws Exception {
+															      @ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} and with subjectId {}}", getSessionUser().getUsername(), projectId, subjectId);
 		return _experimentService.findAllByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
