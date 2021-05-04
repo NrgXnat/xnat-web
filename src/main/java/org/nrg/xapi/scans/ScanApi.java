@@ -49,7 +49,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public  List<XnatImagescandata> getScanTypesByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
-		return _scanService.findAllScanTypesByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, projectId));
+		return _scanService.findAllScanTypesByProjectId(getSessionUser(), projectId);
 	}
 	
 	@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatImagescandata.class, responseContainer = "List")
@@ -59,7 +59,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatImagescandata> getAllScanTypes() throws NotFoundException {
 		log.debug("User {} requested scan types", getSessionUser().getUsername());
-		return _scanService.findAllScanTypes(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME));
+		return _scanService.findAllScanTypes(getSessionUser());
 	}
 	
 	@ApiOperation(value = "Get scan of  specified scanId", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
@@ -70,7 +70,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{assessedId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatImagescandata> getAllByAssessedId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested assessor with ID {}", getSessionUser().getUsername(), assessedId);
-		return _scanService.findAllByAssessedId(getSessionUser(), assessedId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, assessedId));
+		return _scanService.findAllByAssessedId(getSessionUser(), assessedId);
 	}
 	
 	
@@ -96,7 +96,7 @@ public class ScanApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested project with ID {}, subject with ID {} and experiment with ID {}", getSessionUser().getUsername(), projectId, subjectId, experimentId);
-		return _scanService.findAllByProjectIdAndSubjectIdAndExperimentId(getSessionUser(),projectId,subjectId , experimentId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, experimentId));
+		return _scanService.findAllByProjectIdAndSubjectIdAndExperimentId(getSessionUser(),projectId,subjectId , experimentId);
 	}
 	
 	@ApiOperation(value = "Get scan of specified scanId", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "Single")

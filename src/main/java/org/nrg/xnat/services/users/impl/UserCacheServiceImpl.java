@@ -10,11 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 public class UserCacheServiceImpl implements UserCacheService {
 
 
-//	@Override
-//	public void findUserCacheResources(UserI user, HttpServletRequest request) {
-//
-//	}
-
 	@Override
 	public void findUserCacheResourceByXname(String xName) {
 

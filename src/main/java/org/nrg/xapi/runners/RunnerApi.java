@@ -6,6 +6,7 @@ import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.runner.RunnerService;
@@ -39,13 +40,10 @@ public class RunnerApi extends AbstractXapiProjectRestController {
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured runners."),
 	@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = {"/automation/runners", "/automation/runners/{language}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public ResponseEntity<String> getProjectScanTypes(@ApiParam(value = "The language string.") @PathVariable(required = false) final String language) throws Exception {
-		log.debug("Controller Api- get all project scans");
-		String runners = _runnerService.getAutomationRunners(language).replace("\\", "");
-		if (runners == null) {
-			throw new NotFoundException("No Subject with data was found.");
-		}
-		return new ResponseEntity<>(runners, HttpStatus.OK);
+	public String getAutomationRunners(@ApiParam(value = "The language string.") @PathVariable(required = false) final String language) throws Exception {
+		log.debug("Fetch the all automation runners ");
+		String runners = _runnerService.getAutomationRunners(language).orElseThrow(() -> new NotFoundException("Automation runners wasn't found"));
+		return runners.replace("\\", "");
 	}
 	
 	private final RunnerService _runnerService;

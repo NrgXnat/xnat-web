@@ -64,7 +64,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatProjectdata> getAllProjects() throws NotFoundException  {
     	log.debug("User {} requested projects", getSessionUser().getUsername());
-        return _projectService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME));
+        return _projectService.findAll(getSessionUser());
     }
 
     @ApiOperation(value = "Create a new project", notes = "Creates the submitted project.", response = XnatProjectdata.class)

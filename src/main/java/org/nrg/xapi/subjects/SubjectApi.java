@@ -62,7 +62,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatSubjectdata> getAllSubjects() throws NotFoundException {
     	log.debug("User {} requested subject", getSessionUser().getUsername());
-        return _subjectService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME));
+        return _subjectService.findAll(getSessionUser());
     }
 
 
@@ -74,7 +74,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XnatSubjectdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
-        return _subjectService.findAllByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId));
+        return _subjectService.findAllByProjectId(getSessionUser(), projectId);
     }
 
     @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
@@ -104,7 +104,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                                          @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
              							 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
              							 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
-             							 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+             							 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", defaultValue = "Added Subject")String eventAction,
              							 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
     	log.debug("User {} requested to create subject with ID {}", getSessionUser().getUsername(), subject.getId());
         final boolean subjectHasProject = StringUtils.isNotBlank(subject.getProject());

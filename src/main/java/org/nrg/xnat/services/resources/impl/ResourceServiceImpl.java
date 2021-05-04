@@ -73,207 +73,249 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 
 	@Override
 	public List<XnatAbstractresource> findByExperimentId(UserI user, String experimentId) throws NotFoundException, DataFormatException {
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = _template.query(EXPERIMENT_QUERY + BY_ID_WHERE_EXPERIMENT, new MapSqlParameterSource("experimentId", experimentId), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
-    		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME) ;
-    	return resources;
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+    		return resources;
 	}
 	
 	
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndExperimentId(UserI user, Integer resourceId, String experimentId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
 		XnatAbstractresource resource = _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE_EXPERIMENT + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
-		if(Objects.isNull(resource))
+		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
     	return Optional.of(resource);
 	}
 
 	@Override
 	public List<XnatAbstractresource> findByExperimentIdAndScanId(UserI user, String assessorId, String scanId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(assessorId))
-    		throw new DataFormatException("The requested assessorId wasn't found ");
-		if(Objects.isNull(scanId))
-    		throw new DataFormatException("The requested scanId wasn't found ");
+		if(StringUtils.isBlank(assessorId)) {
+    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(scanId)) {
+    		throw new DataFormatException("The requested scan ID "+ scanId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = getXnatAbstractResourceData(user, null, null, null, assessorId, scanId, null);
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME) ;
+		}
 		return resources;
-//		XnatTemplateUtil xnatTemplateUtil =new XnatTemplateUtil();
-//		List<XnatAbstractresource> xnatAbstractresources;
-//		ArrayList<XnatExperimentdata> assesseds = xnatTemplateUtil.getXnatAssessordata(assessorId, user,null);
-//		ArrayList<XnatImagescandata> scans = xnatTemplateUtil.getXnatImageScanData(scanId, user, assesseds);
-//		String query = XnatTemplateUtil.getQuery(scans,assesseds, null);
-//		 xnatAbstractresources = _template.query(query,  new ResourceRowMapper(user));
-//		 return xnatAbstractresources;
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(Objects.isNull(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
+		}
 		return resources;
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndLabel(UserI user, String projectId, String label) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(label))
-    		throw new DataFormatException("The requested label wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(label)) {
+    		throw new DataFormatException("The requested label  "+ label  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_label , new MapSqlParameterSource("projectId", projectId).addValue("label", label), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
+		}
 		return resources;
 	}
 
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndProjectId(UserI user, Integer resourceId, String projectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(resourceId))
-    		throw new DataFormatException("The requested resourceId wasn't found ");
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(Objects.isNull(resourceId)) {
+    		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
 		XnatAbstractresource resource = _template.queryForObject(PROJECT_QUERY + BY_ID_WHERE_PROJECT + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("projectId", projectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resource))
+		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
     	return Optional.of(resource);
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested resourceId wasn't found ");
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
 		return resources;
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources =  getXnatAbstractResourceData(user, projectId, subjectId, experimentId,null,null, null);
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
+		}
 		return resources;
 	}
 
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
 		List<XnatAbstractresource> resources = _template.query(SUBJECT_QUERY + BY_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_SUBJECT  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
+		}
 		return resources;
 	}
 
 
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndProjectIdAndSubjectId(UserI user, Integer resourceId, String projectId, String subjectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(resourceId))
-    		throw new DataFormatException("The requested resourceId wasn't found ");
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
+		if(Objects.isNull(resourceId)) {
+    		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
 		XnatAbstractresource resource = _template.queryForObject(SUBJECT_QUERY + BY_WHERE_PROJECT + AND_WHERE + BY_ID_WHERE_SUBJECT + AND_WHERE + BY_RESOURCE_ID_WHERE  , new MapSqlParameterSource("resourceId", resourceId).addValue("projectId", projectId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resource))
+		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
 		return Optional.of(resource);
 	}
 	
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndSubjectId(UserI user, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(resourceId))
-    		throw new DataFormatException("The requested resourceId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
+		if(Objects.isNull(resourceId)) {
+    		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
 		XnatAbstractresource resource =  _template.queryForObject(SUBJECT_QUERY  + BY_WHERE + BY_RESOURCE_ID_WHERE + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("resourceId", resourceId).addValue("subjectId", subjectId), new ResourceRowMapper(user));
-		if(Objects.isNull(resource))
+		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
 		return Optional.of(resource);
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByExperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
 		List<XnatAbstractresource> resources = new ArrayList<>();
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
-		if(Objects.isNull(assessorId))
-    		throw new DataFormatException("The requested assessorId wasn't found ");
-		if(Objects.nonNull(type) && !type.isEmpty())
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+		}
+		if(Objects.nonNull(type) && !type.isEmpty()) {
 			resources  = getXnatAbstractResourceData(user, null, null, experimentId, assessorId, null, type);
-		else
+		}else {
 			resources = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE   , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessorId), new ResourceRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty())
+		}
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
 		return resources;
 	}
 	
 	@Override
 	public Optional<XnatAbstractresource> findByExperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException  {
 		XnatAbstractresource resource = null;
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
-		if(Objects.isNull(assessedId))
-    		throw new DataFormatException("The requested assessedId wasn't found ");
-		if(Objects.isNull(resourceId))
-    		throw new DataFormatException("The requested resourceId wasn't found ");
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(assessedId)) {
+    		throw new DataFormatException("The requested assessed ID "+ assessedId  + "wasn't found ");
+		}
+		if(Objects.isNull(resourceId)) {
+    		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
+		}
 		if(Objects.nonNull(type) && !type.isEmpty())
 			resource = getXnatResource(user, experimentId, assessedId, type, resourceId);
 		else 
 			resource = _template.queryForObject(EXPERIMENT_ASSESSER_QUERY + BY_WHERE_EXP_ASSE + AND_WHERE + BY_WHERE_RESOURCE  , new MapSqlParameterSource("experimentId", experimentId).addValue("assessedId", assessedId).addValue("resourceId", resourceId), new ResourceRowMapper(user));	
-		if(Objects.isNull(resource))
+		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
 		return Optional.of(resource);
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessorId, String scanId) throws DataFormatException, NotFoundException {
 		List<XnatAbstractresource> resources = new ArrayList<>();
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
-		if(Objects.isNull(assessorId))
-    		throw new DataFormatException("The requested assessorId wasn't found ");
-		if(Objects.isNull(scanId))
-    		throw new DataFormatException("The requested scanId wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+		}
+		if(Objects.isNull(scanId)) {
+    		throw new DataFormatException("The requested scan ID "+ scanId  + "wasn't found ");
+		}
 		resources = getXnatAbstractResourceData(user, projectId, subjectId, null, assessorId, scanId, null);
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, scanId) ;
+		}
 		return resources;
 	}
 	
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
 		List<XnatAbstractresource> resources = new ArrayList<>();
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-		if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
-		if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found ");
-		if(Objects.isNull(assessorId))
-    		throw new DataFormatException("The requested assessorId wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+		}
 		resources = getXnatAbstractResourceData(user, projectId, subjectId, experimentId, assessorId, null, type);
-		if(Objects.isNull(resources) || resources.isEmpty())
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
 		return resources;
 	}
 	
@@ -595,19 +637,6 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	        return resource.getXnatAbstractresourceId() + (StringUtils.isBlank(resourceLabel) ? "" : " (" + resourceLabel + ")");
 	    }
 	 
-//	 private Integer getEventId() {
-//		final String id = getQueryVariable(EventUtils.EVENT_ID);
-//		if (id != null) {
-//			return Integer.valueOf(id);
-//		} else {
-//			return null;
-//		}
-//	}
-	 
-//	protected String getQueryVariable(String string) {
-//		return null;
-//	}
-
 	private static class ResourceRowMapper implements RowMapper<XnatAbstractresource> {
 		ResourceRowMapper(final UserI user) {
 			_user = user;

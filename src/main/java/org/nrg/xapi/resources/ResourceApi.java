@@ -52,7 +52,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 		 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatAbstractresource> getByExperimentId( @ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with experimentId {} }", getSessionUser().getUsername(), experimentId);
+		log.debug("User {} requested resources with experiment ID {} ", getSessionUser().getUsername(), experimentId);
 		return _resourceService.findByExperimentId(getSessionUser(), experimentId);
 	}
 	
@@ -64,7 +64,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
 	public XnatAbstractresource getByIdAndExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 													   @ApiParam(value = "The ID of the resource.") @PathVariable  final Integer resourceId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with experimentId {} and with ID {}}", getSessionUser().getUsername(), experimentId, resourceId);
+		log.debug("User {} requested resources with experiment ID {} and with ID {}", getSessionUser().getUsername(), experimentId, resourceId);
 		return _resourceService.findByIdAndExperimentId(getSessionUser(), resourceId, experimentId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId));
 	}
 	
@@ -78,7 +78,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with projectId {} , with subjectId {} and with experimentId {} }", getSessionUser().getUsername(),projectId, subjectId , experimentId);
+		log.debug("User {} requested resources with project ID {} , with subject ID {} and with experiment ID {} ", getSessionUser().getUsername(),projectId, subjectId , experimentId);
 		return _resourceService.findByProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId, experimentId);
 	}
 	
@@ -90,7 +90,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments/{assessedId}/scans/{scanId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatAbstractresource> getByxperimentIdAndScanId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
 															    @ApiParam(value = "The ID of the scan.") @PathVariable final String scanId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with assessedId {} and with scanId {} }", getSessionUser().getUsername(),assessedId, scanId);
+		log.debug("User {} requested resources with assessed ID {} and with scan ID {} s", getSessionUser().getUsername(),assessedId, scanId);
 		return _resourceService.findByExperimentIdAndScanId(getSessionUser(), assessedId, scanId);
 	}
 
@@ -102,7 +102,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatAbstractresource> getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId)throws Exception {
-		log.debug("User {} requested resources with projectId {} }", getSessionUser().getUsername(),projectId);
+		log.debug("User {} requested resources with project ID {} ", getSessionUser().getUsername(),projectId);
 		return _resourceService.findByProjectId(getSessionUser(), projectId);
 	}
 	
@@ -114,7 +114,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
 	public XnatAbstractresource getByIdAndProjectId(@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
 													@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with ID {} and with projectId {} }", getSessionUser().getUsername(),resourceId, projectId);
+		log.debug("User {} requested resources with ID {} and with project ID {}", getSessionUser().getUsername(),resourceId, projectId);
 		return _resourceService.findByIdAndProjectId(getSessionUser(), resourceId, projectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId));
 	}
 	
@@ -125,7 +125,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatAbstractresource> getBySubject(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources with subjectId {}}", getSessionUser().getUsername(),subjectId);
+		log.debug("User {} requested resources with subject ID {}", getSessionUser().getUsername(),subjectId);
 		return _resourceService.findBySubjectId(getSessionUser(), subjectId);
 	}
 	
@@ -138,7 +138,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
 	public XnatAbstractresource getByIdAndSubjectId(@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId,
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources wth ID {} and with subjectId {} }", getSessionUser().getUsername(),resourceId, subjectId);
+		log.debug("User {} requested resources wth ID {} and with subject ID {} ", getSessionUser().getUsername(),resourceId, subjectId);
 		return _resourceService.findByIdAndSubjectId(getSessionUser(), resourceId, subjectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, subjectId));
 	}
 	
@@ -151,7 +151,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatAbstractresource> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 															     @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException  {
-		log.debug("User {} requested resources wth projectId {} and with subjectId {} }", getSessionUser().getUsername(),projectId, subjectId);
+		log.debug("User {} requested resources wth projectId {} and with subject ID{} ", getSessionUser().getUsername(),projectId, subjectId);
 		return _resourceService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
 	}
 	
@@ -164,7 +164,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	public XnatAbstractresource getByIdAndProjectIdAndSubjectId(@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
 																@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 																@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources wth projectId {} , with subjectId {} and with ID {} }", getSessionUser().getUsername(),projectId, subjectId, resourceId);
+		log.debug("User {} requested resources wth project ID {} , with subject ID {} and with ID {} ", getSessionUser().getUsername(),projectId, subjectId, resourceId);
 		return  _resourceService.findByIdAndProjectIdAndSubjectId(getSessionUser(), resourceId, projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId));
 	}
 	
@@ -178,7 +178,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	public List<XnatAbstractresource> getByexperimentIdAndAssessed(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 																   @ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
 																   @ApiParam(value = "The type of resource.") @PathVariable(required = false) final String type) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested resources wth experimentId {} and with assessedId {} }", getSessionUser().getUsername(),experimentId, assessedId);
+		log.debug("User {} requested resources wth experiment ID {} and with assessed ID {} ", getSessionUser().getUsername(),experimentId, assessedId);
 		return _resourceService.findByExperimentIdAndAssessedId(getSessionUser(), experimentId, assessedId, type);
 	}
 	
@@ -193,7 +193,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 																			@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
 																			@ApiParam(value = "The type of resource") @PathVariable(required = false) final String type,
 																			@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException{
-		log.debug("User {} requested resources wth experimentId {} , with assessedId{} and with ID {} }", getSessionUser().getUsername(),experimentId, assessedId, resourceId);
+		log.debug("User {} requested resources wth experiment ID {} , with assessed ID {} and with ID {} }", getSessionUser().getUsername(),experimentId, assessedId, resourceId);
 		return _resourceService.findByExperimentIdAndAssessedIdAndResourceId(getSessionUser(), experimentId, assessedId, type, resourceId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, assessedId));
 	}
 	
@@ -210,7 +210,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 			@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
 			@ApiParam(value = "The type string.") @PathVariable(required = false) final String type) throws NotFoundException, DataFormatException{
-		log.debug("User {} requested resources wth projectId {} , with subjectId{} , with experimentId {} and with assessedId {} }", getSessionUser().getUsername(),projectId, subjectId, experimentId, assessedId);
+		log.debug("User {} requested resources wth project ID {} , with subject ID {} , with experiment ID {} and with assessedId {} }", getSessionUser().getUsername(),projectId, subjectId, experimentId, assessedId);
 		return _resourceService.findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(getSessionUser(),projectId, subjectId, experimentId, assessedId,type);
 	}
 	
@@ -223,7 +223,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
 			@ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId,
 			@ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final String scanId)throws Exception {
-		log.debug("User {} requested resources wth projectId {} , with subjectId{} , with assessedId {} and with scanId {} }", getSessionUser().getUsername(),projectId, subjectId, assessedId, scanId);
+		log.debug("User {} requested resources wth project ID {} , with subject ID {} , with assessed ID {} and with scan ID {} }", getSessionUser().getUsername(),projectId, subjectId, assessedId, scanId);
 		return _resourceService.findByProjectIdAndSubjectIdAndExperimentIdAndScanId(getSessionUser(), projectId, subjectId, assessedId, scanId);
 	}
 	
@@ -260,7 +260,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    										  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
 	    										  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment,
 	    										  @RequestBody final XnatResource xnatResource) throws DataFormatException, NotFoundException, ResourceAlreadyExistsException  {
-	        log.debug("Controller Api- Create resource: {}", projectId);
+	        log.debug("Creating  resource with project ID {}", projectId);
 	        
 	        if (StringUtils.isNotBlank(label) && !StringUtils.equals(xnatResource.getLabel(), label)) {
 	            throw new DataFormatException("You specified the label " + label + " in your request but the resource is assigned to project " + projectId + ". These values must be the same.");
@@ -290,7 +290,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}",
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}",
 	    							 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-	    public void delete(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
+	    public void deleteResource(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
 	    				   @ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
 	    				   @ApiParam("The ID of the experimentto be deleted") @PathVariable(required = false) final String experimentId,
 	    				   @ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
@@ -302,7 +302,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    				   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
 	    				   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
 	    				   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) {
-		log.debug("Controller Api- Delete resource {}", resourceId);
+		log.debug("Deleting resource  with project ID {}", resourceId);
 			_resourceService.delete(getSessionUser(), projectId, subjectId, experimentId,assessorId,scanId,type, resourceId, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	}
 	 

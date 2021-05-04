@@ -35,7 +35,7 @@ import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.archive.ValidationException;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
-import org.nrg.xnat.model.util.SecureResoureUtil;
+import org.nrg.xnat.model.util.SecureResourceUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.restlet.actions.FixScanTypes;
 import org.nrg.xnat.restlet.actions.PullSessionDataFromHeaders;
@@ -68,61 +68,72 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public Optional<List<XnatExperimentdata>> findAll(UserI user) throws NotFoundException {
+    public List<XnatExperimentdata> findAll(UserI user) throws NotFoundException {
     	List<XnatExperimentdata> experiments = XnatExperimentdata.getAllXnatExperimentdatas(user, false);
-    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    	if(Objects.isNull(experiments) || experiments.isEmpty()) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
-        return Optional.of(experiments);
+    	}
+        return experiments;
     }
 
     @Override
     public Optional<XnatExperimentdata> findById(UserI user, String experimentId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found");
+    	if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID" + experimentId + " wasn't found ");
+    	}
     	XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
-    	if(Objects.isNull(experiment))
+    	if(Objects.isNull(experiment)) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+    	}
         return Optional.of(experiment);
     }
 
     @Override
-    public Optional<List<XnatExperimentdata>> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found");
+    public List<XnatExperimentdata> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+    	if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+    	}
     	List<XnatExperimentdata> experiments = _template.query(PROJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId), new ExperimentRowMapper(user));
-    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    	if(Objects.isNull(experiments) || experiments.isEmpty()) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
-        return Optional.of(experiments);
+    	}
+        return experiments;
     }
 
     @Override
-    public Optional<List<XnatExperimentdata>> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found");
-    	if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found");
+    public List<XnatExperimentdata> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+    	if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+    	}
+    	if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID" + subjectId + " wasn't found ");
+    	}
     	List<XnatExperimentdata> experiments = _template.query(PROJECT_SUBJECT_EXPERIMENT_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new ExperimentRowMapper(user));
-    	if(Objects.isNull(experiments) || experiments.isEmpty())
+    	if(Objects.isNull(experiments) || experiments.isEmpty()) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
-    	return Optional.of(experiments);
+    	}
+    	return experiments;
     }
 
     @Override
     public Optional<XnatExperimentdata> findByIdAndProjectId(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(experimentId))
-    		throw new DataFormatException("The requested experimentId wasn't found");
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found");
+    	if(StringUtils.isBlank(experimentId)) {
+    		throw new DataFormatException("The requested experiment ID" + experimentId + " wasn't found ");
+    	}
+    	if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+    	}
     	XnatExperimentdata experiment = _template.queryForObject(PROJECT_AND_EXPERIMENT_QUERY + BY_PRO_EXP_ID_WHERE, new MapSqlParameterSource("experimentId", experimentId).addValue("projectId", projectId), new ExperimentRowMapper(user));
-    	if(Objects.isNull(experiment))
+    	if(Objects.isNull(experiment)) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME) ;
+    	}
         return Optional.of(experiment);
     }
 
     @SuppressWarnings("unused")
 	@Override
     public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event) throws NotFoundException {
-        SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+        SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
         if (projectId != null) {
             XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 			if (project == null) {
@@ -224,104 +235,12 @@ public class ExperimentServiceImpl implements ExperimentService {
         return expt;
     }
 
-    private XnatSubjectdata getSubjectDataWhenSubjectIsNull(XnatSubjectdata subject, XnatSubjectassessordata expt, UserI user, XnatProjectdata proj, SecureResoureUtil secureResoureUtil, XnatEventUtil event)  {
-    	if (expt.getSubjectId() != null && !expt.getSubjectId().equals("")) {
-                subject = XnatSubjectdata.getXnatSubjectdatasById(expt.getSubjectId(), user, false);
-
-                if (subject == null && expt.getProject() != null && expt.getLabel() != null) {
-                    subject = XnatSubjectdata.GetSubjectByProjectIdentifier(expt.getProject(), expt.getSubjectId(), user, false);
-                }
-
-                if (subject == null) {
-                    for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
-                        subject = XnatSubjectdata.GetSubjectByProjectIdentifier(pp.getProject(), expt.getSubjectId(), user, false);
-                        if (subject != null) {
-                            break;
-                        }
-                    }
-                }
-
-                if (subject == null) {
-                    String newSubjectId = null;
-					try {
-						newSubjectId = XnatSubjectdata.CreateNewID();
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-                    subject = new XnatSubjectdata(user);
-                    subject.setProject(proj.getId());
-                    subject.setLabel(expt.getSubjectId());
-                    subject.setId(newSubjectId);
-                    try {
-						secureResoureUtil.create(subject, false, true, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT, event), event,user);
-					} catch (Exception e) {
-						e.printStackTrace();
-					}
-                    expt.setSubjectId(subject.getId());
-                }
-            }
-        return subject;
-    }
-
-    private XnatSubjectassessordata getExperimentWhenProjectIsNotNull(XnatSubjectassessordata expt, XnatProjectdata proj, UserI user) throws Exception {
-		if (proj != null) {
-			if (expt.getProject() == null || expt.getProject().equals("")) {
-				expt.setProject(proj.getId());
-			} else {
-				boolean matched = false;
-				for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
-					if (pp.getProject().equals(proj.getId())) {
-						matched = true;
-						break;
-					}
-				}
-
-				if (!matched) {
-					XnatExperimentdataShare pp = new XnatExperimentdataShare((UserI) user);
-					pp.setProject(proj.getId());
-					expt.setSharing_share(pp);
-				}
-			}
-		} else {
-			throw new DataFormatException("Submitted experiment record must include the project attribute.");
-		}
-
-        return expt;
-    }
-
-    private XFTItem getXFTItemIsNull(UserI user, XFTItem item, String xsiType) throws XFTInitException, ElementNotFoundException, DataFormatException {
-        if (item == null) {
-            if (xsiType != null) {
-                item = XFTItem.NewItem(xsiType, user);
-            }
-        }
-		if (item == null) {
-			throw new DataFormatException("Need PUT Contents");
-		}
-
-        return item;
-    }
-
-    private XnatSubjectdata getSubjectData(String subjectId, XnatProjectdata proj, UserI user) {
-        XnatSubjectdata subject = null;
-        if (subjectId != null) {
-            subject = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, user, false);
-            if (subject == null) {
-                subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-                if (subject != null && (proj != null && !subject.hasProject(proj.getId()))) {
-                    subject = null;
-                }
-            }
-        }
-        return subject;
-    }
-
     @Override
     public XnatExperimentdata update(UserI user, XnatExperimentdata xnatexperiment, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event) {
         XnatExperimentdata existing          = new XnatExperimentdata();
         XnatProjectdata    project           = null;
         XnatExperimentdata experiment        = null;
-        SecureResoureUtil  secureResoureUtil = new SecureResoureUtil();
+        SecureResourceUtil  secureResoureUtil = new SecureResourceUtil();
         if (StringUtils.isNotBlank(projectId)) {
             project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
             existing = XnatExperimentdata.GetExptByProjectIdentifier(projectId, experimentId, user, false);
@@ -434,8 +353,111 @@ public class ExperimentServiceImpl implements ExperimentService {
         }
         return experiment;
     }
+    
+    
+    @Override
+    public void deleteById(UserI user, String experimentId, String projectId, String filepath,boolean removeFiles, XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
+        delete(user, findById(user, experimentId).get(), projectId,filepath, removeFiles,event);
+    }
+    
+    @Override
+    public List<XnatExperimentdata> findAllByProjectIdAndLabel(UserI user, String projectId, String label) {
+        return null;
+    }
 
-    private void verifyPermission(UserI user, XnatExperimentdata experiment, SecureResoureUtil secureResoureUtil, String allowDataDelete, boolean overwrite, XnatEventUtil event ) throws Exception {
+    private XnatSubjectdata getSubjectDataWhenSubjectIsNull(XnatSubjectdata subject, XnatSubjectassessordata expt, UserI user, XnatProjectdata proj, SecureResourceUtil secureResoureUtil, XnatEventUtil event)  {
+    	if (expt.getSubjectId() != null && !expt.getSubjectId().equals("")) {
+                subject = XnatSubjectdata.getXnatSubjectdatasById(expt.getSubjectId(), user, false);
+
+                if (subject == null && expt.getProject() != null && expt.getLabel() != null) {
+                    subject = XnatSubjectdata.GetSubjectByProjectIdentifier(expt.getProject(), expt.getSubjectId(), user, false);
+                }
+
+                if (subject == null) {
+                    for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
+                        subject = XnatSubjectdata.GetSubjectByProjectIdentifier(pp.getProject(), expt.getSubjectId(), user, false);
+                        if (subject != null) {
+                            break;
+                        }
+                    }
+                }
+
+                if (subject == null) {
+                    String newSubjectId = null;
+					try {
+						newSubjectId = XnatSubjectdata.CreateNewID();
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+                    subject = new XnatSubjectdata(user);
+                    subject.setProject(proj.getId());
+                    subject.setLabel(expt.getSubjectId());
+                    subject.setId(newSubjectId);
+                    try {
+						secureResoureUtil.create(subject, false, true, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.AUTO_CREATE_SUBJECT, event), event,user);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+                    expt.setSubjectId(subject.getId());
+                }
+            }
+        return subject;
+    }
+
+    private XnatSubjectassessordata getExperimentWhenProjectIsNotNull(XnatSubjectassessordata expt, XnatProjectdata proj, UserI user) throws Exception {
+		if (proj != null) {
+			if (expt.getProject() == null || expt.getProject().equals("")) {
+				expt.setProject(proj.getId());
+			} else {
+				boolean matched = false;
+				for (XnatExperimentdataShareI pp : expt.getSharing_share()) {
+					if (pp.getProject().equals(proj.getId())) {
+						matched = true;
+						break;
+					}
+				}
+
+				if (!matched) {
+					XnatExperimentdataShare pp = new XnatExperimentdataShare((UserI) user);
+					pp.setProject(proj.getId());
+					expt.setSharing_share(pp);
+				}
+			}
+		} else {
+			throw new DataFormatException("Submitted experiment record must include the project attribute.");
+		}
+
+        return expt;
+    }
+
+    private XFTItem getXFTItemIsNull(UserI user, XFTItem item, String xsiType) throws XFTInitException, ElementNotFoundException, DataFormatException {
+        if (item == null) {
+            if (xsiType != null) {
+                item = XFTItem.NewItem(xsiType, user);
+            }
+        }
+		if (item == null) {
+			throw new DataFormatException("Need PUT Contents");
+		}
+
+        return item;
+    }
+
+    private XnatSubjectdata getSubjectData(String subjectId, XnatProjectdata proj, UserI user) {
+        XnatSubjectdata subject = null;
+        if (subjectId != null) {
+            subject = XnatSubjectdata.GetSubjectByProjectIdentifier(proj.getId(), subjectId, user, false);
+            if (subject == null) {
+                subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+                if (subject != null && (proj != null && !subject.hasProject(proj.getId()))) {
+                    subject = null;
+                }
+            }
+        }
+        return subject;
+    }
+    
+    private void verifyPermission(UserI user, XnatExperimentdata experiment, SecureResourceUtil secureResoureUtil, String allowDataDelete, boolean overwrite, XnatEventUtil event ) throws Exception {
     	if (Permissions.canEdit(user, experiment.getItem())) {
             if ((isQueryVariableTrue(XNATRestConstants.PULL_DATA_FROM_HEADERS) || secureResoureUtil.containsAction(XNATRestConstants.PULL_DATA_FROM_HEADERS)) && experiment instanceof XnatImagesessiondata) {
                 try {
@@ -467,7 +489,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 
     }
 
-    private XnatExperimentdata existingExperimentIsNotNull(XnatExperimentdata experiment, UserI user, XnatExperimentdata existing, XnatProjectdata project, SecureResoureUtil secureResoureUtil, String subjectId, String label, XnatEventUtil event) throws Exception {
+    private XnatExperimentdata existingExperimentIsNotNull(XnatExperimentdata experiment, UserI user, XnatExperimentdata existing, XnatProjectdata project, SecureResourceUtil secureResoureUtil, String subjectId, String label, XnatEventUtil event) throws Exception {
         if (StringUtils.isBlank(experiment.getId())) {
             experiment.setId(existing.getId());
         }
@@ -483,7 +505,6 @@ public class ExperimentServiceImpl implements ExperimentService {
 
         setSubject(existing.getItem(), experiment, project, existing, user, subjectId, event);
 
-       /// final String label = getQueryVariable("label");
         if (StringUtils.isNotBlank(label)) {
             if (!experiment.getLabel().equals(existing.getLabel())) {
                 experiment.setLabel(existing.getLabel());
@@ -600,7 +621,6 @@ public class ExperimentServiceImpl implements ExperimentService {
 
         if (item == null) {
             String xsiType = experiment.getXSIType();
-            //getQueryVariable("xsiType");
 			if (xsiType != null) {
 				item = XFTItem.NewItem(xsiType, user);
 			}
@@ -670,15 +690,15 @@ public class ExperimentServiceImpl implements ExperimentService {
         return retExp;
     }
 
-    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final String newLabel, XnatEventUtil event) throws Exception {
+    private void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final String newLabel, XnatEventUtil event) throws Exception {
         shareExperimentToProject(user, newProject, experiment, new XnatExperimentdataShare(user), newLabel, event);
     }
 
-    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, XnatEventUtil event) throws Exception {
+    private void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, XnatEventUtil event) throws Exception {
         shareExperimentToProject(user, newProject, experiment, shared, newLabel, true, event);
     }
 
-    protected void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, boolean shareAllScans, XnatEventUtil event) throws Exception {
+    private void shareExperimentToProject(final UserI user, final XnatProjectdata newProject, final XnatExperimentdata experiment, final XnatExperimentdataShare shared, final String newLabel, boolean shareAllScans, XnatEventUtil event) throws Exception {
     	final String newProjectId = newProject.getId();
 
         shared.setProject(newProjectId);
@@ -761,7 +781,7 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
 
-    protected void shareScanToProject(final UserI user, final XnatProjectdata newProject, final XnatImagescandata scan, XnatEventUtil event)  throws Exception {
+    private void shareScanToProject(final UserI user, final XnatProjectdata newProject, final XnatImagescandata scan, XnatEventUtil event)  throws Exception {
         XnatImagescandataShare shared       = new XnatImagescandataShare(user);
         final String           newProjectId = newProject.getId();
 
@@ -772,7 +792,7 @@ public class ExperimentServiceImpl implements ExperimentService {
         XDAT.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
     }
 
-    protected void changeExperimentPrimaryProject(final XnatExperimentdata experiment, final XnatProjectdata source, final XnatProjectdata destination, final String newLabel, String moveAssessors, final XnatExperimentdataShare share, final int index, UserI user, XnatEventUtil event) throws Exception {
+    private void changeExperimentPrimaryProject(final XnatExperimentdata experiment, final XnatProjectdata source, final XnatProjectdata destination, final String newLabel, String moveAssessors, final XnatExperimentdataShare share, final int index, UserI user, XnatEventUtil event) throws Exception {
 		if (!Permissions.canDelete(user, experiment)) {
 			throw new InsufficientPrivilegesException("Specified user account has insufficient privileges for experiments in this project.");
 		}
@@ -804,17 +824,10 @@ public class ExperimentServiceImpl implements ExperimentService {
     	  return allowDataDelete != null && allowDataDelete.equals("true");
     }
 
-//    private String getQueryVariable(String string) {
-//        return null;
-//    }
-
-    @Override
-    public void deleteById(UserI user, String experimentId, String projectId, String filepath,boolean removeFiles, XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
-        delete(user, findById(user, experimentId).get(), projectId,filepath, removeFiles,event);
-    }
+   
 
     @SuppressWarnings("unused")
-    public void delete(UserI user, XnatExperimentdata experiment, String projectId, String filepath, boolean removeFiles, XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
+    private void delete(UserI user, XnatExperimentdata experiment, String projectId, String filepath, boolean removeFiles, XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException {
 		if (Objects.isNull(experiment)) {
 			throw new NotFoundException("The experiment not found");
 		}
@@ -836,13 +849,13 @@ public class ExperimentServiceImpl implements ExperimentService {
 
     }
 
-    protected void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item, String filepath, boolean removeFiles, XnatEventUtil event) throws org.nrg.framework.exceptions.NotFoundException {
+    private void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item, String filepath, boolean removeFiles, XnatEventUtil event) throws org.nrg.framework.exceptions.NotFoundException {
     	if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
             throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
         }
 
         try {
-            SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+            SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
             final XnatProjectdata  newProject  = secureResoureUtil.getProjectFromFilePath(proj, (ArchivableItem) item,filepath, user);
             final PersistentWorkflowI wrk  = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType()), event));
             final EventMetaI c   = wrk.buildEvent();
@@ -885,41 +898,10 @@ public class ExperimentServiceImpl implements ExperimentService {
         }
     }
 
-//    private EventDetails newEventInstance(EventUtils.CATEGORY cat, String deleteAction) {
-//        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : "", getReason(), getComment());
-//    }
-//
-//    private String getComment() {
-//        return null;
-//    }
-//
-//    private String getReason() {
-//        return null;
-//    }
-//
-//    private String getAction() {
-//        return null;
-//    }
-//
-//    private TYPE getEventType() {
-//        final String id = null;
-//        //getQueryVariable(EventUtils.EVENT_TYPE);
-//        if (id != null) {
-//            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
-//        } else {
-//            return EventUtils.TYPE.WEB_SERVICE;
-//        }
-//    }
 
     private boolean isQueryVariableTrue(String string) {
         return false;
     }
-
-    @Override
-    public Optional<List<XnatExperimentdata>> findAllByProjectIdAndLabel(UserI user, String projectId, String label) {
-        return null;
-    }
-
 
     private static class ExperimentRowMapper implements RowMapper<XnatExperimentdata> {
         ExperimentRowMapper(final UserI user) {

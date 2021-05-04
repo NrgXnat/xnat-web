@@ -10,7 +10,6 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
-import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
@@ -31,18 +30,20 @@ public class ProjectAccessibilityServiceImpl implements ProjectAccessibilityServ
 
 	@Override
 	public Optional<String> findByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException{
-		if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID "+ projectId +" wasn't found");
+		}
 		
 		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		
-		if(Objects.isNull(project))
+		if(Objects.isNull(project)) {
 			throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId);
+		}
 		
 		String result = getProjectAccessibility(project);
-		if(Objects.isNull(result))
+		if(StringUtils.isBlank(result)) {
 			throw new NotFoundException( "An error occurred trying to retrieve the accessibility setting for the project '{}'", project.getId());
-		
+		}
     	return Optional.of(result);
 	}
 
@@ -105,36 +106,5 @@ public class ProjectAccessibilityServiceImpl implements ProjectAccessibilityServ
 		}
 		return null;
 	}
-	
-
-//	public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
-//		return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action,
-//				getReason(), getComment());
-//	}
-//
-//	public String getAction() {
-//		return getQueryVariable(EventUtils.EVENT_ACTION);
-//	}
-//
-//	public String getComment() {
-//		return getQueryVariable(EventUtils.EVENT_COMMENT);
-//	}
-//
-//	public String getReason() {
-//		return getQueryVariable(EventUtils.EVENT_REASON);
-//	}
-//
-//	public EventUtils.TYPE getEventType() {
-//		final String id = getQueryVariable(EventUtils.EVENT_TYPE);
-//		if (id != null) {
-//			return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
-//		} else {
-//			return EventUtils.TYPE.WEB_SERVICE;
-//		}
-//	}
-//
-//	private String getQueryVariable(String eventType) {
-//		return null;
-//	}
 
 }

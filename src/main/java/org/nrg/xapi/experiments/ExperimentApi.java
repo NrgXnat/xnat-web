@@ -63,7 +63,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllExperiments() throws NotFoundException {
 		log.debug("User {} requested experiments }", getSessionUser().getUsername());
-		return  _experimentService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME));
+		return  _experimentService.findAll(getSessionUser());
 	}
 	
 	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "List")
@@ -74,7 +74,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XnatExperimentdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} }", getSessionUser().getUsername(), projectId);
-		return _experimentService.findAllByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
+		return _experimentService.findAllByProjectId(getSessionUser(), projectId);
 	}
 	
 	
@@ -100,7 +100,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	public List<XnatExperimentdata> getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId, 
 															      @ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} and with subjectId {}}", getSessionUser().getUsername(), projectId, subjectId);
-		return _experimentService.findAllByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
+		return _experimentService.findAllByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
 	}
 	
 	@ApiOperation(value = "Delete an existing experiment", notes = "Deletes the specified experiment.")

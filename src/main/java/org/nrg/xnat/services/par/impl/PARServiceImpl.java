@@ -34,31 +34,36 @@ public class PARServiceImpl implements PARService {
 	}
 
 	@Override
-	public Optional<List<ProjectAccessRequest>> findAll(UserI user) throws NotFoundException  {
+	public List<ProjectAccessRequest> findAll(UserI user) throws NotFoundException  {
 		List<ProjectAccessRequest> pars = _template.query(PAR_QUERY, new MapSqlParameterSource(),new ProjectAccessRequestRowMapper(user));
-		if(Objects.isNull(pars) || pars.isEmpty())
+		if(Objects.isNull(pars) || pars.isEmpty()) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-    	return Optional.of(pars);
+		}
+    	return pars;
 	}
 
 	@Override
 	public Optional<ProjectAccessRequest> findByParId(UserI user, Integer parId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(parId))
-			throw new DataFormatException("The requested parId wasn't found ");
+		if(Objects.isNull(parId)) {
+			throw new DataFormatException("The requested par ID "+ parId +" wasn't found ");
+		}
 		ProjectAccessRequest par = ProjectAccessRequest.RequestPARById(parId, user);
-		if(Objects.isNull(par))
+		if(Objects.isNull(par)) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
 		return Optional.of(par);
 	}
 
 	@Override
-	public Optional<List<ProjectAccessRequest>> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
-		if(Objects.isNull(projectId))
-			throw new DataFormatException("The requested projectId wasn't found ");
+	public List<ProjectAccessRequest> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+		if(Objects.isNull(projectId)) {
+			throw new DataFormatException("The requested project ID "+ projectId +" wasn't found ");
+		}
 		List<ProjectAccessRequest> pars = _template.query(PROJECT_PAR_QUERY + ID_WHERE_PAR_PROJECT, new MapSqlParameterSource("projectId", projectId),new ProjectAccessRequestRowMapper(user));
-		if(Objects.isNull(pars) || pars.isEmpty())
+		if(Objects.isNull(pars) || pars.isEmpty()) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-    	return Optional.of(pars);
+		}
+    	return pars;
 	}
 	
 	@Override

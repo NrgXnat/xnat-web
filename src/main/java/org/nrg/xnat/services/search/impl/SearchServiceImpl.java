@@ -51,7 +51,6 @@ import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.XFTTool;
 import org.nrg.xft.collections.ItemCollection;
-import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
@@ -83,7 +82,6 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
-import javassist.bytecode.stackmap.BasicBlock.Catch;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -98,8 +96,9 @@ public class SearchServiceImpl implements SearchService {
 	@Override
 	public List<XdatSearch> findAllSearch(UserI user) throws NotFoundException {
 		List<XdatSearch> searches = XdatSearch.getAllXdatSearchs(user, false);
-		if (Objects.isNull(searches) || searches.isEmpty())
+		if (Objects.isNull(searches) || searches.isEmpty()) {
 			throw new NotFoundException(XdatSearch.SCHEMA_ELEMENT_NAME);
+		}
 		return searches;
 	}
 

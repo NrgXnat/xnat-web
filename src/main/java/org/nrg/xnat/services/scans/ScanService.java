@@ -12,15 +12,15 @@ import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface ScanService {
 	
-	 Optional<List<XnatImagescandata>> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
+	 List<XnatImagescandata> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-	 Optional<List<XnatImagescandata>> findAllScanTypes(UserI user) throws NotFoundException;
+	 List<XnatImagescandata> findAllScanTypes(UserI user) throws NotFoundException;
 	
-	 Optional<List<XnatImagescandata>> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException;
+	 List<XnatImagescandata> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException;
 
 	 Optional<XnatImagescandata> findByAssessedIdAndScanId(UserI user, String assessedId, Integer scanId) throws DataFormatException, NotFoundException;
 
-	 Optional<List<XnatImagescandata>> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
+	 List<XnatImagescandata> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
 
 	 Optional<XnatImagescandata> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException;
 

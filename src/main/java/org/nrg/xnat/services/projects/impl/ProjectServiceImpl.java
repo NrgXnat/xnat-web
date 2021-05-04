@@ -17,6 +17,7 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.base.BaseXnatProjectdata;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.Users;
@@ -29,7 +30,6 @@ import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEventI;
-import org.nrg.xft.event.EventUtils.TYPE;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -38,12 +38,13 @@ import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
-import org.nrg.xnat.model.util.SecureResoureUtil;
+import org.nrg.xnat.model.util.SecureResourceUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -58,21 +59,29 @@ import java.util.Optional;
 @Slf4j
 public class ProjectServiceImpl implements ProjectService {
 	
+	@Autowired
+	public ProjectServiceImpl() {
+		_site = XDAT.getSiteConfigPreferences();
+	}
+	
     @Override
-    public Optional<List<XnatProjectdata>> findAll(final UserI user) throws NotFoundException {
+    public List<XnatProjectdata> findAll(final UserI user) throws NotFoundException {
     	List<XnatProjectdata> projects= XnatProjectdata.getAllXnatProjectdatas(user, false);
-    	if(Objects.isNull(projects) || projects.isEmpty())
+    	if(Objects.isNull(projects) || projects.isEmpty()) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-    	return Optional.of(projects);
+    	}
+    	return projects;
     }
 
     @Override
     public  Optional<XnatProjectdata> findById(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
+    	if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+    	}
     	XnatProjectdata proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
-    	if(Objects.isNull(proj))
+    	if(Objects.isNull(proj)) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId) ;
+    	}
     	return Optional.of(proj);
     }
 
@@ -100,7 +109,7 @@ public class ProjectServiceImpl implements ProjectService {
 				throw new DataFormatException("Invalid character in project ID.");
 
 			if (item.getCurrentDBVersion() == null) {
-				if (XDAT.getSiteConfigPreferences().getUiAllowNonAdminProjectCreation() || Roles.isSiteAdmin(user)) {
+				if (_site.getUiAllowNonAdminProjectCreation() || Roles.isSiteAdmin(user)) {
 					BaseXnatProjectdata.createProject(project, user, allowDataDeletion, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event), accessibility);
 				} else
 					throw new InsufficientPrivilegesException( "User account doesn't have permission to edit this project.");
@@ -123,7 +132,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 		// Project equal to null means a new project, so either non-admins must be able
 		// to create projects or the user must be an admin.
-		if (project == null && !XDAT.getSiteConfigPreferences().getUiAllowNonAdminProjectCreation() && !Roles.isSiteAdmin(user))
+		if (project == null && !_site.getUiAllowNonAdminProjectCreation() && !Roles.isSiteAdmin(user))
 			throw new InsufficientPrivilegesException( "User " + user.getUsername() + " doesn't have permission to create projects on this system");
 
 		// All file path settings require an existing project, so if there's a file path  and no project, that's bad, m'kay?
@@ -209,7 +218,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	private XnatProjectdata verifyFilePathAndCreateorUpdateXnatProject(String filepath, XnatProjectdata workingProject, UserI user, XnatEventUtil event) throws Exception {
-		SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+		SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 		if((filepath.startsWith("quarantine_code/")) || (filepath.startsWith("prearchive_code/")) || (filepath.startsWith("current_arc/"))){
 			final ArcProject arcProject = workingProject.getArcSpecification();
 			if (filepath.startsWith("quarantine_code/")) {
@@ -261,21 +270,6 @@ public class ProjectServiceImpl implements ProjectService {
             throw e;
         }
     }
-    
-//    public Integer getEventId() {
-//        final String id = getQueryVariable(EventUtils.EVENT_ID);
-//        if (id != null) {
-//            return Integer.valueOf(id);
-//        } else {
-//            return null;
-//        }
-//    }
-    
-    
-//    public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
-//        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, getReason(), getComment());
-//    }
-    
     
     private int translateArcProjectCode(final String code) throws ClientException {
         if (NumberUtils.isCreatable(code)) {
@@ -349,36 +343,6 @@ public class ProjectServiceImpl implements ProjectService {
 		// should always be set.
 		throw new InitializationException("delete operation failed");
 	}
-    
 
-//    private EventDetails newEventInstance(EventUtils.CATEGORY cat) {
-//    	return EventUtils.newEventInstance(cat, getEventType(), getAction(), getReason(), getComment());
-//	}
-//
-//	private String getComment() {
-//		return null;
-//	}
-//
-//	private String getReason() {
-//		return null;
-//	}
-//
-//	private String getAction() {
-//		return null;
-//	}
-//
-//	private TYPE getEventType() {
-//		 final String id = null;
-//				 //getQueryVariable(EventUtils.EVENT_TYPE);
-//	        if (id != null) {
-//	            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
-//	        } else {
-//	            return EventUtils.TYPE.WEB_SERVICE;
-//	        }
-//	}
-
-//	private String getQueryVariable(String string) {
-//		return null;
-//	}
-
+    private final SiteConfigPreferences _site;
 }

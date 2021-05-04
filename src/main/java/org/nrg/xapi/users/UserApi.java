@@ -44,8 +44,8 @@ public class UserApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/users", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XdatUsergroup> getByProject(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested users with projectId {}", getSessionUser().getUsername(), projectId);
-		return _userService.findByProject(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, projectId));
+		log.debug("User {} requested users with project ID {}", getSessionUser().getUsername(), projectId);
+		return _userService.findByProject(getSessionUser(), projectId);
 		
 	}
 	
@@ -57,8 +57,8 @@ public class UserApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/groups", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<XdatUsergroup> getUserGroupByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
-		log.debug("User {} requested user group with projectId {}", getSessionUser().getUsername(), projectId);
-		return _userService.findUserGroupByProject(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, projectId));
+		log.debug("User {} requested user group with project ID {}", getSessionUser().getUsername(), projectId);
+		return _userService.findUserGroupByProject(getSessionUser(), projectId);
 	}
 	
 	
@@ -70,7 +70,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = "/projects/{projectId}/groups/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public XdatUsergroup getUserGroupByGroupIdAndProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 																		 @ApiParam(value = "The ID of the group.") @PathVariable final String groupId) throws NotFoundException, DataFormatException  {
-		log.debug("User {} requested user group with projectId {} and with groupId", getSessionUser().getUsername(), projectId, groupId);
+		log.debug("User {} requested user group with project ID {} and with group ID {}", getSessionUser().getUsername(), projectId, groupId);
 		return _userService.findUserGroupByGroupIdAndProject(getSessionUser(),groupId, projectId).orElseThrow(() -> new NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, groupId));
 	}
 	

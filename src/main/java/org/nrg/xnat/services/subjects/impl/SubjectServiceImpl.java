@@ -31,7 +31,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
-import org.nrg.xnat.model.util.SecureResoureUtil;
+import org.nrg.xnat.model.util.SecureResourceUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.services.subjects.SubjectService;
@@ -60,30 +60,33 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
     @Override
-    public Optional<List<XnatSubjectdata>> findAll(final UserI user) throws NotFoundException {
+    public List<XnatSubjectdata> findAll(final UserI user) throws NotFoundException {
     	List<XnatSubjectdata> subjects = _template.query(SUBJECT_QUERY , new MapSqlParameterSource(), new SubjectRowMapper(user));
-    	if(Objects.isNull(subjects) || subjects.isEmpty())
+    	if(Objects.isNull(subjects) || subjects.isEmpty()) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME) ;
+    	}
     	subjects.removeIf(Objects:: isNull);
-        return Optional.of(subjects);
+        return subjects;
     }
 
     @Override
     public Optional<XnatSubjectdata> findById(final UserI user, final String subjectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
+    	if(StringUtils.isBlank(subjectId)) {
+    		throw new DataFormatException("The requested subject ID" + subjectId + " wasn't found ");
+    	}
     	XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-    	if(Objects.isNull(subject))
+    	if(Objects.isNull(subject)) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME) ;
+    	}
     	return Optional.of(subject);
     }
 
     @Override
     public Optional<XnatSubjectdata> findByProjectIdAndSubjectId(final UserI user, final String projectId, final String subjectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found ");
-    	if(Objects.isNull(subjectId))
-    		throw new DataFormatException("The requested subjectId wasn't found ");
+    	if(StringUtils.isBlank(projectId))
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+    	if(StringUtils.isBlank(subjectId))
+    		throw new DataFormatException("The requested subject ID" + subjectId + " wasn't found ");
     	XnatSubjectdata subject = _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
     	if(Objects.isNull(subject))
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
@@ -91,47 +94,34 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
     @Override
-    public Optional<List<XnatSubjectdata>> findAllByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
-    	if(Objects.isNull(projectId))
-    		throw new DataFormatException("The requested projectId wasn't found");
+    public List<XnatSubjectdata> findAllByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
+    	if(StringUtils.isBlank(projectId))
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
     	List<XnatSubjectdata> subjects = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new SubjectRowMapper(user));
     	if(Objects.isNull(subjects) || subjects.isEmpty())
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId) ;
-    	return Optional.of(subjects);
+    	return subjects;
     }
     
     @Override
     public void deleteById(final UserI user, final String subjectId, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException {
-        delete(user, findById(user, subjectId).get(), removeFiles, event);
+        
+    	delete(user, findById(user, subjectId).isPresent()?findById(user, subjectId).get():null, removeFiles, event);
     }
 
     public void delete(final UserI user, final XnatSubjectdata subject, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException {
         log.debug("User {} is deleting the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         if(Objects.nonNull(subject)) {
-        	SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+        	SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
         	secureResoureUtil.deleteItem(_projectService.findById(user, subject.getProject()).get(), subject, removeFiles, user, event);
-        }
+		} else {
+			throw new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
+		}
     }
-    
-    
-    private static class SubjectRowMapper implements RowMapper<XnatSubjectdata> {
-        SubjectRowMapper(final UserI user) {
-            _user = user;
-        }
-
-        @Override
-        public XnatSubjectdata mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-            final String subjectId = resultSet.getString("id");
-            return XnatSubjectdata.getXnatSubjectdatasById(subjectId, _user, false);
-        }
-
-        private final UserI _user;
-    }
-    
     
     @Override
     public XnatSubjectdata create(final UserI user, final XnatSubjectdata subject, XnatEventUtil event) throws Exception {
-    	  SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+    	  SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
     	  boolean completeDocument = false;
     	  XnatProjectdata proj = null;
     	  XFTItem item;
@@ -228,7 +218,8 @@ public class SubjectServiceImpl implements SubjectService {
 		return sub;
 	}
     
-    @Override
+    @SuppressWarnings("unused")
+	@Override
     public XnatSubjectdata update(final UserI user, final XnatSubjectdata subject,  String label,boolean primary, String gender, XnatEventUtil event ) throws Exception {
         log.debug("User {} is updating the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         XnatSubjectdata existing = null;
@@ -269,9 +260,24 @@ public class SubjectServiceImpl implements SubjectService {
 		return sub;
     }
     
+    
+    private static class SubjectRowMapper implements RowMapper<XnatSubjectdata> {
+        SubjectRowMapper(final UserI user) {
+            _user = user;
+        }
+
+        @Override
+        public XnatSubjectdata mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+            final String subjectId = resultSet.getString("id");
+            return XnatSubjectdata.getXnatSubjectdatasById(subjectId, _user, false);
+        }
+
+        private final UserI _user;
+    }
+    
 	 
 	private XnatSubjectdata updateXnatSubjectFilePathNotNull(XnatProjectdata proj, XnatSubjectdata sub, UserI user, XnatSubjectdata subject, XnatSubjectdata existing, String label, XnatEventUtil event, String gender) throws Exception {
-		 SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+		 SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 			if (proj == null && sub.getProject() != null)
 				proj = XnatProjectdata.getXnatProjectdatasById(sub.getProject(), user, false);
 
@@ -298,7 +304,7 @@ public class SubjectServiceImpl implements SubjectService {
 	}
 
 	private void verifyUpdateXnatSubjectExistingPermission(XnatSubjectdata sub, XnatProjectdata proj, UserI user, XnatSubjectdata existing, String label) throws Exception {
-		SecureResoureUtil secureResoureUtil = new SecureResoureUtil();
+		SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 		if (existing == null) {
 			if (!Permissions.canCreate(user, sub)) 
 				throw new InsufficientPrivilegesException("Specified user  account has insufficient create privileges for subjects in this project.");
@@ -529,24 +535,6 @@ public class SubjectServiceImpl implements SubjectService {
 	private boolean isQueryVariableTrue(String pRIMARY) {
 		return false;
 	}
-
-//    public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) { //HC
-//        return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action, "", "");
-//    }
-//
-//    private TYPE getEventType() {
-//    	final String id = null;  //HC
-//    			//getQueryVariable(EventUtils.EVENT_TYPE);
-//        if (id != null) {
-//            return EventUtils.getType(id, EventUtils.TYPE.WEB_SERVICE);
-//        } else {
-//            return EventUtils.TYPE.WEB_SERVICE;
-//        }
-//	}
-//
-//	private String getAction() {
-//		return "Added Subject";  //HC
-//	}
 
     
     private static final String BY_ID_WHERE_PRO = " WHERE xnat_subjectData.project = :projectId";

@@ -117,7 +117,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
     public XdatStoredSearch  getSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
     		@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws DataFormatException, NotFoundException {
-    	log.debug("User {} requested Saved Search with PROJECTID {} and with SEARCHID {} ", getSessionUser().getUsername(), projectId, searchId);
+    	log.debug("User {} requested Saved Search with PROJECT ID {} and with SEARCH ID {} ", getSessionUser().getUsername(), projectId, searchId);
     	return _searchService.findSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, projectId));
     }
     
@@ -130,7 +130,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                         consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
                         produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
                         method = PUT)
-    public XdatStoredSearch updateProject(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
+    public XdatStoredSearch updateStoredSearch(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
     									  @ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
     									  @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch,
     									  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
@@ -149,7 +149,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The specified project or project doesn't exist"),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteProject(@ApiParam("The ID of the search saved to be deleted") @PathVariable final String searchId,
+    public void deleteSavedSearch(@ApiParam("The ID of the search saved to be deleted") @PathVariable final String searchId,
     						  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
     						  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
     						  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,

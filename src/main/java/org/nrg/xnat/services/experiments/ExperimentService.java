@@ -13,15 +13,15 @@ public interface ExperimentService {
 	
 	 XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata,String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event) throws NotFoundException;
 
-	 Optional<List<XnatExperimentdata>> findAll(UserI user) throws NotFoundException;
+	 List<XnatExperimentdata> findAll(UserI user) throws NotFoundException;
 	
 	 Optional<XnatExperimentdata> findById(UserI user, String experimentId) throws DataFormatException, NotFoundException;
 	
-	 Optional<List<XnatExperimentdata>> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subject) throws DataFormatException, NotFoundException;
+	 List<XnatExperimentdata> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subject) throws DataFormatException, NotFoundException;
 
-	 Optional<List<XnatExperimentdata>> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
+	 List<XnatExperimentdata> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 	
-	 Optional<List<XnatExperimentdata>> findAllByProjectIdAndLabel(UserI user, String projectId, String label);
+	 List<XnatExperimentdata> findAllByProjectIdAndLabel(UserI user, String projectId, String label);
 
 	 XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event);
 

@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public interface ProjectService {
 	
-     Optional<List<XnatProjectdata>> findAll(UserI user) throws NotFoundException;
+     List<XnatProjectdata> findAll(UserI user) throws NotFoundException;
 
      Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 

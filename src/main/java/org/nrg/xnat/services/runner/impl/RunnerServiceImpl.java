@@ -1,23 +1,21 @@
 package org.nrg.xnat.services.runner.impl;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.automation.runners.ScriptRunner;
 import org.nrg.automation.services.ScriptRunnerService;
 import org.nrg.framework.services.SerializerService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xnat.services.runner.RunnerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import springfox.documentation.spring.web.json.Json;
 
 @Service
 public class RunnerServiceImpl implements RunnerService{
@@ -29,7 +27,7 @@ public class RunnerServiceImpl implements RunnerService{
 	}
 	
 	@Override
-	public String getAutomationRunners(String language) throws InitializationException {
+	public Optional<String> getAutomationRunners(String language) throws InitializationException {
 		ObjectMapper objectMapper = new ObjectMapper();
 		try {
 			if (StringUtils.isNotBlank(language)) {
@@ -37,10 +35,13 @@ public class RunnerServiceImpl implements RunnerService{
 					throw new NotFoundException(String.format("No script runner found for %s", language));
 				}
 				 String json = toJson(_runnerService.getRunner(language));
-				return objectMapper.writeValueAsString(json);
+				 if(StringUtils.isBlank(json)) {
+					 throw new  NotFoundException("language json wasn't founds");
+				 }
+				return Optional.of(objectMapper.writeValueAsString(json));
 			} else {
 				final List<String> runners = _runnerService.getRunners();
-				return objectMapper.writeValueAsString(runners);
+				return Optional.of( objectMapper.writeValueAsString(runners));
 			}
 		} catch (java.io.IOException | NotFoundException e) {
 				throw new InitializationException("There was an error processing the script runners to JSON");

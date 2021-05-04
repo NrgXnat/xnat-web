@@ -54,7 +54,7 @@ import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SecureResoureUtil {
+public class SecureResourceUtil {
 
 	public boolean rename(final XnatProjectdata proj, final ArchivableItem existing, final String label, final UserI user) {
         try {

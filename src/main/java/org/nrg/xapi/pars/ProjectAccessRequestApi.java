@@ -48,7 +48,7 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/pars", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<ProjectAccessRequest> getAll() throws NotFoundException {
     	log.debug("User {} requested ProjectAccessRequest ", getSessionUser().getUsername());
-    	return _parService.findAll(getSessionUser()).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME));
+    	return _parService.findAll(getSessionUser());
     }
     
     @ApiOperation(value = "Gets the requested  project access request", notes = "Returns the  project with the specified ID", response = ProjectAccessRequest.class, responseContainer = "list")
@@ -59,7 +59,7 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}/pars", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<ProjectAccessRequest> getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested project with ID {} ", getSessionUser().getUsername(), projectId);
-    	return _parService.findByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME));
+    	return _parService.findByProjectId(getSessionUser(), projectId);
     }
     
     @ApiOperation(value = "Gets the requested  project access request", notes = "Returns the  project with the specified ID", response = ProjectAccessRequest.class, responseContainer = "single")
@@ -69,7 +69,7 @@ public class ProjectAccessRequestApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/pars/{parId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public ProjectAccessRequest getByParId(@ApiParam(value = "The ID of the project access request.") @PathVariable final Integer parId) throws NotFoundException, DataFormatException {
-    	log.debug("User {} requested parId with ID {} ", getSessionUser().getUsername(), parId);
+    	log.debug("User {} requested pars with ID {} ", getSessionUser().getUsername(), parId);
     	return _parService.findByParId(getSessionUser(), parId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, parId));
     }
     

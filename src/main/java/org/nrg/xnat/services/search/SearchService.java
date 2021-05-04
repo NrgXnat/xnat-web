@@ -11,18 +11,11 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
-import org.nrg.xdat.security.user.exceptions.UserInitException;
-import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
-import org.nrg.xft.exception.DBPoolException;
-import org.nrg.xft.exception.ElementNotFoundException;
-import org.nrg.xft.exception.FieldNotFoundException;
-import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.search.DisplayVersionDto;
 import org.nrg.xnat.dto.search.SearchElementDto;
-import org.nrg.xnat.dto.search.VersionDto;
 import org.nrg.xnat.dto.search.XnatSearchElementDto;
 import org.nrg.xnat.model.util.XnatEventUtil;
 
