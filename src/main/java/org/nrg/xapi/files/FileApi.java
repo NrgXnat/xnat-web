@@ -107,8 +107,8 @@ public class FileApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatResourcecatalog> getByExperimentIdAndAssessorId(@ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
-																	@ApiParam(value = "The ID of the assessorId.") @PathVariable(required = false) final String assessorId) throws NotFoundException, DataFormatException{
+	public List<XnatResourcecatalog> getByExperimentIdAndAssessorId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+																	@ApiParam(value = "The ID of the assessorId.") @PathVariable final String assessorId) throws NotFoundException, DataFormatException{
 		log.debug("User {} requested  resource catalog with experiment ID {} and with assessor ID {}", getSessionUser().getUsername(),experimentId, assessorId);
 		return _fileService.findByExperimentIdAndAssessorId(getSessionUser(), experimentId, assessorId);
 	}
@@ -201,7 +201,7 @@ public class FileApi extends AbstractXapiProjectRestController {
     								  @ApiParam("The ID of the scan.") @PathVariable(required = false) final String  scanId,
     								  @ApiParam("The ID of the type") @PathVariable(required = false) final String  type,
     								  @ApiParam("The ID of the project") @PathVariable(required = false) final String  resourceId,
-    								  @ApiParam("The file description.") @RequestParam(name= "rename", required = false) final String requestRename,
+    								  @ApiParam("The file rename.") @RequestParam(name= "rename", required = false) final String requestRename,
     								  @ApiParam("The file description.") @RequestParam(name= "description", required = false) final String requestDesc,
     								  @ApiParam("The file format.") @RequestParam(name= "format",required = false) final String requestFormat,
     								  @ApiParam("Thefile content.") @RequestParam(name= "content", required = false) final String requestContent,
