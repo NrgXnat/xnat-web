@@ -229,7 +229,7 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws Exception {
+    public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException {
 
         List<DicomObjectI> instances = new ArrayList<>();
         XnatImagesessiondata session = getSession( studyInstanceUID, user);
@@ -483,14 +483,19 @@ public class XftSearchEngine implements SearchEngineI {
         return cc;
     }
 
-    private XnatImagesessiondata getSession(String studyInstanceUID, UserI user) throws Exception {
-        CriteriaCollection cc = new CriteriaCollection("AND");
-        cc.addClause( "xnat:imageSessionData/uid", "=" , studyInstanceUID);
+    private XnatImagesessiondata getSession(String studyInstanceUID, UserI user) throws SearchException {
+        try {
+            CriteriaCollection cc = new CriteriaCollection("AND");
+            cc.addClause("xnat:imageSessionData/uid", "=", studyInstanceUID);
 
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
+            ItemCollection ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
 
-        XnatImagesessiondata session = new XnatImagesessiondata(ic.getFirst());
-        return session;
+            XnatImagesessiondata session = new XnatImagesessiondata(ic.getFirst());
+            return session;
+        }
+        catch (Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, "Error getting session data for studyInstanceUID: " + studyInstanceUID, e);
+        }
     }
 
     private XnatImagescandata getScan( String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws Exception {
@@ -530,7 +535,7 @@ public class XftSearchEngine implements SearchEngineI {
                 }
             }
         }
-        return (file == null)? null: DicomObjectFactory.create( file);
+        return (file == null)? null: DicomObjectFactory.create( file, false);
     }
 
 //    private List<DicomObjectI> getInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {
@@ -565,13 +570,18 @@ public class XftSearchEngine implements SearchEngineI {
 //        return instances;
 //    }
 
-    private List<DicomObjectI> getInstances(XnatImagescandataI scandata) throws ClientException, IOException {
-        XnatResourcecatalog dicomResourceCatalog = _catalogService.getDicomResourceCatalog(scandata.getImageSessionId(), scandata.getId());
-        Path resourceDir = Paths.get(dicomResourceCatalog.getUri()).getParent();
-        return Files.list(resourceDir)
-                .filter(path -> path.getFileName().toString().endsWith(".dcm"))
-                .map(path -> DicomObjectFactory.createQuiet(path.toFile()))
-                .collect(Collectors.toList());
+    private List<DicomObjectI> getInstances(XnatImagescandataI scandata) throws SearchException {
+        try {
+            XnatResourcecatalog dicomResourceCatalog = _catalogService.getDicomResourceCatalog(scandata.getImageSessionId(), scandata.getId());
+            Path resourceDir = Paths.get(dicomResourceCatalog.getUri()).getParent();
+            return Files.list(resourceDir)
+                    .filter(path -> path.getFileName().toString().endsWith(".dcm"))
+                    .map(path -> DicomObjectFactory.createQuiet(path.toFile(), false))
+                    .collect(Collectors.toList());
+        }
+        catch (ClientException | IOException e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, "Error getting instances.", e);
+        }
     }
 
     private int getInstanceCount( String archiveRootPath, XnatImagescandataI imageScanData) {

@@ -19,13 +19,13 @@ public class DicomObjectFactory {
         this.frameGrabber = frameGrabber;
     }
 
-    public static DicomObjectI create(File f) throws IOException {
-        return new DicomObjectChe3(f, frameGrabber);
+    public static DicomObjectI create(File f, boolean isTemporary) throws IOException {
+        return new DicomObjectChe3(f, isTemporary, frameGrabber);
     }
 
-    public static DicomObjectI createQuiet(File f) {
+    public static DicomObjectI createQuiet(File f, boolean isTemporary) {
         try {
-            return new DicomObjectChe3(f, frameGrabber);
+            return new DicomObjectChe3(f, isTemporary, frameGrabber);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

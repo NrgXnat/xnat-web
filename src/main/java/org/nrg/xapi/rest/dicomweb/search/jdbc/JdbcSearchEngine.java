@@ -6,6 +6,7 @@ import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.QIDOResponse;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
+import org.nrg.xapi.rest.dicomweb.search.SearchException;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImagescandataI;
@@ -71,7 +72,7 @@ public class JdbcSearchEngine implements SearchEngineI {
                     CatCatalogBean catalog = CatalogUtils.getCatalog(catFile, null);
                     if (catalog.getEntries_entry().size() > 0) {
                         File file = CatalogUtils.getFile(catalog.getEntries_entry().get(0), catFile.getParentFile().getAbsolutePath(), null);
-                        dcmFiles.add(DicomObjectFactory.create(file));
+                        dcmFiles.add(DicomObjectFactory.create(file, false));
                     }
                 }
             }
@@ -86,8 +87,8 @@ public class JdbcSearchEngine implements SearchEngineI {
     @Override
     public DicomObjectI[] getStudyAsArray(String studyInstanceUID) throws IOException {
         List<DicomObjectI> dcmFiles = new ArrayList<>();
-        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm")));
-        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm")));
+        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"),false));
+        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"), false));
         DicomObjectI[] d = new DicomObjectI[dcmFiles.size()];
         return dcmFiles.toArray(d);
     }
@@ -158,7 +159,7 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws Exception {
+    public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException {
         return null;
     }
 }

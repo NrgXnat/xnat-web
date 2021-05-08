@@ -4,21 +4,28 @@ import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomEncodingOptions;
 import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.io.DicomOutputStream;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
 
 import java.io.*;
 
+/**
+ * References an object on disk. Delete the object on disk if it is labeled as temporary.
+ *
+ */
 public class DicomObjectChe3 implements DicomObjectI{
 
     private final File file;
+    private boolean isTemporary;
     private Attributes attributes = null;
     private static int PIXEL_DATA = 0x7FE00010;
 
     private final FrameGrabber frameGrabber;
 
-    public DicomObjectChe3(File file, FrameGrabber frameGrabber) throws IOException {
+    public DicomObjectChe3( File file, boolean isTemporary, FrameGrabber frameGrabber) throws IOException {
         this.file = file;
+        this.isTemporary = isTemporary;
         readAll();
         this.frameGrabber = frameGrabber;
     }
@@ -46,6 +53,10 @@ public class DicomObjectChe3 implements DicomObjectI{
             int bytes;
             while( (bytes = is.read(buf)) != -1) {
                 os.write(buf, 0, bytes);
+            }
+            if( this.isTemporary) {
+                file.delete();
+                attributes = null;
             }
         }
     }

@@ -24,5 +24,5 @@ public interface SearchEngineI {
 
     List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws Exception;
 
-    List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws Exception;
+    List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException;
 }

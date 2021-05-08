@@ -58,8 +58,7 @@ public class TransCoderChe3 implements TransCoder {
                 try( OutputStream os =  new FileOutputStream( tmpFile.toFile())) {
                     transcode( inDcm, dstTsuid, os);
                 }
-                DicomObjectI dobj = DicomObjectFactory.create( tmpFile.toFile());
-                tmpFile.toFile().delete();
+                DicomObjectI dobj = DicomObjectFactory.create( tmpFile.toFile(), true);
                 return dobj;
             }
         } catch (IOException e) {

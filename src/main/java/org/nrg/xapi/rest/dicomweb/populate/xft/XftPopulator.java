@@ -113,7 +113,7 @@ public class XftPopulator implements PopulatorI {
     }
 
     public void processFile( long imagescandata_id, File file) throws IOException {
-        DicomObjectI d = DicomObjectFactory.create(file);
+        DicomObjectI d = DicomObjectFactory.create(file, false);
         dicomInstanceDAO.saveDicomObject( imagescandata_id, d);
     }
 

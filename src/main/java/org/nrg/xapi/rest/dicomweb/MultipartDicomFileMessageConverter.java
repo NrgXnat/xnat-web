@@ -71,7 +71,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     }
 
     @Override
-    protected void writeInternal( List<DicomObjectI> dicomParts, HttpOutputMessage outputMessage) throws IOException, HttpMessageNotWritableException {
+    protected void writeInternal( List<DicomObjectI> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
 
         try {
             HttpHeaders defaultHeaders = outputMessage.getHeaders();
@@ -81,14 +81,16 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
             if( partMediaType == null) {
                 String msg = String.format("Error finding root-part media type in multipart content: %s", defaultMediaType);
                 _log.error( msg);
-                throw new IOException(msg);
+                throw new HttpMessageNotWritableException( msg);
             }
 
             String tsuid = defaultMediaType.getParameter("transfer-syntax");
             tsuid = (tsuid == null)? DEFAULT_DICOM_TSUID: tsuid;
 
             if( ! transCoder.isSupportedTransferSyntax( tsuid)) {
-                throw new UnsupportedTransferSyntaxException( tsuid);
+                String msg = "Unsupported Transfer Syntax: " + tsuid;
+                _log.error( msg);
+                throw new HttpMessageNotWritableException( msg);
             }
 
             HttpHeaders outputHeaders = outputMessage.getHeaders();
@@ -132,11 +134,10 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
 
             }
 
-        } catch (IOException e) {
-            String msg = "Error streaming dicom.";
-            throw new IOException(msg, e);
-        } catch( TransCoderException e) {
-            throw new HttpMessageNotWritableException(e.getMessage(), e);
+        } catch (IOException | TransCoderException e) {
+            String msg = "Error streaming dicom: " + e.getMessage();
+            _log.error( msg);
+            throw new HttpMessageNotWritableException( msg, e);
         }
     }
 
