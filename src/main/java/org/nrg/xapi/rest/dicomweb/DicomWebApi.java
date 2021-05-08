@@ -36,6 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -294,23 +295,6 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         }
     }
 
-    @ExceptionHandler(UnsupportedTransferSyntaxException.class)
-    public ResponseEntity<String> handleUnsupportedTSUIDException(UnsupportedTransferSyntaxException ex) {
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_ACCEPTABLE);
-
-        return responseEntity;
-    }
-
-    @ExceptionHandler(TransCoderException.class)
-    public ResponseEntity<String> handleTransCoderException(TransCoderException ex) {
-
-        ResponseEntity<String> responseEntity = new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-
-        return responseEntity;
-    }
-
-
     @ApiOperation(value = "WADO-RS Retrieve Series.", response = DicomObjectI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve series."),
             @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
@@ -348,27 +332,17 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "studies/{studyInstanceUID}", produces = {"multipart/related;type=\"application/dicom\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<DicomObjectI>> doRetrieveStudy(@PathVariable("studyInstanceUID") String studyInstanceUID) throws NrgServiceException, NoContentException {
+    public ResponseEntity<List<DicomObjectI>> doRetrieveStudy(@PathVariable("studyInstanceUID") String studyInstanceUID, HttpServletRequest request) throws UserNotFoundException, UserInitException, SearchException {
 
         UserI user = null;
         List<DicomObjectI> instances = new ArrayList<>();
-        try {
-            user = getUser();
-            instances.addAll( _searchEngine.retrieveStudy( studyInstanceUID, user));
-            if( instances.isEmpty()) {
-                return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-            }
-            return new ResponseEntity<>(instances, HttpStatus.OK );
 
-        } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to retrieve study: studyUID={1}", user, studyInstanceUID);
-            _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried to retrieve study: studyUID={1}", user, studyInstanceUID);
-            _log.error(msg, e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        user = getUser();
+        instances.addAll( _searchEngine.retrieveStudy( studyInstanceUID, user));
+        if( instances.isEmpty()) {
+            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
         }
+        return new ResponseEntity<>(instances, HttpStatus.OK );
     }
 
     @ApiOperation(value = "Populate DB for pre-existing project.", response = String.class)
