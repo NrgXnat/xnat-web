@@ -12,4 +12,8 @@ public interface ConfigurationService {
 	List<Map<String, String>> findAllConfigs(UserI user) throws NotFoundException;
 
 	List<Configuration> findByToolName(UserI user, String toolName, String projectId) throws NotFoundException;
+
+	List<Map<String, String>> findAllProjectConfigs(UserI user, String projectId) throws NotFoundException;
+
+	List<Configuration> findByToolNameAndPath(UserI user,String toolName, String projectId,  String path, boolean defaultToSiteWide);
 }
