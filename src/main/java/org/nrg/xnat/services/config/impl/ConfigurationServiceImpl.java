@@ -27,11 +27,11 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		configService = XDAT.getConfigService();
 		final List<String> tools;
 		tools = configService.getTools();
-		return getListConfigDate(tools);
+		return getListConfigData(tools);
 	}
 	
 	@Override
-	public List<Configuration> findByToolName(UserI user, String toolName, String projectId) throws NotFoundException {
+	public List<Configuration> findAllByToolName(UserI user, String toolName, String projectId) throws NotFoundException {
 		 final List<Configuration> configurations = new ArrayList<>();
 		configService = XDAT.getConfigService();
 		 final List<Configuration> l = StringUtils.isBlank(projectId)
@@ -50,42 +50,55 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 	      final List<String> tools;
 	      configService = XDAT.getConfigService();
 		 tools = configService.getTools(Scope.Project, projectId);
-		 return getListConfigDate(tools);
+		 return getListConfigData(tools);
 	}
 
 	@Override
-	public List<Configuration> findByToolNameAndPath(UserI user,  String toolName, String projectId,String path, boolean defaultToSiteWide) {
+	public List<Configuration> findAllByToolNameAndPath(UserI user,  String toolName, String projectId,String path, boolean defaultToSiteWide, String history, String requestVersion) {
 		final List<Configuration> configurations = new ArrayList<>();
+		Integer version = null;
+		if(StringUtils.isNotBlank(requestVersion)){
+			version = Integer.parseInt(requestVersion);
+		}
 		configService = XDAT.getConfigService();
-		 Configuration configuration = null;
-		 if(Objects.isNull(projectId))
-			 projectId = "";
-		 
-		  final boolean isSiteWide = StringUtils.isBlank(projectId);
-         if (isSiteWide) {
-             configuration = configService.getConfig(toolName, path);
-         } else {
-             try {
-                 configuration = configService.getConfig(toolName, path, Scope.Project, projectId);
-                 if (configuration == null && defaultToSiteWide) {
-                     //if project specific config is missing, allow fail over to site wide config
-                     configuration = configService.getConfig(toolName, path);
-                 }
-             } catch (Exception e) {
-                 // assume project config is missing
-                 if (defaultToSiteWide) {
-                	//if project specific config is missing, allow fail over to site wide configService.getConfig(toolName, path))
-                     configuration = configService.getConfig(toolName, path);
-                 }
-             }
-         }
-         if (configuration != null) {
-             configurations.add(configuration);
-         }
+		Configuration configuration = null;
+		if (Objects.isNull(projectId)) {
+			projectId = "";
+		}
+		final boolean isSiteWide = StringUtils.isBlank(projectId);
+		if (Objects.isNull(version)) {
+			if (isSiteWide) {
+				configuration = configService.getConfig(toolName, path);
+			} else {
+				configuration = getProjectConfiguration(configuration, toolName, path, projectId, defaultToSiteWide);
+			}
+			if (configuration != null) {
+				configurations.add(configuration);
+			}
+		} else {
+			 configurations.add(isSiteWide ? configService.getConfigByVersion(toolName, path, version) : configService.getConfigByVersion(toolName, path, version, Scope.Project, projectId));
+		}
 		return configurations;
 	}
 	
-	private List<Map<String, String>> getListConfigDate(List<String> tools) throws NotFoundException {
+	private Configuration getProjectConfiguration(Configuration configuration, String toolName, String path, String projectId, boolean defaultToSiteWide) {
+        try {
+            configuration = configService.getConfig(toolName, path, Scope.Project, projectId);
+            if (configuration == null && defaultToSiteWide) {
+                //if project specific config is missing, allow fail over to site wide config
+                configuration = configService.getConfig(toolName, path);
+            }
+        } catch (Exception e) {
+            // assume project config is missing
+            if (defaultToSiteWide) {
+           	//if project specific config is missing, allow fail over to site wide configService.getConfig(toolName, path))
+                configuration = configService.getConfig(toolName, path);
+            }
+        }
+		return configuration;
+	}
+
+	private List<Map<String, String>> getListConfigData(List<String> tools) throws NotFoundException {
 		  final List<Map<String, String>> list = new ArrayList<>();
 		 if (tools != null) {
        	 tools.forEach(tool->{

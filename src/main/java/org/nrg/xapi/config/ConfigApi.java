@@ -57,10 +57,10 @@ public class ConfigApi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = { "/config/{toolName}","/projects/{projectId}/config/{toolName}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<Configuration> getAllByToolName(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-			@ApiParam(value = "The value of tool name ") @PathVariable final String toolName)
+												@ApiParam(value = "The value of tool name ") @PathVariable final String toolName)
 			throws NotFoundException, DataFormatException {
 		log.debug("User {} requested configs with tool Name {}", getSessionUser().getUsername(), toolName);
-		return _configurationService.findByToolName(getSessionUser(),toolName, projectId);
+		return _configurationService.findAllByToolName(getSessionUser(),toolName, projectId);
 	}
 	
 	@ApiOperation(value = "Gets the requested  config", notes = "Returns the  project with the specified ID", response = List.class, responseContainer = "single")
@@ -83,11 +83,12 @@ public class ConfigApi extends AbstractXapiProjectRestController {
 	public List<Configuration> getAllByToolNameAndPath(@ApiParam(value = "The value of tool name ") @PathVariable final String toolName,
 													   @ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 													   @ApiParam(value = "The value  of the path to file.") @PathVariable final String path,
-													   @ApiParam(value = "The value  of the defaultToSiteWide.") @RequestParam final boolean defaultToSiteWide) throws NotFoundException, DataFormatException {
+													   @ApiParam(value = "The value  of the defaultToSiteWide.") @RequestParam(name ="defaultToSiteWide" ) final boolean defaultToSiteWide,
+													   @ApiParam(value = "The value  of the history.") @RequestParam(name ="history", required = false) final String history,
+													   @ApiParam(value = "The value  of the requestVersion.") @RequestParam(name ="requestVersion", required = false) final String requestVersion) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested configs with tool Name {}", getSessionUser().getUsername(), toolName);
-		return _configurationService.findByToolNameAndPath(getSessionUser(),toolName,projectId, path,defaultToSiteWide);
+		return _configurationService.findAllByToolNameAndPath(getSessionUser(),toolName,projectId, path,defaultToSiteWide, history, requestVersion);
 	}
 	
-
 	private final ConfigurationService _configurationService;
 }
