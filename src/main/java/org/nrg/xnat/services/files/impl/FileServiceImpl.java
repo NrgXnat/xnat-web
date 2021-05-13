@@ -11,13 +11,16 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
@@ -28,6 +31,7 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -36,6 +40,8 @@ import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xft.utils.ResourceFile;
+import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
@@ -48,6 +54,7 @@ import org.nrg.xnat.services.files.FileService;
 import org.nrg.xnat.services.messaging.file.MoveStoredFileRequest;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
+import org.nrg.xnat.utils.CatalogUtils.CatEntryFilterI;
 import org.nrg.xnat.utils.CatalogUtils.CatalogData;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
@@ -68,15 +75,15 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
-    	return resourceCatlogs;
+		return getResourceFileData(resources, projectId, user, contents, formats);
 	}
 	
 	@Override
@@ -107,33 +114,42 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public  List<XnatResourcecatalog>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public  List<ResourceFileDto>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats ) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
 		if(Objects.isNull(resourceId) ) {
 			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
 		}
-    	return resourceCatlogs;
+		return getResourceFileData(resources, projectId, user,contents,formats);
 	}
 	
+
 	@Override
-	public List<XnatResourcecatalog> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
 		if(Objects.isNull(resourceId) ) {
 			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
 		}
-    	return resourceCatlogs;
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
 	@Override
@@ -194,6 +210,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+		
     	return resourceCatlogs;
 	}
 	
@@ -583,6 +600,101 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
                 proj = ((XnatSubjectdata) security).getPrimaryProject(false);
             }
         }
+	}
+	
+	private XnatProjectdata getXnatProjectData(ItemI parent,ItemI security, XnatProjectdata proj) throws ElementNotFoundException {
+		if (proj == null) {
+            //setting project as primary project, or shared project
+            //this only works because the absolute paths are stored in the database for each resource, so the actual project path isn't used.
+            if (parent != null && parent.getItem().instanceOf("xnat:experimentData")) {
+                proj = ((XnatExperimentdata) parent).getPrimaryProject(false);
+                // Per FogBugz 4746, prevent NPE when user doesn't have access to resource (MRH)
+                // Check access through shared project when user doesn't have access to primary project
+                if (proj == null) {
+                    proj = (XnatProjectdata) ((XnatExperimentdata) parent).getFirstProject();
+                }
+            } else if (security != null && security.getItem().instanceOf("xnat:experimentData")) {
+                proj = ((XnatExperimentdata) security).getPrimaryProject(false);
+                // Per FogBugz 4746, ....
+                if (proj == null) {
+                    proj = (XnatProjectdata) ((XnatExperimentdata) security).getFirstProject();
+                }
+            } else if (security != null && security.getItem().instanceOf("xnat:subjectData")) {
+                proj = ((XnatSubjectdata) security).getPrimaryProject(false);
+                // Per FogBugz 4746, ....
+                if (proj == null) {
+                    proj = (XnatProjectdata) ((XnatSubjectdata) security).getFirstProject();
+                }
+            } else if (security != null && security.getItem().instanceOf("xnat:projectData")) {
+                proj = (XnatProjectdata) security;
+            }
+        }
+		return proj;
+	}
+	private List<ResourceFileDto> getResourceFileData(List<XnatResourcecatalog> resources, String projectId, UserI user,String[] contents, String[] formats) {
+		List<ResourceFileDto>  results = new ArrayList<ResourceFileDto>();
+			for(XnatResourcecatalog resource : resources) {
+			CatalogData catalogData = null;
+			try {
+				catalogData = CatalogData.getOrCreateAndClean(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath(), resource, false, projectId);
+			} catch (ServerException e) {
+				e.printStackTrace();
+			}
+			final CatCatalogBean cat = catalogData.catBean;
+			final String parentPath = catalogData.catPath;
+			XNATCatalogTemplateUtil tmp = new XNATCatalogTemplateUtil();
+			String baseURI = tmp.getBaseURI();
+			final CatalogUtils.CatEntryFilterI entryFilter = buildFilter(contents, formats);
+	        List<Object[]> objects= CatalogUtils.getEntryDetails(cat, parentPath, baseURI + "/resources/" + resource.getXnatAbstractresourceId() + "/files", resource, false, entryFilter, proj, "URI");
+	        results = getListObjectData(objects, results);
+	        //CatCatalogBean catBean = resource.getCatalog(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
+	        //ArrayList<ResourceFile> files= resource.getFileResources(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
+	       // File file =resource.getCatalogFile(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
+			}
+		
+		
+		return results;
+		
+	}
+
+	private List<ResourceFileDto> getListObjectData(List<Object[]> objects, List<ResourceFileDto> results) {
+		objects.forEach(object ->{
+        	results.add(ResourceFileDto.builder()
+        		.name(object[0].toString())
+        		.size(Integer.parseInt(object[1].toString()))
+        		.uri(object[2].toString())
+        		.collection(object[3].toString())
+        		.fileTags(object[4].toString())
+        		.fileFormat(object[5].toString())
+        		.fileContent(object[6].toString())
+        		.catId(Integer.parseInt(object[7].toString()))
+        		.digest(object[8].toString())
+        		.build());
+        	
+        });
+		return results;
+		
+	}
+
+	private CatEntryFilterI buildFilter(String[] contents, String[] formats) {
+		//final String[] contents = getQueryVariables("file_content");
+		//final String[] formats = getQueryVariables("file_format");
+		final boolean hasContents = !ArrayUtils.isEmpty(contents);
+		final boolean hasFormats = !ArrayUtils.isEmpty(formats);
+		if (!hasContents && !hasFormats) {
+			return null;
+		}
+	  return new CatEntryFilterI() {
+	     public boolean accept(final CatEntryI entry) {
+	          if (hasFormats && ((entry.getFormat() == null && !ArrayUtils.contains(formats, "NULL")) || !ArrayUtils.contains(formats, entry.getFormat()))) {
+	               return false;
+	            }
+	         if (hasContents) {
+	              return entry.getContent() == null ? ArrayUtils.contains(contents, "NULL") : ArrayUtils.contains(contents, entry.getContent());
+	            }
+	        return true;
+			}
+		};
 	}
 
     /**

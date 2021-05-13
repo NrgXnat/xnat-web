@@ -30,6 +30,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
+
 import javax.annotation.Nonnull;
 
 @Slf4j
@@ -71,6 +73,47 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
 		}
 		return _resourceIds;
 	}
+	
+	 public String getBaseURI() {
+	        final StringBuilder buffer = new StringBuilder("/data");
+	        if (proj != null && sub != null) {
+	            buffer.append("/projects/");
+	            buffer.append(proj.getId());
+	            buffer.append("/subjects/");
+	            buffer.append(sub.getId());
+	        }
+	        if (!recons.isEmpty()) {
+	            buffer.append("/experiments/");
+	            buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	            buffer.append("/reconstructions/");
+	            buffer.append(recons.stream().map(XnatReconstructedimagedata::getId).collect(Collectors.joining(",")));
+	            if (StringUtils.isNotBlank(type)) {
+	                buffer.append("/").append(type);
+	            }
+	        } else if (!scans.isEmpty()) {
+	            buffer.append("/experiments/");
+	            buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	            buffer.append("/scans/");
+	            buffer.append(scans.stream().map(XnatImagescandata::getId).collect(Collectors.joining(",")));
+	        } else if (!expts.isEmpty()) {
+	            if (!assesseds.isEmpty()) {
+	                buffer.append("/experiments/");
+	                buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	                buffer.append("/assessors/");
+	                buffer.append(expts.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	                if (type != null) {
+	                    buffer.append("/").append(type);
+	                }
+	            } else {
+	                buffer.append("/experiments/");
+	                buffer.append(expts.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	            }
+	        } else if (sub == null && proj != null) {
+	            buffer.append("/projects/");
+	            buffer.append(proj.getId());
+	        }
+	        return buffer.toString();
+	    }
 
 	protected NamedParameterJdbcTemplate getTemplate() {
 		return _template;
@@ -208,6 +251,8 @@ public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
 			return experiment.getId();
 		}
 	};
+	
+	
 
 	 private static final String QUERY_FIND_RESOURCE_SECURE_OBJECTS = "SELECT " +
              "  a.xnat_abstractresource_id AS resourceId, " +
