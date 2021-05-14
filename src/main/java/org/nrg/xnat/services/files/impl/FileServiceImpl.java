@@ -40,7 +40,6 @@ import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xft.utils.ResourceFile;
 import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
@@ -87,30 +86,49 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-    	return resourceCatlogs;
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
-	
 	@Override
-	public List<XnatResourcecatalog> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " +projectId+ "wasn't found");
 		}
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-    	return resourceCatlogs;
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, XnatProjectdata.getXnatProjectdatasById(projectId, user, false));
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
 	@Override
@@ -149,6 +167,9 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		ItemI parent = subject;
 		ItemI security = subject;
 		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
 		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
@@ -189,29 +210,50 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByExperimentId(UserI user, String experimentId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(Objects.isNull(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+		List<XnatResourcecatalog> resources = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId) ;
-    	return resourceCatlogs;
+		}
+		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(expriment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = expriment;
+		ItemI security = expriment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 
 	@Override
-	public List<XnatResourcecatalog> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
 		if( Objects.isNull(resourceId) ) {
 			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty())
+		List<XnatResourcecatalog> resources = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-		
-    	return resourceCatlogs;
+		}
+		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(expriment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = expriment;
+		ItemI security = expriment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
 	/**

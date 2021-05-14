@@ -16,9 +16,9 @@ public interface FileService {
 	
 	 List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException;
 
-	 List<XnatResourcecatalog> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException;
+	 List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
 
-	 List<XnatResourcecatalog> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
+	 List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
 
 	 List<ResourceFileDto> findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException;
 
@@ -28,9 +28,9 @@ public interface FileService {
 
 	 List<XnatResourcecatalog> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException;
 
-	 List<XnatResourcecatalog> findByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException;
+	 List<ResourceFileDto> findByExperimentId(UserI user, String experimentId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
 
-	 List<XnatResourcecatalog> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId) throws DataFormatException, NotFoundException;
+	 List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
 	
 	 void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception;
 

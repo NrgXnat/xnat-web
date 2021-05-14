@@ -59,9 +59,11 @@ public class FileApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 404, message = "The requested resource catalog  wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatResourcecatalog> getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException{
+	public List<ResourceFileDto> getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId,
+													@ApiParam(value = "The values of the contents.") @RequestParam(name="contents", required = false) final String[] contents,
+													@ApiParam(value = "The values of the formats.") @RequestParam(name="formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException{
 		log.debug("User {} requested  resource catalog with subject ID {}", getSessionUser().getUsername(), subjectId);
-		return _fileService.findBySubjectId(getSessionUser(), subjectId);
+		return _fileService.findBySubjectId(getSessionUser(), subjectId, contents, formats);
 		
 	}
 	
@@ -72,10 +74,12 @@ public class FileApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatResourcecatalog> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
-																@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException {
+	public List<ResourceFileDto> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+																@ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId,
+																@ApiParam(value = "The values of the contents.") @RequestParam(name="contents", required = false) final String[] contents,
+																@ApiParam(value = "The values of the formats.") @RequestParam(name="formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
 		log.debug("User {} requested  resource catalog with Project ID {} and subject ID {}", getSessionUser().getUsername(), projectId, subjectId);
-		return  _fileService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
+		return  _fileService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId, contents, formats);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  subjectId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -141,9 +145,11 @@ public class FileApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatResourcecatalog> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId) throws NotFoundException, DataFormatException {
+	public List<ResourceFileDto> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
+													 @ApiParam(value = "The values of the contents.") @RequestParam(name="contents", required = false) final String[] contents,
+													 @ApiParam(value = "The values of the formats.") @RequestParam(name="formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
 		log.debug("User {} requested  resource catalog with experiment ID {}", getSessionUser().getUsername(), experimentId);
-		return _fileService.findByExperimentId(getSessionUser(), experimentId);
+		return _fileService.findByExperimentId(getSessionUser(), experimentId, contents, formats);
 	}
 	
 	@ApiOperation(value = "Gets the requested  files", notes = "Returns the  resource with the specified  experimentId", response = XnatResourcecatalog.class, responseContainer = "List")
@@ -152,10 +158,12 @@ public class FileApi extends AbstractXapiProjectRestController {
 					@ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatResourcecatalog> getByExperimentIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
-																	@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException {
+	public List<ResourceFileDto> getByExperimentIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
+																	@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
+																	@ApiParam(value = "The values of the contents.") @RequestParam(name="contents", required = false) final String[] contents,
+																	@ApiParam(value = "The values of the formats.") @RequestParam(name="formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
 		log.debug("User {} requested  resource catalog with experiment ID {} and resource ID {} ", getSessionUser().getUsername(), experimentId, resourceId);
-		return _fileService.findByExperimentIdAndResourceId(getSessionUser(), experimentId, resourceId);
+		return _fileService.findByExperimentIdAndResourceId(getSessionUser(), experimentId, resourceId,contents, formats);
 	}
 	
 	 @ApiOperation(value = "Delete an existing resource file", notes = "Deletes the specified resource file.")
