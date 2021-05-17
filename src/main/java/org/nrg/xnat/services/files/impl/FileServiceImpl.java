@@ -174,22 +174,57 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
 		if(StringUtils.isBlank(assessorId)) {
 			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
-    	return resourceCatlogs;
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
 	@Override
-	public List<XnatResourcecatalog> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId) throws DataFormatException, NotFoundException {
+	public List<ResourceFileDto> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	@Override
+	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
@@ -202,11 +237,21 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(assessedId)) {
 			throw new DataFormatException("The requested assessed ID " + assessedId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resourceCatlogs = _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
-		if(Objects.isNull(resourceCatlogs) || resourceCatlogs.isEmpty()) {
+		List<XnatResourcecatalog> resources = _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
 		}
-    	return resourceCatlogs;
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessedId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
 	}
 	
 	@Override
@@ -947,6 +992,8 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	
 	private static final String BY_ID_WHERE_EXP_AND_ASSESSER = " WHERE iad.imagesession_id= :experimentId  AND  map.xnat_imageassessordata_id = :assessorId";
 	
+	private static final String BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE = " WHERE iad.imagesession_id= :experimentId  AND  map.xnat_imageassessordata_id = :assessorId AND abst.xnat_abstractresource_id = :resourceId";
+	
 	private static final String BY_ID_WHERE_SUBJ_AND_RESOURCE = " WHERE xnat_subjectdata_id= :subjectId  AND map.xnat_abstractresource_xnat_abstractresource_id= :resourceId";
 	
 	private static final String BY_ID_WHERE_PROJ = " where sub.project = :projectId ";
@@ -973,5 +1020,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};
+	
 
 }
