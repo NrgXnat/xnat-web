@@ -51,6 +51,7 @@ import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.cache.UserProjectCache;
 import org.nrg.xnat.services.files.FileService;
 import org.nrg.xnat.services.messaging.file.MoveStoredFileRequest;
+import org.nrg.xnat.services.resources.ResourceService;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.CatalogUtils.CatEntryFilterI;
@@ -69,8 +70,9 @@ import lombok.extern.slf4j.Slf4j;
 public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileService {
 	
 	@Autowired
-	public FileServiceImpl(final NamedParameterJdbcTemplate template) {
+	public FileServiceImpl(final NamedParameterJdbcTemplate template, ResourceService resourceService) {
 		_template = template;
+		_resourceService = resourceService;
 	}
 	
 	@Override
@@ -221,6 +223,39 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
 		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	@Override
+	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		List<XnatResourcecatalog> resourceCatalog= new ArrayList<>();
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
+		}
+		List<XnatAbstractresource> resources = _resourceService.findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		for (final XnatAbstractresource temp : resources) {
+			final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
+			resourceCatalog.add(catResource);
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resourceCatalog, project.getId(), user, contents, formats);
 	}
 	
 	@Override
@@ -743,7 +778,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		return results;
 		
 	}
-
+	
 	private List<ResourceFileDto> getListObjectData(List<Object[]> objects, List<ResourceFileDto> results) {
 		objects.forEach(object ->{
         	results.add(ResourceFileDto.builder()
@@ -1011,6 +1046,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	private static final String BY_ID_WHERE_RESOURCE_ID  = "  abst.xnat_abstractresource_id = :resourceId ";
 
 	private final NamedParameterJdbcTemplate _template;
+	private final ResourceService _resourceService;
 	
     private static final Pattern       PATTERN_ASSESSOR_URI = Pattern.compile("/assessors/([^/]+)", Pattern.CASE_INSENSITIVE);
     private static final Pattern       PATTERN_ARCHIVE_URI  = Pattern.compile("/archive/([^/]+)");
@@ -1020,6 +1056,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};
+	
 	
 
 }
