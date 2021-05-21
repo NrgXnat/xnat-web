@@ -1,12 +1,12 @@
 package org.nrg.xnat.services.prearchive;
 
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
-
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
+import org.nrg.xnat.helpers.prearchive.SessionException;
 
 public interface PrearchiveService {
 
-	List<PrearchiveDto> findAllPrearchives(UserI user, String projectId);
+	List<PrearchiveDto> findAllPrearchives(UserI user, String projectId,  String tag) throws SQLException, SessionException, Exception;
 }

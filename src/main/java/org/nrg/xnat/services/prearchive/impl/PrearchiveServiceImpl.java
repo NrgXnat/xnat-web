@@ -5,22 +5,30 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.security.PermissionsServiceImpl;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.DatabaseSession;
+import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
+import org.nrg.xnat.helpers.prearchive.SessionDataTriple;
+import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
+import org.nrg.xnat.utils.functions.Functions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
+
+import com.google.common.collect.Lists;
 
 @Service
 public class PrearchiveServiceImpl implements PrearchiveService {
@@ -32,30 +40,56 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 	}
 
 	@Override
-	public List<PrearchiveDto>  findAllPrearchives(UserI user,String projectId) {
+	public List<PrearchiveDto>  findAllPrearchives(UserI user,String projectId, String tag) throws SQLException, SessionException, Exception {
 		boolean dataAccess = Groups.hasAllDataAccess(user);
-		final List<String> projects = new ArrayList<>(StringUtils.isNotBlank(projectId) ? Arrays.asList(projectId.split("\\s*,\\s*")) : _permissions.getUserEditableProjects(user.getUsername()));
-        if (dataAccess) {
-            projects.add(null);
-        }
-        return _template.query(DatabaseSession.PROJECT.allMatchesSql(projects.toArray(new String[0])), new MapSqlParameterSource(), new PrearchiveRowMapper());
+		if (StringUtils.isNotBlank(tag)) {
+			List<PrearchiveDto> prearchiveDtos = new ArrayList<>();
+			Collection<SessionDataTriple> result = Lists.transform(new ArrayList<>(PrearcDatabase.getSessionByUID(tag)),Functions.SESSION_DATA_TO_SESSION_DATA_TRIPLE);
+			if (Objects.isNull(result)) {
+				throw new NotFoundException("Session Data Triple result wasn't found");
+			} else {
+				for (final SessionDataTriple s : result) {
+					String query = DatabaseSession.findSessionSql(s.getFolderName(), s.getTimestamp(), s.getProject());
+					if (StringUtils.isNotBlank(query)) {
+						PrearchiveDto prearchiveDto = _template.queryForObject(query, new MapSqlParameterSource(),
+								new PrearchiveTagRowMapper());
+						prearchiveDtos.add(prearchiveDto);
+					}
+				}
+				return prearchiveDtos;
+			}
+		} else {
+			final List<String> projects = new ArrayList<>(StringUtils.isNotBlank(projectId) ? Arrays.asList(projectId.split("\\s*,\\s*")): _permissions.getUserEditableProjects(user.getUsername()));
+			if (Objects.isNull(projects)&& projects.size()<=0) {
+				throw new NotFoundException("List of project ID wasn't found");
+			}
+			if (dataAccess) {
+				projects.add(null);
+			}
+			return _template.query(DatabaseSession.PROJECT.allMatchesSql(projects.toArray(new String[0])),new MapSqlParameterSource(), new PrearchiveRowMapper());
+		}
 	}
-	
+
 	private static class PrearchiveRowMapper implements RowMapper<PrearchiveDto>  {
         @Override
         public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
         	ResultSetMetaData rsmd = resultSet.getMetaData();
-        	while (resultSet.next()) {
-        		 return  getPreacgiveData(resultSet, rsmd);
-        	}
-			return null;
+        	return  getPrearchiveData(resultSet, rsmd);
         }
 	}
 	
-	private static PrearchiveDto getPreacgiveData(ResultSet resultSet, ResultSetMetaData rsmd) throws SQLException {
+	private static class PrearchiveTagRowMapper implements RowMapper<PrearchiveDto>  {
+        @Override
+        public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+        	ResultSetMetaData rsmd = resultSet.getMetaData();
+        	 return  getPrearchiveData(resultSet, rsmd);
+        }
+	}
+	
+	private static PrearchiveDto getPrearchiveData(ResultSet resultSet, ResultSetMetaData rsmd) throws SQLException {
 		PrearchiveDto prearchiveDto = new PrearchiveDto(); 
 		int columnsNumber = rsmd.getColumnCount();
-	for (int i = 1; i <= columnsNumber; i++) {
+	   for (int i = 1; i <= columnsNumber; i++) {
 	     String columnName = rsmd.getColumnName(i);
 		if(columnName.equalsIgnoreCase("project")) {
 			prearchiveDto.setProject(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
