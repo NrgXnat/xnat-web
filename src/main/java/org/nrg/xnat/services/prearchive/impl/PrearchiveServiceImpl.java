@@ -51,8 +51,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 				for (final SessionDataTriple s : result) {
 					String query = DatabaseSession.findSessionSql(s.getFolderName(), s.getTimestamp(), s.getProject());
 					if (StringUtils.isNotBlank(query)) {
-						PrearchiveDto prearchiveDto = _template.queryForObject(query, new MapSqlParameterSource(),
-								new PrearchiveTagRowMapper());
+						PrearchiveDto prearchiveDto = _template.queryForObject(query, new MapSqlParameterSource(),new PrearchiveTagRowMapper());
 						prearchiveDtos.add(prearchiveDto);
 					}
 				}
@@ -74,7 +73,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         @Override
         public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
         	ResultSetMetaData rsmd = resultSet.getMetaData();
-        	return  getPrearchiveData(resultSet, rsmd);
+        	return  PrearchiveDto.getPrearchiveData(resultSet, rsmd);
         }
 	}
 	
@@ -82,57 +81,11 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         @Override
         public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
         	ResultSetMetaData rsmd = resultSet.getMetaData();
-        	 return  getPrearchiveData(resultSet, rsmd);
+        	 return  PrearchiveDto.getPrearchiveData(resultSet, rsmd);
         }
 	}
 	
-	private static PrearchiveDto getPrearchiveData(ResultSet resultSet, ResultSetMetaData rsmd) throws SQLException {
-		PrearchiveDto prearchiveDto = new PrearchiveDto(); 
-		int columnsNumber = rsmd.getColumnCount();
-	   for (int i = 1; i <= columnsNumber; i++) {
-	     String columnName = rsmd.getColumnName(i);
-		if(columnName.equalsIgnoreCase("project")) {
-			prearchiveDto.setProject(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("timestamp")) {
-			prearchiveDto.setTimestamp(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("lastmod")) {
-			prearchiveDto.setLastmod(resultSet.getTimestamp(i));
-		}else if(columnName.equalsIgnoreCase("uploaded")) {
-			prearchiveDto.setUploaded(resultSet.getTimestamp(i));
-		}else if(columnName.equalsIgnoreCase("scan_date")) {
-			prearchiveDto.setScan_date(resultSet.getTimestamp(i));
-		}else if(columnName.equalsIgnoreCase("scan_time")) {
-			prearchiveDto.setScan_time(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("subject")) {
-			prearchiveDto.setSubject(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("foldername")) {
-			prearchiveDto.setFolderName(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("name")) {
-			prearchiveDto.setName(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("tag")) {
-			prearchiveDto.setTag(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("status")) {
-			prearchiveDto.setStatus(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("url")) {
-			prearchiveDto.setUrl(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("autoarchive")) {
-			prearchiveDto.setAutoarchive(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("prevent_anon")) {
-			prearchiveDto.setPrevent_anon(resultSet.getBoolean(i));
-		}else if(columnName.equalsIgnoreCase("prevent_auot_commit")) {
-			prearchiveDto.setPrevent_auto_commit(resultSet.getBoolean(i));
-		}else if(columnName.equalsIgnoreCase("source")) {
-			prearchiveDto.setSOURCE(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("visit")) {
-			prearchiveDto.setVISIT(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("protocol")) {
-			prearchiveDto.setPROTOCOL(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}else if(columnName.equalsIgnoreCase("timezone")) {
-			prearchiveDto.setTIMEZONE(Objects.nonNull(resultSet.getString(i))?resultSet.getString(i):"");
-		}
-	}
-	return prearchiveDto;
-}
+	
 
 	 private final NamedParameterJdbcTemplate _template;
 	 private final PermissionsServiceImpl _permissions;
