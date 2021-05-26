@@ -9,7 +9,9 @@ import java.util.List;
 import org.nrg.action.ActionException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -60,5 +62,36 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 		return _prearchiveService.findAllPrearchives(getSessionUser(), projectId, tag);
 	}
     
+    @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdata.class)
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
+			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
+			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive rebuild"),
+			@ApiResponse(code = 404, message = "The specified prearchive rebuild doesn't exist"),
+			@ApiResponse(code = 409, message = "The specified prearchive rebuild already exist"),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/services/prearchive/rebuild",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
+						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
+	public PrearchiveDto createPrearchiveRebuild(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+												@ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
+		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
+		return _prearchiveService.createPrarchiveRebuild(getSessionUser(), src, overrideLock);
+	}
+    
+    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdata.class)
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
+			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
+			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive delete"),
+			@ApiResponse(code = 404, message = "The specified prearchive delete doesn't exist"),
+			@ApiResponse(code = 409, message = "The specified prearchive delete already exist"),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/services/prearchive/delete",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
+						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
+	public PrearchiveDto deletePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+												@ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
+		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
+		return _prearchiveService.deletePrarchive(getSessionUser(), src, overrideLock);
+	}
+    
+   
    private final PrearchiveService _prearchiveService;
 }
