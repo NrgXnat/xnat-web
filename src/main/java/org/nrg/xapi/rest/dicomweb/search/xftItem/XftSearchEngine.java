@@ -72,8 +72,8 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapStudy(queryParameters);
+    public List<? extends QIDOResponse> searchForStudies( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapStudy( sessionID, queryParameters);
 
         ItemCollection ic;
         try {
@@ -113,11 +113,7 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPatientsBirthDate(session.getSubjectData().getDOB());
             response.setStudyID(session.getStudyId());
             response.setNumberOfStudyRelatedSeries(countSeries(session));
-            try {
-                response.setNumberOfStudyRelatedInstances(countStudyInstances(session));
-            } catch (BaseXnatExperimentdata.UnknownPrimaryProjectException e) {
-                throw new SearchException( SearchException.Type.UNEXPECTED, e);
-            }
+            response.setNumberOfStudyRelatedInstances(countStudyInstances(session));
             response.setReferringPhysiciansName("");
             responses.add(response);
         }
@@ -145,15 +141,20 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForSeries(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = _queryParamService.mapSeries( studyInstanceUID, queryParameters);
+    public List<? extends QIDOResponse> searchForSeries( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapSeries( sessionID, studyInstanceUID, queryParameters);
 
         ItemCollection ic;
-        if( cc.size() == 0) {
-            ic = ItemSearch.GetAllItems( "xnat:imageScanData", user, false);
+        try {
+            if( cc.size() == 0) {
+                ic = ItemSearch.GetAllItems( "xnat:imageScanData", user, false);
+            }
+            else {
+                ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+            }
         }
-        else {
-            ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
         }
 
         List<QIDOResponse> responses = new ArrayList();
@@ -167,7 +168,13 @@ public class XftSearchEngine implements SearchEngineI {
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
 //            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
-            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( getSession( studyInstanceUID, user).getArchiveRootPath(), scandata));
+            try {
+                response.setNumberOfSeriesRelatedInstances( countSeriesInstances( getSession( studyInstanceUID, user).getArchiveRootPath(), scandata));
+            }
+            catch( Exception e) {
+                throw new SearchException( SearchException.Type.UNEXPECTED, e);
+            }
+
             responses.add( response);
         }
         int from = Math.min( responses.size(), queryParameters.getOffset());
@@ -176,11 +183,11 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudySeries(QueryParameters queryParameters, UserI user) throws Exception {
+    public List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
         List<? extends QIDOResponse> responses = null;
 
         if( queryParameters.hasStudyLevel()) {
-            List<? extends QIDOResponse> studyResponses = searchForStudySeriesByStudyParams( queryParameters, user);
+            List<? extends QIDOResponse> studyResponses = searchForStudySeriesByStudyParams( sessionID, queryParameters, user);
 
             if( queryParameters.hasSeriesLevel()) {
                 Iterator<? extends QIDOResponse> it = studyResponses.iterator();
@@ -188,7 +195,7 @@ public class XftSearchEngine implements SearchEngineI {
                     QIDOResponseStudySeries responseStudySeries = (QIDOResponseStudySeries) it.next();
                     String studyInstanceUID = responseStudySeries.getStudyInstanceUID();
 
-                    responses = searchForStudySeriesByStudyUID( studyInstanceUID, queryParameters, user);
+                    responses = searchForStudySeriesByStudyUID( sessionID, studyInstanceUID, queryParameters, user);
                 }
             }
             else {
@@ -196,7 +203,7 @@ public class XftSearchEngine implements SearchEngineI {
             }
         }
         else if( queryParameters.hasSeriesLevel()) {
-            responses = searchForStudySeriesBySeries( queryParameters, user);
+            responses = searchForStudySeriesBySeries( sessionID, queryParameters, user);
         }
         else {
             responses = new ArrayList<>();
@@ -207,25 +214,29 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws Exception {
-
-        XnatImagesessiondata session = getSession( studyInstanceUID, user);
-        XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
-        DicomObjectI instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
-
-        return instance;
+    public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException {
+        try {
+            XnatImagesessiondata session = getSession( studyInstanceUID, user);
+            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+            DicomObjectI instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
+            return instance;
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
     }
 
     @Override
-    public List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws Exception {
-
-        XnatImagesessiondata session = getSession( studyInstanceUID, user);
-        XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
-
-//        List<DicomObjectI> instances = getInstances( session.getArchiveRootPath(), scan);
-        List<DicomObjectI> instances = getInstances( scan);
-
-        return instances;
+    public List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+        try {
+            XnatImagesessiondata session = getSession( studyInstanceUID, user);
+            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
+            List<DicomObjectI> instances = getInstances( scan);
+            return instances;
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
     }
 
     @Override
@@ -241,28 +252,35 @@ public class XftSearchEngine implements SearchEngineI {
         return instances;
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesByStudy( QueryParameters queryParameters, UserI user) throws Exception {
+    public List<? extends QIDOResponse> searchForStudySeriesByStudy( QueryParameters queryParameters, UserI user) throws SearchException {
         CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesBySeries( QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = _queryParamService.mapSeries( queryParameters);
+    public List<? extends QIDOResponse> searchForStudySeriesBySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapSeries( sessionID, queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesByStudyUID(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception {
+    public List<? extends QIDOResponse> searchForStudySeriesByStudyUID( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
         CriteriaCollection cc ;
-        if( studyInstanceUID != null) cc = _queryParamService.mapSeries( studyInstanceUID, queryParameters);
-        else  cc = _queryParamService.mapSeries( queryParameters);
+        if( studyInstanceUID != null) cc = _queryParamService.mapSeries( sessionID, studyInstanceUID, queryParameters);
+        else  cc = _queryParamService.mapSeries( sessionID, queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesByStudy( CriteriaCollection cc, UserI user) throws Exception {
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+    private List<? extends QIDOResponse> searchForStudySeriesByStudy( CriteriaCollection cc, UserI user) throws SearchException {
+        ItemCollection ic;
+        try {
+            ic = ItemSearch.GetItems( "xnat:imageScanData", cc, user, false);
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
+
         _log.debug("Found {} items.", ic.size());
 
 //        QIDOStudyResponseList responses = new QIDOStudyResponseList();
@@ -278,8 +296,13 @@ public class XftSearchEngine implements SearchEngineI {
             response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
-            String archiveRootPath = scandata.getImageSessionData().getArchiveRootPath();
-            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( archiveRootPath, scandata));
+            try {
+                String archiveRootPath = scandata.getImageSessionData().getArchiveRootPath();
+                response.setNumberOfSeriesRelatedInstances( countSeriesInstances( archiveRootPath, scandata));
+            }
+            catch( Exception e) {
+                throw new SearchException( SearchException.Type.UNEXPECTED, e);
+            }
 
             response.setStudyDate( scandata.getImageSessionData().getExperimentdata().getDate());
             response.setStudyTime( scandata.getImageSessionData().getExperimentdata().getTime());
@@ -301,9 +324,16 @@ public class XftSearchEngine implements SearchEngineI {
         return responses;
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesByStudyParams( QueryParameters queryParameters, UserI user) throws Exception {
-        CriteriaCollection cc = _queryParamService.mapStudy( queryParameters);
-        ItemCollection ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
+    private List<? extends QIDOResponse> searchForStudySeriesByStudyParams( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapStudy( sessionID, queryParameters);
+        ItemCollection ic;
+        try {
+            ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
+
 
 //        QIDOStudyResponseList responses = new QIDOStudyResponseList();
         List<QIDOResponseStudySeries> responses = new ArrayList();
@@ -319,9 +349,14 @@ public class XftSearchEngine implements SearchEngineI {
                 response.setSeriesNumber((scan.getSeriesNumber() != null)? scan.getSeriesNumber().toString(): "");
                 response.setPerformedProcedureStepStartDate(scan.getStartDate());
                 response.setPerformedProcedureStepStartTime(scan.getStarttime());
-                response.setNumberOfSeriesRelatedInstances( countSeriesInstances( session.getArchiveRootPath(), scan));
+                try {
+                    response.setNumberOfSeriesRelatedInstances( countSeriesInstances( session.getArchiveRootPath(), scan));
+                }
+                catch( Exception e) {
+                    throw new SearchException( SearchException.Type.UNEXPECTED, e);
+                }
 
-                response.setStudyDate(session.getExperimentdata().getDate());
+            response.setStudyDate(session.getExperimentdata().getDate());
                 response.setStudyTime(session.getExperimentdata().getTime());
                 response.setAccessionNumber(session.getDcmaccessionnumber());
                 response.setInstanceAvailability("ONLINE");
@@ -333,7 +368,12 @@ public class XftSearchEngine implements SearchEngineI {
                 response.setPatientsBirthDate(session.getSubjectData().getDOBDisplay());
                 response.setStudyID(session.getStudyId());
                 response.setNumberOfStudyRelatedSeries( countSeries( session));
-                response.setNumberOfStudyRelatedInstances( countStudyInstances( session));
+                try {
+                    response.setNumberOfStudyRelatedInstances( countStudyInstances( session));
+                }
+                catch( Exception e) {
+                    throw new SearchException( SearchException.Type.UNEXPECTED, e);
+                }
 
                 responses.add(response);
             }
@@ -372,28 +412,40 @@ public class XftSearchEngine implements SearchEngineI {
      * @return number of instances in the session to which the user has access.
      * @throws Exception if error reading scan catalog.
      */
-    private int countStudyInstances1( UserI user, XnatImagesessiondata session) throws Exception {
+    private int countStudyInstances1( UserI user, XnatImagesessiondata session) throws SearchException {
         ArrayList<XnatImagescandata> imagescandata = XnatImagescandata.getXnatImagescandatasByField("xnat:imagescandata/image_session_id", session.getId(), user, false);
 
         int count = 0;
         for( XnatImagescandata scan: imagescandata) {
             Integer n = scan.getInstanceCount();
             if( n == null) {
-                n = getInstanceCount( session.getArchiveRootPath(), scan );
+                try {
+                    n = getInstanceCount( session.getArchiveRootPath(), scan );
+                }
+                catch( Exception e) {
+                    throw new SearchException( SearchException.Type.UNEXPECTED, e);
+                }
+
             }
             count += n;
         }
         return count;
     }
 
-    private int countStudyInstances( XnatImagesessiondata session) throws BaseXnatExperimentdata.UnknownPrimaryProjectException {
+    private int countStudyInstances( XnatImagesessiondata session) throws SearchException {
         List<XnatImagescandataI> scans = session.getScans_scan();
 
         int count = 0;
         for( XnatImagescandataI scan: scans) {
             Integer n = scan.getInstanceCount();
             if( n == null) {
-                n = getInstanceCount( session.getArchiveRootPath(), scan );
+                try {
+                    n = getInstanceCount( session.getArchiveRootPath(), scan );
+                }
+                catch( Exception e) {
+                    throw new SearchException( SearchException.Type.UNEXPECTED, e);
+                }
+
             }
             count += n;
         }
@@ -407,7 +459,7 @@ public class XftSearchEngine implements SearchEngineI {
         return count;
     }
 
-    private int countSeriesInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {
+    private int countSeriesInstances( String archiveRootPath, XnatImagescandataI imageScanData) {
         int count = 0;
         for( XnatAbstractresourceI resourceI: imageScanData.getFile()) {
             if( XnatResourcecatalog.class.isInstance( resourceI)) {
@@ -436,11 +488,11 @@ public class XftSearchEngine implements SearchEngineI {
         return count;
     }
 
-    private int querySeriesInstanceCount( XnatImagescandata scandata) {
-        int count = 0;
-        count = _jdbcTemplate.queryForObject(QUERY_GET_INSTANCE_COUNT_IN_SERIES, new MapSqlParameterSource("scandataId", scandata.getId()), Integer.class);
-        return count;
-    }
+//    private int querySeriesInstanceCount( XnatImagescandata scandata) {
+//        int count = 0;
+//        count = _jdbcTemplate.queryForObject(QUERY_GET_INSTANCE_COUNT_IN_SERIES, new MapSqlParameterSource("scandataId", scandata.getId()), Integer.class);
+//        return count;
+//    }
 
     private CriteriaCollection parseDateCriteria( String dateString) {
         return parseRangeCriteria( "xnat:experimentData/date", dateString);
@@ -610,6 +662,6 @@ public class XftSearchEngine implements SearchEngineI {
         return count;
     }
 
-    private static final String QUERY_GET_INSTANCE_COUNT_IN_SERIES         = "SELECT frame_count FROM xhbm_dicom_instance WHERE imagescandata_id = :scandataId";
+//    private static final String QUERY_GET_INSTANCE_COUNT_IN_SERIES         = "SELECT frame_count FROM xhbm_dicom_instance WHERE imagescandata_id = :scandataId";
 
 }

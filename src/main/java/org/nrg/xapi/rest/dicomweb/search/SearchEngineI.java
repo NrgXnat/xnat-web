@@ -14,15 +14,15 @@ public interface SearchEngineI {
 
     DicomObjectI[] getStudyAsArray(String studyInstanceUID) throws IOException;
 
-    List<? extends QIDOResponse> searchForStudies(QueryParameters queryParameters, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForStudies( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    List<? extends QIDOResponse> searchForSeries(String studyInstanceUID, QueryParameters queryParameters, UserI user) throws Exception;
+    List<? extends QIDOResponse> searchForSeries( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    List<? extends QIDOResponse> searchForStudySeries( QueryParameters queryParameters, UserI user) throws Exception;
+    List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws Exception;
+    DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
 
-    List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws Exception;
+    List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
 
     List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException;
 }

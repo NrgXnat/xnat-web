@@ -26,10 +26,11 @@ public class QueryParamToCriteriaService {
         this._dateTimeService = dateTimeService;
     }
 
-    public CriteriaCollection mapSeries( String studyInstanceUID, BaseQueryParameters params) {
-        CriteriaCollection cc = mapSeries( params);
-
-        cc.addClause("xnat:imagesessiondata/uid", studyInstanceUID);
+    public CriteriaCollection mapStudy( String sessionID, BaseQueryParameters params) {
+        CriteriaCollection cc = mapStudy( params);
+        if( ! (sessionID == null || sessionID.isEmpty())) {
+            cc.addClause( "xnat:imagesessiondata/id", "=", sessionID);
+        }
         return cc;
     }
 
@@ -109,14 +110,25 @@ public class QueryParamToCriteriaService {
             }
         }
 
-        if( cc.size() == 0) {
-            cc.addClause( "xnat:imagesessionData/dcmaccessionnumber", "like" , "%");
-        }
-
         return cc;
     }
 
-    public CriteriaCollection mapSeries( BaseQueryParameters params) {
+    public CriteriaCollection mapSeries( String sessionID, String studyInstanceUID, BaseQueryParameters params) {
+        CriteriaCollection cc = mapSeries( sessionID, params);
+
+        cc.addClause("xnat:imagesessiondata/uid", studyInstanceUID);
+        return cc;
+    }
+
+    public CriteriaCollection mapSeries( String sessionID, BaseQueryParameters params) {
+        CriteriaCollection cc = mapSeries( params);
+        if( ! (sessionID == null || sessionID.isEmpty())) {
+            cc.addClause( "xnat:experimentData/id", "=", sessionID);
+        }
+        return cc;
+    }
+
+    private CriteriaCollection mapSeries( BaseQueryParameters params) {
         CriteriaCollection cc = new CriteriaCollection("AND");
 
         ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
