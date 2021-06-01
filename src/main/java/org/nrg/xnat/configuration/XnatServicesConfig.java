@@ -32,7 +32,7 @@ import static org.nrg.xft.identifier.IDGeneratorFactory.*;
  * This configuration manages configuration and instantiation of core XNAT/XDAT/XFT services.
  */
 @Configuration
-@ComponentScan({"org.nrg.xnat.services.config.impl","org.nrg.xft.identifier", "org.nrg.xnat.eventservice", "org.nrg.xnat.services.archive.impl", "org.nrg.xnat.services.cache",
+@ComponentScan({"org.nrg.xnat.services.config.impl","org.nrg.xnat.services.dump.impl", "org.nrg.xft.identifier", "org.nrg.xnat.eventservice", "org.nrg.xnat.services.archive.impl", "org.nrg.xnat.services.cache",
                 "org.nrg.xnat.services.experiments.impl", "org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.investigators.impl.xft",
                 "org.nrg.xnat.services.importer.impl", "org.nrg.xnat.services.prearchive.impl", "org.nrg.xnat.services.par.impl", "org.nrg.xnat.services.projects.impl", 
                 "org.nrg.xnat.services.resources.impl","org.nrg.xnat.services.runner.impl", "org.nrg.xnat.services.scans.impl", 
