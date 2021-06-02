@@ -10,42 +10,42 @@ import org.restlet.util.Template;
 
 public class Env {
 	  Map<String, Object> attrs = new HashMap<>();
-	  public DumpUtil.HeaderType h;
-	  DumpUtil.ArchiveType a;
-	  DumpUtil.ResourceType r;
+	  public HeaderTypeUtil.HeaderType h;
+	  ArchiveTypeUtil.ArchiveType a;
+	  ResourceTypeUtil.ResourceType r;
       final String uri;
       public final Map<Integer, Set<String>> fields;
 
       public Env(String uri, Map<Integer, Set<String>> fields) {
           this.uri = uri;
-          this.a = DumpUtil.ArchiveType.UNKNOWN;
-          this.h = DumpUtil.HeaderType.UNKNOWN;
-          this.r = DumpUtil.ResourceType.UNKNOWN;
+          this.a = ArchiveTypeUtil.ArchiveType.UNKNOWN;
+          this.h = HeaderTypeUtil.HeaderType.UNKNOWN;
+          this.r = ResourceTypeUtil.ResourceType.UNKNOWN;
           this.fields = fields;
           this.determineArchiveType();
           this.determineHeaderType();
           this.determineResourceType();
       }
 
-      DumpUtil.ArchiveType getArchiveType() {
+      ArchiveTypeUtil.ArchiveType getArchiveType() {
           return this.a;
       }
 
-      DumpUtil.HeaderType getHeaderType() {
+      HeaderTypeUtil.HeaderType getHeaderType() {
           return this.h;
       }
 
-      DumpUtil.ResourceType getResourceType() {
+      ResourceTypeUtil.ResourceType getResourceType() {
           return this.r;
       }
 
       void determineArchiveType() {
           if (this.uri.startsWith("/prearchive/")) {
-              this.a = DumpUtil.ArchiveType.PREARCHIVE;
+              this.a = ArchiveTypeUtil.ArchiveType.PREARCHIVE;
           } else if (this.uri.startsWith("/archive/")) {
-              this.a = DumpUtil.ArchiveType.ARCHIVE;
+              this.a = ArchiveTypeUtil.ArchiveType.ARCHIVE;
           } else {
-              this.a = DumpUtil.ArchiveType.UNKNOWN;
+              this.a = ArchiveTypeUtil.ArchiveType.UNKNOWN;
           }
       }
 
@@ -53,8 +53,8 @@ public class Env {
        * If a summary is requested then the resource type defaults to SCAN.
        */
       void determineResourceType() {
-          if (this.a != DumpUtil.ArchiveType.UNKNOWN && this.h != DumpUtil.HeaderType.UNKNOWN) {
-              this.r = DumpUtil.ResourceType.SCAN;
+          if (this.a != ArchiveTypeUtil.ArchiveType.UNKNOWN && this.h != HeaderTypeUtil.HeaderType.UNKNOWN) {
+              this.r = ResourceTypeUtil.ResourceType.SCAN;
           }
       }
 
@@ -63,7 +63,7 @@ public class Env {
        *
        * @param _h The header type.
        */
-      void visit(DumpUtil.HeaderType _h) {
+      void visit(HeaderTypeUtil.HeaderType _h) {
           for (final Template t : _h.getTemplates()) {
               if (t.match(this.uri) != -1) {
                   t.parse(this.uri, this.attrs);
@@ -75,8 +75,8 @@ public class Env {
       }
 
       void determineHeaderType() {
-          for (DumpUtil.HeaderType h : DumpUtil.HeaderType.values()) {
-              if (this.h == DumpUtil.HeaderType.UNKNOWN) {
+          for (HeaderTypeUtil.HeaderType h : HeaderTypeUtil.HeaderType.values()) {
+              if (this.h == HeaderTypeUtil.HeaderType.UNKNOWN) {
                   this.visit(h);
               }
           }
