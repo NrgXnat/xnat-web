@@ -134,11 +134,7 @@ public class DumpUtil<T> {
       
     }
     
-    private List<T> getEcatSummaryDumpRender() {
-		return null;
-	}
-
-	/**
+    /**
      * 
      * @return
      * @throws FileNotFoundException
@@ -433,7 +429,177 @@ public class DumpUtil<T> {
 	    
 	    
 	    
+	 // ---- ECAT Summary  STRAT
+
+	/**
+	 * 
+	 * @return
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
+	private List<EcatSummary> getEcatSummaryDumpRender() throws FileNotFoundException, IOException {
+		List<EcatSummary> ecatSummaries = new ArrayList<>();
+		for (File file : this.files) {
+			List<SortedMap<Variable, ?>> values = getEcatHeader(file);
+			for (Iterator<SortedMap<Variable, ?>> it = values.iterator(); it.hasNext();) {
+				SortedMap<Variable, ?> header = it.next();
+				ecatSummaries = getEcatSummaryDumpWrite(header, ecatSummaries);
+			}
+		}
+		return ecatSummaryDumpReformat(ecatSummaries);
+	}
+
+	/**
+	 * 
+	 * @param f
+	 * @return
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
+	List<SortedMap<Variable, ?>> getEcatHeader(File f) throws IOException, FileNotFoundException {
+		final MatrixDataFile ef = new MatrixDataFile(f, Variable.getVars());
+		return ef.getScanValues();
+	}
 	 
+	/**
+	 * 
+	 * @param ecatSummaries
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private List<EcatSummary> ecatSummaryDumpReformat(List<EcatSummary> ecatSummaries) {
+		List<EcatSummary> finalEcatSummaries = new ArrayList<EcatSummary>();
+		for (EcatSummary ecatSummary : ecatSummaries) {
+			add2Map(ecatSummary.getTag1(), (T) ecatSummary);
+		}
+
+		for (String key : map.keySet()) {
+			Collection<EcatSummary> dsummary = (Collection<EcatSummary>) map.get(key);
+			String val = "";
+			int i = 0;
+			EcatSummary consolidated = new EcatSummary();
+			for (EcatSummary ecatSummary : dsummary) {
+				if (StringUtils.contains(val, ecatSummary.getValue()) != true
+						&& StringUtils.isNotBlank(ecatSummary.getValue())) {
+					if ("".equals(val)) {
+						val = ecatSummary.getValue();
+					} else {
+						val = val + ", " + ecatSummary.getValue();
+						;
+					}
+				}
+				if (i == dsummary.size() - 1) {
+					consolidated = new EcatSummary(key, ecatSummary.getTag2(), consolidated.getVr(), val,
+							ecatSummary.getDesc());
+				}
+				i++;
+			}
+			if (dsummary.size() > 0) {
+				finalEcatSummaries
+						.add(new EcatSummary(Objects.nonNull(consolidated.getTag1()) ? consolidated.getTag1() : "",
+								Objects.nonNull(consolidated.getTag2()) ? consolidated.getTag2() : "",
+								Objects.nonNull(consolidated.getVr()) ? consolidated.getVr() : "",
+								Objects.nonNull(consolidated.getValue()) ? consolidated.getValue() : "",
+								Objects.nonNull(consolidated.getDesc()) ? consolidated.getDesc() : ""));
+			}
+		}
+		return finalEcatSummaries;
+
+	}
+
+	/**
+	 * 
+	 * @param hmap
+	 * @param ecatSummaries
+	 * @return
+	 */
+	public List<EcatSummary> getEcatSummaryDumpWrite(SortedMap<Variable, ?> hmap, List<EcatSummary> ecatSummaries) {
+		for (final Map.Entry<Variable, ?> e : hmap.entrySet()) {
+			final Variable v = e.getKey();
+			final Object val = e.getValue();
+			final Class<?> c = val.getClass();
+			if (c.isArray()) {
+				final int length = Array.getLength(val);
+				for (int i = 0; i < length; i++) {
+					ecatSummaries = getEcatSummaryDumpMakeRow(v.toString(), Array.get(val, i), null, 100,
+							ecatSummaries);
+				}
+			} else {
+				ecatSummaries = getEcatSummaryDumpMakeRow(v.toString(), val, null, 100, ecatSummaries);
+			}
+		}
+		return ecatSummaries;
+	}
+
+	/**
+	 * 
+	 * @param o
+	 * @param e
+	 * @param parentTag
+	 * @param maxLen
+	 * @param ecatSummaries
+	 * @return
+	 */
+	List<EcatSummary> getEcatSummaryDumpMakeRow(String o, Object e, String parentTag, int maxLen,
+			List<EcatSummary> ecatSummaries) {
+		EcatSummary ecatSummary = new EcatSummary();
+		ecatSummary.setTag1(o);
+		ecatSummary.setTag2("");
+		ecatSummary.setDesc(e.toString());
+		ecatSummary.setValue("");
+		ecatSummary.setVr("");
+		ecatSummaries.add(ecatSummary);
+		return ecatSummaries;
+
+	}
 	 	    
-	
+	 	//------Ecat Header start
+	/**
+	 * 
+	 * @return
+	 * @throws IOException
+	 * @throws FileNotFoundException
+	 */
+	public List<EcatSummary> ecatHeaderDumpRender() throws IOException, FileNotFoundException {
+		List<EcatSummary> ecatSummaries = new ArrayList<>();
+		if (this.file == null) {
+			return ecatSummaries;
+		}
+		List<SortedMap<Variable, ?>> values = getEcatHeader(new File(this.file));
+		for (Iterator<SortedMap<Variable, ?>> it = values.iterator(); it.hasNext();) {
+			SortedMap<Variable, ?> header = it.next();
+			ecatSummaries = ecatHeaderDumpWrite(header, ecatSummaries);
+		}
+		return ecatSummaryDumpReformat(ecatSummaries);
+	}
+
+	/**
+	 * 
+	 * @param hmap
+	 * @param ecatSummaries
+	 * @return
+	 */
+	public List<EcatSummary> ecatHeaderDumpWrite(SortedMap<Variable, ?> hmap, List<EcatSummary> ecatSummaries) {
+
+		for (final Map.Entry<Variable, ?> e : hmap.entrySet()) {
+			final Variable v = e.getKey();
+			final Object val = e.getValue();
+			final Class<?> c = val.getClass();
+			if (c.isArray()) {
+				final int length = Array.getLength(val);
+				for (int i = 0; i < length; i++) {
+					if (!v.toString().startsWith("FILL")) {
+						ecatSummaries = getEcatSummaryDumpMakeRow(v.toString(), Array.get(val, i), null, 100,
+								ecatSummaries);
+					}
+				}
+			} else {
+				if (!v.toString().startsWith("FILL")) {
+					ecatSummaries = getEcatSummaryDumpMakeRow(v.toString(), val, null, 100, ecatSummaries);
+				}
+			}
+		}
+		return ecatSummaries;
+	}
+	 	    
 }

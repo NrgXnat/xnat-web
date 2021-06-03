@@ -27,11 +27,11 @@ import com.google.common.collect.Lists;
 public class ResourceTypeUtil {
 	
 	private static List<String> imageTypes = new ArrayList<>();
-	 private static String dumpType;
+	 //private static String dumpType;
 	 
 	public ResourceTypeUtil(List<String> imageTypes, String dumpType) {
 		ResourceTypeUtil.imageTypes = imageTypes;
-		ResourceTypeUtil.dumpType = dumpType;
+		//ResourceTypeUtil.dumpType = dumpType;
 	}
 	   public enum ResourceType {
 	        SCAN {

@@ -6,10 +6,10 @@ import java.util.Set;
 
 import javax.annotation.Nullable;
 
-import org.restlet.util.Template;
+import org.springframework.web.util.UriTemplate;
 
 public class Env {
-	  Map<String, Object> attrs = new HashMap<>();
+	  Map<String, String> attrs = new HashMap<>();
 	  public HeaderTypeUtil.HeaderType h;
 	  ArchiveTypeUtil.ArchiveType a;
 	  ResourceTypeUtil.ResourceType r;
@@ -63,10 +63,22 @@ public class Env {
        *
        * @param _h The header type.
        */
+//      void visit(HeaderTypeUtil.HeaderType _h) {
+//          for (final Template t : _h.getTemplates()) {
+//              if (t.match(this.uri) != -1) {
+//                  t.parse(this.uri, this.attrs);
+//                  this.h = _h;
+//                  this.r = _h.getResourceType(t);
+//                  break;
+//              }
+//          }
+//      }
+      
       void visit(HeaderTypeUtil.HeaderType _h) {
-          for (final Template t : _h.getTemplates()) {
-              if (t.match(this.uri) != -1) {
-                  t.parse(this.uri, this.attrs);
+          for (final UriTemplate t : _h.getTemplates()) {
+        	  boolean match = t.matches(uri);
+              if (match) {
+            	  this.attrs = t.match(uri);
                   this.h = _h;
                   this.r = _h.getResourceType(t);
                   break;

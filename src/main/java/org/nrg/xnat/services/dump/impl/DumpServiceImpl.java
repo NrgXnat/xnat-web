@@ -70,7 +70,7 @@ public class DumpServiceImpl implements DumpService {
          }else{//default..
         	 Iterable<File> files = env.h.retrieveAll(env, user);
  			DumpUtil<EcatSummary> dumpUtil = new DumpUtil<EcatSummary>(files, env.fields, ECAT_DUMP_TYPE);
- 			return null;
+ 			return dumpUtil.ecatHeaderDumpRender();
          }
 	}
 	

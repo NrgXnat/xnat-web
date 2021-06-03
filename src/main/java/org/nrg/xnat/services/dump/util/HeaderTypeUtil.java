@@ -10,7 +10,7 @@ import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.dump.util.ResourceTypeUtil.CatFilterWithPath;
 import org.nrg.xnat.utils.CatalogUtils;
-import org.restlet.util.Template;
+import org.springframework.web.util.UriTemplate;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -65,27 +65,27 @@ public class HeaderTypeUtil {
             }
         };
 
-        private final ImmutableMap<Template, ResourceTypeUtil.ResourceType> templates;
+		 private final ImmutableMap<UriTemplate, ResourceTypeUtil.ResourceType> templates;
 
-        HeaderType(final String... templates) {
-            // Convert the provided string templates to Template objects
-            final ImmutableMap.Builder<Template, ResourceTypeUtil.ResourceType> builder = ImmutableMap.builder();
-            for (final String st : templates) {
-                final Template t = new Template(st, Template.MODE_STARTS_WITH);
-                final ResourceTypeUtil.ResourceType r;
-                if (st.contains("scans")) {
-                    r = ResourceTypeUtil.ResourceType.SCAN;
-                } else if (st.contains("assessors")) {
-                    r = ResourceTypeUtil.ResourceType.ASSESSOR;
-                } else if (st.contains("recons")) {
-                    r = ResourceTypeUtil.ResourceType.RECON;
-                } else {
-                    r = ResourceTypeUtil.ResourceType.UNKNOWN;
-                }
-                builder.put(t, r);
-            }
-            this.templates = builder.build();
-        }
+	        HeaderType(final String... templates) {
+	            // Convert the provided string templates to Template objects
+	            final ImmutableMap.Builder<UriTemplate, ResourceTypeUtil.ResourceType> builder = ImmutableMap.builder();
+	            for (final String st : templates) {
+	                final UriTemplate t = new UriTemplate(st);
+	                final ResourceTypeUtil.ResourceType r;
+	                if (st.contains("scans")) {
+	                    r = ResourceTypeUtil.ResourceType.SCAN;
+	                } else if (st.contains("assessors")) {
+	                    r = ResourceTypeUtil.ResourceType.ASSESSOR;
+	                } else if (st.contains("recons")) {
+	                    r = ResourceTypeUtil.ResourceType.RECON;
+	                } else {
+	                    r = ResourceTypeUtil.ResourceType.UNKNOWN;
+	                }
+	                builder.put(t, r);
+	            }
+	            this.templates = builder.build();
+	        }
 
 
         /**
@@ -93,7 +93,7 @@ public class HeaderTypeUtil {
          *
          * @return The available templates.
          */
-        final List<Template> getTemplates() {
+        final List<UriTemplate> getTemplates() {
             return Lists.newArrayList(templates.keySet());
         }
 
@@ -103,7 +103,7 @@ public class HeaderTypeUtil {
          * @param matchingTemplate The template to match.
          * @return The resource type matching the submitted template.
          */
-        final ResourceTypeUtil.ResourceType getResourceType(final Template matchingTemplate) {
+        final ResourceTypeUtil.ResourceType getResourceType(final UriTemplate matchingTemplate) {
             final ResourceTypeUtil.ResourceType r = templates.get(matchingTemplate);
             return null == r ? ResourceTypeUtil.ResourceType.UNKNOWN : r;
         }
