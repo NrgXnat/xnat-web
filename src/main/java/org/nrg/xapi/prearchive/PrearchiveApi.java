@@ -18,16 +18,13 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xdat.security.user.exceptions.UserInitException;
-import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
-import org.nrg.xft.exception.XftItemException;
+import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -58,8 +55,22 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 	@XapiRequestMapping(value = {"/prearchive","/prearchive/projects/{projectId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	public List<PrearchiveDto> getAllPrearchives(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 													@ApiParam(value = "The value of the tag.") @RequestParam(name = "tag", required = false) final String tag) throws SQLException, SessionException, Exception {
-		log.debug("User {} requested configs", getSessionUser().getUsername());
+		log.debug("User {} requested Prearchive", getSessionUser().getUsername());
 		return _prearchiveService.findAllPrearchives(getSessionUser(), projectId, tag);
+	}
+    
+    
+    @ApiOperation(value = "Gets the requested  Prearchive session resource", notes = "Returns the  Prearchive session resource with the specified PROJECT ID", response = List.class, responseContainer = "list")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
+			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
+			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public List<PrearcSessionResourceDto> getAllPrearcSessionResources(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
+		log.debug("User {} requested Prearchive session resource", getSessionUser().getUsername());
+		return _prearchiveService.findAllPrearcSessionResource(getSessionUser(), projectId, sessionTimestamp, sessionLabel);
 	}
     
     @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdata.class)
@@ -92,6 +103,19 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 		return _prearchiveService.deletePrarchive(getSessionUser(), src, overrideLock);
 	}
     
-   
+    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdata.class)
+   	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
+   			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
+   			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive delete"),
+   			@ApiResponse(code = 404, message = "The specified prearchive delete doesn't exist"),
+   			@ApiResponse(code = 409, message = "The specified prearchive delete already exist"),
+   			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+   	@XapiRequestMapping(value = "/services/prearchive/move",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
+   						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
+   	public PrearchiveDto movePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+   												@ApiParam("The value to overrideLock") @RequestParam(name = "newProject") String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException, ResourceAlreadyExistsException{
+   		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
+   		return _prearchiveService.movePrarchive(getSessionUser(), src, newProject);
+   	}
    private final PrearchiveService _prearchiveService;
 }

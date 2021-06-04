@@ -2,10 +2,15 @@ package org.nrg.xnat.services.prearchive;
 
 import java.sql.SQLException;
 import java.util.List;
+
+import org.nrg.action.ActionException;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 
@@ -16,4 +21,8 @@ public interface PrearchiveService {
 	PrearchiveDto createPrarchiveRebuild(UserI user,  List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, org.nrg.xapi.exceptions.DataFormatException;
 	
 	PrearchiveDto deletePrarchive(UserI user,  List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException;
+
+	PrearchiveDto movePrarchive(UserI user,  List<String> src, String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, ResourceAlreadyExistsException, DataFormatException; 
+
+	List<PrearcSessionResourceDto> findAllPrearcSessionResource(UserI user,String projectId, String timestamp, String sessionLabel) throws ActionException;
 }

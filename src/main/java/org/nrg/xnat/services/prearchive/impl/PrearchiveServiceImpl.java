@@ -3,12 +3,6 @@ package org.nrg.xnat.services.prearchive.impl;
 import static org.nrg.xnat.archive.Operation.Delete;
 import static org.nrg.xnat.archive.Operation.Move;
 import static org.nrg.xnat.archive.Operation.Rebuild;
-import static org.restlet.data.Status.CLIENT_ERROR_BAD_REQUEST;
-import static org.restlet.data.Status.CLIENT_ERROR_CONFLICT;
-import static org.restlet.data.Status.CLIENT_ERROR_FORBIDDEN;
-import static org.restlet.data.Status.CLIENT_ERROR_NOT_FOUND;
-import static org.restlet.data.Status.SERVER_ERROR_INTERNAL;
-
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -27,11 +21,18 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.nrg.action.ActionException;
+import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XnatAbstractresourceI;
+import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.model.XnatResourceI;
+import org.nrg.xdat.model.XnatResourcecatalogI;
 import org.nrg.xdat.security.PermissionsServiceImpl;
 import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.helpers.Groups;
@@ -39,6 +40,7 @@ import org.nrg.xdat.security.services.PermissionsServiceI;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.predicates.ProjectAccessPredicate;
+import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.DatabaseSession;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
@@ -48,9 +50,10 @@ import org.nrg.xnat.helpers.prearchive.SessionDataTriple;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
+import org.nrg.xnat.services.prearchive.util.PrearcInfoUtil;
+import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.functions.Functions;
 import org.nrg.xnat.utils.functions.UriToSessionDataTriple;
-import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -166,7 +169,111 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 		return result;
 	}
 	
-	 protected List<SessionDataTriple> getSessionDataTriples(UserI user,  List<String> src) throws InitializationException, InsufficientPrivilegesException, NotFoundException {
+	@Override
+	public PrearchiveDto movePrarchive(UserI user, List<String> src, String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, ResourceAlreadyExistsException, DataFormatException {
+		 
+		final List<SessionDataTriple> triples = getSessionDataTriples(user, src);
+	        if (triples == null) {
+	            return null;
+	        }
+	        for (final SessionDataTriple triple : triples) {
+	            try {
+	                if (PrearcDatabase.setStatus(triple.getFolderName(), triple.getTimestamp(), triple.getProject(), PrearcUtils.PrearcStatus.QUEUED_MOVING)) {
+	                    final SessionData session = PrearcDatabase.getSession(triple.getFolderName(), triple.getTimestamp(), triple.getProject());
+	                    final File sessionDir = PrearcUtils.getPrearcSessionDir(user, triple.getProject(), triple.getTimestamp(), triple.getFolderName(), false);
+
+	                    final Map<String, Object> parameters = new HashMap<>();
+	                    parameters.put(PrearchiveOperationRequest.PARAM_DESTINATION, newProject);
+
+	                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters));
+	                }
+	            } catch (SessionException e) {
+	                errorResponse(e, triple);
+	            } catch (Exception e) {
+	                log.error("", e);
+	                throw new InitializationException(e.getMessage());
+	            }
+	        }
+	        PrearchiveDto result =  getPrearchiveResult(triples);
+			if(Objects.isNull(result)) {
+				throw new NotFoundException("Prearchive move wasn't found");
+			}
+			return result;
+	}
+	
+	@Override
+	public List<PrearcSessionResourceDto> findAllPrearcSessionResource(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
+		List<PrearcSessionResourceDto> prearcSessionResourceDtos = new ArrayList<>();
+		final PrearcInfoUtil info;
+		info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
+		String project = info.session.getProject();
+		String prearchivePath = info.session.getPrearchivepath();
+		for (final XnatImagescandataI scan : info.session.getScans_scan()) {
+			return getPrearcSessionResource(project, prearchivePath, scan, prearcSessionResourceDtos);
+		}
+		return prearcSessionResourceDtos;
+	}
+	
+	 private List<PrearcSessionResourceDto> getPrearcSessionResource(String project, String prearchivePath, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
+		 for (final XnatAbstractresourceI res : scan.getFile()) {
+				if(res instanceof XnatResourcecatalogI){
+					return  getPrearcSessionXnatResourceCatalogI(project, prearchivePath, res, scan, sessionResources);
+				}else if(res instanceof XnatResourceI){
+					return getPrearcSessionXnatResourceI(prearchivePath, res, scan, sessionResources);
+				}
+			}
+		return sessionResources;
+	}
+
+	private List<PrearcSessionResourceDto> getPrearcSessionXnatResourceI(String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
+		File f= new File(prearchivePath,((XnatResourceI)res).getUri());
+		if(f.exists()){
+			return getSessionResources(CATEGORY_NAME, scan.getId(),res.getLabel(), ONE_FILE_COUNT, f.length(), sessionResources);
+		}else{
+			return getSessionResources(CATEGORY_NAME, scan.getId(),res.getLabel(), ZERO_FILE_COUNT, ZERO_FILE_SIZE, sessionResources);
+		}
+	}
+
+	private List<PrearcSessionResourceDto> getPrearcSessionXnatResourceCatalogI(String project, String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan,List<PrearcSessionResourceDto> sessionResources) {
+		try {
+			final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(prearchivePath, (XnatResourcecatalogI) res, false, project
+			);
+			CatalogUtils.Stats stats = CatalogUtils.getFileStats(catalogData.catBean, catalogData.catPath, catalogData.project);
+			return getSessionResources(CATEGORY_NAME, scan.getId(),res.getLabel(), new Long(stats.count), stats.size, sessionResources);
+		} catch (ServerException e) {
+			log.error("Unable to read catalog for resource {}", res.getXnatAbstractresourceId(), e);
+		}
+		return sessionResources;
+	}
+	
+	private List<PrearcSessionResourceDto> getSessionResources(String catagory, String catId, String label, Long fileCount, Long fileSize, List<PrearcSessionResourceDto> sessionResources ) {
+		 sessionResources.add(PrearcSessionResourceDto.builder()
+				.category(catagory)
+				.cat_id(catId)
+				.label(label)
+				.file_count(fileCount)
+				.file_size(fileSize).build());
+		 return sessionResources;
+	}
+
+	private void errorResponse(SessionException e, SessionDataTriple triple) throws ResourceAlreadyExistsException, DataFormatException, NotFoundException, InsufficientPrivilegesException {
+		 switch (e.getError()) {
+         case AlreadyExists:
+        	 throw new ResourceAlreadyExistsException("A prearchive resource with session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp() + " already exists in the project " + triple.getProject(), null);
+         case DoesntExist:
+        	 throw new NotFoundException("No prearchive resource with session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp() + " exists in the project " + triple.getProject());
+         case NoProjectSpecified:
+        	 throw new DataFormatException("No project specified to move session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp());
+         case InvalidStatus:
+        	 throw new InsufficientPrivilegesException("Can't move session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp() + " in project " + triple.getProject() + " as it has an invalid status");
+         case InvalidSession:
+        	 throw new InsufficientPrivilegesException("The session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp() + " in project " + triple.getProject() + " is invalid (it's not missing, but something's wrong with it)"); 
+         case DatabaseError:
+        	 throw new InsufficientPrivilegesException("A database error occurred trying to move the session " + triple.getFolderName() + " and timestamp " + triple.getTimestamp() + " in project " + triple.getProject());
+     }
+	}
+
+	protected List<SessionDataTriple> getSessionDataTriples(UserI user,  List<String> src) throws InitializationException, InsufficientPrivilegesException, NotFoundException {
 	        final UriToSessionDataTriple  transformer = new UriToSessionDataTriple();
 	        final List<SessionDataTriple> triples     = Lists.transform(src, transformer);
 	        if (transformer.hasMalformedUrls()) {
@@ -230,26 +337,14 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         }
 	}
 	
-//	private static class PrearchiveTagRowMapper implements RowMapper<PrearchiveDto>  {
-//        @Override
-//        public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-//        	ResultSetMetaData rsmd = resultSet.getMetaData();
-//        	 return  PrearchiveDto.getPrearchiveData(resultSet, rsmd);
-//        }
-//	}
-	
-//    private static class PrearchiveRebuildRowMapper implements RowMapper<PrearchiveDto>  {
-//    @Override
-//    public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-//    	ResultSetMetaData rsmd = resultSet.getMetaData();
-//    	 return  PrearchiveDto.getPrearchiveData(resultSet, rsmd);
-//    }
-//}
-	
-	
-
 	 private final NamedParameterJdbcTemplate _template;
 	 private final PermissionsServiceImpl _permissions;
 	 private final Map<String, Object> _additionalValues = new HashMap<>();
+	 private static final  String CATEGORY_NAME = "scans";
+	 private static final Long ONE_FILE_COUNT = 1L;
+	 private static final Long ZERO_FILE_COUNT = 0L;
+	 private static final Long ZERO_FILE_SIZE = 0L;
+
+	
 
 }
