@@ -41,7 +41,9 @@ import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.predicates.ProjectAccessPredicate;
 import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
+import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
+import org.nrg.xnat.helpers.merge.MergeUtils;
 import org.nrg.xnat.helpers.prearchive.DatabaseSession;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
 import org.nrg.xnat.helpers.prearchive.PrearcUtils;
@@ -202,6 +204,39 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 	}
 	
 	@Override
+	public List<PrearcSessionResourceDto> findAllPrearcSessionResourceByScanId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException {
+		List<PrearcSessionResourceDto> sessionResources = new ArrayList<>();
+		final PrearcInfoUtil info;
+		info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
+		String project = info.session.getProject();
+		String prearchivePath = info.session.getPrearchivepath();
+		final XnatImagescandataI scan=MergeUtils.getMatchingScanById(scanId.toString(),(List<XnatImagescandataI>)info.session.getScans_scan());
+		if (Objects.isNull(scan)) {
+			throw new NotFoundException("scan data wasn't found");
+		}
+		for (final XnatAbstractresourceI res : scan.getFile()) {
+			sessionResources = getSessionResourcesByScanId(prearchivePath, project, res, sessionResources);
+		}
+		return sessionResources;
+	}
+	
+
+	@Override
+	public List<PrearcSessionScanDto> findAllPrearcSessionScans(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
+		List<PrearcSessionScanDto> prearcSessionScanDtos = new ArrayList<>();
+		final PrearcInfoUtil info;
+		info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
+		for (XnatImagescandataI scan : info.session.getScans_scan()) {
+			prearcSessionScanDtos.add(PrearcSessionScanDto.builder()
+					.ID(scan.getId())
+					.xsiType(scan.getXSIType())
+					.series_description( scan.getSeriesDescription()).build());
+		}
+		return prearcSessionScanDtos;
+	}
+
+	
+	@Override
 	public List<PrearcSessionResourceDto> findAllPrearcSessionResource(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
 		List<PrearcSessionResourceDto> prearcSessionResourceDtos = new ArrayList<>();
 		final PrearcInfoUtil info;
@@ -209,10 +244,22 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 		String project = info.session.getProject();
 		String prearchivePath = info.session.getPrearchivepath();
 		for (final XnatImagescandataI scan : info.session.getScans_scan()) {
-			return getPrearcSessionResource(project, prearchivePath, scan, prearcSessionResourceDtos);
+			prearcSessionResourceDtos = getPrearcSessionResource(project, prearchivePath, scan, prearcSessionResourceDtos);
 		}
 		return prearcSessionResourceDtos;
 	}
+	
+
+	private List<PrearcSessionResourceDto> getSessionResourcesByScanId(String prearchivePath, String project, XnatAbstractresourceI res, List<PrearcSessionResourceDto> sessionResources) throws ServerException {
+		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(prearchivePath, (XnatResourcecatalogI) res, false, project);
+		CatalogUtils.Stats stats = CatalogUtils.getFileStats(catalogData.catBean, catalogData.catPath, catalogData.project);
+		 sessionResources.add(PrearcSessionResourceDto.builder()
+				 .label( res.getLabel())
+				 .file_count(Long.valueOf(stats.count))
+				 .file_size( stats.size).build());
+		return sessionResources;
+	}
+
 	
 	 private List<PrearcSessionResourceDto> getPrearcSessionResource(String project, String prearchivePath, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
 		 for (final XnatAbstractresourceI res : scan.getFile()) {
@@ -239,7 +286,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 			final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(prearchivePath, (XnatResourcecatalogI) res, false, project
 			);
 			CatalogUtils.Stats stats = CatalogUtils.getFileStats(catalogData.catBean, catalogData.catPath, catalogData.project);
-			return getSessionResources(CATEGORY_NAME, scan.getId(),res.getLabel(), new Long(stats.count), stats.size, sessionResources);
+			return getSessionResources(CATEGORY_NAME, scan.getId(),res.getLabel(), Long.valueOf(stats.count), stats.size, sessionResources);
 		} catch (ServerException e) {
 			log.error("Unable to read catalog for resource {}", res.getXnatAbstractresourceId(), e);
 		}
@@ -255,6 +302,8 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 				.file_size(fileSize).build());
 		 return sessionResources;
 	}
+	
+	
 
 	private void errorResponse(SessionException e, SessionDataTriple triple) throws ResourceAlreadyExistsException, DataFormatException, NotFoundException, InsufficientPrivilegesException {
 		 switch (e.getError()) {
@@ -344,7 +393,5 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 	 private static final Long ONE_FILE_COUNT = 1L;
 	 private static final Long ZERO_FILE_COUNT = 0L;
 	 private static final Long ZERO_FILE_SIZE = 0L;
-
-	
 
 }

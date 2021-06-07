@@ -19,6 +19,7 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
+import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
@@ -60,7 +61,7 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 	}
     
     
-    @ApiOperation(value = "Gets the requested  Prearchive session resource", notes = "Returns the  Prearchive session resource with the specified PROJECT ID", response = List.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested  Prearchive session resource", notes = "Returns the  Prearchive session resource", response = List.class, responseContainer = "list")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
 			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
@@ -72,6 +73,33 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 		log.debug("User {} requested Prearchive session resource", getSessionUser().getUsername());
 		return _prearchiveService.findAllPrearcSessionResource(getSessionUser(), projectId, sessionTimestamp, sessionLabel);
 	}
+    
+    @ApiOperation(value = "Gets the requested  Prearchive session scans", notes = "Returns the  Prearchive session scans", response = List.class, responseContainer = "list")
+   	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
+   			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+   			@ApiResponse(code = 404, message = "The requested Prearchive session scans wasn't found."),
+   			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+   	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+   	public List<PrearcSessionScanDto> getAllPrearcSessionScans(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
+   		log.debug("User {} requested Prearchive session resource", getSessionUser().getUsername());
+   		return _prearchiveService.findAllPrearcSessionScans(getSessionUser(), projectId, sessionTimestamp, sessionLabel);
+   	}
+    
+    @ApiOperation(value = "Gets the requested  Prearchive session resource with scanId", notes = "Returns the  Prearchive session resource with the specified SCAN_ID", response = List.class, responseContainer = "list")
+   	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
+   			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+   			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
+   			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+   	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans/{scanId}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+   	public List<PrearcSessionResourceDto> getAllPrearcSessionResourcesByScanId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+   													@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException {
+   		log.debug("User {} requested Prearchive session resource with scan ID", getSessionUser().getUsername(), scanId);
+   		return _prearchiveService.findAllPrearcSessionResourceByScanId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId);
+   	}
     
     @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdata.class)
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),

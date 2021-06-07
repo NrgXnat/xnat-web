@@ -11,6 +11,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
+import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 
@@ -25,4 +26,8 @@ public interface PrearchiveService {
 	PrearchiveDto movePrarchive(UserI user,  List<String> src, String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, ResourceAlreadyExistsException, DataFormatException; 
 
 	List<PrearcSessionResourceDto> findAllPrearcSessionResource(UserI user,String projectId, String timestamp, String sessionLabel) throws ActionException;
+
+	List<PrearcSessionScanDto> findAllPrearcSessionScans(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException;
+
+	List<PrearcSessionResourceDto> findAllPrearcSessionResourceByScanId(UserI user,String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException;
 }
