@@ -3,7 +3,13 @@ package org.nrg.xnat.services.prearchive.impl;
 import static org.nrg.xnat.archive.Operation.Delete;
 import static org.nrg.xnat.archive.Operation.Move;
 import static org.nrg.xnat.archive.Operation.Rebuild;
+
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -11,24 +17,29 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 
 import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nrg.action.ActionException;
 import org.nrg.action.ServerException;
+import org.nrg.dcm.Dcm2Jpg;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.CatCatalogI;
+import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.model.XnatResourceI;
@@ -37,11 +48,13 @@ import org.nrg.xdat.security.PermissionsServiceImpl;
 import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.services.PermissionsServiceI;
+import org.nrg.xft.XFTTable;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.predicates.ProjectAccessPredicate;
 import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
 import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
+import org.nrg.xnat.dto.prearchive.PrearcSessionScanResFileDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.merge.MergeUtils;
 import org.nrg.xnat.helpers.prearchive.DatabaseSession;
@@ -56,6 +69,10 @@ import org.nrg.xnat.services.prearchive.util.PrearcInfoUtil;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.functions.Functions;
 import org.nrg.xnat.utils.functions.UriToSessionDataTriple;
+import org.restlet.data.MediaType;
+import org.restlet.data.Status;
+import org.restlet.resource.InputRepresentation;
+import org.restlet.resource.StringRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -202,6 +219,80 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 			}
 			return result;
 	}
+	
+	@Override
+	public List<PrearcSessionScanResFileDto> findAllPrearcSessionResourceByScanIdAndResourceId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId, String resourceId, String filepath, boolean prettyPrint, HttpServletRequest request) throws ActionException, NotFoundException, DataFormatException {
+		final PrearcInfoUtil info;
+		info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
+		String project = info.session.getProject();
+		final XnatImagescandataI scan=MergeUtils.getMatchingScanById(scanId.toString(),(List<XnatImagescandataI>)info.session.getScans_scan());
+		if (Objects.isNull(scan)) {
+			throw new NotFoundException("scan data wasn't found");
+		}
+		final XnatResourcecatalogI res=(XnatResourcecatalogI)MergeUtils.getMatchingResourceByLabel(resourceId, scan.getFile());
+		if (Objects.isNull(res)) {
+			throw new NotFoundException("Resource data wasn't found");
+		}
+		final CatalogUtils.CatalogData catalogData;
+		try {
+			catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(info.session.getPrearchivepath(), res, false, project );
+		} catch (ServerException e) {
+			throw new NotFoundException("Catalog data wasn't found");
+		}
+
+		final String rootPath = catalogData.catPath;
+		final CatCatalogI catalog = catalogData.catBean;
+		
+		if (StringUtils.isNotEmpty(filepath)) {
+			return getPrearchiveSessionScanResWithFilepath(catalog, filepath, rootPath, project,resourceId, request, prettyPrint);
+		}else{
+			return getPrearchiveSessionScanRes(catalog, rootPath, project, prettyPrint, request);
+		}
+	}
+	
+	private List<PrearcSessionScanResFileDto> getPrearchiveSessionScanRes(CatCatalogI catalog, String rootPath, String project, boolean prettyPrint, HttpServletRequest request) {
+		List<PrearcSessionScanResFileDto> sessionScanResources = new ArrayList<>();
+		for (final CatEntryI entry: CatalogUtils.getEntriesByFilter(catalog,null)) {
+        	File f = CatalogUtils.getFile(entry, rootPath, project);
+        	if (f == null) continue;
+        	sessionScanResources = getSessionScanResources(f, entry, request, sessionScanResources, prettyPrint);
+        }
+		return sessionScanResources;
+	}
+
+	private List<PrearcSessionScanResFileDto> getSessionScanResources(File f, CatEntryI entry, HttpServletRequest request, List<PrearcSessionScanResFileDto> sessionScanResources, boolean prettyPrint) {
+		sessionScanResources.add(PrearcSessionScanResFileDto.builder()
+							.name(f.getName())
+							.uri(constructURI(entry.getUri(), request))
+							.size((prettyPrint)?Long.valueOf(CatalogUtils.formatSize(f.length())):f.length()).build());
+		return sessionScanResources;
+	}
+
+	private List<PrearcSessionScanResFileDto> getPrearchiveSessionScanResWithFilepath(CatCatalogI catalog, String filepath, String rootPath, String project, String resourceId, HttpServletRequest request, boolean prettyPrint) throws DataFormatException {
+		List<PrearcSessionScanResFileDto> sessionScanResources = new ArrayList<>();
+		final CatEntryI entry = CatalogUtils.getEntryByURI(catalog, filepath);
+		File f = CatalogUtils.getFile(entry, rootPath, project);
+		if (f == null) return null;
+		
+		if (request.getContentType().equals("image/jpg")&& StringUtils.equals(resourceId, "DICOM") && Dcm2Jpg.isDicom(f)) {
+            try {
+            	InputStream inputStream = new ByteArrayInputStream(Dcm2Jpg.convert(f));
+            	File file = new File("");
+            	Files.copy(inputStream, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                //return new InputRepresentation(new ByteArrayInputStream(Dcm2Jpg.convert(f)), mt);
+            } catch (IOException e) {
+            	throw new DataFormatException("Unable to convert this file to jpeg : " + e.getMessage());
+            }
+        }
+        return getSessionScanResources(f, entry, request, sessionScanResources, prettyPrint);
+		
+	}
+
+	private String constructURI(String resource, HttpServletRequest request) {
+    	String requestPart = request.getServletPath() + request.getPathInfo();
+    	return requestPart + "/" + resource;
+    	
+    }
 	
 	@Override
 	public List<PrearcSessionResourceDto> findAllPrearcSessionResourceByScanId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException {

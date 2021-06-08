@@ -6,6 +6,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.POST;
 import java.sql.SQLException;
 import java.util.List;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.nrg.action.ActionException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
@@ -20,6 +22,7 @@ import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
 import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
+import org.nrg.xnat.dto.prearchive.PrearcSessionScanResFileDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
@@ -99,6 +102,24 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException {
    		log.debug("User {} requested Prearchive session resource with scan ID", getSessionUser().getUsername(), scanId);
    		return _prearchiveService.findAllPrearcSessionResourceByScanId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId);
+   	}
+    
+    @ApiOperation(value = "Gets the requested  Prearchive session resource with scanId", notes = "Returns the  Prearchive session resource with the specified SCAN_ID", response = List.class, responseContainer = "list")
+   	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested project."),
+   			@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+   			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
+   			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+   	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans/{scanId}/resources/{resourceId}/files"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+   	public List<PrearcSessionScanResFileDto> getAllPrearcSessionResourcesByScanIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+   													@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
+   													@ApiParam(value = "The ID of the resource.") @PathVariable  final String resourceId,
+   													@ApiParam(value = "The valur of the filepath.") @RequestParam(required = false)  final String filepath,
+   													@ApiParam(value = "The valur of the prettyPrint.") @RequestParam(defaultValue = "false")  final boolean prettyPrint,
+   													@ApiParam(value = "The valur of the filepath.")   final HttpServletRequest request,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException, DataFormatException {
+   		log.debug("User {} requested Prearchive session resource with scan ID", getSessionUser().getUsername(), scanId);
+   		return _prearchiveService.findAllPrearcSessionResourceByScanIdAndResourceId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId, resourceId, filepath, prettyPrint, request);
    	}
     
     @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdata.class)
