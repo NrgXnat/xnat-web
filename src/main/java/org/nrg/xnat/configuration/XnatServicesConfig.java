@@ -35,7 +35,7 @@ import static org.nrg.xft.identifier.IDGeneratorFactory.*;
 @ComponentScan({"org.nrg.xnat.services.config.impl","org.nrg.xnat.services.dump.impl", "org.nrg.xft.identifier", "org.nrg.xnat.eventservice", "org.nrg.xnat.services.archive.impl", "org.nrg.xnat.services.cache",
                 "org.nrg.xnat.services.experiments.impl", "org.nrg.xnat.services.files.impl", "org.nrg.xnat.services.investigators.impl.xft",
                 "org.nrg.xnat.services.importer.impl", "org.nrg.xnat.services.prearchive.impl", "org.nrg.xnat.services.par.impl", "org.nrg.xnat.services.projects.impl", 
-                "org.nrg.xnat.services.resources.impl","org.nrg.xnat.services.runner.impl", "org.nrg.xnat.services.scans.impl", 
+                "org.nrg.xnat.services.protocol.impl","org.nrg.xnat.services.resources.impl","org.nrg.xnat.services.runner.impl", "org.nrg.xnat.services.scans.impl", 
                 "org.nrg.xnat.services.search.impl", "org.nrg.xnat.services.subjects.impl", "org.nrg.xnat.services.system.impl.hibernate", "org.nrg.xnat.services.token.impl",
                 "org.nrg.xnat.services.triage","org.nrg.xnat.services.users.impl", "org.nrg.xnat.services.validation", 
                 "org.nrg.xnat.snapshot.generator.impl", "org.nrg.xnat.snapshot.services.impl", "org.nrg.xnat.web.converters"})
