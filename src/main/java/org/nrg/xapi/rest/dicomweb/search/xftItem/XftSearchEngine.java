@@ -1,15 +1,19 @@
 package org.nrg.xapi.rest.dicomweb.search.xftItem;
 
 import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
 import org.nrg.xapi.rest.dicomweb.mediator.Conflict;
 import org.nrg.xapi.rest.dicomweb.mediator.Mediator;
+import org.nrg.xapi.rest.dicomweb.search.InstanceFilter;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
 import org.nrg.xapi.rest.dicomweb.search.SearchException;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.bean.CatDcmcatalogBean;
+import org.nrg.xdat.bean.CatDcmentryBean;
 import org.nrg.xdat.model.*;
+import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatResourcecatalog;
@@ -48,6 +52,7 @@ public class XftSearchEngine implements SearchEngineI {
     private final CatalogService _catalogService;
     private final Mediator _mediator;
     private static final Logger _log = LoggerFactory.getLogger("dicomweb");
+    private final InstanceFilter _instanceFilter;
 
     @Autowired
     public XftSearchEngine(final UserManagementServiceI userManagementService,
@@ -59,6 +64,7 @@ public class XftSearchEngine implements SearchEngineI {
         this._jdbcTemplate = jdbcTemplate;
         this._catalogService = catalogService;
         this._mediator = mediator;
+        this._instanceFilter = new InstanceFilter();
     }
 
     @Override
@@ -214,9 +220,61 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException {
+    public List<? extends QIDOResponse> searchForInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapInstances( sessionID, studyInstanceUID, seriesInstanceUID, queryParameters);
+
+        ItemCollection ic;
         try {
-            XnatImagesessiondata session = getSession( studyInstanceUID, user);
+            ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
+
+        List<QIDOResponse> responses = new ArrayList();
+        if( ic.getItems().size() == 1) {
+            XnatImagesessiondata sessionData = new XnatImagesessiondata( ic.get(0));
+            XnatImagescandata scan = sessionData.getScans_scan().stream()
+                    .filter( XnatImagescandata.class::isInstance)
+                    .map( XnatImagescandata.class::cast)
+                    .filter( scn -> scn.getUid().equals( seriesInstanceUID))
+                    .findAny()
+                    .orElseThrow( () -> {
+                            String msg = String.format("Failed to find scan. sessionID=%s, studyUID=%s, seriesUID=%s", sessionID, studyInstanceUID, seriesInstanceUID);
+                            return new SearchException( SearchException.Type.UNEXPECTED, msg);
+                    });
+
+            XnatResourcecatalog catalog;
+            try {
+                catalog = _catalogService.getDicomResourceCatalog(sessionID, scan.getId());
+                final Path dicomRootPath = Paths.get(catalog.getUri()).getParent();
+                final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(dicomRootPath.toString(), catalog, null);
+                final CatDcmcatalogBean dcmCatalog = (CatDcmcatalogBean) catalogData.catBean;
+                List<CatEntryI> catEntryList = dcmCatalog.getEntries_entry();
+                catEntryList.stream()
+                        .filter(CatDcmentryBean.class::isInstance)
+                        .map(CatDcmentryBean.class::cast)
+                        .filter( entry -> _instanceFilter.match( entry, queryParameters))
+                        .forEach(entry -> {
+                            QIDOResponseInstance response = new QIDOResponseInstance();
+                            response.setInstanceNumber(entry.getInstancenumber().toString());
+                            response.setSopInstanceUID(entry.getUid());
+                            responses.add(response);
+                        });
+            } catch (ClientException | ServerException e) {
+                throw new SearchException(SearchException.Type.UNEXPECTED, "Error finding scan catalog.", e);
+            }
+        }
+
+        int from = Math.min( responses.size(), queryParameters.getOffset());
+        int to = Math.min( responses.size(), from + queryParameters.getLimit());
+        return responses.subList( from, to);
+    }
+
+    @Override
+    public DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException {
+        try {
+            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
             DicomObjectI instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
             return instance;
@@ -230,6 +288,19 @@ public class XftSearchEngine implements SearchEngineI {
     public List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
         try {
             XnatImagesessiondata session = getSession( studyInstanceUID, user);
+            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
+            List<DicomObjectI> instances = getInstances( scan);
+            return instances;
+        }
+        catch( Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, e);
+        }
+    }
+
+    @Override
+    public List<DicomObjectI> retrieveSeries( String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+        try {
+            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
             List<DicomObjectI> instances = getInstances( scan);
             return instances;
@@ -538,6 +609,22 @@ public class XftSearchEngine implements SearchEngineI {
     private XnatImagesessiondata getSession(String studyInstanceUID, UserI user) throws SearchException {
         try {
             CriteriaCollection cc = new CriteriaCollection("AND");
+            cc.addClause("xnat:imageSessionData/uid", "=", studyInstanceUID);
+
+            ItemCollection ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
+
+            XnatImagesessiondata session = new XnatImagesessiondata(ic.getFirst());
+            return session;
+        }
+        catch (Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, "Error getting session data for studyInstanceUID: " + studyInstanceUID, e);
+        }
+    }
+
+    private XnatImagesessiondata getSession( String sessionID, String studyInstanceUID, UserI user) throws SearchException {
+        try {
+            CriteriaCollection cc = new CriteriaCollection("AND");
+            cc.addClause("xnat:imageSessionData/id", "=", sessionID);
             cc.addClause("xnat:imageSessionData/uid", "=", studyInstanceUID);
 
             ItemCollection ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);

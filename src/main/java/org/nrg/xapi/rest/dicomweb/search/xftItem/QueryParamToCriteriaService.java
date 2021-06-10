@@ -120,6 +120,21 @@ public class QueryParamToCriteriaService {
         return cc;
     }
 
+    /*
+        Query parms don't come into play here because we need to search scan catalogs.  But another implementation
+        will use them.
+        This should return an imagesession with the unique series.
+     */
+    public CriteriaCollection mapInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, BaseQueryParameters params) {
+        CriteriaCollection cc = new CriteriaCollection("AND");
+        if( ! (sessionID == null || sessionID.isEmpty())) {
+            cc.addClause( "xnat:experimentData/id", "=", sessionID);
+        }
+        cc.addClause("xnat:imagesessiondata/uid", studyInstanceUID);
+        cc.addClause("xnat:imagescandata/uid", seriesInstanceUID);
+        return cc;
+    }
+
     public CriteriaCollection mapSeries( String sessionID, BaseQueryParameters params) {
         CriteriaCollection cc = mapSeries( params);
         if( ! (sessionID == null || sessionID.isEmpty())) {
@@ -129,6 +144,47 @@ public class QueryParamToCriteriaService {
     }
 
     private CriteriaCollection mapSeries( BaseQueryParameters params) {
+        CriteriaCollection cc = new CriteriaCollection("AND");
+
+        ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
+
+        for (String paramName : params.keySet()) {
+            switch (paramName) {
+                case QueryParameters.PERFORMED_PROCEDURE_STEP_STARTDATE:
+                    cc.addClause(parseDateRangeCriteria("xnat:imagescandata/start_date", params.getParams(paramName).get(0), zoneOffset));
+                    break;
+                case QueryParameters.PERFORMED_PROCEDURE_STEP_STARTTIME:
+                    // Add criteria for times only if the query is not also for dates. We will do combined date-time matching
+                    // by filtering responses after the item search.
+                    if( params.getParams( QueryParameters.PERFORMED_PROCEDURE_STEP_STARTDATE) == null) {
+                        cc.addClause( parseTimeCriteria( params.getParams( paramName).get(0), zoneOffset));
+                    }
+                    // Don't add criteria for times. Filter responses after the item search.
+//                    cc.addClause(parseRangeCriteria("xnat:imagescandata/starttime", params.getParams(paramName).get(0)));
+                    break;
+                case QueryParameters.SERIES_NUMBER_NAME:
+                    cc.addClause("xnat:imagescanData/id", "=", params.getParams(paramName).get(0));
+                    break;
+                case QueryParameters.SERIES_INSTANCE_UID_NAME:
+                    List<String> uids = params.getParams(paramName);
+                    CriteriaCollection cc_or_uid = new CriteriaCollection("OR");
+                    for (String uid : uids) {
+                        cc_or_uid.addClause("xnat:imagescandata/uid", "=", uid);
+                    }
+                    cc.addClause(cc_or_uid);
+                    break;
+                case QueryParameters.MODALITY_NAME:
+                    cc.addClause("xnat:imagescanData/modality", "=", params.getParams(paramName).get(0));
+                    break;
+                default:
+                    _log.warn("Ignoring query parameter: " + params.asString(paramName));
+                    break;
+            }
+        }
+        return cc;
+    }
+
+    private CriteriaCollection mapInstances( BaseQueryParameters params) {
         CriteriaCollection cc = new CriteriaCollection("AND");
 
         ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();

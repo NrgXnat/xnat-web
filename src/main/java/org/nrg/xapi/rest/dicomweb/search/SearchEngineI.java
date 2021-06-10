@@ -20,9 +20,13 @@ public interface SearchEngineI {
 
     List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    DicomObjectI retrieveInstance(String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
+
+    DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
 
     List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
+
+    List<DicomObjectI> retrieveSeries( String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
 
     List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException;
 }

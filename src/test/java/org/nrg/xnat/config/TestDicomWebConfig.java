@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.hibernate4.Hibernate4Module;
 import org.mockito.Mockito;
 import org.nrg.framework.services.ContextService;
 import org.nrg.framework.services.SerializerService;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.services.PermissionsServiceI;
 import org.nrg.xdat.services.cache.UserDataCache;
 import org.nrg.xnat.services.archive.CatalogService;
@@ -31,18 +32,20 @@ import javax.xml.transform.sax.SAXTransformerFactory;
 @Configuration
 public class TestDicomWebConfig {
     @Bean
-    public CatalogService catalogService(final NamedParameterJdbcTemplate namedParameterJdbcTemplate,
+    public CatalogService catalogService(final SiteConfigPreferences siteConfigPreferences,
+                                         final NamedParameterJdbcTemplate namedParameterJdbcTemplate,
                                          final CacheManager cacheManager,
                                          final UserDataCache userDataCache) {
-        return new DefaultCatalogService(namedParameterJdbcTemplate, cacheManager, userDataCache);
+        return new DefaultCatalogService( siteConfigPreferences, namedParameterJdbcTemplate, cacheManager, userDataCache);
     }
 
     @Bean
-    public DefaultCatalogService catalogServiceNoRemote(final NamedParameterJdbcTemplate namedParameterJdbcTemplate,
+    public DefaultCatalogService catalogServiceNoRemote(final SiteConfigPreferences siteConfigPreferences,
+                                                        final NamedParameterJdbcTemplate namedParameterJdbcTemplate,
                                                         final CacheManager cacheManager,
                                                         final UserDataCache userDataCache) {
         // return type DefaultCatalogService so we can re-set RemoteFilesService to null
-        return new DefaultCatalogService(namedParameterJdbcTemplate, cacheManager, userDataCache);
+        return new DefaultCatalogService(siteConfigPreferences, namedParameterJdbcTemplate, cacheManager, userDataCache);
     }
 
 
