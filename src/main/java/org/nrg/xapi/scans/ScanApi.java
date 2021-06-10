@@ -3,9 +3,11 @@ package org.nrg.xapi.scans;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import java.util.List;
+import java.util.Map;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -111,6 +113,18 @@ public class ScanApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The ID of the scan.") @PathVariable final Integer scanId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested project with ID {}, subject with ID {}, experiment with ID {} and scan with ID {}", getSessionUser().getUsername(), projectId, subjectId, experimentId, scanId);
 		return _scanService.findByProjectIdAndSubjectIdAndExperimentIdAndScanId(getSessionUser(),projectId,subjectId , experimentId, scanId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, experimentId));
+	}
+	
+	@ApiOperation(value = "Get All scanner", notes = "The scannners function returns a list of all scanner configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
+					@ApiResponse(code = 400, message = "The requested scanner  wasn't found."),
+					@ApiResponse(code = 404, message = "The requested scanner wasn't found."),			
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
+	@XapiRequestMapping(value = "/scanners", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+	public List<Map<String, String>> getAllScanners(@ApiParam(value = "The value of the scanTable.") @RequestParam(required = false) final String scanTable,
+													@ApiParam(value = "The ID of the project.") @RequestParam(required = false) final String projectId) throws InsufficientPrivilegesException{
+		log.debug("User {} requested scanners", getSessionUser().getUsername());
+		return _scanService.findAllScanners(getSessionUser(), scanTable, projectId);
 	}
 	
 	@ApiOperation(value = "Delete an existing scan", notes = "Deletes the specified scan.")

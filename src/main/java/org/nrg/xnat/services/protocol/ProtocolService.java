@@ -1,5 +1,6 @@
 package org.nrg.xnat.services.protocol;
 
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xft.security.UserI;
@@ -9,5 +10,7 @@ public interface ProtocolService {
 
 	XnatDatatypeprotocol findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType,  XnatEventUtil event ) throws NotFoundException;
 	
-	XnatDatatypeprotocol update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event );
+	XnatDatatypeprotocol update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event ) throws InitializationException, NotFoundException;
+	
+	void delete(UserI user, String projectId, String protocolId,String dataType, XnatEventUtil event ) throws InitializationException, NotFoundException;
 }

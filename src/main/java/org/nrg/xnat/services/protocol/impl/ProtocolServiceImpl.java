@@ -1,16 +1,19 @@
 package org.nrg.xnat.services.protocol.impl;
 
+import java.util.Objects;
+
 import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.action.ActionException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatAbstractprotocol;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.ElementSecurity;
+import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
@@ -23,8 +26,6 @@ import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.protocol.ProtocolService;
 import org.springframework.stereotype.Service;
-import org.xml.sax.SAXParseException;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Service
@@ -33,15 +34,9 @@ public class ProtocolServiceImpl implements ProtocolService {
 
 	@Override
 	public XnatDatatypeprotocol findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType,  XnatEventUtil event ) throws NotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		if (StringUtils.isBlank(protocolId)) {
-			throw new  NotFoundException(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME) ;
-		}
-		if (StringUtils.isBlank(dataType)) {
-			throw new  NotFoundException("Datatype wasn't found") ;
-		}
+		
+		validate(projectId, protocolId, dataType);
+		
 		XnatDatatypeprotocol xnatDatatypeprotocol = null;
 		final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);;
 		final XnatDatatypeprotocol protocol = (XnatDatatypeprotocol) XnatAbstractprotocol.getXnatAbstractprotocolsById(protocolId, user, true);
@@ -58,21 +53,87 @@ public class ProtocolServiceImpl implements ProtocolService {
 	
 	
 	@Override
-	public XnatDatatypeprotocol update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event) {
-		final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);;
-		final XnatDatatypeprotocol existingProtocol = (XnatDatatypeprotocol) XnatAbstractprotocol.getXnatAbstractprotocolsById(protocolId, user, true);
-		 try {
-         if (StringUtils.isBlank(protocol.getProject())) {
-             protocol.setProperty("xnat_projectdata_id", project.getId());
-         }
-         if (StringUtils.isBlank(protocol.getId())) {
-             protocol.setId(existingProtocol == null ? protocol.getDataType() : existingProtocol.getId());
-         }
-         if (StringUtils.isNotBlank(gender)) {
-             protocol.setProperty("xnat:subjectData/demographics[@xsi:type=xnat:demographicData]/gender", gender);
-         }
+	public void delete(UserI user, String projectId, String protocolId, String dataType, XnatEventUtil event) throws InitializationException, NotFoundException {
+		
+		validate(projectId, protocolId, dataType);
+		
+		final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		
+		final XnatDatatypeprotocol protocol = (XnatDatatypeprotocol) XnatAbstractprotocol.getXnatAbstractprotocolsById(protocolId, user, true);
+		try {
+	            final PersistentWorkflowI workflow          = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, project.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Deleted event data-type protocol.", event));
+	           
+	            final boolean             isProjectSpecific = XnatDatatypeprotocol.isProjectSpecific(protocol);
+	            
+	            if (isProjectSpecific) {
+	                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+	            } else {
+	                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
+	            }
+	            try {
+	                SaveItemHelper.authorizedDelete(protocol.getItem().getCurrentDBVersion(), user, workflow.buildEvent());
+	                PersistentWorkflowUtils.complete(workflow, workflow.buildEvent());
+	            } catch (Exception e) {
+	                PersistentWorkflowUtils.fail(workflow, workflow.buildEvent());
+	                throw e;
+	            }
+	            Users.clearCache(user);
+	            MaterializedView.deleteByUser(user);
+	        } catch (Exception e) {
+	            log.error("", e);
+	            throw new InitializationException(e.getMessage());
+	        }
+	}
+	
+	
+	@Override
+	public XnatDatatypeprotocol update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event) throws InitializationException, NotFoundException {
+		
+		validate(projectId, protocolId, dataType);
 
-         final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, project.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Modified event data-type protocol.", event));
+		final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+
+		if (Objects.isNull(project)) {
+			throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME);
+		}
+		final XnatDatatypeprotocol existingProtocol = (XnatDatatypeprotocol) XnatAbstractprotocol.getXnatAbstractprotocolsById(protocolId, user, true);
+		try {
+			if (StringUtils.isBlank(protocol.getProject())) {
+				protocol.setProperty("xnat_projectdata_id", project.getId());
+			}
+			if (StringUtils.isBlank(protocol.getId())) {
+				protocol.setId(existingProtocol == null ? protocol.getDataType() : existingProtocol.getId());
+			}
+			if (StringUtils.isNotBlank(gender)) {
+				protocol.setProperty("xnat:subjectData/demographics[@xsi:type=xnat:demographicData]/gender", gender);
+			}
+
+			protocol = updateProtocol(protocol, user, existingProtocol, project, event);
+
+		} catch (Exception e) {
+			log.error("An unknown error occurred trying to store the protocol", e);
+			throw new InitializationException(e.getMessage());
+
+		}
+		return protocol;
+	}
+	
+	
+	private void validate(String projectId, String protocolId, String dataType) throws NotFoundException {
+		if(StringUtils.isBlank(projectId)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		if (StringUtils.isBlank(protocolId)) {
+			throw new  NotFoundException(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME) ;
+		}
+		if (StringUtils.isBlank(dataType)) {
+			throw new  NotFoundException("Datatype wasn't found") ;
+		}
+	}
+
+
+	private XnatDatatypeprotocol updateProtocol(XnatDatatypeprotocol protocol, UserI user, XnatDatatypeprotocol existingProtocol, XnatProjectdata project, XnatEventUtil event) throws Exception {
+		 final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, project.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Modified event data-type protocol.", event));
          try {
              SaveItemHelper.authorizedSave(protocol, user, false, true, workflow.buildEvent());
 
@@ -100,19 +161,9 @@ public class ProtocolServiceImpl implements ProtocolService {
              PersistentWorkflowUtils.fail(workflow, workflow.buildEvent());
              throw e;
          }
-     } catch (SAXParseException e) {
-         //getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY, e.getMessage());
-         log.error("An error was detected in format for the protocol definition", e);
-     } catch (ActionException e) {
-        // getResponse().setStatus(e.getStatus(), e.getMessage());
-     } catch (Exception e) {
-        // getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
-         log.error("An unknown error occurred trying to store the protocol", e);
-     }
-		return null;
 	}
-	
-	
+
+
 	@Nonnull
     private XnatDatatypeprotocol getXnatDatatypeprotocol(final UserI user, final String dataType, XnatProjectdata project, XnatDatatypeprotocol protocol2, String protocolId, XnatEventUtil event ) throws Exception {
         final XnatDatatypeprotocol existing = (XnatDatatypeprotocol) project.getProtocolByDataType(dataType);
@@ -182,6 +233,5 @@ public class ProtocolServiceImpl implements ProtocolService {
         ProjectSpecific,
         SiteWide
     }
-
 
 }

@@ -1,10 +1,12 @@
 package org.nrg.xnat.services.scans;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xft.security.UserI;
@@ -26,4 +28,5 @@ public interface ScanService {
 
 	 void deleteById(UserI user, String assessedId, Integer scanId, String filepath, boolean removeFiles,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException;
 	
+	 List<Map<String, String>> findAllScanners(UserI user, String scanTable, String projectId) throws InsufficientPrivilegesException;
 }

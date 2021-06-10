@@ -2,9 +2,11 @@ package org.nrg.xapi.protocol;
 
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -76,9 +78,28 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 				@ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
 				@ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
 				@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
-				@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException, DataFormatException {
+				@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException, DataFormatException, InitializationException {
 	    	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
 	    	return _protocolService.update(getSessionUser(), projectId, protocolId, dataType, gender, protocol, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+	    }
+	 
+	 
+	 @ApiOperation(value = "delete the requested  protocol", notes = "delete the  protocol with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
+	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
+	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE)
+	    public void delete(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
+	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
+	    		@ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+				@ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+				@ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+				@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+				@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException, DataFormatException, InitializationException {
+	    	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
+	    	 _protocolService.delete(getSessionUser(), projectId, protocolId,dataType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
 	 
 	 private final ProtocolService _protocolService;
