@@ -29,6 +29,10 @@ public class QueryParameters extends BaseQueryParameters {
     public static final String PERFORMED_PROCEDURE_STEP_STARTDATE = "PerformedProcedureStepStartDate";
     public static final String PERFORMED_PROCEDURE_STEP_STARTTIME = "PerformedProcedureStepStartTime";
 
+    public static final String SOP_INSTANCE_UID_NAME = "sopInstanceUID";
+    public static final String SOP_CLASS_UID_NAME = "sopClassUID";
+    public static final String INSTANCE_NUMBER_NAME = "instanceNumber";
+
     public static final String LIMIT = "limit";
     public static final String OFFSET = "offset";
 
@@ -113,6 +117,20 @@ public class QueryParameters extends BaseQueryParameters {
             case "00400245":
                 value.forEach( v -> addParam( PERFORMED_PROCEDURE_STEP_STARTTIME, v));
                 break;
+
+            case "sopinstanceuid":
+            case "00080018":
+                value.forEach( v -> addParam( SOP_INSTANCE_UID_NAME, v));
+                break;
+            case "sopclassuid":
+            case "00080016":
+                value.forEach( v -> addParam( SOP_CLASS_UID_NAME, v));
+                break;
+            case "instancenumber":
+            case "00200013":
+                value.forEach( v -> addParam( INSTANCE_NUMBER_NAME, v));
+                break;
+
             case "limit":
                 value.forEach( v -> addParam( LIMIT, v));
                 break;
