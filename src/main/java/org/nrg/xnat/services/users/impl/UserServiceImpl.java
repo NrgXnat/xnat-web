@@ -10,6 +10,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
+import org.nrg.xft.db.FavEntries;
+import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -65,6 +67,64 @@ public class UserServiceImpl implements UserService{
     	return Optional.of(userGroup);
 	}
 	
+	@Override
+	public List<FavEntries> FindAllUserFavorites(UserI user, String dataType) throws DataFormatException, NotFoundException {
+		validateDataType(dataType);
+		List<FavEntries> fanEntries = _template.query(BY_DATATYPE_USERID_WHERE_USER_FAVORITE_QUERY, new MapSqlParameterSource("dataType", dataType).addValue("userId", user.getID()), new UserFavoriteRowMapper());
+		if(Objects.isNull(fanEntries) || fanEntries.isEmpty()) {
+    		throw new  NotFoundException("The requested FavEntries for data Type " + dataType + "wasn't found" ) ;
+		}
+		return fanEntries;
+	}
+
+	
+
+	@Override
+	public  Optional<FavEntries> findUserFavorite(UserI user, String projectId, String dataType) throws NotFoundException, DataFormatException {
+		ValidateProjectId(projectId);
+		validateDataType(dataType);
+		FavEntries favEntries =  _template.queryForObject(BY_ID_DATATYPE_USERID_WHERE_USER_FAVORITE_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("dataType", dataType).addValue("userId", user.getID()), new UserFavoriteRowMapper());
+		if(Objects.isNull(favEntries)) {
+    		throw new  NotFoundException("The requested FavEntries for project ID " + projectId + "wasn't found" ) ;
+		}
+    	return Optional.of(favEntries);
+	}
+
+	@Override
+	public void deleteUserFavorite(UserI user, String projectId, String dataType) throws DataFormatException {
+		ValidateProjectId(projectId);
+		validateDataType(dataType);
+		try {
+			FavEntries favEntry=FavEntries.GetFavoriteEntries(dataType, projectId, user);
+			if(Objects.isNull(favEntry)) {
+	    		throw new  NotFoundException("The requested FavEntries for project ID " + projectId + "wasn't found" ) ;
+			}
+			favEntry.delete();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	@Override
+	public List<FavEntries> updateUserFavorite(UserI user, String projectId, String dataType) throws DataFormatException, NotFoundException {
+		ValidateProjectId(projectId);
+		validateDataType(dataType);
+		try {
+			FavEntries favEntry=new FavEntries();
+			favEntry.setId(projectId);
+			favEntry.setDataType(dataType);
+			favEntry.setUser(user);
+			favEntry.save();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return FindAllUserFavorites(user, dataType);
+	}
+	
 	private static class UserRowMapper implements RowMapper<XdatUsergroup> {
 		UserRowMapper(final UserI user) {
 			_user = user;
@@ -94,6 +154,32 @@ public class UserServiceImpl implements UserService{
 
 		private final UserI _user;
 	}
+	
+	private static class UserFavoriteRowMapper implements RowMapper<FavEntries> {
+
+		@Override
+		public FavEntries mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+			final String projectId = resultSet.getString("id");
+			final String dataType = resultSet.getString("dataType");
+			FavEntries favEntries = new FavEntries();
+			favEntries.setDataType(dataType);
+			favEntries.setId(projectId);
+			return favEntries;
+		}
+
+	}
+	
+	private void validateDataType(String dataType) throws DataFormatException {
+		if(StringUtils.isBlank(dataType)) {
+    		throw new DataFormatException("The requested FavEntries for data Type" + dataType + " wasn't found ");
+		}
+	}
+	
+	private void ValidateProjectId(String projectId) throws DataFormatException {
+		if(StringUtils.isBlank(projectId)) {
+    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+		}
+	}
 
 	
 	private static final String USER_QUERY = "SELECT g.id AS GROUP_ID, displayname,login,firstname,lastname,email FROM xdat_userGroup g \n" + 
@@ -113,7 +199,10 @@ public class UserServiceImpl implements UserService{
 	
 	private static final String USER_GROUP_BY= " GROUP BY ug.id, ug.displayname,ug.tag,ug.xdat_usergroup_id ORDER BY ug.displayname DESC";
 	
+	private static final String BY_ID_DATATYPE_USERID_WHERE_USER_FAVORITE_QUERY = "SELECT datatype,id FROM xdat_search.xs_fav_entries WHERE dataType= :dataType AND id = :projectId AND xdat_user_id = :userId";
+	
+	private static final String BY_DATATYPE_USERID_WHERE_USER_FAVORITE_QUERY = "SELECT datatype,id FROM xdat_search.xs_fav_entries WHERE dataType= :dataType AND xdat_user_id = :userId";
+	
 	private final NamedParameterJdbcTemplate _template;
 
-	
 }
