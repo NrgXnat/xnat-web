@@ -624,7 +624,9 @@ public class XftSearchEngine implements SearchEngineI {
     private XnatImagesessiondata getSession( String sessionID, String studyInstanceUID, UserI user) throws SearchException {
         try {
             CriteriaCollection cc = new CriteriaCollection("AND");
-            cc.addClause("xnat:imageSessionData/id", "=", sessionID);
+            if( sessionID != null) {
+                cc.addClause("xnat:imageSessionData/id", "=", sessionID);
+            }
             cc.addClause("xnat:imageSessionData/uid", "=", studyInstanceUID);
 
             ItemCollection ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
