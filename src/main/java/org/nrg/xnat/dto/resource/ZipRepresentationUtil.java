@@ -59,30 +59,22 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
 	        if (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_GNU_TAR))) {
 	            zip = new TarUtils();
 	            zip.setOutputStream(output, ZipOutputStream.DEFLATED);
-	            setDownloadName(getTokenName() + ".tar.gz");
-	            setDownloadable(true);
+	           // setDownloadName(getTokenName() + ".tar.gz");
+	           // setDownloadable(true);
 	        } else if (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_TAR))) {
 	            zip = new TarUtils();
 	            zip.setOutputStream(output, ZipOutputStream.STORED);
-	            setDownloadName(getTokenName() + ".tar");
-	            setDownloadable(true);
+	           // setDownloadName(getTokenName() + ".tar");
+	           // setDownloadable(true);
 	        } else {
 	            zip = new ZipUtils();
 	            zip.setOutputStream(output, _compression);
-	            setDownloadName(getTokenName() + ".zip");
-	            setDownloadable(true);
+	           // setDownloadName(getTokenName() + ".zip");
+	            //setDownloadable(true);
 	        }
 	        return zip;
 	    }
 	 
-	private void setDownloadable(boolean b) {
-		
-	}
-
-
-	private void setDownloadName(String string) {
-		
-	}
 
 
 	@Override
@@ -113,26 +105,26 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
         _entries.add(new ZipFileEntry(path, file));
     }
 
-    public void addEntry(final String path, final InputStream input) {
-        _entries.add(new ZipStreamEntry(path, input));
-    }
+//    public void addEntry(final String path, final InputStream input) {
+//        _entries.add(new ZipStreamEntry(path, input));
+//    }
 
-    public void addFolder(final String path, final File folder) {
-        if (folder.isDirectory()) {
-            final File[] files = folder.listFiles();
-            if (files != null) {
-                for (final File file : files) {
-                    if (file.isDirectory()) {
-                        addFolder(Paths.get(path, file.getName()).toString(), file);
-                    } else {
-                        addEntry(Paths.get(path, file.getName()).toString(), file);
-                    }
-                }
-            }
-        } else {
-            addEntry(Paths.get(path, folder.getName()).toString(), folder);
-        }
-    }
+//    public void addFolder(final String path, final File folder) {
+//        if (folder.isDirectory()) {
+//            final File[] files = folder.listFiles();
+//            if (files != null) {
+//                for (final File file : files) {
+//                    if (file.isDirectory()) {
+//                        addFolder(Paths.get(path, file.getName()).toString(), file);
+//                    } else {
+//                        addEntry(Paths.get(path, file.getName()).toString(), file);
+//                    }
+//                }
+//            }
+//        } else {
+//            addEntry(Paths.get(path, folder.getName()).toString(), folder);
+//        }
+//    }
 
     public void addEntry(final File file) {
         final String path      = file.getAbsolutePath().replace('\\', '/');
@@ -182,18 +174,18 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
         }
     }
 
-    public void addAllAtRelativeDirectory(final String dirSpec, final List<File> files) {
-        final String dirCleaned = dirSpec.replace('\\', '/');
-        for (final File file : files) {
-            final String path = file.getAbsolutePath().replace('\\', '/');
-            final int    index   = path.indexOf(dirCleaned);
-            if (index >= 0) {
-                addEntry(path.substring(index + dirCleaned.length() + 1), file);
-            } else {
-                addEntry(file);
-            }
-        }
-    }
+//    public void addAllAtRelativeDirectory(final String dirSpec, final List<File> files) {
+//        final String dirCleaned = dirSpec.replace('\\', '/');
+//        for (final File file : files) {
+//            final String path = file.getAbsolutePath().replace('\\', '/');
+//            final int    index   = path.indexOf(dirCleaned);
+//            if (index >= 0) {
+//                addEntry(path.substring(index + dirCleaned.length() + 1), file);
+//            } else {
+//                addEntry(file);
+//            }
+//        }
+//    }
 
     public int getEntryCount() {
         return _entries.size();
