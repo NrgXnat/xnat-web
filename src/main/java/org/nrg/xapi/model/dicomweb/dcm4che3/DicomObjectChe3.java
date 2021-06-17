@@ -1,7 +1,6 @@
 package org.nrg.xapi.model.dicomweb.dcm4che3;
 
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.Tag;
+import org.dcm4che3.data.*;
 import org.dcm4che3.io.DicomEncodingOptions;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.io.DicomOutputStream;
@@ -93,7 +92,69 @@ public class DicomObjectChe3 implements DicomObjectI{
 
     @Override
     public byte[] getBytes( int tag) throws IOException {
-        return attributes.getBytes( tag);
+        return attributes.getBytes(tag);
+    }
+
+    public Value readPixels() throws IOException {
+        Value v = (Value) attributes.getValue( PIXEL_DATA);
+        if( v == null || v.isEmpty()) {
+            try (DicomInputStream dis = new DicomInputStream(file)) {
+                Attributes dataSet = dis.readDataset(-1, -1);
+                v = (Value) dataSet.getValue(PIXEL_DATA);
+                if (v != null) {
+                    attributes.setValue(PIXEL_DATA, dataSet.getVR(PIXEL_DATA), v);
+                }
+            }
+        }
+        return v;
+    }
+
+    @Override
+    public int getPixelDataLength() throws IOException {
+        Value v = readPixels();
+        int length = 0;
+        VR vr = attributes.getVR( PIXEL_DATA);
+        if( v instanceof Fragments) {
+            // Compressed Bulkdata contains only the compressed octet stream without the fragment delimiters.
+            Fragments f = (Fragments) v;
+            for( int i = 1; i < f.size(); i++) {
+                length += ((byte[]) f.get(i)).length;
+            }
+        }
+        else {
+            length = v.toBytes( vr, false).length;
+        }
+        return length;
+    }
+
+    @Override
+    public void writePixelData(OutputStream os) throws IOException {
+        Value v = readPixels();
+        VR vr = attributes.getVR( PIXEL_DATA);
+        if( v instanceof Fragments) {
+            // Compressed Bulkdata contains only the compressed octet stream without the fragment delimiters.
+            Fragments f = (Fragments) v;
+            for( int i = 1; i < f.size(); i++) {
+                os.write( (byte[]) f.get(i));
+            }
+        }
+        else {
+            os.write( v.toBytes( vr, false));
+        }
+    }
+
+    private void writePixelData( Value v, VR vr, OutputStream os) throws IOException {
+        if( ! (v == null || v.isEmpty())) {
+            if (v instanceof Fragments) {
+                // Compressed Bulkdata contains only the compressed octet stream without the fragment delimiters.
+                Fragments f = (Fragments) v;
+                for (int i = 1; i < f.size(); i++) {
+                    os.write((byte[]) f.get(i));
+                }
+            } else {
+                os.write(v.toBytes(vr, false));
+            }
+        }
     }
 
     public byte[] getPixels() throws IOException {
