@@ -14,7 +14,8 @@ import java.io.OutputStream;
 @JsonSerialize(using= JsonDicomObjectISerializer.class)
 public interface DicomObjectI {
 
-    void write(OutputStream os) throws IOException;
+    int getLength();
+    void write( OutputStream os) throws IOException;
 
     InputStream getInputStream() throws IOException;
 
@@ -26,8 +27,11 @@ public interface DicomObjectI {
 
     byte[] getPixelsForFrame( int frameNumber) throws IOException;
 
+    int getPixelDataLength() throws IOException;
+
+    void writePixelData(OutputStream os) throws IOException;
+
     byte[] getPixels() throws IOException;
-    int getLength();
 
     String getTransferSyntaxUID();
     String getStudyInstanceUID();

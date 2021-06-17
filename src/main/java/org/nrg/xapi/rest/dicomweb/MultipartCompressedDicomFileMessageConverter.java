@@ -18,11 +18,12 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
 
+import javax.activation.MimeType;
+import javax.activation.MimeTypeParseException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 @Lazy
@@ -57,30 +58,33 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
     protected void writeInternal(List<DicomObjectI> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
 
         try {
-            HttpHeaders defaultHeaders = outputMessage.getHeaders();
-            MediaType defaultMediaType = MediaType.parseMediaType(defaultHeaders.getFirst("Content-Type"));
-            MediaType partMediaType = getPartType(defaultMediaType);
-
-            if (partMediaType == null) {
-                String msg = String.format("Error finding root-part media type in multipart content: %s", defaultMediaType);
+            if( dicomParts.isEmpty()) {
+                String msg = "Error. Attempting to write response with no body.";
                 _log.error(msg);
                 throw new HttpMessageNotWritableException(msg);
             }
+            DicomObjectI dobj = dicomParts.get(0);
 
-            String tsuid = getTransferSyntax( defaultMediaType);
-            if( tsuid == null) {
-                String msg = "Unsupported Transfer Syntax: " + defaultMediaType;
+            String inputTsuid = dobj.getTransferSyntaxUID();
+            final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
+                String msg = String.format("Error finding acceptable transfer syntax for data in: %s", inputTsuid);
                 _log.error(msg);
-                throw new HttpMessageNotWritableException(msg);
-            }
+                return new HttpMessageNotWritableException(msg);
+            });
+
+            MimeType partContentType = getContentType( tsuid).orElseThrow( () -> {
+                String msg = String.format("Error finding part media type for transfer syntax uid: %s", tsuid);
+                _log.error(msg);
+                return new HttpMessageNotWritableException(msg);
+            });
 
             HttpHeaders outputHeaders = outputMessage.getHeaders();
             Map<String, String> contentTypeArgs = new HashMap<>(1);
             String boundary = getBoundary();
-            contentTypeArgs.put("type", "\"" + partMediaType.toString() + "\"");
+            contentTypeArgs.put("type", "\"" + partContentType.toString() + "\"");
             contentTypeArgs.put("boundary", boundary);
             MediaType mediaType = new MediaType("multipart", "related", contentTypeArgs);
-            outputHeaders.setContentType(mediaType);
+            outputHeaders.setContentType( mediaType);
 
             int frameNumber = getFrameNumber(request);
             String contentLocation = getContentLocation(request);
@@ -91,18 +95,15 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
 
             for (DicomObjectI dicomPart : dicomParts) {
 
-                String inputTsuid = dicomPart.getTransferSyntaxUID();
-                if( isAcceptedTransferSyntax( inputTsuid)) {
-                    tsuid = inputTsuid;
-                }
-
                 DicomObjectI dcmOut = transCoder.transcode(dicomPart, tsuid);
 
                 outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
-                outputMessage.getBody().write(("Content-Type: application/dicom\r\n").getBytes());
-                outputMessage.getBody().write(("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
-                dcmOut.write(outputMessage.getBody());
+                outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
+//                outputMessage.getBody().write(("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
+//                dcmOut.write(outputMessage.getBody());
+                outputMessage.getBody().write(("Content-Length: " + dcmOut.getPixelDataLength() + "\r\n\r\n").getBytes());
+                dcmOut.writePixelData( outputMessage.getBody());
 
                 outputMessage.getBody().write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
 
@@ -155,6 +156,61 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
         return partType;
     }
 
+    private Optional<String> getAcceptableTransferSyntax( String inputTsuid) {
+        if( isAcceptedTransferSyntax( inputTsuid)) {
+            return Optional.of( inputTsuid);
+        }
+        else {
+            return transCoder.getAcceptableTranscodings( inputTsuid).stream()
+                    .filter( getAcceptedTransferSyntaxes()::contains)
+                    .findAny();
+        }
+    }
+
+    private Optional<MimeType> getContentType(String transferSyntax) {
+        MimeType mt = new MimeType();
+        try {
+            switch (transferSyntax) {
+                case "1.2.840.10008.1.2.1":
+                    mt.setPrimaryType("application");
+                    mt.setSubType("dicom");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+                    break;
+                case "1.2.840.10008.1.2.4.70":
+                case "1.2.840.10008.1.2.4.50":
+                case "1.2.840.10008.1.2.4.51":
+                    mt.setPrimaryType("image");
+                    mt.setSubType("jpeg");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+                    break;
+                case "1.2.840.10008.1.2.4.80":
+                case "1.2.840.10008.1.2.4.81":
+                    mt.setPrimaryType("image");
+                    mt.setSubType("jls");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+                    break;
+                case "1.2.840.10008.1.2.4.90":
+                case "1.2.840.10008.1.2.4.91":
+                    mt.setPrimaryType("image");
+                    mt.setSubType("jp2");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+                    break;
+                case "1.2.840.10008.1.2.4.92":
+                case "1.2.840.10008.1.2.4.93":
+                    mt.setPrimaryType("image");
+                    mt.setSubType("jpx");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+                    break;
+                default:
+                    mt = null;
+            }
+        }
+        catch (MimeTypeParseException e) {
+            // ignore. There should not be any parse error for hardcoded values.
+        }
+        return Optional.ofNullable( mt);
+    }
+
     private String getTransferSyntax( MediaType mediaType) {
         String tx = "";
         if (MULTIPART_RELATED.isCompatibleWith(mediaType)) {
@@ -185,6 +241,12 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
         }
     }
 
+    /**
+     * Search the request's list of acceptable transfer syntaxes for a match.
+     *
+     * @param tsuid
+     * @return
+     */
     private boolean isAcceptedTransferSyntax( String tsuid) {
         HttpHeaders headers = new HttpHeaders();
         headers.add( "Accept", request.getHeader("Accept"));
@@ -194,11 +256,18 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
                 .anyMatch(mt -> tsuid.equals( getTransferSyntax(mt)));
     }
 
+    private Set<String> getAcceptedTransferSyntaxes() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.add( "Accept", request.getHeader("Accept"));
+        List<MediaType> acceptedMediaTypes = headers.getAccept();
+
+        return acceptedMediaTypes.stream()
+                .map(mt -> mt.getParameter("transfer-syntax"))
+                .collect(Collectors.toSet());
+    }
+
     private  String getBoundary() {
-        StringBuffer buf = new StringBuffer(64);
-        buf.append("Part_").append('_').append((new Object()).hashCode()).append('.').append(System.currentTimeMillis());
-        return buf.toString();
+        return String.format( "Part__%s.%s", (new Object()).hashCode(), System.currentTimeMillis());
     }
 
 }
-
