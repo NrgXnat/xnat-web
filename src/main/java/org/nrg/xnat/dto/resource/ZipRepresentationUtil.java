@@ -4,9 +4,7 @@ import static lombok.AccessLevel.PROTECTED;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -39,7 +37,6 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
 	        _mediaType = mediaType;
 	    }
 
-	 
 	 public String getDownloadName() {
 	        if (_mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_GNU_TAR))) {
 	            return getTokenName() + ".tar.gz";
@@ -59,24 +56,16 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
 	        if (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_GNU_TAR))) {
 	            zip = new TarUtils();
 	            zip.setOutputStream(output, ZipOutputStream.DEFLATED);
-	           // setDownloadName(getTokenName() + ".tar.gz");
-	           // setDownloadable(true);
 	        } else if (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_TAR))) {
 	            zip = new TarUtils();
 	            zip.setOutputStream(output, ZipOutputStream.STORED);
-	           // setDownloadName(getTokenName() + ".tar");
-	           // setDownloadable(true);
 	        } else {
 	            zip = new ZipUtils();
 	            zip.setOutputStream(output, _compression);
-	           // setDownloadName(getTokenName() + ".zip");
-	            //setDownloadable(true);
 	        }
 	        return zip;
 	    }
 	 
-
-
 	@Override
 	public void writeTo(OutputStream output) throws IOException {
 		 try (final ZipI zip = initializeZip(output, _mediaType)) {
@@ -100,31 +89,9 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
 	        }
 	}
 	
-	
 	public void addEntry(final String path, final File file) {
         _entries.add(new ZipFileEntry(path, file));
     }
-
-//    public void addEntry(final String path, final InputStream input) {
-//        _entries.add(new ZipStreamEntry(path, input));
-//    }
-
-//    public void addFolder(final String path, final File folder) {
-//        if (folder.isDirectory()) {
-//            final File[] files = folder.listFiles();
-//            if (files != null) {
-//                for (final File file : files) {
-//                    if (file.isDirectory()) {
-//                        addFolder(Paths.get(path, file.getName()).toString(), file);
-//                    } else {
-//                        addEntry(Paths.get(path, file.getName()).toString(), file);
-//                    }
-//                }
-//            }
-//        } else {
-//            addEntry(Paths.get(path, folder.getName()).toString(), folder);
-//        }
-//    }
 
     public void addEntry(final File file) {
         final String path      = file.getAbsolutePath().replace('\\', '/');
@@ -174,19 +141,6 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
         }
     }
 
-//    public void addAllAtRelativeDirectory(final String dirSpec, final List<File> files) {
-//        final String dirCleaned = dirSpec.replace('\\', '/');
-//        for (final File file : files) {
-//            final String path = file.getAbsolutePath().replace('\\', '/');
-//            final int    index   = path.indexOf(dirCleaned);
-//            if (index >= 0) {
-//                addEntry(path.substring(index + dirCleaned.length() + 1), file);
-//            } else {
-//                addEntry(file);
-//            }
-//        }
-//    }
-
     public int getEntryCount() {
         return _entries.size();
     }
@@ -205,4 +159,4 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
 	private final int _compression;
 	private final ExecutorService _executor;
 	private final MediaType _mediaType;
-	}
+}

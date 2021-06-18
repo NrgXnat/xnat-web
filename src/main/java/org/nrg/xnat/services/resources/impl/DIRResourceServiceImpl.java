@@ -2,25 +2,22 @@ package org.nrg.xnat.services.resources.impl;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.oro.io.GlobFilenameFilter;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
@@ -36,17 +33,11 @@ import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.dto.resource.FileSet;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
-import org.nrg.xnat.restlet.representations.ZipRepresentation;
 import org.nrg.xnat.services.resources.DIRResourceService;
-import org.restlet.data.Form;
-import org.restlet.data.Parameter;
-import org.restlet.util.Series;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
-
-import com.noelios.restlet.http.HttpConstants;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -86,6 +77,74 @@ public class DIRResourceServiceImpl implements DIRResourceService {
 			}
 		}
 		return response;
+	}
+	
+	@Override
+	public StreamingResponseBody findAllXARResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest, String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException {
+		
+		//MediaType mediaType = hRequest.getContentType() != null? hRequest.getContentType(): MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR);
+		
+		MediaType mediaType =  MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR);
+		
+		XnatProjectdata proj = getXnatProject(projectId, user);
+		
+		XnatExperimentdata expt = getXnatExperiment(experimentId, proj, user);
+		
+		if (user.isGuest()) {
+			throw new NotAuthenticatedException("");
+		}
+		if(expt instanceof XnatSubjectassessordata){
+			if(filepath==null){
+				filepath="";
+			}
+			final File session_dir=expt.getSessionDir();
+			if(session_dir==null){
+				throw new NotFoundException("Session directory doesn't exist in standard location for this experiment.");
+			}
+			try {
+				final List<File> src = getSourceFile(filepath, session_dir);
+				
+				if (src.size() == 1 && !src.get(0).isDirectory()) {
+					final File f=src.get(0);
+					if (isZIPRequest(mediaType)) {
+						zipFileRequest(mediaType, expt, f, compression);
+					}
+				}else{
+					final List<FileSet> dest = getFileSet(src, recursive, isXarReference);
+					if ((isZIPRequest(mediaType) || (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR))))) {
+						ZipRepresentationUtil rep = zipRepresentation(mediaType, expt, user,sRequest, compression );
+						for (final FileSet fileSet : dest) {
+							rep.addAll(fileSet.getMatches());
+						}
+						FILE_NAME = rep.getDownloadName();
+						return rep;
+					}
+				}
+			} catch (InvalidFileCharacters e) {
+				throw new InvalidFileCharacters(String.format("'%s' is not allowed in this resource URI.",e.characters));
+			}
+		}
+		return null;
+	}
+	
+	 
+	@Override
+	public String getContentDisposition() {
+		return String.format(ATTACHMENT_DISPOSITION, FILE_NAME);
+	}
+
+	public static class InvalidFileCharacters extends Exception {
+		public String characters;
+
+		public InvalidFileCharacters(String chars) {
+			characters = chars;
+		}
+	}
+
+	public static boolean isZIPRequest(MediaType mt) {
+		MediaType zip = MediaType.parseMediaType(MediaTypeUtil.APPLICATION_ZIP);
+		MediaType tar = MediaType.parseMediaType(MediaTypeUtil.APPLICATION_TAR);
+		return !(mt == null || !(mt.equals(zip)) || mt.equals(tar));
 	}
 	
 	private List<DIRResourceDto> getDIRResourceResult(List<FileSet> dest, File session_dir, XnatExperimentdata expt) {
@@ -162,19 +221,29 @@ public class DIRResourceServiceImpl implements DIRResourceService {
 		return dest;
 	}
 
-	private void zipFileRequest() {
-		System.out.println("ZIP FILE REQUEST");
+	private ZipRepresentationUtil zipFileRequest(MediaType mediaType, XnatExperimentdata expt, File f, String compression) {
+		if(isZIPRequest(mediaType)){
+			ZipRepresentationUtil rep = null;
+			try{
+				rep=new ZipRepresentationUtil(mediaType,Collections.singletonList((expt).getArchiveDirectoryName()),identifyCompression(null, compression));
+			} catch (ActionException e) {
+				log.error("", e);
+			}
+			rep.addEntry(f);
+			FILE_NAME = String.format("%s.zip", f.getName());
+			return rep;
+		}else{
+			//return this.representFile(f, mediaType);
+		}
+		return null;
 	}
 
-	private ZipRepresentationUtil zipRepresentation(MediaType mediaType, XnatExperimentdata expt, UserI user, HttpServletRequest request, String compression ) {
-		System.out.println("ZIP REPRESNTATION REQUEST");
+	private ZipRepresentationUtil zipRepresentation(MediaType mediaType, XnatExperimentdata expt, UserI user, HttpServletRequest request, String compression ) throws InitializationException {
 		ZipRepresentationUtil rep = null;
 		try{
 			rep=new ZipRepresentationUtil(mediaType,Collections.singletonList((expt).getArchiveDirectoryName()),identifyCompression(null, compression));
 		} catch (ActionException e) {
 			log.error("", e);
-			//this.setResponseStatus(e);
-			//return null;
 		}
 		if (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR))) {
 			final File output = getUserDataCache().getUserDataCacheFile(user, Paths.get("expt_" + new Date().getTime()), UserDataCache.Options.DeleteOnExit, UserDataCache.Options.Overwrite);
@@ -188,8 +257,7 @@ public class DIRResourceServiceImpl implements DIRResourceService {
 				writer.write(expt.getItem());
 				rep.addEntry(expt.getId() + ".xml", output);
 			} catch (Exception e) {
-				//getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, "Unable to retrieve/save session XML.");
-				//return null;
+				throw new InitializationException("Unable to retrieve/save session XML.");
 			}
 	}
 		return rep;
@@ -211,10 +279,10 @@ public class DIRResourceServiceImpl implements DIRResourceService {
         }
     }
 	
-	  protected UserDataCache getUserDataCache() {
-		  _userDataCache = XDAT.getContextService().getBean(UserDataCache.class);
-	        return _userDataCache;
-	    }
+	protected UserDataCache getUserDataCache() {
+		_userDataCache = XDAT.getContextService().getBean(UserDataCache.class);
+		return _userDataCache;
+	}
 
 	public static List<File> getFiles(File dir,String path,boolean recursive) throws InvalidFileCharacters{
 		final List<File> files= new ArrayList<>();
@@ -261,108 +329,8 @@ public class DIRResourceServiceImpl implements DIRResourceService {
 		return files;
 	}
 	
-	public static class InvalidFileCharacters extends Exception{
-		public String characters;
-		public InvalidFileCharacters(String chars){
-			characters=chars;
-		}
-	}
-	
-	
-	public static boolean isZIPRequest(MediaType mt) {
-		MediaType zip = MediaType.parseMediaType(MediaTypeUtil.APPLICATION_ZIP);
-		MediaType tar = MediaType.parseMediaType(MediaTypeUtil.APPLICATION_TAR);
-        return !(mt == null || !(mt.equals(zip)) || mt.equals(tar));
-    }
-	
 	 private UserDataCache _userDataCache;
-
-	// ==============
-//	@Override
-//	public void writeTo(OutputStream outputStream) throws IOException {
-//		
-//	}
-
-	@Override
-	public StreamingResponseBody findAllXARResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest, String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters {
-		
-		MediaType mediaType = MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR);
-		
-		XnatProjectdata proj = getXnatProject(projectId, user);
-		
-		XnatExperimentdata expt = getXnatExperiment(experimentId, proj, user);
-		
-		if (user.isGuest()) {
-			throw new NotAuthenticatedException("");
-		}
-		if(expt instanceof XnatSubjectassessordata){
-			if(filepath==null){
-				filepath="";
-			}
-			final File session_dir=expt.getSessionDir();
-			if(session_dir==null){
-				throw new NotFoundException("Session directory doesn't exist in standard location for this experiment.");
-			}
-			try {
-				final List<File> src = getSourceFile(filepath, session_dir);
-				
-				if (src.size() == 1 && !src.get(0).isDirectory()) {
-					final File f=src.get(0);
-					if (isZIPRequest(mediaType)) {
-						zipFileRequest();
-					}
-				}else{
-					final List<FileSet> dest = getFileSet(src, recursive, isXarReference);
-					if ((isZIPRequest(mediaType) || (mediaType.equals(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_XAR))))) {
-						ZipRepresentationUtil rep = zipRepresentation(mediaType, expt, user,sRequest, compression );
-						for (final FileSet fileSet : dest) {
-							rep.addAll(fileSet.getMatches());
-						}
-						rep.getDownloadName();
-						
-						//setContentDisposition(rep.getDownloadName());
-						hRequest.add(HttpHeaders.CONTENT_DISPOSITION, setContentDisposition(rep.getDownloadName()));
-						return rep;
-					}
-				}
-			} catch (InvalidFileCharacters e) {
-				throw new InvalidFileCharacters(String.format("'%s' is not allowed in this resource URI.",e.characters));
-			}
-		}
-		
-		return null;
-	}
-	
-//	 public void setContentDisposition(String filename) {
-//	        setContentDisposition(filename, true);
-//	    }
-//	 
-//	 public void setContentDisposition(String filename, boolean isAttachment) {
-//	        final Map<String, Object> attributes = new HashMap<>();
-//	        if (attributes.containsKey(CONTENT_DISPOSITION)) {
-//	            throw new IllegalStateException("A content disposition header has already been added to this response.");
-//	        }
-//	        Object oHeaders = attributes.get(HttpConstants.ATTRIBUTE_HEADERS);
-//	        Series<Parameter> headers;
-//	        if (oHeaders != null) {
-//	            headers = (Series<Parameter>) oHeaders;
-//	        } else {
-//	            headers = new Form();
-//	        }
-//	        headers.add(new Parameter(CONTENT_DISPOSITION, TurbineUtils.createContentDispositionValue(filename, isAttachment)));
-//	        attributes.put(HttpConstants.ATTRIBUTE_HEADERS, headers);
-//	    }
-//	
-//	 public  static String getAttaDisposition(final String filename) {
-//        return String.format(ATTACHMENT_DISPOSITION, filename);
-//    }
-	 
-	  protected static String setContentDisposition(final String... parts) {
-	        final int    maxIndex = parts.length - 1;
-	        final String filename = maxIndex == 0 ? parts[0] : StringUtils.join(ArrayUtils.subarray(parts, 0, maxIndex)) + "." + parts[maxIndex];
-	        return String.format(ATTACHMENT_DISPOSITION, filename);
-	    }
-	 private static final String CONTENT_DISPOSITION = "Content-Disposition";
 	 private static final String ATTACHMENT_DISPOSITION = "attachment; filename=\"%s\"";
+	 private static String FILE_NAME = "";
 
 }

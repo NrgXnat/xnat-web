@@ -8,6 +8,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NoContentException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
@@ -22,15 +23,12 @@ import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.services.resources.DIRResourceService;
 import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
-import org.nrg.xnat.web.http.AbstractZipStreamingResponseBody;
-import org.nrg.xnat.web.http.CatalogZipStreamingResponseBody;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -73,14 +71,14 @@ public class DIRResourceApi extends AbstractXapiProjectRestController {
 	    }
 	 
 	 
-	@ApiOperation(value = "Downloads the contents of the specified catalog as a zip archive.", response = StreamingResponseBody.class)
+	@ApiOperation(value = "Downloads the contents of the specified resource XAR.", response = StreamingResponseBody.class)
 	@ApiResponses({ @ApiResponse(code = 200, message = "The requested resources were successfully downloaded."),
 			@ApiResponse(code = 204, message = "No resources were specified."),
 			@ApiResponse(code = 400, message = "Something is wrong with the request format."),
 			@ApiResponse(code = 403, message = "The user is not authorized to access one or more of the specified resources."),
 			@ApiResponse(code = 404, message = "The request was valid but one or more of the specified resources was not found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
-	@XapiRequestMapping(value = "/experiments/{experimentId}/XAR", produces = MediaTypeUtil.APPLICATION_XAR, method = RequestMethod.GET)
+	@XapiRequestMapping(value = {"/experiments/{experimentId}/XAR","/projects/{projectId}/experiments/{experimentId}/XAR"}, produces = MediaTypeUtil.APPLICATION_XAR, method = RequestMethod.GET)
 	@ResponseBody
 public ResponseEntity<StreamingResponseBody> downloadXarResourceZip(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 		@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
@@ -89,11 +87,14 @@ public ResponseEntity<StreamingResponseBody> downloadXarResourceZip(@ApiParam(va
 		@ApiParam(value = "The value  of the isXarReference.") @RequestParam(required = false) final boolean isXarReference,
 		@ApiParam(value = "The value  of the compression.") @RequestParam(required = false) final String compression,
 		@ApiParam(value = "The value  of the sRequest.") final  HttpServletRequest sRequest,
-		@ApiParam(value = "The value  of the hRequest.") @RequestHeader HttpHeaders hRequest) throws InsufficientPrivilegesException, NoContentException, NotFoundException, NotAuthenticatedException, InvalidFileCharacters {
+		@ApiParam(value = "The value  of the hRequest.") @RequestHeader HttpHeaders hRequest) throws InsufficientPrivilegesException, NoContentException, NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException {
 		final UserI user = getSessionUser();
+		
+		StreamingResponseBody result  = _dIRResourceService.findAllXARResources(user, projectId, experimentId, filepath, recursive, isXarReference,sRequest,hRequest,compression );
+		
 		return ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, MediaTypeUtil.APPLICATION_XAR)
-				//.header(HttpHeaders.CONTENT_DISPOSITION, _dIRResourceService.setContentDisposition())
-				.body(_dIRResourceService.findAllXARResources(user, projectId, experimentId, filepath, recursive, isXarReference,sRequest,hRequest,compression ));
+				.header(HttpHeaders.CONTENT_DISPOSITION, _dIRResourceService.getContentDisposition())
+				.body(result);
 	}
 
 	 private final  DIRResourceService _dIRResourceService;

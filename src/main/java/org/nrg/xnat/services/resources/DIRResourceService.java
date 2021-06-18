@@ -4,6 +4,7 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
@@ -16,7 +17,7 @@ public interface DIRResourceService {
 
 	List<DIRResourceDto>  findAllDIRResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters;
 
-	StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters;
+	StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException;
 
-	//String setContentDisposition(final String... parts);
+	String getContentDisposition();
 }
