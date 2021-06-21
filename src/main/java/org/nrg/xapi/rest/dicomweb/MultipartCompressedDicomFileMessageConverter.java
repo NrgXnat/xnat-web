@@ -37,7 +37,7 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
     private TransCoder transCoder;
 
     private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
-    private final static MediaType APPLICATION_DICOM = new MediaType("application", "dicom");
+    private final static MediaType APPLICATION_OCTETSTREAM = new MediaType("application", "octet-stream");
     private final static MediaType IMAGE_JPG = new MediaType("image", "jpeg");
     private final static MediaType IMAGE_JLS = new MediaType("image", "jls");
     private final static MediaType IMAGE_JP2 = new MediaType("image", "jp2");
@@ -134,14 +134,53 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
 
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
-//        MediaType partMediaType = getPartType(mediaType);
-        String tx = getTransferSyntax(mediaType);
-        return transCoder.isSupportedTransferSyntax( tx);
+        boolean canWrite = false;
+        if( supports( clazz) && MULTIPART_RELATED.isCompatibleWith( mediaType)) {
+            MediaType partMediaType = getPartType( mediaType);
+            String tx = getTransferSyntax( mediaType);
+            canWrite = canWrite( partMediaType, tx);
+        }
+        return canWrite;
     }
 
-    @Override
-    protected boolean canWrite(MediaType mediaType) {
-        return MULTIPART_RELATED.isCompatibleWith(mediaType);
+    private boolean canWrite(MediaType partMediaType, String tsuid) {
+        boolean canWrite = false;
+        if( APPLICATION_OCTETSTREAM.isCompatibleWith( partMediaType)) {
+            switch (tsuid) {
+                case "1.2.840.10008.1.2.1":
+                    canWrite = true;
+            }
+        }
+        else if( IMAGE_JPG.isCompatibleWith( partMediaType)) {
+            switch (tsuid) {
+                case "1.2.840.10008.1.2.4.70":
+                case "1.2.840.10008.1.2.4.50":
+                case "1.2.840.10008.1.2.4.51":
+                    canWrite = true;
+            }
+        }
+        else if( IMAGE_JLS.isCompatibleWith( partMediaType)) {
+            switch (tsuid) {
+                case "1.2.840.10008.1.2.4.80":
+                case "1.2.840.10008.1.2.4.81":
+                    canWrite = true;
+            }
+        }
+        else if( IMAGE_JP2.isCompatibleWith( partMediaType)) {
+            switch (tsuid) {
+                case "1.2.840.10008.1.2.4.90":
+                case "1.2.840.10008.1.2.4.91":
+                    canWrite = true;
+            }
+        }
+        else if( IMAGE_JPX.isCompatibleWith( partMediaType)) {
+            switch (tsuid) {
+                case "1.2.840.10008.1.2.4.92":
+                case "1.2.840.10008.1.2.4.93":
+                    canWrite = true;
+            }
+        }
+        return canWrite;
     }
 
     private MediaType getPartType(MediaType mediaType) {
@@ -167,7 +206,13 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
         }
     }
 
-    private Optional<MimeType> getContentType(String transferSyntax) {
+    /**
+     * Map from transfer-syntax uid to the corresponding Mime type.
+     *
+     * @param transferSyntax
+     * @return
+     */
+    private Optional<MimeType> getContentType( String transferSyntax) {
         MimeType mt = new MimeType();
         try {
             switch (transferSyntax) {
@@ -221,7 +266,7 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
     }
 
     private String getDefaultTransferSyntax( MediaType mediaType) {
-        if( APPLICATION_DICOM.isCompatibleWith( mediaType)) {
+        if( APPLICATION_OCTETSTREAM.isCompatibleWith( mediaType)) {
             return "1.2.840.10008.1.2.1";
         }
         if( IMAGE_JPG.isCompatibleWith( mediaType)) {
