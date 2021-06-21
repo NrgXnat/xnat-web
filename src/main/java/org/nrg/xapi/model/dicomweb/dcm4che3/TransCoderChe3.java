@@ -85,6 +85,7 @@ public class TransCoderChe3 implements TransCoder {
         List<String> tsuids = new ArrayList<>();
         switch (transferSyntaxUID) {
             default:
+                tsuids.add( EVLE);
                 tsuids.add( JPG_BASELINE);
         }
         return tsuids;
