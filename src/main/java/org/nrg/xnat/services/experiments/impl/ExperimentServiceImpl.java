@@ -132,7 +132,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 
     @SuppressWarnings("unused")
 	@Override
-    public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event) throws NotFoundException {
+    public XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata, String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event, boolean triggerPipelines, boolean supressEmail) throws NotFoundException {
         SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
         if (projectId != null) {
             XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
@@ -221,8 +221,8 @@ public class ExperimentServiceImpl implements ExperimentService {
 
                 secureResoureUtil.postSaveManageStatus(expt, user, event);
 
-                if (Permissions.canEdit(user, expt.getItem()) && (isQueryVariableTrue(XNATRestConstants.TRIGGER_PIPELINES) || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES))) {
-                    _pipelineService.launchAutoRun(expt, isQueryVariableTrue(XNATRestConstants.SUPRESS_EMAIL), user);
+                if (Permissions.canEdit(user, expt.getItem()) && (triggerPipelines || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES))) {
+                    _pipelineService.launchAutoRun(expt, supressEmail, user);
                 }
             } catch (ActionException e) {
                 log.error("ActionException", e.getMessage());
@@ -236,7 +236,7 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
     @Override
-    public XnatExperimentdata update(UserI user, XnatExperimentdata xnatexperiment, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event) {
+    public XnatExperimentdata update(UserI user, XnatExperimentdata xnatexperiment, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event, boolean fixScanTypes, boolean pullDataFromHeaders, boolean triggerPipelines, boolean supressEmail) {
         XnatExperimentdata existing          = new XnatExperimentdata();
         XnatProjectdata    project           = null;
         XnatExperimentdata experiment        = null;
@@ -290,7 +290,7 @@ public class ExperimentServiceImpl implements ExperimentService {
                 PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, experiment.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getAddModifyAction(experiment.getXSIType(), (existing == null)),event));
                 EventMetaI          c   = wrk.buildEvent();
 
-                if (isQueryVariableTrue(XNATRestConstants.FIX_SCAN_TYPES) || secureResoureUtil.containsAction(XNATRestConstants.FIX_SCAN_TYPES)) {
+                if (fixScanTypes || secureResoureUtil.containsAction(XNATRestConstants.FIX_SCAN_TYPES)) {
                     if (experiment instanceof XnatImagesessiondata) {
                         FixScanTypes.builder().experiment(experiment).user(user).project(project).allowSave(false).eventMeta(c).build().call();
                     }
@@ -340,7 +340,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 
                 secureResoureUtil.postSaveManageStatus(experiment, user, event);
 
-                verifyPermission(user, experiment, secureResoureUtil, allowDataDelete, overwrite,event);
+                verifyPermission(user, experiment, secureResoureUtil, allowDataDelete, overwrite,event, pullDataFromHeaders, triggerPipelines, supressEmail);
 
             }
 
@@ -457,9 +457,9 @@ public class ExperimentServiceImpl implements ExperimentService {
         return subject;
     }
     
-    private void verifyPermission(UserI user, XnatExperimentdata experiment, SecureResourceUtil secureResoureUtil, String allowDataDelete, boolean overwrite, XnatEventUtil event ) throws Exception {
+    private void verifyPermission(UserI user, XnatExperimentdata experiment, SecureResourceUtil secureResoureUtil, String allowDataDelete, boolean overwrite, XnatEventUtil event, boolean pullDataFromHeaders, boolean triggerPipelines, boolean supressEmail ) throws Exception {
     	if (Permissions.canEdit(user, experiment.getItem())) {
-            if ((isQueryVariableTrue(XNATRestConstants.PULL_DATA_FROM_HEADERS) || secureResoureUtil.containsAction(XNATRestConstants.PULL_DATA_FROM_HEADERS)) && experiment instanceof XnatImagesessiondata) {
+            if ((pullDataFromHeaders || secureResoureUtil.containsAction(XNATRestConstants.PULL_DATA_FROM_HEADERS)) && experiment instanceof XnatImagesessiondata) {
                 try {
                     final PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, experiment.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.DICOM_PULL, event));
                     assert wrk != null;
@@ -482,8 +482,8 @@ public class ExperimentServiceImpl implements ExperimentService {
                 }
             }
 
-            if (isQueryVariableTrue(XNATRestConstants.TRIGGER_PIPELINES) || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES)) {
-                _pipelineService.launchAutoRun(experiment, isQueryVariableTrue(XNATRestConstants.SUPRESS_EMAIL), user);
+            if (triggerPipelines || secureResoureUtil.containsAction(XNATRestConstants.TRIGGER_PIPELINES)) {
+                _pipelineService.launchAutoRun(experiment, supressEmail, user);
             }
         }
 
@@ -899,9 +899,9 @@ public class ExperimentServiceImpl implements ExperimentService {
     }
 
 
-    private boolean isQueryVariableTrue(String string) {
-        return false;
-    }
+//    private boolean isQueryVariableTrue(String string) {
+//        return false;
+//    }
 
     private static class ExperimentRowMapper implements RowMapper<XnatExperimentdata> {
         ExperimentRowMapper(final UserI user) {

@@ -259,6 +259,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    										  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
 	    										  @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
 	    										  @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment,
+	    										  @ApiParam("The description value ") @RequestParam(name = "description", required = false)String description,
+	    										  @ApiParam("The format value ") @RequestParam(name = "format", required = false)String format,
+	    										  @ApiParam("The content value ") @RequestParam(name = "content", required = false)String content,
+	    										  @ApiParam("The tags value ") @RequestParam(name = "tags", required = false)String [] tags,
 	    										  @RequestBody final XnatResource xnatResource) throws DataFormatException, NotFoundException, ResourceAlreadyExistsException  {
 	        log.debug("Creating  resource with project ID {}", projectId);
 	        
@@ -271,7 +275,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	        if(xnatResourcecatalogs.size()>0)
 	        	throw new ResourceAlreadyExistsException("You specified the label in your request is alreay exists", label);
 	        
-	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId, type, xnatResource, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ) );
+	        return _resourceService.create(getSessionUser(),projectId, subjectId, experimentId,assessorId, scanId, type, xnatResource, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ),
+	        		description, format, content, tags);
 	    }
 	
 	 

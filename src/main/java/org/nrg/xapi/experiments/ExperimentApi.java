@@ -145,7 +145,11 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    										   @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
 	    										   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
 	    										   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
-	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException  {
+	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment,
+	    										   @ApiParam("The fixScanTypes value ") @RequestParam(name = "fixScanTypes", defaultValue = "false",required = false)boolean fixScanTypes,
+	    										   @ApiParam("The pullDataFromHeaders value ") @RequestParam(name = "pullDataFromHeaders", defaultValue = "false", required = false)boolean pullDataFromHeaders,
+	    										   @ApiParam("The trigger Pipelines value ") @RequestParam(name = "triggerPipelines", defaultValue = "false", required = false) boolean triggerPipelines,
+	    										   @ApiParam("The supress Email value ") @RequestParam(name = "supressEmail",defaultValue = "false", required = false) boolean supressEmail) throws DataFormatException  {
 	        if (StringUtils.isNotBlank(projectId) && !StringUtils.equals(experiment.getProject(), projectId)) {
 	            throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
 	        }
@@ -153,7 +157,8 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	            throw new DataFormatException("You specified the subject ID " + experimentId + " in your request but the experiment to be updated has the ID " + experiment.getId() + ". These values must be the same.");
 	        }
 	        log.debug("Controller Api- Update experiment {} (ID {}) in project {}", experiment.getLabel(), experimentId, experiment.getProject());
-	        return _experimentService.update(getSessionUser(), experiment, experimentId,projectId, subjectId,allowDataDelete,label, primary,moveAssessors,overwrite,filepath,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+	        return _experimentService.update(getSessionUser(), experiment, experimentId,projectId, subjectId,allowDataDelete,label, primary,moveAssessors,overwrite,filepath,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment),
+	        		fixScanTypes, pullDataFromHeaders, triggerPipelines, supressEmail);
 	    }
 	 
 	 
@@ -175,7 +180,9 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    										   @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
 	    										   @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
 	    										   @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
-	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws DataFormatException, NotFoundException  {
+	    										   @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment,
+	    										   @ApiParam("The trigger Pipelines value ") @RequestParam(name = "triggerPipelines", defaultValue = "false", required = false) boolean triggerPipelines,
+	    										   @ApiParam("The supress Email value ") @RequestParam(name = "supressEmail",defaultValue = "false", required = false) boolean supressEmail) throws DataFormatException, NotFoundException  {
 	        final boolean experimentHasProject = StringUtils.isNotBlank(experiment.getProject());
 	        final boolean hasProject        = StringUtils.isNotBlank(projectId);
 	        if (!experimentHasProject && !hasProject) {
@@ -187,7 +194,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	        if (!experimentHasProject) {
 	        	experiment.setProject(projectId);
 	        }
-	         return _experimentService.create(getSessionUser(), experiment, projectId, subjectId,xsiType,allowDataDelete,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+	         return _experimentService.create(getSessionUser(), experiment, projectId, subjectId,xsiType,allowDataDelete,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ), triggerPipelines, supressEmail);
 	    }
 	
 

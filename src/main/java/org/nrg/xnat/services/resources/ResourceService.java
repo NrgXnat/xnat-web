@@ -41,7 +41,7 @@ public interface ResourceService {
 
 	 List<XnatAbstractresource>findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId, String type) throws DataFormatException, NotFoundException;
 	
-	 XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResourcecatalog,XnatEventUtil event);
+	 XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResourcecatalog,XnatEventUtil event, String description, String format, String content, String [] tags);
 	
 	 void delete(UserI user, String projectId, String subjectId, String experimentId,String assessorId,String scanId,String type, String resourceId,XnatEventUtil event);
 

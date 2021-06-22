@@ -364,7 +364,7 @@ public class XnatTemplateUtil {
 
 	public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user,
 			XnatProjectdata proj2, XnatSubjectdata sub2, ArrayList<XnatExperimentdata> expts2,
-			ArrayList<XnatExperimentdata> assesseds2, ArrayList<XnatImagescandata> scans2) throws Exception {
+			ArrayList<XnatExperimentdata> assesseds2, ArrayList<XnatImagescandata> scans2, XnatEventUtil event) throws Exception {
 
 		setProjSubExpScanAssessorData(proj2, sub2, expts2, assesseds2, scans2);
 
@@ -372,8 +372,8 @@ public class XnatTemplateUtil {
 		final Integer wrkId;
 		if (wrk == null) {
 			isNew = true;
-			wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), newEventInstance(
-					EventUtils.CATEGORY.DATA, (getAction() != null) ? getAction() : EventUtils.CREATE_RESOURCE));
+			wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, getSecurityItem().getItem(), XnatEventUtil.newEventInstance(
+					EventUtils.CATEGORY.DATA, ((event.getEventAction() != null) ? event.getEventAction() : EventUtils.CREATE_RESOURCE),event));
 			if (wrk == null) {
 				throw new Exception("Unable to build open workflow for inserting catalog " + catResource.getUri());
 			}
@@ -448,18 +448,18 @@ public class XnatTemplateUtil {
 		return true;
 	}
 
-	public void setCatalogAttributes(final UserI user, final XnatResourcecatalog catalog) throws Exception {
-		if (StringUtils.isNotBlank(getQueryVariable("description"))) {
-			catalog.setDescription(this.getQueryVariable("description"));
+	public void setCatalogAttributes(final UserI user, final XnatResourcecatalog catalog,String description, String format, String content, String [] tags) throws Exception {
+		if (StringUtils.isNotBlank(description)) {
+			catalog.setDescription(description);
 		}
-		if (StringUtils.isNotBlank(getQueryVariable("format"))) {
-			catalog.setFormat(this.getQueryVariable("format"));
+		if (StringUtils.isNotBlank(format)) {
+			catalog.setFormat(format);
 		}
-		if (StringUtils.isNotBlank(getQueryVariable("content"))) {
-			catalog.setContent(this.getQueryVariable("content"));
+		if (StringUtils.isNotBlank(content)) {
+			catalog.setContent(content);
 		}
 
-		final String[] tags = getQueryVariables("tags");
+		//final String[] tags = getQueryVariables("tags");
 		if (tags != null) {
 			for (final String variable : tags) {
 				if (StringUtils.isNotBlank(variable)) {
@@ -483,9 +483,9 @@ public class XnatTemplateUtil {
 		}
 	}
 
-	protected String[] getQueryVariables(String string) {
-		return null;
-	}
+//	protected String[] getQueryVariables(String string) {
+//		return null;
+//	}
 
 	public void checkResourceIDs(final List<String> resourceIds) throws Exception {
 		if (resourceIds == null || resourceIds.isEmpty()) {
@@ -502,39 +502,39 @@ public class XnatTemplateUtil {
 		}
 	}
 
-	public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
-		return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action,
-				getReason(), getComment());
-	}
+//	public EventDetails newEventInstance(EventUtils.CATEGORY cat, String action) {
+//		return EventUtils.newEventInstance(cat, getEventType(), (getAction() != null) ? getAction() : action,
+//				getReason(), getComment());
+//	}
 
-	private Integer getEventId() {
-		final String id = getQueryVariable(EventUtils.EVENT_ID);
-		if (id != null) {
-			return Integer.valueOf(id);
-		} else {
-			return null;
-		}
-	}
-
-	private String getComment() {
-		return null;
-	}
-
-	private String getReason() {
-		return null;
-	}
-
-	public EventUtils.TYPE getEventType() {
-		return EventUtils.TYPE.WEB_FORM;
-	}
-
-	protected String getAction() {
-		return null;
-	}
-
-	protected String getQueryVariable(String string) {
-		return null;
-	}
+//	private Integer getEventId() {
+//		final String id = getQueryVariable(EventUtils.EVENT_ID);
+//		if (id != null) {
+//			return Integer.valueOf(id);
+//		} else {
+//			return null;
+//		}
+//	}
+//
+//	private String getComment() {
+//		return null;
+//	}
+//
+//	private String getReason() {
+//		return null;
+//	}
+//
+//	public EventUtils.TYPE getEventType() {
+//		return EventUtils.TYPE.WEB_FORM;
+//	}
+//
+//	protected String getAction() {
+//		return null;
+//	}
+//
+//	protected String getQueryVariable(String string) {
+//		return null;
+//	}
 
 	public XFTTable loadCatalogs(final List<String> resourceIds, final boolean includeURI, final boolean allowAll, UserI user) throws Exception {
 		checkResourceIDs(resourceIds);

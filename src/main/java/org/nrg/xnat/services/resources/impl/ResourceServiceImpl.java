@@ -392,7 +392,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	@Override
-	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResource, XnatEventUtil event) {
+	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
@@ -429,7 +429,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 						throw new DataFormatException("Contains erroneous generated fields (xnat_abstractresource_id)");
 				}
 
-				xnatTemplateUtil.setCatalogAttributes(user, catResource);
+				xnatTemplateUtil.setCatalogAttributes(user, catResource, description, format, content, tags);
 
 				PersistentWorkflowI wrk = PersistentWorkflowUtils.getWorkflowByEventId(user, XnatEventUtil.getEventId(event.getEventId()));
 				if (wrk == null && "SNAPSHOTS".equals(catResource.getLabel())) {
@@ -445,7 +445,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 					}
 				}
 				
-				xnatTemplateUtil.insertCatalogWrap(catResource, wrk, user, proj, sub, expts, assesseds, scans);
+				xnatTemplateUtil.insertCatalogWrap(catResource, wrk, user, proj, sub, expts, assesseds, scans, event);
 				
 			} else
 				throw new DataFormatException("Only ResourceCatalog documents can be PUT to this address.");
