@@ -41,7 +41,7 @@ public class IpWhitelistApi extends AbstractXapiProjectRestController {
     }
 
 	
-	@ApiOperation(value = "Gets the Ip Whitelist", notes = "Returns the  IpWhitelist", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the Ip Whitelist", notes = "Returns the  IpWhitelist", response = String.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested IpWhitelist wasn't found."),
@@ -53,7 +53,7 @@ public class IpWhitelistApi extends AbstractXapiProjectRestController {
 	}
 
 
-	@ApiOperation(value = "Update an existing IpWhitelist", notes = "Updates the submitted project.", response = XnatProjectdata.class)
+	@ApiOperation(value = "Update an existing IpWhitelist", notes = "Updates the submitted project.", response = void.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated project."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit IpWhitelist"),
                    @ApiResponse(code = 404, message = "The specified IpWhitelist doesn't exist"),
