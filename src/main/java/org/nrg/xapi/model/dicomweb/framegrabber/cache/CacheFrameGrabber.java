@@ -3,14 +3,20 @@ package org.nrg.xapi.model.dicomweb.framegrabber.cache;
 import org.dcm4che3.data.Tag;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
+import org.nrg.xapi.model.dicomweb.TransCoder;
 
 import java.io.IOException;
 import java.util.Arrays;
 
 public class CacheFrameGrabber implements FrameGrabber {
-    //TODO: This is currently a clone of BasicFrameGrabber. It is a place holder for the cached-based grabber when time allows.
-    // Basic idea is that all the frames for a multi-frame image should be cached. Chances are good that if one frame is hit
-    // the rest will be too.  No point in re-reading the entire image from disk every time.
+
+    private TransCoder transCoder;
+    private DicomObjectCache dicomObjectCache;
+
+    public CacheFrameGrabber( TransCoder transCoder) {
+        this.transCoder = transCoder;
+        this.dicomObjectCache = new DicomObjectCache(transCoder);
+    }
 
     /**
      * Assumes the pixel data is uncompressed EVLE.
@@ -19,15 +25,16 @@ public class CacheFrameGrabber implements FrameGrabber {
      * @return byte array of uncompressed EVLE image data
      * @throws IOException
      */
-    @Override
     public byte[] getPixelsForFrame( DicomObjectI dicomObject, int frameNumber) throws IOException {
-        byte[] pixels = dicomObject.getPixels();
+        DicomObjectI dobj = dicomObjectCache.getDicomObject( dicomObject);
+        byte[] pixels = dobj.getPixels();
         byte[] framePixels = null;
         if( pixels != null) {
-            int rows = dicomObject.getRows();
-            int columns = dicomObject.getColumns();
-            int samplePerPixel = dicomObject.getInt(Tag.SamplesPerPixel, 1);
-            int bitsAllocated = dicomObject.getInt(Tag.BitsAllocated, 8);
+            int rows = dobj.getRows();
+            int columns = dobj.getColumns();
+            int samplePerPixel = dobj.getInt(Tag.SamplesPerPixel, 1);
+            // TODO: bits stored??  8 or 16
+            int bitsAllocated = dobj.getInt(Tag.BitsAllocated, 8);
             int frameSizeInBytes = rows * columns * samplePerPixel * bitsAllocated / 8;
             int from = (frameNumber - 1) * frameSizeInBytes;
             int to = from + frameSizeInBytes;

@@ -10,7 +10,9 @@
 package org.nrg.xapi.configuration;
 
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
+import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.framegrabber.basic.BasicFrameGrabber;
+import org.nrg.xapi.model.dicomweb.framegrabber.cache.CacheFrameGrabber;
 import org.nrg.xapi.rest.dicomweb.mediator.BaseMediator;
 import org.nrg.xapi.rest.dicomweb.mediator.Mediator;
 import org.springframework.context.annotation.Bean;
@@ -21,8 +23,8 @@ import org.springframework.context.annotation.Configuration;
 @ComponentScan(value = {"org.nrg.xapi","org.nrg.xapi.model", "org.nrg.xapi.model.dicomweb"})
 public class DicomWebApiConfig {
     @Bean
-    public FrameGrabber getFrameGrabber() {
-        return new BasicFrameGrabber();
+    public FrameGrabber getFrameGrabber(TransCoder transCoder) {
+        return new CacheFrameGrabber( transCoder);
     }
 
     @Bean

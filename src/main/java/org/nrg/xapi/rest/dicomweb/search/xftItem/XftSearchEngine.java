@@ -272,7 +272,7 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException {
+    public DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
         try {
             XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
@@ -285,12 +285,12 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+    public DicomFrame retrieveFrame( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frame, UserI user) throws SearchException {
         try {
-            XnatImagesessiondata session = getSession( studyInstanceUID, user);
-            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
-            List<DicomObjectI> instances = getInstances( scan);
-            return instances;
+            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
+            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+            DicomObjectI instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
+            return (instance != null)? new DicomFrame( instance, frame): null;
         }
         catch( Exception e) {
             throw new SearchException( SearchException.Type.UNEXPECTED, e);
@@ -311,10 +311,10 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException {
+    public List<DicomObjectI> retrieveStudy( String sessionID, String studyInstanceUID, UserI user) throws SearchException {
 
         List<DicomObjectI> instances = new ArrayList<>();
-        XnatImagesessiondata session = getSession( studyInstanceUID, user);
+        XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
         for( XnatImagescandataI scan: session.getScans_scan()) {
 //            instances.addAll( getInstances( session.getArchiveRootPath(), scan));
             instances.addAll( getInstances( scan));
@@ -677,6 +677,12 @@ public class XftSearchEngine implements SearchEngineI {
             }
         }
         return (file == null)? null: DicomObjectFactory.create( file, false);
+    }
+
+    private DicomFrame getFrame( String archiveRootPath, XnatImagescandata imageScanData, String sopInstanceUID, int frameNumber) throws IOException {
+        DicomObjectI dobj = getInstance( archiveRootPath, imageScanData, sopInstanceUID);
+
+        return ( dobj != null)? new DicomFrame( dobj, frameNumber): null;
     }
 
 //    private List<DicomObjectI> getInstances( String archiveRootPath, XnatImagescandataI imageScanData) throws IOException {

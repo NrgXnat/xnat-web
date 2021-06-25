@@ -133,6 +133,18 @@ public class DicomObjectChe3 implements DicomObjectI{
         }
     }
 
+    @Override
+    public int getPixelDataLength( int frame) throws IOException {
+        byte[] pixelData = frameGrabber.getPixelsForFrame( this, frame);
+        return pixelData.length;
+    }
+
+    @Override
+    public void writePixelData(int frame, OutputStream os) throws IOException {
+        byte[] pixelData = frameGrabber.getPixelsForFrame( this, frame);
+        os.write( pixelData);
+    }
+
     public byte[] getPixels() throws IOException {
         byte[] pixels = getBytes( PIXEL_DATA);
         if( pixels == null) {

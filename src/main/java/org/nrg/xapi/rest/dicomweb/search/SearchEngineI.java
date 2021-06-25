@@ -1,5 +1,6 @@
 package org.nrg.xapi.rest.dicomweb.search;
 
+import org.nrg.xapi.model.dicomweb.DicomFrame;
 import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.QIDOResponse;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
@@ -22,11 +23,11 @@ public interface SearchEngineI {
 
     List<? extends QIDOResponse> searchForInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
+    DicomObjectI retrieveInstance( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException;
 
-    List<DicomObjectI> retrieveSeries(String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
+    DicomFrame retrieveFrame(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
 
     List<DicomObjectI> retrieveSeries( String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
 
-    List<DicomObjectI> retrieveStudy(String studyInstanceUID, UserI user) throws SearchException;
+    List<DicomObjectI> retrieveStudy( String sessionID, String studyInstanceUID, UserI user) throws SearchException;
 }

@@ -28,8 +28,10 @@ public interface DicomObjectI {
     byte[] getPixelsForFrame( int frameNumber) throws IOException;
 
     int getPixelDataLength() throws IOException;
+    int getPixelDataLength( int frame) throws IOException;
 
     void writePixelData(OutputStream os) throws IOException;
+    void writePixelData(int frame, OutputStream os) throws IOException;
 
     byte[] getPixels() throws IOException;
 
