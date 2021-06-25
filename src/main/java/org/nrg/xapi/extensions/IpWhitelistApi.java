@@ -12,7 +12,6 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.services.extensions.IpWhitelistService;
@@ -53,7 +52,7 @@ public class IpWhitelistApi extends AbstractXapiProjectRestController {
 	}
 
 
-	@ApiOperation(value = "Update an existing IpWhitelist", notes = "Updates the submitted project.", response = void.class)
+	@ApiOperation(value = "Update an existing IpWhitelist", notes = "Updates the submitted project.", response = String.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated project."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit IpWhitelist"),
                    @ApiResponse(code = 404, message = "The specified IpWhitelist doesn't exist"),
