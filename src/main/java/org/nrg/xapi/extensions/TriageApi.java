@@ -2,6 +2,7 @@ package org.nrg.xapi.extensions;
 
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
 import java.util.List;
 
@@ -17,7 +18,6 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.extensions.util.TriageUtil;
-import org.nrg.xnat.services.extensions.IpWhitelistService;
 import org.nrg.xnat.services.extensions.TriageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -58,11 +58,37 @@ public class TriageApi extends AbstractXapiProjectRestController {
 		return _triageService.findTriageByProjectId(getSessionUser(),projectId, request);
 	}
 	
+	@ApiOperation(value = "create Triage resource", notes = " creating the Triage resource", response = void.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested  Triage resource."),
+    	           @ApiResponse(code = 400, message = "The requested  Triage resource wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested  Triage resource wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+	 @XapiRequestMapping(value = {"/{PROJECT}/resources","/{PROJECT}/resources/{XNAME}","/{PROJECT}/resources/{XNAME}/files","/{PROJECT}/resources/{XNAME}/files/{FILE}"}, 
+	 					consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
+	 					produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
+    public void createTriage(@ApiParam("The ID of the project ") @PathVariable final String projectId,
+    		@ApiParam("The value of xname") @PathVariable(required = false) final String xname,
+    		@ApiParam("The value of file") @PathVariable(required = false) final String file,
+    		@ApiParam("The value of eventReason") @RequestParam(required = false) final String eventReason,
+    		@ApiParam("The value of eventComment") @RequestParam(required = false) final String eventComment,
+    		@ApiParam("The value of eventId") @RequestParam(required = false) final String eventId,
+    		@ApiParam("The value of target") @RequestParam(required = false) final String target,
+    		@ApiParam("The value of inbody") @RequestParam(required = false) final boolean inbody,
+    		@ApiParam("The value of overwrite") @RequestParam(required = false) final String overwrite,
+    		@ApiParam("The value of format") @RequestParam(required = false) final String format,
+    		@ApiParam("The value of content") @RequestParam(required = false) final String content,
+    		@ApiParam("The value of event_reason") @RequestParam(required = false) final String event_reason,
+    		@ApiParam("The value of extract") @RequestParam(required = false) final String extract,
+    		@ApiParam("The value of Http Servlet request") HttpServletRequest request) throws InitializationException, DataFormatException {
+		log.debug("User {} requested Study Routing", getSessionUser().getUsername());
+		_triageService.create(getSessionUser(), projectId, xname, file, eventReason, eventComment, eventId, target, inbody, overwrite, format, content, event_reason, extract, request);
+	}
 	
-	@ApiOperation(value = "delete Study Routing", notes = " delete the Study Routing with specified instance Uid", response = void.class, responseContainer = "single")
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested Study Routing."),
-    	           @ApiResponse(code = 400, message = "The requested Study Routing wasn't found."),
-                   @ApiResponse(code = 404, message = "The requested Study Routing wasn't found."),
+	
+	@ApiOperation(value = "delete  Triage resource", notes = " delete the  Triage resource ", response = void.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested  Triage resource."),
+    	           @ApiResponse(code = 400, message = "The requested  Triage resource wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested  Triage resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	 @XapiRequestMapping(value = {"/{PROJECT}/resources","/{PROJECT}/resources/{XNAME}","/{PROJECT}/resources/{XNAME}/files","/{PROJECT}/resources/{XNAME}/files/{FILE}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
     public void deleteStudyRouting(@ApiParam("The ID of the project ") @PathVariable final String projectId,

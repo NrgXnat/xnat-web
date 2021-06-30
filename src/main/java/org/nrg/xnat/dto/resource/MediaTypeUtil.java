@@ -24,7 +24,7 @@ public class MediaTypeUtil {
 	
 	public static final String APPLICATION_TAR = "application/tar";
 
-	public MediaType getRequestedMediaType(String requested_format) {
+	public static MediaType getRequestedMediaType(String requested_format) {
 		if (requested_format != null) {
 			if (requested_format.equalsIgnoreCase("xml")) {
 				return MediaType.TEXT_XML;

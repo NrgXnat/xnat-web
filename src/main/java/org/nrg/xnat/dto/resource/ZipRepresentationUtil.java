@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,10 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ZipRepresentationUtil implements StreamingResponseBody{
 
+	 public ZipRepresentationUtil(final MediaType mediaType, final String token, final Integer compression) {
+	        this(mediaType, Collections.singletonList(token), compression);
+	    }
+	
 	 public ZipRepresentationUtil(final MediaType mediaType, final List<String> tokens, final Integer compression) {
 			_executor = ObjectUtils.defaultIfNull(XDAT.getContextService().getBeanSafely(ExecutorService.class), Executors.newSingleThreadExecutor());
 	        _tokens.addAll(tokens);
@@ -138,6 +143,19 @@ public class ZipRepresentationUtil implements StreamingResponseBody{
     public void addAll(final List<File> files) {
         for (final File file : files) {
             addEntry(file);
+        }
+    }
+    
+    public void addAllAtRelativeDirectory(final String dirSpec, final List<File> files) {
+        final String dirCleaned = dirSpec.replace('\\', '/');
+        for (final File file : files) {
+            final String path = file.getAbsolutePath().replace('\\', '/');
+            final int    index   = path.indexOf(dirCleaned);
+            if (index >= 0) {
+                addEntry(path.substring(index + dirCleaned.length() + 1), file);
+            } else {
+                addEntry(file);
+            }
         }
     }
 
