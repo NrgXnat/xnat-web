@@ -165,6 +165,11 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
+    public List<DicomFrame> retrieveFrames(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
+        return null;
+    }
+
+    @Override
     public List<DicomObjectI> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
         return null;
     }

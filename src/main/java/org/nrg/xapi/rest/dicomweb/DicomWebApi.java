@@ -39,8 +39,10 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.http.HttpServletRequest;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Read;
 
@@ -405,10 +407,33 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
-            produces = {"multipart/related;type=\"application/dicom\""},
+            produces = { "application/dicom",
+                    "multipart/related;type=\"application/dicom\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<DicomObjectI>> doRetrieveInstance( @PathVariable("studyInstanceUID") String studyInstanceUID,
+    public ResponseEntity<DicomObjectI> doRetrieveInstanceSinglePart( @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                                  @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                                  @PathVariable("sopInstanceUID") String sopInstanceUID,
+                                                                  @RequestParam final MultiValueMap<String,String> allRequestParams,
+                                                                  @RequestHeader MultiValueMap<String, String> headers)
+            throws UserNotFoundException, UserInitException, SearchException, NoContentException {
+        UserI user = getUser();
+        DicomObjectI instance = _searchEngine.retrieveInstance( null, studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+        if( instance == null) {
+            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+        }
+        return new ResponseEntity<>( instance, HttpStatus.OK );
+    }
+
+    @ApiOperation(value = "WADO-RS Retrieve Instance.", response = DicomObjectI.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve instance."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
+            produces = { "multipart/related;type=\"application/dicom\""},
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<List<DicomObjectI>> doRetrieveInstanceMultipart( @PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                   @PathVariable("seriesInstanceUID") String seriesInstanceUID,
                                                                   @PathVariable("sopInstanceUID") String sopInstanceUID,
                                                                   @RequestParam final MultiValueMap<String,String> allRequestParams,
@@ -458,21 +483,51 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
                     "multipart/related; type=\"image/jpeg\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<List<DicomFrame>> doRetrieveFrame( @PathVariable("studyInstanceUID") String studyInstanceUID,
+    public ResponseEntity<List<DicomFrame>> doRetrieveFrames( @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                              @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                              @PathVariable("sopInstanceUID") String sopInstanceUID,
+                                                              @PathVariable("frameNumbers") String frameNumbers,
+                                                              @RequestParam final MultiValueMap<String,String> allRequestParams,
+                                                              @RequestHeader MultiValueMap<String, String> headers)
+            throws UserNotFoundException, UserInitException, SearchException, NoContentException {
+        UserI user = getUser();
+        List<Integer> frameList = Arrays.stream(frameNumbers.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+        List<DicomFrame> frames = _searchEngine.retrieveFrames( null, studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameList, user);
+        if( frames == null || frames.isEmpty()) {
+            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+        }
+        else if( frames.size() < frameList.size()) {
+            return new ResponseEntity<>( frames, HttpStatus.NOT_FOUND);
+        }
+        else {
+            return new ResponseEntity<>(frames, HttpStatus.OK );
+        }
+    }
+
+    @ApiOperation(value = "WADO-RS Retrieve Frame.", response = DicomObjectI.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve frame."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/oneframe/{frameNumbers}",
+            produces = {"application/octet-stream"},
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<DicomFrame> doRetrieveOneFrame( @PathVariable("studyInstanceUID") String studyInstanceUID,
                                                              @PathVariable("seriesInstanceUID") String seriesInstanceUID,
                                                              @PathVariable("sopInstanceUID") String sopInstanceUID,
-                                                             @PathVariable("frameNumber") int frameNumber,
+                                                             @PathVariable("frameNumbers") String frameNumbers,
                                                              @RequestParam final MultiValueMap<String,String> allRequestParams,
                                                              @RequestHeader MultiValueMap<String, String> headers)
             throws UserNotFoundException, UserInitException, SearchException, NoContentException {
         List<DicomFrame> frames = new ArrayList<>();
         UserI user = getUser();
-        DicomFrame frame = _searchEngine.retrieveFrame( null, studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameNumber, user);
-        if( frame == null) {
-            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
-        }
-        frames.add(frame);
-        return new ResponseEntity<>(frames, HttpStatus.OK );
+        List<Integer> frameList = Arrays.stream(frameNumbers.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+//        DicomFrame frame = _searchEngine.retrieveFrame( null, studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameNumber, user);
+//        if( frame == null) {
+//            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+//        }
+//        frames.add(frame);
+        return new ResponseEntity<>(frames.get(0), HttpStatus.OK );
     }
 
     @ApiOperation(value = "WADO-RS Retrieve Frame with session ID.", response = DicomObjectI.class)
