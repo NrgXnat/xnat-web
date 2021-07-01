@@ -1,8 +1,7 @@
 package org.nrg.xapi.rest.dicomweb.populate.xft;
 
-import org.nrg.dicom.mizer.objects.DicomObjectVisitor;
+import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.DicomObjectFactory;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.rest.dicomweb.populate.PopulatorI;
 import org.nrg.xapi.rest.dicomweb.search.xftItem.XftSearchEngine;
 import org.nrg.xdat.bean.CatCatalogBean;
@@ -11,7 +10,6 @@ import org.nrg.xdat.model.CatDcmentryI;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImagescandataI;
-import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -23,8 +21,6 @@ import org.nrg.xft.search.CriteriaCollection;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.daos.DicomInstanceDAO;
-import org.nrg.xnat.entities.DicomFrame;
-import org.nrg.xnat.entities.DicomInstance;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.slf4j.Logger;
@@ -32,10 +28,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -45,13 +39,15 @@ public class XftPopulator implements PopulatorI {
     private static final Logger _log = LoggerFactory.getLogger(XftSearchEngine.class);
     private CatalogService catalogService;
     private DicomInstanceDAO dicomInstanceDAO;
+    private DicomObjectFactory dicomObjectFactory;
 
     @Autowired
-    public XftPopulator(final UserManagementServiceI userManagementService, final CatalogService catalogService, DicomInstanceDAO dicomInstanceDAO) {
+    public XftPopulator(final UserManagementServiceI userManagementService, final CatalogService catalogService, DicomInstanceDAO dicomInstanceDAO, DicomObjectFactory dicomObjectFactory) {
 
         this.catalogService = catalogService;
         this.userManagementService = userManagementService;
         this.dicomInstanceDAO = dicomInstanceDAO;
+        this.dicomObjectFactory = dicomObjectFactory;
         // need to get the authenticated user here....
         try {
             this.user = userManagementService.getUser( "admin");
@@ -113,7 +109,7 @@ public class XftPopulator implements PopulatorI {
     }
 
     public void processFile( long imagescandata_id, File file) throws IOException {
-        DicomObjectI d = DicomObjectFactory.create(file, false);
+        DicomImageObject d = dicomObjectFactory.createDicomObject( file, false);
         dicomInstanceDAO.saveDicomObject( imagescandata_id, d);
     }
 

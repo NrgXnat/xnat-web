@@ -1,8 +1,7 @@
 package org.nrg.xapi.rest.dicomweb;
 
-import org.dcm4che3.data.Attributes;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
-import org.springframework.http.HttpHeaders;
+import org.nrg.xapi.model.dicomweb.DicomImageObject;
+import org.nrg.xapi.model.dicomweb.DicomObject;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -13,7 +12,7 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import java.io.IOException;
 import java.io.OutputStream;
 
-public class Dicom2OctetStreamMessageConverter extends AbstractHttpMessageConverter<DicomObjectI> {
+public class Dicom2OctetStreamMessageConverter extends AbstractHttpMessageConverter<DicomImageObject> {
     private int PIXEL_DATA = 0x7FE00010;
 
     public Dicom2OctetStreamMessageConverter() {
@@ -21,17 +20,17 @@ public class Dicom2OctetStreamMessageConverter extends AbstractHttpMessageConver
     }
 
     @Override
-    protected DicomObjectI readInternal(Class<? extends DicomObjectI> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
+    protected DicomImageObject readInternal(Class<? extends DicomImageObject> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         throw new UnsupportedOperationException();
     }
 
     @Override
     protected boolean supports(Class<?> clazz) {
-        return DicomObjectI.class.isAssignableFrom( clazz);
+        return DicomObject.class.isAssignableFrom( clazz);
     }
 
     @Override
-    protected void writeInternal(DicomObjectI dicomObject, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
+    protected void writeInternal(DicomImageObject dicomObject, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
 
         OutputStream os = httpOutputMessage.getBody();
         byte[] pixels = dicomObject.getPixels();

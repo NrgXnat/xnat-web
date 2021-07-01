@@ -1,7 +1,7 @@
 package org.nrg.xapi.model.dicomweb.framegrabber.cache;
 
 import org.dcm4che3.data.Tag;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
+import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
 import org.nrg.xapi.model.dicomweb.TransCoder;
 
@@ -10,12 +10,10 @@ import java.util.Arrays;
 
 public class CacheFrameGrabber implements FrameGrabber {
 
-    private TransCoder transCoder;
     private DicomObjectCache dicomObjectCache;
 
     public CacheFrameGrabber( TransCoder transCoder) {
-        this.transCoder = transCoder;
-        this.dicomObjectCache = new DicomObjectCache(transCoder);
+        this.dicomObjectCache = new DicomObjectCache( transCoder);
     }
 
     /**
@@ -25,16 +23,15 @@ public class CacheFrameGrabber implements FrameGrabber {
      * @return byte array of uncompressed EVLE image data
      * @throws IOException
      */
-    public byte[] getPixelsForFrame( DicomObjectI dicomObject, int frameNumber) throws IOException {
-        DicomObjectI dobj = dicomObjectCache.getDicomObject( dicomObject);
+    public byte[] getPixelsForFrame(DicomImageObject dicomObject, int frameNumber) throws IOException {
+        DicomImageObject dobj = dicomObjectCache.getDicomObject( dicomObject);
         byte[] pixels = dobj.getPixels();
         byte[] framePixels = null;
         if( pixels != null) {
             int rows = dobj.getRows();
             int columns = dobj.getColumns();
             int samplePerPixel = dobj.getInt(Tag.SamplesPerPixel, 1);
-            // TODO: bits stored??  8 or 16
-            int bitsAllocated = dobj.getInt(Tag.BitsAllocated, 8);
+            int bitsAllocated = dobj.getInt(Tag.BitsStored, 8);
             int frameSizeInBytes = rows * columns * samplePerPixel * bitsAllocated / 8;
             int from = (frameNumber - 1) * frameSizeInBytes;
             int to = from + frameSizeInBytes;

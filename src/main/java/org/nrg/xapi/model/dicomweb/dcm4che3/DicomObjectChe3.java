@@ -1,37 +1,42 @@
 package org.nrg.xapi.model.dicomweb.dcm4che3;
 
-import org.dcm4che3.data.*;
-import org.dcm4che3.io.DicomEncodingOptions;
-import org.dcm4che3.io.DicomInputStream;
-import org.dcm4che3.io.DicomOutputStream;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
-import org.nrg.xapi.model.dicomweb.FrameGrabber;
+//import com.fasterxml.jackson.core.JsonFactory;
+//import com.fasterxml.jackson.core.JsonGenerator;
 
-import java.io.*;
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.github.pgelinas.jackson.javax.json.stream.JacksonGenerator;
+import org.dcm4che3.data.Attributes;
+import org.dcm4che3.data.ElementDictionary;
+import org.dcm4che3.io.DicomEncodingOptions;
+import org.dcm4che3.io.SAXWriter;
+import org.dcm4che3.json.JSONWriter;
+import org.nrg.xapi.model.dicomweb.DicomObject;
+import org.nrg.xapi.rest.dicomweb.JsonDicomObjectSerializer;
+import org.xml.sax.SAXException;
+
+import javax.xml.transform.TransformerConfigurationException;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.sax.SAXTransformerFactory;
+import javax.xml.transform.sax.TransformerHandler;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
- * References an object on disk. Delete the object on disk if it is labeled as temporary.
+ * Implements Dcm4che3 version of DicomObject.
  *
  */
-public class DicomObjectChe3 implements DicomObjectI{
+@JsonSerialize(using= JsonDicomObjectSerializer.class)
+public class DicomObjectChe3 implements DicomObject {
 
-    private final File file;
-    private boolean isTemporary;
-    private Attributes attributes = null;
-    private static int PIXEL_DATA = 0x7FE00010;
+    private Attributes attributes;
+    private TransformerHandler transformerHandler;
 
-    private final FrameGrabber frameGrabber;
-
-    public DicomObjectChe3( File file, boolean isTemporary, FrameGrabber frameGrabber) throws IOException {
-        this.file = file;
-        this.isTemporary = isTemporary;
-        readAll();
-        this.frameGrabber = frameGrabber;
-    }
-
-    // TODO: leak attributes which is bad.  clean this up. Used as quick fix for json serializing these objects.
-    public Attributes getAttributes() {
-        return attributes;
+    public DicomObjectChe3() {
+        attributes = new Attributes();
     }
 
     public int getLength() {
@@ -39,45 +44,52 @@ public class DicomObjectChe3 implements DicomObjectI{
         return attributes.getLength();
     }
 
-    /**
-     * Blast the file, as is, down stream.
-     *
-     * @param os
-     * @throws IOException
-     */
     @Override
-    public void write(OutputStream os) throws IOException {
-        byte[] buf = new byte[16384];
-        try ( InputStream is = new FileInputStream(file)) {
-            int bytes;
-            while( (bytes = is.read(buf)) != -1) {
-                os.write(buf, 0, bytes);
-            }
-            if( this.isTemporary) {
-                file.delete();
-                attributes = null;
-            }
+    public void writeAsXML( OutputStream os) throws IOException {
+        TransformerHandler th;
+        try {
+            th = getTransformerHandler();
+
+            SAXWriter writer = new SAXWriter( th);
+            th.setResult( new StreamResult( os));
+            writer.write( attributes);
+
+        } catch (TransformerConfigurationException | SAXException e) {
+            throw new IOException( "Error writing dicom object as XML.", e);
         }
     }
 
-    @Override
-    public InputStream getInputStream() throws IOException {
-        return new DicomInputStream( file);
-    }
-
-    @Override
-    public File getFile() {
-        return file;
-    }
-
     /**
-     * Return the transfer syntax uid or null if it is missing or IO error.
+     * Create the TransformerHandler lazily.
      *
      * @return
+     * @throws TransformerConfigurationException
+     * @throws IOException
      */
+    private TransformerHandler getTransformerHandler() throws TransformerConfigurationException, IOException {
+        if( transformerHandler == null) {
+            SAXTransformerFactory tf = (SAXTransformerFactory) TransformerFactory.newInstance();
+            String xsltURL = null;
+            if (xsltURL == null)
+                transformerHandler = tf.newTransformerHandler();
+            else
+                transformerHandler = tf.newTransformerHandler( new StreamSource(xsltURL));
+        }
+        return transformerHandler;
+    }
+
     @Override
-    public String getTransferSyntaxUID() {
-        return getString(Tag.TransferSyntaxUID);
+    public void writeAsJSON( OutputStream os) throws IOException {
+        JsonGenerator jsonGenerator = new JsonFactory().createGenerator(os);
+        JacksonGenerator jgen = new JacksonGenerator( jsonGenerator);
+        writeAsJSON( jgen);
+    }
+
+    @Override
+    public void writeAsJSON(javax.json.stream.JsonGenerator jsonGenerator) throws IOException {
+        JSONWriter jsonWriter = new JSONWriter( jsonGenerator);
+        jsonWriter.write( attributes);
+        jsonGenerator.flush();
     }
 
     @Override
@@ -96,144 +108,12 @@ public class DicomObjectChe3 implements DicomObjectI{
     }
 
     @Override
-    public int getPixelDataLength() throws IOException {
-        int length = 0;
-        Object o = attributes.getValue( PIXEL_DATA);
-        if( o != null) {
-            if( o instanceof byte[] ) {
-                length = ((byte[]) o).length;
-            }
-            else if( o instanceof Fragments) {
-                Fragments f = (Fragments) o;
-                if( ! f.isEmpty()) {
-                    for( int i = 1; i < f.size(); i++) {
-                        length += ((byte[]) f.get(i)).length;
-                    }
-                }
-            }
-        }
-        return length;
+    public void setString( int tag, String value) {
+        attributes.setString(tag, ElementDictionary.vrOf(tag, null), value);
     }
 
     @Override
-    public void writePixelData(OutputStream os) throws IOException {
-        Object o = attributes.getValue( PIXEL_DATA);
-        if( o != null) {
-            if( o instanceof byte[] ) {
-                os.write((byte[]) o);
-            }
-            else if( o instanceof Fragments) {
-                Fragments f = (Fragments) o;
-                if( ! f.isEmpty()) {
-                    for( int i = 1; i < f.size(); i++) {
-                        os.write((byte[]) f.get(i));
-                    }
-                }
-            }
-        }
+    public void setInt( int tag, int value) {
+        attributes.setInt(tag, ElementDictionary.vrOf(tag, null), value);
     }
-
-    @Override
-    public int getPixelDataLength( int frame) throws IOException {
-        byte[] pixelData = frameGrabber.getPixelsForFrame( this, frame);
-        return pixelData.length;
-    }
-
-    @Override
-    public void writePixelData(int frame, OutputStream os) throws IOException {
-        byte[] pixelData = frameGrabber.getPixelsForFrame( this, frame);
-        os.write( pixelData);
-    }
-
-    public byte[] getPixels() throws IOException {
-        byte[] pixels = getBytes( PIXEL_DATA);
-        if( pixels == null) {
-            try (DicomInputStream dis = new DicomInputStream( file)) {
-                Attributes dataSet = dis.readDataset( -1, -1);
-                attributes.setBytes( PIXEL_DATA, dataSet.getVR( PIXEL_DATA), dataSet.getBytes( PIXEL_DATA) );
-                pixels = getBytes( PIXEL_DATA);
-            }
-        }
-        return pixels;
-    }
-
-    /**
-     * Delegate to the FrameGrabber.
-     *
-     * @param frameNumber The frame to grab, counting from 1.
-     * @return byte array of uncompressed EVLE image data
-     * @throws IOException
-     */
-    public byte[] getPixelsForFrame( int frameNumber) throws IOException {
-        return frameGrabber.getPixelsForFrame( this, frameNumber);
-    }
-
-//    private void readHeader() throws IOException {
-//        DicomInputStream dis = new DicomInputStream( file);
-//        attributes = dis.getFileMetaInformation();
-//        attributes.addAll( dis.readDataset( -1, Tag.PixelData));
-//    }
-
-    private void readAll() throws IOException {
-        DicomInputStream dis = new DicomInputStream( file);
-        attributes = dis.getFileMetaInformation();
-        attributes.addAll( dis.readDataset( -1, -1));
-    }
-
-    @Override
-    public String getStudyInstanceUID() { return attributes.getString( 0x002000D); }
-
-    @Override
-    public String getSeriesInstanceUID() { return attributes.getString( 0x002000E); }
-
-    @Override
-    public String getSOPInstanceUID() { return attributes.getString( 0x00080018); }
-
-    @Override
-    public String getSOPClassUID() { return attributes.getString( 0x00080016); }
-
-    @Override
-    public Integer getInstanceNumber() {
-        String s = attributes.getString( 0x00200013);
-        return (s != null)? Integer.valueOf(s): null;
-    }
-
-    @Override
-    public Integer getRows() {
-        String s = attributes.getString( 0x00280010);
-        return (s != null)? Integer.valueOf( s): null;
-    }
-
-    @Override
-    public Integer getColumns() {
-        String s = attributes.getString( 0x00280011);
-        return (s != null)? Integer.valueOf( s): null;
-    }
-
-    @Override
-    public Integer getBitsAllocated() {
-        String s = attributes.getString( 0x00280100);
-        return (s != null)? Integer.valueOf( s): null;
-    }
-
-    @Override
-    public Integer getNumberOfFrames() {
-        String s = attributes.getString( 0x00280008);
-        return (s != null)? Integer.valueOf( s): 1;
-    }
-
-    @Override
-    public Integer getFrameNumber() { return null; }
-
-    @Override
-    public String getImagePositionPatient() { return attributes.getString( 0x00200032); }
-
-    @Override
-    public String getImageOrientationPatient() { return attributes.getString( 0x00200037); }
-
-    @Override
-    public String getPixelSpacing() { return attributes.getString( 0x00280030); }
-
-    @Override
-    public String getFrameOfReferenceUid() { return attributes.getString( 0x00200052); }
 }

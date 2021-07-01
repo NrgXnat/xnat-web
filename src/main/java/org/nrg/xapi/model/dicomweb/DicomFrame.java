@@ -1,15 +1,15 @@
 package org.nrg.xapi.model.dicomweb;
 
 public class DicomFrame {
-    private DicomObjectI dicomObject;
+    private DicomImageObject dicomObject;
     private int frameNumber;
 
-    public DicomFrame( DicomObjectI dicomObject, int frameNumber) {
+    public DicomFrame(DicomImageObject dicomObject, int frameNumber) {
         this.dicomObject = dicomObject;
         this.frameNumber = frameNumber;
     }
 
-    public DicomObjectI getDicomObject() {
+    public DicomImageObject getDicomObject() {
         return dicomObject;
     }
 

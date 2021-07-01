@@ -1,16 +1,12 @@
 package org.nrg.xapi.model.dicomweb.dcm4che3;
 
-import org.dcm4che2.data.UID;
-import org.dcm4che3.imageio.codec.TransferSyntaxType;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.io.DicomOutputStream;
-import org.nrg.xapi.model.dicomweb.DicomObjectFactory;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
+import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.TransCoderException;
-import org.springframework.stereotype.Component;
+import org.nrg.xapi.model.dicomweb.framegrabber.cache.CacheFrameGrabber;
 
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -20,21 +16,20 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-@Component
 public class TransCoderChe3 implements TransCoder {
 
-    Dcm2Dcm dcm2Dcm;
+    private final Dcm2Dcm dcm2Dcm;
 
     public TransCoderChe3() {
         this.dcm2Dcm = new Dcm2Dcm();
     }
 
     @Override
-    public void transcode(DicomObjectI inDcm, String dstTsuid, OutputStream os) throws TransCoderException {
+    public void transcode(DicomImageObject inDcm, String dstTsuid, OutputStream os) throws TransCoderException {
         String srcTsuid = inDcm.getTransferSyntaxUID();
         try {
             if ( srcTsuid != null && srcTsuid.equals(dstTsuid)) {
-                inDcm.write(os);
+                inDcm.writeFile(os);
             }
             else {
                 dcm2Dcm.setTransferSyntax( dstTsuid);
@@ -49,7 +44,7 @@ public class TransCoderChe3 implements TransCoder {
     }
 
     @Override
-    public DicomObjectI transcode(DicomObjectI inDcm, String dstTsuid) throws TransCoderException {
+    public DicomImageObject transcode(DicomImageObject inDcm, String dstTsuid) throws TransCoderException {
         String srcTsuid = inDcm.getTransferSyntaxUID();
         try {
             if ( srcTsuid != null && srcTsuid.equals(dstTsuid)) {
@@ -60,7 +55,7 @@ public class TransCoderChe3 implements TransCoder {
                 try( OutputStream os =  new FileOutputStream( tmpFile.toFile())) {
                     transcode( inDcm, dstTsuid, os);
                 }
-                DicomObjectI dobj = DicomObjectFactory.create( tmpFile.toFile(), true);
+                DicomImageObject dobj = new DicomImageObjectChe3( tmpFile.toFile(), true, new CacheFrameGrabber( this));
                 return dobj;
             }
         } catch (IOException e) {

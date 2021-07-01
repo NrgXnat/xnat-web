@@ -1,36 +1,33 @@
 package org.nrg.xapi.model.dicomweb;
 
-import org.dcm4che3.data.ElementDictionary;
+public interface QIDOResponseSeries extends QIDOResponse {
 
-public class QIDOResponseSeries extends QIDOResponse {
+    String getSpecificCharacterSetString();
+    void setSpecificCharacterSetString(String value);
 
+    String getModality();
+    void setModality(String value);
 
-    public String getSpecificCharacterSetString() { return getString( 0x00080005); }
-    public void setSpecificCharacterSetString(String value) { setString( 0x00080005, ElementDictionary.vrOf(0x00080005,null), value ); }
+    String getSeriesDescription();
+    void setSeriesDescription(String value);
 
-    public String getModality() { return getString( 0x00080060); }
-    public void setModality(String value) { setString( 0x00080060, ElementDictionary.vrOf(0x00080060, null), value ); }
+    String getTimezoneOffsetFromUTC();
+    void setTimezoneOffsetFromUTC(String value);
 
-    public String getSeriesDescription() { return getString(0x0008103E); }
-    public void setSeriesDescription(String value) { setString( 0x0008103E, ElementDictionary.vrOf(0x0008103E, null), value ); }
+    String getSeriesInstanceUID();
+    void setSeriesInstanceUID(String value);
 
-    public String getTimezoneOffsetFromUTC() { return getString(0x00080201); }
-    public void setTimezoneOffsetFromUTC(String value) { setString( 0x00080201, ElementDictionary.vrOf(0x00080201, null), value ); }
+    String getSeriesNumber();
+    void setSeriesNumber(String value);
 
-    public String getSeriesInstanceUID() { return getString(0x0020000E); }
-    public void setSeriesInstanceUID(String value) { setString( 0x0020000E, ElementDictionary.vrOf(0x0020000E, null), value ); }
+    String getNumberOfSeriesRelatedInstances();
+    void setNumberOfSeriesRelatedInstances(int value);
 
-    public String getSeriesNumber() { return getString(0x00200011); }
-    public void setSeriesNumber(String value) { setString( 0x00200011, ElementDictionary.vrOf(0x00200011, null), value ); }
+    String getPerformedProcedureStepStartDate();
+    void setPerformedProcedureStepStartDate(String value);
+    void setPerformedProcedureStepStartDate(Object obj);
 
-    public String getNumberOfSeriesRelatedInstances() { return getString(0x00201209); }
-    public void setNumberOfSeriesRelatedInstances(int value) { setInt( 0x00201209, ElementDictionary.vrOf(0x00201209, null), value ); }
-
-    public String getPerformedProcedureStepStartDate() { return getString(0x00400244); }
-    public void setPerformedProcedureStepStartDate(String value) { setString( 0x00400244, ElementDictionary.vrOf(0x00400244, null), value ); }
-    public void setPerformedProcedureStepStartDate(Object obj) { setString( 0x00400244, ElementDictionary.vrOf(0x00400244, null), (obj == null)? null:dateFormat.format( obj) ); }
-
-    public String getPerformedProcedureStepStartTime() { return getString(0x00400245); }
-    public void setPerformedProcedureStepStartTime(String value) { setString( 0x00400245, ElementDictionary.vrOf(0x00400245, null), value ); }
-    public void setPerformedProcedureStepStartTime(Object obj) { setString( 0x00400245, ElementDictionary.vrOf(0x00400245, null), (obj == null)? null:timeFormat.format( obj) ); }
+    String getPerformedProcedureStepStartTime();
+    void setPerformedProcedureStepStartTime(String value);
+    void setPerformedProcedureStepStartTime(Object obj);
 }

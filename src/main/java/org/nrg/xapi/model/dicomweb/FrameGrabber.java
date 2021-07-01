@@ -4,5 +4,5 @@ import java.io.IOException;
 
 public interface FrameGrabber {
 
-    byte[] getPixelsForFrame( DicomObjectI dicomObject, int frameNumber) throws IOException;
+    byte[] getPixelsForFrame(DicomImageObject dicomObject, int frameNumber) throws IOException;
 }
