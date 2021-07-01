@@ -1,13 +1,12 @@
 package org.nrg.xapi.rest.dicomweb;
 
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
+import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.TransCoderException;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
@@ -15,7 +14,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.AbstractHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
 
 import javax.activation.MimeType;
@@ -25,9 +23,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Component
-@Lazy
-public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMessageConverter< List<DicomObjectI>> {
+public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMessageConverter< List<DicomImageObject>> {
 
     @Autowired
     HttpServletRequest request;
@@ -50,12 +46,12 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
 
     // for reading from the input message.
     @Override
-    protected List<DicomObjectI> readInternal(Class<? extends List<DicomObjectI>> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
+    protected List<DicomImageObject> readInternal(Class<? extends List<DicomImageObject>> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         return null;
     }
 
     @Override
-    protected void writeInternal(List<DicomObjectI> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
+    protected void writeInternal(List<DicomImageObject> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
 
         try {
             if( dicomParts.isEmpty()) {
@@ -63,7 +59,7 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
                 _log.error(msg);
                 throw new HttpMessageNotWritableException(msg);
             }
-            DicomObjectI dobj = dicomParts.get(0);
+            DicomImageObject dobj = dicomParts.get(0);
 
             String inputTsuid = dobj.getTransferSyntaxUID();
             final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
@@ -93,9 +89,9 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
-            for (DicomObjectI dicomPart : dicomParts) {
+            for (DicomImageObject dicomPart : dicomParts) {
 
-                DicomObjectI dcmOut = transCoder.transcode(dicomPart, tsuid);
+                DicomImageObject dcmOut = transCoder.transcode(dicomPart, tsuid);
 
                 outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());

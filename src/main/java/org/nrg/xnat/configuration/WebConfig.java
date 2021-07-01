@@ -9,15 +9,13 @@
 
 package org.nrg.xnat.configuration;
 
-import org.nrg.xapi.model.dicomweb.TransCoder;
-import org.nrg.xapi.model.dicomweb.dcm4che3.TransCoderChe3;
-import org.nrg.xapi.rest.dicomweb.*;
 import com.fasterxml.jackson.core.SerializableString;
 import com.fasterxml.jackson.core.io.CharacterEscapes;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Chars;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
+import org.nrg.xapi.rest.dicomweb.*;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xnat.preferences.AsyncOperationsPreferences;
 import org.nrg.xnat.web.converters.XftBeanHttpMessageConverter;
@@ -94,7 +92,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(resourceHttpMessageConverter());
         converters.add(xftBeanHttpMessageConverter());
         converters.add(xftObjectHttpMessageConverter());
-        converters.add(multipartDicomMessageConverter( converters));
+        converters.add(multipartDicomFileMessageConverter());
         converters.add(multipartCompressedDicomFileMessageConverter( ));
         converters.add( dicomFrameMessageConverter( ));
         converters.add(zipFileHttpMessageConverter());
@@ -123,13 +121,13 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public Dicom2XmlMessageConverter dicomMessageConverter() {
+    public Dicom2XmlMessageConverter dicom2XmlMessageConverter() {
         return new Dicom2XmlMessageConverter();
     }
 
-    @Bean
-    public DicomObjectMessageConverter dicomObjectMessageConverter() {
-        return new DicomObjectMessageConverter();
+   @Bean
+    public DicomImageObjectMessageConverter dicomObjectMessageConverter() {
+        return new DicomImageObjectMessageConverter();
     }
 
     @Bean
@@ -158,11 +156,6 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public HttpMessageConverter<?> multipartDicomMessageConverter(List<HttpMessageConverter<?>> converters) {
-        return new MultipartDicomMessageConverter( converters);
-    }
-
-    @Bean
     public HttpMessageConverter<?> multipartDicomFileMessageConverter() {
         return new MultipartDicomFileMessageConverter( );
     }
@@ -175,16 +168,6 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     @Bean
     public HttpMessageConverter<?> dicomFrameMessageConverter() {
         return new DicomFrameMessageConverter( );
-    }
-
-    @Bean
-    public TransCoder transCoder() {
-        return new TransCoderChe3();
-    }
-
-    @Bean
-    public HttpMessageConverter<?> dicom2XmlMessageConverter() {
-        return new Dicom2XmlMessageConverter();
     }
 
     @Bean

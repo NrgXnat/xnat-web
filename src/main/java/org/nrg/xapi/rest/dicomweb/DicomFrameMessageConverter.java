@@ -1,15 +1,12 @@
 package org.nrg.xapi.rest.dicomweb;
 
 import org.nrg.xapi.model.dicomweb.DicomFrame;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
-import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.TransCoderException;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpOutputMessage;
 import org.springframework.http.MediaType;
@@ -19,12 +16,9 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerMapping;
 
-import javax.activation.MimeType;
-import javax.activation.MimeTypeParseException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Map;
 
 @Component
 @Lazy

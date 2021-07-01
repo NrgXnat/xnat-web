@@ -1,8 +1,5 @@
 package org.nrg.xapi.model.dicomweb;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.nrg.xapi.rest.dicomweb.JsonDicomObjectISerializer;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,19 +8,12 @@ import java.io.OutputStream;
 /**
  * Interface to keep the underlying DICOM library from leaking.
  */
-@JsonSerialize(using= JsonDicomObjectISerializer.class)
-public interface DicomObjectI {
-
-    int getLength();
-    void write( OutputStream os) throws IOException;
-
-    InputStream getInputStream() throws IOException;
+//@JsonSerialize(using= JsonDicomObjectISerializer.class)
+public interface DicomImageObject extends DicomObject {
 
     File getFile() ;
-
-    String getString( int tag);
-    int getInt( int tag, int def);
-    byte[] getBytes( int tag) throws IOException;
+    InputStream getInputStream() throws IOException;
+    void writeFile( OutputStream os) throws IOException;
 
     byte[] getPixelsForFrame( int frameNumber) throws IOException;
 

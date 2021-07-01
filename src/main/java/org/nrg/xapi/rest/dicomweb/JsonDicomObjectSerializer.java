@@ -4,23 +4,20 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import com.github.pgelinas.jackson.javax.json.stream.JacksonGenerator;
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.json.JSONWriter;
+import org.nrg.xapi.model.dicomweb.DicomObject;
 
-public class JsonDicomObjectSerializer extends StdSerializer<Attributes> {
+import java.io.IOException;
+
+public class JsonDicomObjectSerializer extends StdSerializer<DicomObject> {
 
     JsonDicomObjectSerializer() {
-        super(Attributes.class);
+        super(DicomObject.class);
     }
 
     @Override
-    public void serialize(Attributes value, JsonGenerator gen, SerializerProvider provider) {
-
+    public void serialize(DicomObject dicomObject, JsonGenerator gen, SerializerProvider provider) throws IOException {
         JacksonGenerator jgen = new JacksonGenerator( gen);
-//        javax.json.stream.JsonGenerator sgen = (javax.json.stream.JsonGenerator) gen;
-        JSONWriter jsonWriter = new JSONWriter( jgen);
-        jsonWriter.write( value);
-        jgen.flush();
+        dicomObject.writeAsJSON( jgen);
     }
 
 }

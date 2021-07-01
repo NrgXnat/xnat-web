@@ -10,10 +10,10 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 
 import java.io.IOException;
 
-public class Dicom2XmlMessageConverter extends AbstractHttpMessageConverter<DicomObject> {
+public class Dicom2JsonMessageConverter extends AbstractHttpMessageConverter<DicomObject> {
 
-    public Dicom2XmlMessageConverter() {
-        super(new MediaType("application","dicom+xml"));
+    public Dicom2JsonMessageConverter() {
+        super(new MediaType("application","dicom+json"));
     }
 
     @Override
@@ -30,10 +30,10 @@ public class Dicom2XmlMessageConverter extends AbstractHttpMessageConverter<Dico
     protected void writeInternal(DicomObject dicomObject, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
 
         try {
-            dicomObject.writeAsXML( httpOutputMessage.getBody());
+            dicomObject.writeAsJSON( httpOutputMessage.getBody());
 
         } catch (IOException e) {
-            throw new HttpMessageNotWritableException("Error writing dicom object as XML", e);
+            throw new HttpMessageNotWritableException("Error writing dicom object as JSON.", e);
         }
     }
 }

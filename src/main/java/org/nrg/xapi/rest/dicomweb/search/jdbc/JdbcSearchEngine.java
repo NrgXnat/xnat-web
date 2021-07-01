@@ -2,8 +2,8 @@ package org.nrg.xapi.rest.dicomweb.search.jdbc;
 
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.model.dicomweb.DicomFrame;
+import org.nrg.xapi.model.dicomweb.DicomObject;
 import org.nrg.xapi.model.dicomweb.DicomObjectFactory;
-import org.nrg.xapi.model.dicomweb.DicomObjectI;
 import org.nrg.xapi.model.dicomweb.QIDOResponse;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
@@ -37,17 +37,19 @@ public class JdbcSearchEngine implements SearchEngineI {
     private final JdbcTemplate _template;
     private static final Logger _log = LoggerFactory.getLogger(JdbcSearchEngine.class);
     private final SiteConfigPreferences _preferences;
+    private final DicomObjectFactory _dicomObjectFactory;
 
     private UserI user;
 
     @Autowired
-    public JdbcSearchEngine(final JdbcTemplate template, final SiteConfigPreferences preferences) {
+    public JdbcSearchEngine(final JdbcTemplate template, final SiteConfigPreferences preferences, final DicomObjectFactory dicomObjectFactory) {
         _preferences = preferences;
         _template = template;
+        _dicomObjectFactory = dicomObjectFactory;
     }
 
     @Override
-    public List<DicomObjectI> getStudy(String studyInstanceUID) throws IOException {
+    public List<DicomObject> getStudy(String studyInstanceUID) throws IOException {
         // TODO:  user access enforced.  IF not loop over each object and check.
         ArrayList<XnatImagesessiondata> imagesessiondatas = XnatImagesessiondata.getXnatImagesessiondatasByField("xnat:imageSessionData/UID", studyInstanceUID, user, false);
 
@@ -58,7 +60,7 @@ public class JdbcSearchEngine implements SearchEngineI {
             // return 404
         }
 
-        List<DicomObjectI> dcmFiles = new ArrayList<>();
+        List<DicomObject> dcmFiles = new ArrayList<>();
         XnatImagesessiondata isd = imagesessiondatas.get(0);
         for (XnatImagescandataI imagescandata : isd.getScans_scan()) {
             for (XnatAbstractresourceI resourceI : imagescandata.getFile()) {
@@ -73,7 +75,7 @@ public class JdbcSearchEngine implements SearchEngineI {
                     CatCatalogBean catalog = CatalogUtils.getCatalog(catFile, null);
                     if (catalog.getEntries_entry().size() > 0) {
                         File file = CatalogUtils.getFile(catalog.getEntries_entry().get(0), catFile.getParentFile().getAbsolutePath(), null);
-                        dcmFiles.add(DicomObjectFactory.create(file, false));
+                        dcmFiles.add( _dicomObjectFactory.createDicomObject( file, false));
                     }
                 }
             }
@@ -86,11 +88,11 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI[] getStudyAsArray(String studyInstanceUID) throws IOException {
-        List<DicomObjectI> dcmFiles = new ArrayList<>();
-        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"),false));
-        dcmFiles.add(DicomObjectFactory.create(new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"), false));
-        DicomObjectI[] d = new DicomObjectI[dcmFiles.size()];
+    public DicomObject[] getStudyAsArray(String studyInstanceUID) throws IOException {
+        List<DicomObject> dcmFiles = new ArrayList<>();
+        dcmFiles.add( _dicomObjectFactory.createDicomObject( new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"),false));
+        dcmFiles.add( _dicomObjectFactory.createDicomObject( new File("/data/xnat/archive/testproject1/arc001/Cucumber_MR1/SCANS/601/DICOM/1.3.46.670589.11.5730.5.0.1268.2010042909472232027-601-1-1apb4sk.dcm"), false));
+        DicomObject[] d = new DicomObject[dcmFiles.size()];
         return dcmFiles.toArray(d);
     }
 
@@ -126,7 +128,7 @@ public class JdbcSearchEngine implements SearchEngineI {
 
             @Override
             public QIDOResponse mapRow(ResultSet resultSet, int i) throws SQLException {
-                QIDOResponse response = new QIDOResponse();
+                QIDOResponse response = _dicomObjectFactory.createQIDOResponseInstance();
 //                response.setPatientsName(resultSet.getString(statement.getPatientIDLabel()));
 //                response.setStudyInstanceUID(resultSet.getString(statement.getStudyInstanceUIDLabel()));
 //                response.setAccessionNumber(resultSet.getString(statement.getAccessionNumberLabel()));
@@ -155,7 +157,7 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObjectI retrieveInstance(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
+    public DicomObject retrieveInstance(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
         return null;
     }
 
@@ -170,12 +172,12 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObjectI> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public List<DicomObjectI> retrieveStudy( String sessionID, String studyInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveStudy(String sessionID, String studyInstanceUID, UserI user) throws SearchException {
         return null;
     }
 }
