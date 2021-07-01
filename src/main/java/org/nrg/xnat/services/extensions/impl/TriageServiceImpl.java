@@ -24,6 +24,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
@@ -140,6 +141,50 @@ public class TriageServiceImpl implements TriageService{
 			log.error("",e);
 		}
 	}
+	
+	@Override
+	public void updte(UserI user, String projectId, String xname, String file, String eventReason, String eventComment,String eventId, String target, boolean inbody, String overwrite, String format, String content, String event_reason, String extract, HttpServletRequest request) {
+		try {
+			String projectPath = TriageUtils.getTriageUploadsPath();
+			if( projectId==null){
+	        	//fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation."); //Pending IMPL
+	        } 
+			XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+	     	if(proj!=null && proj.canRead(user) && canEditDestination(target, user)){
+	     		  if (xname == null && file == null) {
+			        	//fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation.");
+				    } else if (xname != null && file == null) {
+				    	createTriageResource(projectPath,xname, request);
+				       // uploadTriageFile(projectPath,xname, null, inbody,target,overwrite,format,content,event_reason,extract, request,user);
+				    }else if (xname != null && file != null) {
+				        uploadTriageFile(projectPath,getxName(projectId,request),file, inbody,target,overwrite,format,content,event_reason,extract,request,user);
+				    }
+		        	openworkflow(true,"Upload Quarantine Files", "Upload Quarantine Files", "Upload Quarantine Files",user, projectId);
+	     	}else{
+	     		//fail(Status.CLIENT_ERROR_UNAUTHORIZED,"Not authorized");
+	     	}
+			} catch (Exception e) {
+				//fail(Status.SERVER_ERROR_INTERNAL,e.getMessage());
+				log.error("",e);
+			}
+	}
+	
+private void createTriageResource(String projectPath,String pXNAME, HttpServletRequest request) throws ResourceAlreadyExistsException, InitializationException {
+		
+		// Create any subdirectories requested as well
+		String dirString = "";
+				//pXNAME + getRequest().getResourceRef().getRemainingPart().replaceFirst("\\?.*$", "");
+		File dir = new File (projectPath,dirString);
+		if (dir.exists()) {
+			throw new ResourceAlreadyExistsException("Resource with this name already exists.", dirString);
+		} else {
+			if (!dir.mkdirs()) {
+				throw new InitializationException("Could not create resource directory.");
+			}
+		}	
+		
+	}
+	
 	
 	public void openworkflow(boolean status,String action,String reason,String comment, UserI user, String projectId) throws Exception{
 		PersistentWorkflowI work=WorkflowUtils.buildOpenWorkflow( user, "xnat:projectData", projectId, projectId,EventUtils.newEventInstance(EventUtils.CATEGORY.DATA,EventUtils.TYPE.WEB_FORM,  action,reason,comment));
@@ -340,6 +385,7 @@ public class TriageServiceImpl implements TriageService{
 	    private String constructEventReason( String event_reason) {
 	 	    if (StringUtils.isEmpty(event_reason)) {
 	 	    	event_reason="";
+				
 	 	    }
 	 	    return event_reason;
 	      }

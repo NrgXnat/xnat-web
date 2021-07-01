@@ -22,4 +22,6 @@ public interface TriageService {
 	void deleteTriage(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId);
 	
 	void create(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request);
+	
+	void updte(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request); 
 }
