@@ -1,6 +1,7 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
@@ -64,4 +65,10 @@ public class XnatProjectdataDeserializer extends AbstractBaseElementDeserializer
         }
         return project;
     }
+
+	@Override
+	protected XnatProjectdata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

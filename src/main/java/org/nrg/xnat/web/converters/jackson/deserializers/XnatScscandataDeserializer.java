@@ -9,6 +9,7 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.ItemI;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
@@ -47,4 +48,10 @@ public class XnatScscandataDeserializer extends AbstractBaseElementDeserializer<
         }
         return scans;
     }
+
+	@Override
+	protected XnatScscandata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

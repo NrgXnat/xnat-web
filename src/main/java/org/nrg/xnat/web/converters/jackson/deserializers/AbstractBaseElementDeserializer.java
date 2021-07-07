@@ -1,6 +1,7 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,6 +13,7 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.Optional;
 
 @Slf4j
 public abstract class AbstractBaseElementDeserializer<T extends BaseElement> extends StdDeserializer<T> {
@@ -54,4 +56,17 @@ public abstract class AbstractBaseElementDeserializer<T extends BaseElement> ext
             return parser.getValueAsString();
         }
     }
+    
+    protected T getInstance(final DeserializationContext context) throws JsonProcessingException {
+        //noinspection unchecked
+        final Optional<T> instance = Optional.ofNullable((T) context.getAttribute("XnatItem"));
+        if (instance.isPresent()) {
+            return instance.get();
+        }
+        final T newInstance = getNewInstance();
+        context.setAttribute("XnatItem", newInstance);
+        return newInstance;
+    }
+
+    protected abstract T getNewInstance() throws JsonProcessingException;
 }

@@ -5,6 +5,7 @@ import java.io.IOException;
 import org.nrg.xdat.om.XnatCtsessiondata;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
@@ -61,5 +62,11 @@ public class XnatCtsessiondataDeserializer extends AbstractBaseElementDeserializ
         }
         return xnatCtsessiondata;
     }
+
+	@Override
+	protected XnatCtsessiondata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }

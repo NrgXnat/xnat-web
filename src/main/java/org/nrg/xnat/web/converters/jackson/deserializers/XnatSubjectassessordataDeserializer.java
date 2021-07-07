@@ -2,15 +2,17 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
 public class XnatSubjectassessordataDeserializer extends AbstractBaseElementDeserializer<XnatSubjectassessordata> {
-    public XnatSubjectassessordataDeserializer() {
+	private static final long serialVersionUID = 8210237025631857679L;
+
+	public XnatSubjectassessordataDeserializer() {
         super(XnatSubjectassessordata.class);
     }
 
@@ -65,5 +67,10 @@ public class XnatSubjectassessordataDeserializer extends AbstractBaseElementDese
         }
         return xnatSubjectassessordata;
     }
+
+	@Override
+	protected XnatSubjectassessordata getNewInstance() throws JsonProcessingException {
+		return null;
+	}
 
 }

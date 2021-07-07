@@ -1,6 +1,7 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -96,4 +97,10 @@ public class XnatResourceDeserializer extends AbstractBaseElementDeserializer<Xn
     }
     
     private static final String DATA_TYPE = "xsiType";
+
+	@Override
+	protected XnatResource getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

@@ -4,16 +4,14 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 
-import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatSubjectdata;
-
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
 public class XnatExperimentdataSerializer extends AbstractBaseElementSerializer<XnatExperimentdata> {
-    public XnatExperimentdataSerializer() {
+	private static final long serialVersionUID = -745536640121672797L;
+
+	public XnatExperimentdataSerializer() {
         super(XnatExperimentdata.class);
     }
 

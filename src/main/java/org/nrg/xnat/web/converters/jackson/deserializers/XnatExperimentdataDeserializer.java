@@ -1,6 +1,7 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.TreeNode;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
@@ -220,5 +221,10 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 	private static final String DATA_TYPE = "xsiType";
 	private static final String XNAT_SCAN = "scans";
 	private static final String SCAN_METHOD_NAME = "Scans_scan";
+	@Override
+	protected XnatExperimentdata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 	
 }

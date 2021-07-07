@@ -2,36 +2,24 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatExperimentdata;
+import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatMrsessiondata;
-import org.nrg.xdat.om.XnatSubjectassessordata;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 public class XnatMrsessiondataSerializer extends AbstractBaseElementSerializer<XnatMrsessiondata> {
-    public XnatMrsessiondataSerializer() {
+	private static final long serialVersionUID = 7260985692118037295L;
+
+	public XnatMrsessiondataSerializer() {
         super(XnatMrsessiondata.class);
     }
 
     @Override
     protected void serializeImpl(final XnatMrsessiondata xnatMrsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "id", xnatMrsessiondata.getId());
-        writeNonBlankField(generator, "label", xnatMrsessiondata.getLabel());
-        writeNonBlankField(generator, "project", xnatMrsessiondata.getProject());
-        writeNonBlankField(generator, "note", xnatMrsessiondata.getNote());
-        writeNonBlankField(generator, "protocol", xnatMrsessiondata.getProtocol());
-        writeNonBlankField(generator, "original", xnatMrsessiondata.getOriginal());
-        writeNonNullField(generator, "date", xnatMrsessiondata.getDate());
-        writeNonNullNumber(generator, "delay", xnatMrsessiondata.getDelay());
-        writeNonNullNumber(generator, "version", xnatMrsessiondata.getVersion());
-        writeNonBlankField(generator, "acquisitionSite", xnatMrsessiondata.getAcquisitionSite());
-        writeNonBlankField(generator, "visit", xnatMrsessiondata.getVisit());
-        writeNonBlankField(generator, "visitId", xnatMrsessiondata.getVisitId());
-        writeNonBlankField(generator, "description", xnatMrsessiondata.getDescription());
-        writeNonNullField(generator, "subjectId", xnatMrsessiondata.getSubjectId());
-        writeNonNullField(generator, "scans", xnatMrsessiondata.getScans_scan());
-       // writeNonNullField(generator, "experiment", xnatSubjectassessordata.getExperimentdata());
+    	writeNonBlankField(generator, "coil", xnatMrsessiondata.getCoil());
+		writeNonBlankField(generator, "fieldStrength", xnatMrsessiondata.getFieldstrength());
+		writeNonBlankField(generator, "marker", xnatMrsessiondata.getMarker());
+		writeNonBlankField(generator, "stabilization", xnatMrsessiondata.getStabilization());
+		provider.findValueSerializer(XnatImagesessiondata.class).serialize(this, generator, provider);
     }
-
 }

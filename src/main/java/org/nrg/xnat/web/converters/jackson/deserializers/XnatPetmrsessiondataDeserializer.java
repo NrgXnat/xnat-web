@@ -8,6 +8,7 @@ import org.nrg.xdat.om.XnatPetmrsessiondata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
@@ -64,5 +65,11 @@ public class XnatPetmrsessiondataDeserializer extends AbstractBaseElementDeseria
         }
         return xnatPetmrsessiondata;
     }
+
+	@Override
+	protected XnatPetmrsessiondata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }

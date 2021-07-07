@@ -11,6 +11,7 @@ import org.nrg.xft.ItemI;
 import org.nrg.xft.security.UserI;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
@@ -53,4 +54,10 @@ public class XdatUsergroupDeserializer extends AbstractBaseElementDeserializer<X
         }
         return userGroup;
     }
+
+	@Override
+	protected XdatUsergroup getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

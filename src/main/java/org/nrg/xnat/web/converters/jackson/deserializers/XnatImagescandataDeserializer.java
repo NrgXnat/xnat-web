@@ -5,6 +5,7 @@ import java.util.Objects;
 
 import org.nrg.xdat.om.XnatImagescandata;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
@@ -79,4 +80,10 @@ public class XnatImagescandataDeserializer extends AbstractBaseElementDeserializ
         }
         return scans;
     }
+
+	@Override
+	protected XnatImagescandata getNewInstance() throws JsonProcessingException {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
