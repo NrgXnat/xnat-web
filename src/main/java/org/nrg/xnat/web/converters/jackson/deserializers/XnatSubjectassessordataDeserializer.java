@@ -1,6 +1,7 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import org.nrg.xdat.om.XnatSubjectassessordata;
 
@@ -18,47 +19,18 @@ public class XnatSubjectassessordataDeserializer extends AbstractBaseElementDese
 
     @Override
     protected XnatSubjectassessordata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatSubjectassessordata xnatSubjectassessordata = new XnatSubjectassessordata();
+        //final XnatSubjectassessordata xnatSubjectassessordata = getInstance(context);
+    	final XnatSubjectassessordata xnatSubjectassessordata = Optional.ofNullable((XnatSubjectassessordata) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("xnatSubjectassessordata can't be created on its own"));
 
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
             switch (field) {
-                case "id":
-                	xnatSubjectassessordata.setId(parser.getText());
+                case "subjectId":
+                	xnatSubjectassessordata.setSubjectId(parser.getText());
                     break;
-                case "label":
-                	xnatSubjectassessordata.setLabel(parser.getText());
-                    break;
-                case "project":
-                    xnatSubjectassessordata.setProject(parser.getText());
-                    break;
-                case "note":
-                    xnatSubjectassessordata.setNote(parser.getText());
-                    break;
-                case "protocol":
-                    xnatSubjectassessordata.setProtocol(parser.getText());
-                    break;
-                case "original":
-                    xnatSubjectassessordata.setOriginal(parser.getText());
-                    break;
-                case "date":
-                    xnatSubjectassessordata.setDate(parseDate(parser.getText()));
-                    break;
-                case "delay":
-                    xnatSubjectassessordata.setDelay(parser.getIntValue());
-                    break;
-                case "version":
-                    xnatSubjectassessordata.setVersion(parser.getIntValue());
-                    break;
-                case "acquisitionSite":
-                    xnatSubjectassessordata.setAcquisitionSite(parser.getText());
-                    break;
-                case "visit":
-                    xnatSubjectassessordata.setVisit(parser.getText());
-                    break;
-                case "visitId":
-                    xnatSubjectassessordata.setVisitId(parser.getText());
+                case "age":
+                	xnatSubjectassessordata.setAge(Double.parseDouble(parser.getText()));
                     break;
                 case "xsiType":
                 	xnatSubjectassessordata.getItem().setXmlType("xnat:mrSessionData");

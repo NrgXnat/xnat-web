@@ -14,6 +14,7 @@ import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatMrscandata;
 import org.nrg.xdat.om.XnatPetscandata;
+import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -31,8 +32,8 @@ import java.util.Optional;
 
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
-	
-    public XnatExperimentdataDeserializer() {
+	private static final long serialVersionUID = 1267197324318417600L;
+	public XnatExperimentdataDeserializer() {
         super(XnatExperimentdata.class);
     }
 
@@ -50,7 +51,7 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
     	if(xsiType == null) 
     		throw new RuntimeException("xsiType not found");
     	
-		XnatExperimentdata experiment = getExperimentdata(xsiType, property, xnatImagescandatas);
+		XnatExperimentdata experiment = getExperimentdata(xsiType, property, xnatImagescandatas, context);
 		
     	if(Objects.isNull(experiment))
     		throw new NullPointerException("Experiment object is Null");
@@ -108,11 +109,13 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
      * @param xsiType
      * @param property
      * @param xnatImagescandatas
+     * @param context 
      * @return
      */
 
-	private XnatExperimentdata getExperimentdata(TreeNode xsiType, String property, List<XnatImagescandata> xnatImagescandatas) {
-		XnatExperimentdata experiment = null;
+	private XnatExperimentdata getExperimentdata(TreeNode xsiType, String property, List<XnatImagescandata> xnatImagescandatas, DeserializationContext context) {
+		//XnatExperimentdata experiment = null;
+		XnatExperimentdata experiment = Optional.ofNullable((XnatExperimentdata) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("xnatSubjectassessordata can't be created on its own"));
 		SchemaElement element;
 		XFTItem item =null;
 		try {
@@ -217,14 +220,14 @@ public class XnatExperimentdataDeserializer extends AbstractBaseElementDeseriali
 	public String removeFirstAndLastQuotes(String inputString) {
     	return inputString.toString().replace("\"", "");
     }
+	
+	@Override
+	protected XnatExperimentdata getNewInstance() throws JsonProcessingException {
+		return null;
+	}
     
 	private static final String DATA_TYPE = "xsiType";
 	private static final String XNAT_SCAN = "scans";
 	private static final String SCAN_METHOD_NAME = "Scans_scan";
-	@Override
-	protected XnatExperimentdata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 	
 }
