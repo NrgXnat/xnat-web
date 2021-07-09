@@ -8,16 +8,19 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.nrg.xdat.om.ArcProject;
 import java.io.IOException;
+import java.util.Optional;
 
 @Slf4j
 public class ArcProjectDeserializer extends AbstractBaseElementDeserializer<ArcProject> {
-    public ArcProjectDeserializer() {
+	private static final long serialVersionUID = 2687825671261474280L;
+
+	public ArcProjectDeserializer() {
         super(ArcProject.class);
     }
 
     @Override
     protected ArcProject deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final ArcProject arcProject = new ArcProject();
+        final ArcProject arcProject = Optional.ofNullable((ArcProject) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("ArcProject can't be created on its own"));
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
             parser.nextToken();  //move to next token in string
@@ -38,7 +41,6 @@ public class ArcProjectDeserializer extends AbstractBaseElementDeserializer<ArcP
 
 	@Override
 	protected ArcProject getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 }

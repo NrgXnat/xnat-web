@@ -18,7 +18,7 @@ public class ArcProjectSerializer extends AbstractBaseElementSerializer<ArcProje
         writeNonBlankField(generator, "id", arcProject.getId());
         writeNonBlankField(generator, "currentArc", arcProject.getCurrentArc());
         writeNonNullNumber(generator, "prearchiveCode", arcProject.getPrearchiveCode());
-        //writeNonNullField(generator, "paths", arcProject.getPaths());
+        generator.writeObjectField("paths", arcProject.getPaths());
 
     }
 }
