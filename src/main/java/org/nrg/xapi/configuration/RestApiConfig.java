@@ -35,10 +35,10 @@ import java.util.Locale;
 
 @Configuration
 @EnableSwagger2
-@ComponentScan(value = {"org.nrg.xapi.archive", "org.nrg.xapi.catalog","org.nrg.xapi.config","org.nrg.xapi.dump","org.nrg.xapi.experiments", "org.nrg.xapi.extensions", 
-						"org.nrg.xapi.files", "org.nrg.xapi.features", "org.nrg.xapi.importer", "org.nrg.xapi.prearchive", 
+@ComponentScan(value = {"org.nrg.xapi.archive", "org.nrg.xapi.catalog","org.nrg.xapi.config","org.nrg.xapi.dump","org.nrg.xapi.experiments",  
+						"org.nrg.xapi.files", "org.nrg.xapi.features", "org.nrg.xapi.importer", "org.nrg.xapi.prearchive", "org.nrg.xapi.extensions", 
 						"org.nrg.xapi.projects", "org.nrg.xapi.protocol", "org.nrg.xapi.resources", "org.nrg.xapi.rest", "org.nrg.xapi.runners", 
-						"org.nrg.xapi.scans", "org.nrg.xapi.search","org.nrg.xapi.subjects","org.nrg.xapi.token", "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", 
+						"org.nrg.xapi.search","org.nrg.xapi.subjects","org.nrg.xapi.token", "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", 
 						"org.nrg.xnat.snapshot.rest"},
                includeFilters = @Filter(ControllerAdvice.class))
 @Import(SpawnerConfig.class)
