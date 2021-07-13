@@ -80,7 +80,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
@@ -92,7 +92,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_FILE__QUERY + BY_WHERE + BY_ID_WHERE_FILE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
@@ -116,7 +116,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_FILE__QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_FILE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
@@ -141,7 +141,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(Objects.isNull(resourceId) ) {
 			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(PROJECT_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
 		}
@@ -183,7 +183,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(assessorId)) {
 			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
@@ -208,7 +208,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(assessorId)) {
 			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId).addValue("resourceId", resourceId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
@@ -272,7 +272,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(assessedId)) {
 			throw new DataFormatException("The requested assessed ID " + assessedId + "wasn't found");
 		}
-		List<XnatResourcecatalog> resources = _template.query(PRO_SUB_EXP_ASS_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
+		List<XnatResourcecatalog> resources = _template.query(PRO_SUB_EXP_ASS_FILE_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
 		}
@@ -340,7 +340,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * Delete the files from specific resource
 	 */
 	@Override
-	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception {
+	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, boolean removeFiles, XnatEventUtil event) throws Exception {
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
@@ -385,7 +385,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user, security.getItem(),XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE,event));
 
 		// Step 9: delete resource file
-		deleteResourceFiles(work, catalogData, entries, user);
+		deleteResourceFiles(work, catalogData, entries, user, removeFiles);
 
 	}
 	
@@ -395,9 +395,10 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	 * @param catalogData
 	 * @param entries
 	 * @param user
+	 * @param removeFiles 
 	 * @throws Exception
 	 */
-	private void deleteResourceFiles(PersistentWorkflowI work, CatalogData catalogData, Collection<CatEntryI> entries, UserI user) throws Exception {
+	private void deleteResourceFiles(PersistentWorkflowI work, CatalogData catalogData, Collection<CatEntryI> entries, UserI user, boolean removeFiles) throws Exception {
 		try {
             long catSize = catalogData.catRes.getFileSize() == null ? 0 : (Long) catalogData.catRes.getFileSize();
             Map<CatEntryI, File> historyMap = new HashMap<>();
@@ -422,7 +423,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 
             // Write updated bean to the catalog, maintain history if appropriate, and remove files if requested
             CatalogUtils.saveUpdatedCatalog(catalogData, auditSummary, catSize, fileCount, ci, user,
-                    historyMap, !isQueryVariableFalse("removeFiles"));
+                    historyMap, !removeFiles);
 
             if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
                 XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
@@ -769,9 +770,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 			final CatalogUtils.CatEntryFilterI entryFilter = buildFilter(contents, formats);
 	        List<Object[]> objects= CatalogUtils.getEntryDetails(cat, parentPath, baseURI + "/resources/" + resource.getXnatAbstractresourceId() + "/files", resource, false, entryFilter, proj, "URI");
 	        results = getListObjectData(objects, results);
-	        //CatCatalogBean catBean = resource.getCatalog(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
-	        //ArrayList<ResourceFile> files= resource.getFileResources(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
-	       // File file =resource.getCatalogFile(XnatProjectdata.getProjectByIDorAlias(projectId, user, false).getRootArchivePath());
 			}
 		
 		
@@ -799,8 +797,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	}
 
 	private CatEntryFilterI buildFilter(String[] contents, String[] formats) {
-		//final String[] contents = getQueryVariables("file_content");
-		//final String[] formats = getQueryVariables("file_format");
 		final boolean hasContents = !ArrayUtils.isEmpty(contents);
 		final boolean hasFormats = !ArrayUtils.isEmpty(formats);
 		if (!hasContents && !hasFormats) {
@@ -819,18 +815,6 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 		};
 	}
 
-    /**
-     * 
-     * @return
-     */
-//	public Integer getEventId() {
-//        final String id = getQueryVariable(EventUtils.EVENT_ID);
-//        if (id != null) {
-//            return Integer.valueOf(id);
-//        } else {
-//            return null;
-//        }
-//    }
 	
 	/**
 	 * 
@@ -941,16 +925,12 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	    
 	}
 	
-	private boolean isQueryVariableFalse(String string) {
-		return false;
-	}
 	
-	
-	private static final String PROJECT_QUERY=  "SELECT xnat_abstractresource_id FROM xnat_projectdata_resource pr \n" + 
+	private static final String PROJECT_FILE_QUERY=  "SELECT xnat_abstractresource_id FROM xnat_projectdata_resource pr \n" + 
 												"LEFT JOIN xnat_abstractresource abst ON pr.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
 												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id";
 	
-	private static final String SUBJECT_QUERY= "SELECT xnat_abstractresource_id FROM xnat_subjectdata_resource map \n" + 
+	private static final String SUBJECT_FILE__QUERY= "SELECT xnat_abstractresource_id FROM xnat_subjectdata_resource map \n" + 
 												"LEFT JOIN xnat_subjectdata sub ON map.xnat_subjectdata_id=sub.id \n" + 
 												"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
 												"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id ";
@@ -961,7 +941,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 														"LEFT JOIN xnat_abstractresource abst ON map.xnat_abstractresource_xnat_abstractresource_id=abst.xnat_abstractresource_id \n" + 
 														"LEFT JOIN xdat_meta_element xme ON abst.extension=xme.xdat_meta_element_id";
 	
-	private static final String EXPERIMENT_ASSESSER_QUERY = "SELECT xnat_abstractresource_id\n" + 
+	private static final String EXPERIMENT_ASSESSER_FILE_QUERY = "SELECT xnat_abstractresource_id\n" + 
 															"FROM img_assessor_out_resource map \n" + 
 															"LEFT JOIN xnat_experimentdata expt ON map.xnat_imageassessordata_id=expt.id  \n" + 
 															"LEFT JOIN xdat_meta_element xmeexpt ON expt.extension=xmeexpt.xdat_meta_element_id \n" + 
@@ -971,7 +951,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 															"LEFT JOIN xnat_imageassessordata xiad ON expt.id=xiad.id\n" + 
 															"LEFT JOIN xnat_imageAssessorData iad ON map.xnat_imageassessordata_id=iad.id";
 	
-	private static final String PRO_SUB_EXP_ASS_QUERY=" SELECT xnat_abstractresource_id\n" + 
+	private static final String PRO_SUB_EXP_ASS_FILE_QUERY=" SELECT xnat_abstractresource_id\n" + 
 			  											"FROM img_assessor_out_resource map \n" + 
 			  											"LEFT JOIN xnat_experimentdata expt ON map.xnat_imageassessordata_id=expt.id  \n" + 
 			  											"LEFT JOIN xdat_meta_element xmeexpt ON expt.extension=xmeexpt.xdat_meta_element_id \n" + 
@@ -1035,7 +1015,7 @@ public class FileServiceImpl extends XNATCatalogTemplateUtil implements FileServ
 	
 	private static final String BY_ID_WHERE_PROJ_AND_RESOURCE = " WHERE xnat_projectdata_id= :projectId  AND pr.xnat_abstractresource_xnat_abstractresource_id = :resourceId ";
 	
-	private static final String BY_ID_WHERE_SUBJECT = " xnat_subjectdata_id = :subjectId ";
+	private static final String BY_ID_WHERE_FILE_SUBJECT = " xnat_subjectdata_id = :subjectId ";
 	
 	private static final String BY_ID_WHERE_EXP_ID = " res_map.xnat_experimentdata_id = :experimentId  ";
 	

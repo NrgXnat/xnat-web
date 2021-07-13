@@ -3,16 +3,30 @@ package org.nrg.xnat.services.resources;
 import java.util.List;
 import java.util.Optional;
 
+import javax.servlet.http.HttpServletRequest;
+
+import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.dto.file.ResourceFileDto;
+import org.nrg.xnat.dto.resource.DIRResourceDto;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
+import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 public interface ResourceService {
 	
+	 /** Start Resource Service Methods*/
 	 List<XnatAbstractresource> findByExperimentId(final UserI user, final String experimentId) throws NotFoundException, DataFormatException;
 	
 	 Optional<XnatAbstractresource> findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId) throws DataFormatException, NotFoundException;
@@ -46,4 +60,47 @@ public interface ResourceService {
 	 void delete(UserI user, String projectId, String subjectId, String experimentId,String assessorId,String scanId,String type, String resourceId,XnatEventUtil event);
 
 	 List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessedId, String scanId) throws DataFormatException, NotFoundException;
+	 /** End Resource Service Methods*/
+	 
+	 
+	 /** Start DIR Resource Service Methods*/
+	 List<DIRResourceDto>  findAllDIRResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
+
+	 StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException, org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
+
+     String getContentDisposition();
+     /** End DIR Resource Service Methods*/
+     
+     
+     /** Start File Service Methods*/
+     List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException;
+
+	 List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException;
+
+	 List<ResourceFileDto> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByExperimentId(UserI user, String experimentId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+	
+	 void deleteResourceFile(UserI user,String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, boolean removeFiles, XnatEventUtil event) throws Exception;
+
+	 Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId, String subjectId, String experimentId,String assessorId, String scanId, String type, String resourceId, XnatEventUtil event) throws Exception;
+
+	 List<ResourceFileDto> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+
+	 List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
+	 /** End File Service Methods*/
+	 
+	 /** Start Triage Service Methods*/
+	 void createCatalogRefresh(UserI user, List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException, ServerException;
+	 /** End Triage Service Methods*/
 }

@@ -36,7 +36,7 @@ public class XnatExperimentdataSerializer extends AbstractBaseElementSerializer<
         writeNonNullField(generator, "fields", experiment.getFields_field());
         writeNonNullField(generator, "resources", experiment.getResources_resource());
         writeNonNullField(generator, "sharing", experiment.getSharing_share());
-        generator.writeObjectField("investigator", experiment.getInvestigator());
-        generator.writeObjectField("validation", experiment.getValidation());
+       // generator.writeObjectField("investigator", experiment.getInvestigator());
+       // generator.writeObjectField("validation", experiment.getValidation());
     }
 }

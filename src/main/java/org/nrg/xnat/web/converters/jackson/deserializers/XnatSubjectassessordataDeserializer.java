@@ -20,6 +20,7 @@ public class XnatSubjectassessordataDeserializer extends AbstractBaseElementDese
     @Override
     protected XnatSubjectassessordata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         //final XnatSubjectassessordata xnatSubjectassessordata = getInstance(context);
+    	
     	final XnatSubjectassessordata xnatSubjectassessordata = Optional.ofNullable((XnatSubjectassessordata) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("xnatSubjectassessordata can't be created on its own"));
 
         while (parser.nextToken() != JsonToken.END_OBJECT) {

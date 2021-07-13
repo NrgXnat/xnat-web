@@ -20,6 +20,6 @@ public class XnatSubjectassessordataSerializer extends AbstractBaseElementSerial
         writeNonNullField(generator, "subjectId", xnatSubjectassessordata.getSubjectId());
         writeNonNullNumber(generator, "age", xnatSubjectassessordata.getAge());
         writeNonBlankField(generator, "xsiType", xnatSubjectassessordata.getXSIType());
-        provider.findValueSerializer(XnatExperimentdata.class).serialize(this, generator, provider);
+        provider.findValueSerializer(XnatExperimentdata.class).serialize(xnatSubjectassessordata, generator, provider);
     }
 }
