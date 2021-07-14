@@ -20,6 +20,7 @@ public class XnatMrsessiondataSerializer extends AbstractBaseElementSerializer<X
 		writeNonBlankField(generator, "fieldStrength", xnatMrsessiondata.getFieldstrength());
 		writeNonBlankField(generator, "marker", xnatMrsessiondata.getMarker());
 		writeNonBlankField(generator, "stabilization", xnatMrsessiondata.getStabilization());
-		provider.findValueSerializer(XnatImagesessiondata.class).serialize(this, generator, provider);
+		//generator.writeFieldName("imageSessions");
+		provider.findValueSerializer(XnatImagesessiondata.class).serialize(xnatMrsessiondata, generator, provider);
     }
 }

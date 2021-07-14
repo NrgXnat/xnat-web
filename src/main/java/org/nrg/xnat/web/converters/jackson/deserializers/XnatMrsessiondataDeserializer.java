@@ -13,7 +13,7 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializer<XnatMrsessiondata> {
+public class XnatMrsessiondataDeserializer extends XnatImagesessiondataDeserializer{
 	private static final long serialVersionUID = 8714542973804658983L;
 
 	public XnatMrsessiondataDeserializer() {
@@ -48,7 +48,7 @@ public class XnatMrsessiondataDeserializer extends AbstractBaseElementDeserializ
             }
          
         }
-        return xnatMrsessiondata;
+        return (XnatMrsessiondata)super.deserializeImpl(parser, context);
     }
 
 	@Override

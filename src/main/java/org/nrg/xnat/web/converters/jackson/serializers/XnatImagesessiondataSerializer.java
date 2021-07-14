@@ -33,7 +33,8 @@ public class XnatImagesessiondataSerializer extends AbstractBaseElementSerialize
 		generator.writeObjectField("reconstructions", xnatImagesessiondata.getReconstructions_reconstructedimage());
 		generator.writeObjectField("regions", xnatImagesessiondata.getRegions_region());
 		generator.writeObjectField("scans", xnatImagesessiondata.getScans_scan());
-		provider.findValueSerializer(XnatSubjectassessordata.class).serialize(this, generator, provider);
+		generator.writeFieldName("subjectAssessor");
+		provider.findValueSerializer(XnatSubjectassessordata.class).serialize(xnatImagesessiondata, generator, provider);
     }
 
 }

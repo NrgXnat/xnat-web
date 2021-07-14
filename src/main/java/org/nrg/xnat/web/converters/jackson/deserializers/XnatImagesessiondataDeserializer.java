@@ -24,10 +24,10 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class XnatImagesessiondataDeserializer extends AbstractBaseElementDeserializer<XnatImagesessiondata> {
+public class XnatImagesessiondataDeserializer extends XnatSubjectassessordataDeserializer {
 	private static final long serialVersionUID = 8714542973804658983L;
 
-	public XnatImagesessiondataDeserializer() {
+	public XnatImagesessiondataDeserializer(Class<XnatMrsessiondata> class1) {
         super(XnatImagesessiondata.class);
     }
 
@@ -89,12 +89,11 @@ public class XnatImagesessiondataDeserializer extends AbstractBaseElementDeseria
             }
          
         }
-        return xnatImagesessiondata;
+    	return (XnatImagesessiondata)super.deserializeImpl(parser, context);
     }
 
 	@Override
 	protected XnatImagesessiondata getNewInstance() throws JsonProcessingException {
-		// throw new JsonProcessingException("Can't create new instances of the XnatImagesessiondata data type");
 		return null;
 	}
 }

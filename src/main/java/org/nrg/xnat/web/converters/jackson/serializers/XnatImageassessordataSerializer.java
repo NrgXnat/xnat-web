@@ -37,5 +37,6 @@ public class XnatImageassessordataSerializer extends AbstractBaseElementSerializ
         writeNonNullField(generator, "scans", assessor.getImageSessionData().getScans_scan());
         writeNonNullField(generator, "outFile", assessor.getOut_file());
         
+        
     }
 }
