@@ -5,19 +5,23 @@ import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.dto.resource.DIRResourceDto;
+import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
@@ -100,7 +104,23 @@ public interface ResourceService {
 	 List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException;
 	 /** End File Service Methods*/
 	 
-	 /** Start Triage Service Methods*/
+	 
+	 /** Start refresh catalog Service Methods*/
 	 void createCatalogRefresh(UserI user, List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException, ServerException;
+	 /** End refresh catalog Service Methods*/
+	 
+	 
+	 /** Start Triage Service Methods*/
+	 List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
+		
+	void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
+
+	void findTriageByProjectIdAndXname(UserI user, String projectId, String xName,String file, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception;
+
+	void deleteTriage(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId);
+
+	void create(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request);
+
+	void updte(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request); 
 	 /** End Triage Service Methods*/
 }

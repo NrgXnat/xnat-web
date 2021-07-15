@@ -2,10 +2,14 @@ package org.nrg.xnat.services.resources.impl;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URLDecoder;
 import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -13,18 +17,21 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.ZipOutputStream;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +43,7 @@ import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
@@ -53,6 +61,7 @@ import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.security.helpers.Features;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.cache.UserDataCache;
@@ -66,6 +75,7 @@ import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.exception.MetaDataException;
 import org.nrg.xft.exception.XFTInitException;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXWriter;
@@ -77,9 +87,14 @@ import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.dto.resource.FileSet;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
+import org.nrg.xnat.extensions.util.TriageFileUtil;
+import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
+import org.nrg.xnat.helpers.uri.URIManager;
+import org.nrg.xnat.helpers.uri.UriParserUtils;
+import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.model.util.XnatTemplateUtil;
@@ -89,6 +104,8 @@ import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.services.cache.UserProjectCache;
 import org.nrg.xnat.services.messaging.file.MoveStoredFileRequest;
 import org.nrg.xnat.services.resources.ResourceService;
+import org.nrg.xnat.services.triage.TriageManifest;
+import org.nrg.xnat.services.triage.TriageUtils;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.nrg.xnat.utils.WorkflowUtils;
@@ -104,10 +121,15 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -121,7 +143,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	/**
-	 * s
+	 * Get list of resource with specified experiment ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByExperimentId(UserI user, String experimentId) throws NotFoundException, DataFormatException {
@@ -136,7 +158,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get a resource with specified resource ID and experiment ID
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndExperimentId(UserI user, Integer resourceId, String experimentId) throws DataFormatException, NotFoundException {
@@ -151,7 +173,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	/**
-	 * 
+	 * Get list of resource with specified experiment ID and scan ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByExperimentIdAndScanId(UserI user, String assessorId, String scanId) throws DataFormatException, NotFoundException {
@@ -169,7 +191,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get list of resource with specified project ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
@@ -185,7 +207,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	
 	/**
-	 * s
+	 * Get list of resource with specified project ID and label
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndLabel(UserI user, String projectId, String label) throws DataFormatException, NotFoundException {
@@ -204,7 +226,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 
 	
 	/**
-	 * 
+	 * Get a resource with specified resource ID and project ID
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndProjectId(UserI user, Integer resourceId, String projectId) throws DataFormatException, NotFoundException {
@@ -223,7 +245,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	
 	/**
-	 * 
+	 * Get list of resource with specified subject ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
@@ -239,7 +261,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	
 	/**
-	 * 
+	 * Get list of resource with specified project ID, subject ID and experiment ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException {
@@ -260,7 +282,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	/**
-	 * 
+	 * Get list of resource with specified project ID and subject ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
@@ -278,7 +300,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	/**
-	 * 
+	 * Get a resource with specified resource ID, project ID and subject ID
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndProjectIdAndSubjectId(UserI user, Integer resourceId, String projectId, String subjectId) throws DataFormatException, NotFoundException {
@@ -299,7 +321,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get a resource with specified resource ID and experiment ID
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByIdAndSubjectId(UserI user, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException {
@@ -317,7 +339,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get list of resource with specified experiment ID and Assessor ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByExperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
@@ -341,7 +363,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	
 	/**
-	 * 
+	 * Get list of resource with specified experiment ID
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByExperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException  {
@@ -366,7 +388,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get list of resource with specified project ID, subject ID, experiment ID and scan ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessorId, String scanId) throws DataFormatException, NotFoundException {
@@ -391,7 +413,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Get list of resource with specified project ID , subjectId, experiment ID and assessor ID
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
@@ -417,7 +439,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 
 	
 	/**
-	 * 
+	 * create new resource catalog
 	 */
 	@Override
 	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
@@ -487,7 +509,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	/**
-	 * 
+	 * delete existing resource 
 	 */
 	@Override
 	public void delete(UserI user, String projectId, String subjectId, String experimentId, String assessorId,String scanId,String type,String resourceId1, XnatEventUtil event) {
@@ -557,8 +579,10 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 
 	
+	/** Start DIR Service methods*/
+	
 	/**
-	 * 
+	 * Get list of DIR resources
 	 */
 	@Override
 	public List<DIRResourceDto> findAllDIRResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters {
@@ -595,7 +619,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	
 	/**
-	 * 
+	 * Download the XAR resource file 
 	 */
 	@Override
 	public StreamingResponseBody findAllXARResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest, String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException {
@@ -647,13 +671,566 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	
 	 
 	/**
-	 * 
+	 * Return the content composition
 	 */
 	@Override
 	public String getContentDisposition() {
 		return String.format(ATTACHMENT_DISPOSITION, FILE_NAME);
 	}
 	
+	/** End DIR Service methods*/
+	
+    /** Start file service  Method */
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException {
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
+		}
+		return getResourceFileData(resources, projectId, user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_FILE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " +projectId+ "wasn't found");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_FILE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, XnatProjectdata.getXnatProjectdatasById(projectId, user, false));
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public  List<ResourceFileDto>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats ) throws DataFormatException, NotFoundException {
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
+		}
+		if(Objects.isNull(resourceId) ) {
+			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
+		return getResourceFileData(resources, projectId, user,contents,formats);
+	}
+	
+
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		if(Objects.isNull(resourceId) ) {
+			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
+		}
+		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		if(Objects.isNull(subject)) {
+    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
+		}
+		
+		List<XnatResourcecatalog> resources = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
+		ItemI parent = subject;
+		ItemI security = subject;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
+		}
+		if(StringUtils.isBlank(assessorId)) {
+			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		List<XnatResourcecatalog> resourceCatalog= new ArrayList<>();
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
+		}
+		List<XnatAbstractresource> resources = findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		for (final XnatAbstractresource temp : resources) {
+			final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
+			resourceCatalog.add(catResource);
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resourceCatalog, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(subjectId)) {
+			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
+		}
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
+		}
+		if(StringUtils.isBlank(assessedId)) {
+			throw new DataFormatException("The requested assessed ID " + assessedId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(PRO_SUB_EXP_ASS_FILE_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
+		}
+		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
+		if(Objects.isNull(experiment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessedId) ;
+		}
+		ItemI parent = experiment;
+		ItemI security = experiment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByExperimentId(UserI user, String experimentId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(Objects.isNull(experimentId)) {
+			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(expriment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = expriment;
+		ItemI security = expriment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+		if(StringUtils.isBlank(experimentId)) {
+			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
+		}
+		if( Objects.isNull(resourceId) ) {
+			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
+		}
+		List<XnatResourcecatalog> resources = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
+		if(Objects.isNull(resources) || resources.isEmpty()) {
+    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
+		}
+		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
+		if(Objects.isNull(expriment)) {
+    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
+		}
+		ItemI parent = expriment;
+		ItemI security = expriment;
+		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		if(Objects.isNull(project)) {
+			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+		}
+		return getResourceFileData(resources, project.getId(), user, contents, formats);
+	}
+	
+	/**
+	 * Delete the files from specific resource
+	 */
+	@Override
+	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, boolean removeFiles, XnatEventUtil event) throws Exception {
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
+		// step 1: get proj/sub/assesseds/expts/scans data
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		if(Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
+
+		// step 2: set resource_ids
+		_resourceIds = setResourcesIds(resourceId, user, false);
+
+		// Step 3: get resource data
+		XnatAbstractresource resource = null;
+		
+		resource= getResourceData(user, _resourceIds);
+
+		// Step 4: validate resource data
+		validateResource(user, resource);
+
+		// Step 5: validate project data
+		verifyProjIsNull();
+
+		// Step 6: get catalogData
+		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
+
+		// Step 7: get  cat Enttry
+		final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
+
+		if (entries.isEmpty())
+			throw new NotFoundException("Resource file not found");
+
+		// Step 8: get or create workflow data
+		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user, security.getItem(),XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE,event));
+
+		// Step 9: delete resource file
+		deleteResourceFiles(work, catalogData, entries, user, removeFiles);
+
+	}
+	
+	/**
+	 * Create resource file and upload into the specific resource
+	 */
+	@Override
+	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception{
+		
+		proj = null;
+		sub = null;
+		expts = new ArrayList<>();
+		assesseds = new ArrayList<>();
+		scans = new ArrayList<>();
+		// step 1: get proj/sub/assesseds/expts/scans data
+		if(Objects.nonNull(projectId))
+			proj = getXnatProjectdata(projectId, user);
+		if(Objects.nonNull(subjectId))
+			sub = getXnatSubjectdata(subjectId, user, proj);
+		if (Objects.nonNull(assessorId)) 
+			assesseds = getXnatAssessordata(assessorId, user, proj);
+		if(Objects.nonNull(experimentId)) 
+			expts = getXnatExperimentData(experimentId, user,assesseds, type);
+		if (Objects.nonNull(scanId)) 
+			scans = getXnatImageScanData(scanId, user, assesseds);
+		
+		// step 2: set resource_ids
+		 _resourceIds = setResourcesIds(resourceId, user, false);
+		 
+		// Step 3: get resource data
+			XnatAbstractresource xnatAbstractresource = null;
+
+			xnatAbstractresource = getResourceData(user, _resourceIds);
+		
+		// step 4:
+			if (parent != null && security != null) {
+				if (Permissions.canEdit(user, security)) {
+					Integer result=  resourceFileUpload(xnatAbstractresource, user, projectId, resourceId,xnatResourceInfo,event);
+					if(Objects.nonNull(result))
+						return result;
+					else
+						throw new InitializationException("Please check ..File Not Uploaded");
+						
+			}
+		}
+			throw new InitializationException("Please check ... File Not Uploaded");
+	}
+
+	
+	/** End File service methods */
+	
+	/** Start refresh catalog service methods */
+	/**
+	 * 
+	 */
+	@Override
+	public void createCatalogRefresh(UserI user,List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException, ServerException {
+		_catalogService = XDAT.getContextService().getBean(CatalogService.class);
+		
+		loadValues(resources, append , checksum, delete , populateStats, options);
+		
+		_catalogService.refreshResourceCatalogs(user, _resources, _operations.toArray(new CatalogService.Operation[_operations.size()]));
+	}
+	/** End refresh catalog service methods */
+	
+	
+	/** Start Triage service methods */
+	/**
+	 * 
+	 */
+	@Override
+	public List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
+		String projectPath = TriageUtils.getTriageProjectPath(projectId);
+		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		return returnXnameList(proj, projectPath + File.separator + "resources", request);
+	}
+
+	/**
+	 * 
+	 * @param proj
+	 * @param projectPath
+	 * @param request
+	 * @return
+	 */
+	private List<TriageUtil> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
+		List<TriageUtil> response = new ArrayList<>();
+		File[] fileArray = new File(projectPath).listFiles();
+		if (fileArray != null) {
+			for (File f : fileArray) {
+				String fn = f.getName();
+				response.add(getTriageUtil(fn, f, request));
+			}
+		}
+		// sendTableRepresentation : // Pending IMPL
+		return response;
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName,HttpServletRequest request, String compression) throws Exception {
+		String projectPath = TriageUtils.getTriageProjectPath(projectId);
+		MediaType mt = MediaType.parseMediaType(request.getContentType());
+		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		if (proj != null && proj.canRead(user)) {
+			if (xName != null) {
+				if (isZIPRequest(mt)) {
+					returnZippedFiles(proj, projectPath, xName, user, request, compression);
+				} else {
+					returnFileList(proj, projectPath, xName, request);
+				}
+			}
+		}
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public void findTriageByProjectIdAndXname(UserI user, String projectId, String xName, String file, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception {
+		String projectPath = TriageUtils.getTriageProjectPath(projectId);
+		MediaType mt = MediaType.parseMediaType(request.getContentType());
+		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		if (proj != null && proj.canRead(user)) {
+			if (xName != null) {
+				if (isZIPRequest(mt)) {
+					returnZippedFiles(proj, projectPath, xName, user, request, compression);
+				} else {
+					returnFile(proj, projectPath, xName, file, user);
+				}
+			}
+		}
+	}
+	
+	/**
+	 * 
+	 */
+	@Override
+	public void create(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String event_reason, String extract, HttpServletRequest request) {
+		try {
+			String projectPath = TriageUtils.getTriageUploadsPath();
+			if (projectId == null) {
+				// fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation."); //Pending IMPL
+			}
+			XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+			if (proj != null && proj.canRead(user) && canEditDestination(target, user)) {
+				if (xname == null && file == null) {
+					// fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation.");
+				} else if (xname != null && file == null) {
+					uploadTriageFile(projectPath, xname, null, inbody, target, overwrite, format, content, event_reason,
+							extract, request, user);
+				} else if (xname != null && file != null) {
+					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, event_reason, extract, request, user);
+				}
+				openworkflow(true, "Upload Quarantine Files", eventReason, eventComment, user, projectId);
+
+				// XNATCR-834: stops IE opening save dialog
+				// this.getResponse().setEntity("",MediaType.TEXT_HTML); //Pending IMPL
+			} else {
+				// fail(Status.CLIENT_ERROR_UNAUTHORIZED,"Not authorized");
+			}
+		} catch (Exception e) {
+			// fail(Status.SERVER_ERROR_INTERNAL,e.getMessage());
+			log.error("", e);
+		}
+	}
+
+	/**
+	 * 
+	 */
+	@Override
+	public void updte(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String event_reason, String extract, HttpServletRequest request) {
+		try {
+			String projectPath = TriageUtils.getTriageUploadsPath();
+			if (projectId == null) {
+				// fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation."); //Pending IMPL
+			}
+			XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+			if (proj != null && proj.canRead(user) && canEditDestination(target, user)) {
+				if (xname == null && file == null) {
+					// fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation.");
+				} else if (xname != null && file == null) {
+					createTriageResource(projectPath, xname, request);
+					// uploadTriageFile(projectPath,xname, null,
+					// inbody,target,overwrite,format,content,event_reason,extract, request,user);
+				} else if (xname != null && file != null) {
+					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, event_reason, extract, request, user);
+				}
+				openworkflow(true, "Upload Quarantine Files", "Upload Quarantine Files", "Upload Quarantine Files",
+						user, projectId);
+			} else {
+				// fail(Status.CLIENT_ERROR_UNAUTHORIZED,"Not authorized");
+			}
+		} catch (Exception e) {
+			// fail(Status.SERVER_ERROR_INTERNAL,e.getMessage());
+			log.error("", e);
+		}
+	}
+	
+	/** End Triage service methods*/
+	
+	
+	/** Start resource private methods */
 	/**
 	 * 
 	 * @param user
@@ -952,6 +1529,8 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	}
 	/** End Resource service Private Method */
 	
+	
+	
 	/** Start DIR Resource service Private Method */
 
 	/**
@@ -1155,7 +1734,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	 * @return
 	 * @throws ActionException
 	 */
-	public Integer identifyCompression(Integer defaultCompression, String compression) throws ActionException {
+	private Integer identifyCompression(Integer defaultCompression, String compression) throws ActionException {
         try {
             if (StringUtils.isNoneBlank(compression)) {
                 return Integer.valueOf(compression);
@@ -1175,7 +1754,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	 * 
 	 * @return
 	 */
-	protected UserDataCache getUserDataCache() {
+	private UserDataCache getUserDataCache() {
 		_userDataCache = XDAT.getContextService().getBean(UserDataCache.class);
 		return _userDataCache;
 	}
@@ -1188,7 +1767,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	 * @return
 	 * @throws InvalidFileCharacters
 	 */
-	public static List<File> getFiles(File dir,String path,boolean recursive) throws InvalidFileCharacters{
+	private static List<File> getFiles(File dir,String path,boolean recursive) throws InvalidFileCharacters{
 		final List<File> files= new ArrayList<>();
 		final int slash=path.indexOf("/");
 		if(slash>-1){
@@ -1233,325 +1812,11 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 		return files;
 	}
 	
-	/** End DIR Resource Method */
+	/** End DIR Resource private Methods */
 	
 	
-	/** Start file service  Method */
 	
-	@Override
-	public List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJECT, new MapSqlParameterSource("projectId", projectId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, projectId) ;
-		}
-		return getResourceFileData(resources, projectId, user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(subjectId)) {
-			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_WHERE + BY_ID_WHERE_FILE_SUBJECT, new MapSqlParameterSource("subjectId", subjectId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
-		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-		if(Objects.isNull(subject)) {
-    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
-		}
-		ItemI parent = subject;
-		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID " +projectId+ "wasn't found");
-		}
-		if(StringUtils.isBlank(subjectId)) {
-			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PROJ + AND_WHERE + BY_ID_WHERE_FILE_SUBJECT , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
-		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-		if(Objects.isNull(subject)) {
-    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
-		}
-		ItemI parent = subject;
-		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, XnatProjectdata.getXnatProjectdatasById(projectId, user, false));
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public  List<ResourceFileDto>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats ) throws DataFormatException, NotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
-		}
-		if(Objects.isNull(resourceId) ) {
-			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(PROJECT_FILE_QUERY + BY_ID_WHERE_PROJ_AND_RESOURCE, new MapSqlParameterSource("projectId", projectId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-		}
-		return getResourceFileData(resources, projectId, user,contents,formats);
-	}
-	
-
-	@Override
-	public List<ResourceFileDto> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(subjectId)) {
-			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
-		}
-		if(Objects.isNull(resourceId) ) {
-			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
-		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-		if(Objects.isNull(subject)) {
-    		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
-		}
-		
-		List<XnatResourcecatalog> resources = _template.query(SUBJECT_RESOURCE_QUERY + BY_ID_WHERE_SUBJ_AND_RESOURCE, new MapSqlParameterSource("subjectId", subjectId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-		}
-		ItemI parent = subject;
-		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(experimentId)) {
-			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
-		}
-		if(StringUtils.isBlank(assessorId)) {
-			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
-		}
-		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
-		if(Objects.isNull(experiment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
-		}
-		ItemI parent = experiment;
-		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(experimentId)) {
-			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
-		}
-		if(StringUtils.isBlank(assessorId)) {
-			throw new DataFormatException("The requested assessor ID " +  assessorId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(EXPERIMENT_ASSESSER_FILE_QUERY + BY_ID_WHERE_EXP_AND_ASSESSER_AND_RESOURCE, new MapSqlParameterSource("experimentId", experimentId).addValue("assessorId", assessorId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
-		}
-		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
-		if(Objects.isNull(experiment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
-		}
-		ItemI parent = experiment;
-		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		List<XnatResourcecatalog> resourceCatalog= new ArrayList<>();
-		if(StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
-		}
-		if(StringUtils.isBlank(subjectId)) {
-			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
-		}
-		if(StringUtils.isBlank(experimentId)) {
-			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
-		}
-		List<XnatAbstractresource> resources = findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
-		}
-		for (final XnatAbstractresource temp : resources) {
-			final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
-			resourceCatalog.add(catResource);
-		}
-		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
-		if(Objects.isNull(experiment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
-		}
-		ItemI parent = experiment;
-		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resourceCatalog, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
-		}
-		if(StringUtils.isBlank(subjectId)) {
-			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
-		}
-		if(StringUtils.isBlank(experimentId)) {
-			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
-		}
-		if(StringUtils.isBlank(assessedId)) {
-			throw new DataFormatException("The requested assessed ID " + assessedId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(PRO_SUB_EXP_ASS_FILE_QUERY + BY_WHERE_PRO_SUB_EXP_ASS  , new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId", experimentId).addValue("assessedId", assessedId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessedId) ;
-		}
-		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
-		if(Objects.isNull(experiment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessedId) ;
-		}
-		ItemI parent = experiment;
-		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	@Override
-	public List<ResourceFileDto> findByExperimentId(UserI user, String experimentId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(Objects.isNull(experimentId)) {
-			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(EXP_FILE_QUERY, new MapSqlParameterSource("experimentId", experimentId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, experimentId) ;
-		}
-		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
-		if(Objects.isNull(expriment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
-		}
-		ItemI parent = expriment;
-		ItemI security = expriment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-
-	@Override
-	public List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
-		if(StringUtils.isBlank(experimentId)) {
-			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
-		}
-		if( Objects.isNull(resourceId) ) {
-			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
-		}
-		List<XnatResourcecatalog> resources = _template.query(EXP_RESOURCE_QUERY, new MapSqlParameterSource("experimentId", experimentId).addValue("resourceId", resourceId), new FileRowMapper(user));
-		if(Objects.isNull(resources) || resources.isEmpty()) {
-    		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
-		}
-		XnatExperimentdata  expriment = XnatExperimentdata.getXnatExperimentdatasById(experimentId, user, false);
-		if(Objects.isNull(expriment)) {
-    		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId) ;
-		}
-		ItemI parent = expriment;
-		ItemI security = expriment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
-		if(Objects.isNull(project)) {
-			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
-		}
-		return getResourceFileData(resources, project.getId(), user, contents, formats);
-	}
-	
-	/**
-	 * Delete the files from specific resource
-	 */
-	@Override
-	public void deleteResourceFile(UserI user, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, boolean removeFiles, XnatEventUtil event) throws Exception {
-		proj = null;
-		sub = null;
-		expts = new ArrayList<>();
-		assesseds = new ArrayList<>();
-		scans = new ArrayList<>();
-		// step 1: get proj/sub/assesseds/expts/scans data
-		if(Objects.nonNull(projectId))
-			proj = getXnatProjectdata(projectId, user);
-		if(Objects.nonNull(subjectId))
-			sub = getXnatSubjectdata(subjectId, user, proj);
-		if (Objects.nonNull(assessorId)) 
-			assesseds = getXnatAssessordata(assessorId, user, proj);
-		if(Objects.nonNull(experimentId)) 
-			expts = getXnatExperimentData(experimentId, user,assesseds, type);
-		if (Objects.nonNull(scanId)) 
-			scans = getXnatImageScanData(scanId, user, assesseds);
-
-		// step 2: set resource_ids
-		_resourceIds = setResourcesIds(resourceId, user, false);
-
-		// Step 3: get resource data
-		XnatAbstractresource resource = null;
-		
-		resource= getResourceData(user, _resourceIds);
-
-		// Step 4: validate resource data
-		validateResource(user, resource);
-
-		// Step 5: validate project data
-		verifyProjIsNull();
-
-		// Step 6: get catalogData
-		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
-
-		// Step 7: get  cat Enttry
-		final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
-
-		if (entries.isEmpty())
-			throw new NotFoundException("Resource file not found");
-
-		// Step 8: get or create workflow data
-		PersistentWorkflowI work = WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(event.getEventId()), user, security.getItem(),XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.REMOVE_FILE,event));
-
-		// Step 9: delete resource file
-		deleteResourceFiles(work, catalogData, entries, user, removeFiles);
-
-	}
-	
+	/** Start File service private methods */
 	/**
 	 * 
 	 * @param work
@@ -1644,51 +1909,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
          }
 	}
 	
-	/**
-	 * Create resource file and upload into the specific resource
-	 */
-	@Override
-	public Integer createResourceFile(UserI user, XnatResourceInfo xnatResourceInfo, String projectId,String subjectId, String experimentId, String assessorId, String scanId, String type,String resourceId, XnatEventUtil event) throws Exception{
-		
-		proj = null;
-		sub = null;
-		expts = new ArrayList<>();
-		assesseds = new ArrayList<>();
-		scans = new ArrayList<>();
-		// step 1: get proj/sub/assesseds/expts/scans data
-		if(Objects.nonNull(projectId))
-			proj = getXnatProjectdata(projectId, user);
-		if(Objects.nonNull(subjectId))
-			sub = getXnatSubjectdata(subjectId, user, proj);
-		if (Objects.nonNull(assessorId)) 
-			assesseds = getXnatAssessordata(assessorId, user, proj);
-		if(Objects.nonNull(experimentId)) 
-			expts = getXnatExperimentData(experimentId, user,assesseds, type);
-		if (Objects.nonNull(scanId)) 
-			scans = getXnatImageScanData(scanId, user, assesseds);
-		
-		// step 2: set resource_ids
-		 _resourceIds = setResourcesIds(resourceId, user, false);
-		 
-		// Step 3: get resource data
-			XnatAbstractresource xnatAbstractresource = null;
-
-			xnatAbstractresource = getResourceData(user, _resourceIds);
-		
-		// step 4:
-			if (parent != null && security != null) {
-				if (Permissions.canEdit(user, security)) {
-					Integer result=  resourceFileUpload(xnatAbstractresource, user, projectId, resourceId,xnatResourceInfo,event);
-					if(Objects.nonNull(result))
-						return result;
-					else
-						throw new InitializationException("Please check ..File Not Uploaded");
-						
-			}
-		}
-			throw new InitializationException("Please check ... File Not Uploaded");
-	}
-
+	
 	/**
 	 * 
 	 * 
@@ -2096,6 +2317,11 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	    }
 
 	
+	 /**
+	  * 
+	  * @author afour
+	  *
+	  */
 	private static class FileRowMapper implements RowMapper<XnatResourcecatalog> {
 		FileRowMapper(final UserI user) {
 	        _user = user;
@@ -2109,20 +2335,23 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	    private final UserI _user;
 	    
 	}
-	/** End file service  Method */
+	/** End file service private Method */
 	
 	
-	/** Start refresh catalog service  Method */
 	
-	@Override
-	public void createCatalogRefresh(UserI user,List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException, ServerException {
-		_catalogService = XDAT.getContextService().getBean(CatalogService.class);
-		
-		loadValues(resources, append , checksum, delete , populateStats, options);
-		
-		_catalogService.refreshResourceCatalogs(user, _resources, _operations.toArray(new CatalogService.Operation[_operations.size()]));
-	}
 	
+	/** Start refresh catalog service  private Methods */
+	
+	/**
+	 * 
+	 * @param resources
+	 * @param append
+	 * @param checksum
+	 * @param delete
+	 * @param populateStats
+	 * @param options
+	 * @throws ClientException
+	 */
 	 private void loadValues(List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException {
 		 if(Objects.nonNull(resources)) {
 			 _resources = resources;
@@ -2148,23 +2377,668 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	        }
 	}
 
-	 	private void loadOptions(List<String> options) {
-            if (options.contains(APPEND)) {
-                _operations.add(CatalogService.Operation.Append);
-            }
-            if (options.contains(CHECKSUM)) {
-                _operations.add(CatalogService.Operation.Checksum);
-            }
-            if (options.contains(DELETE)) {
-                _operations.add(CatalogService.Operation.Delete);
-            }
-            if (options.contains(POPULATE_STATS)) {
-                _operations.add(CatalogService.Operation.PopulateStats);
-            }
+	 /**
+	  * 
+	  * @param options
+	  */
+	private void loadOptions(List<String> options) {
+		if (options.contains(APPEND)) {
+			_operations.add(CatalogService.Operation.Append);
+		}
+		if (options.contains(CHECKSUM)) {
+			_operations.add(CatalogService.Operation.Checksum);
+		}
+		if (options.contains(DELETE)) {
+			_operations.add(CatalogService.Operation.Delete);
+		}
+		if (options.contains(POPULATE_STATS)) {
+			_operations.add(CatalogService.Operation.PopulateStats);
+		}
 	}
 	 	
-	/** End refresh catalog service  Method */
+	/** End refresh catalog service Method */
 
+    /** Start Triage Service private Methods*/
+	 
+
+	/**
+	 * 
+	 * @param projectPath
+	 * @param pXNAME
+	 * @param request
+	 * @throws ResourceAlreadyExistsException
+	 * @throws InitializationException
+	 */
+	private void createTriageResource(String projectPath, String pXNAME, HttpServletRequest request) throws ResourceAlreadyExistsException, InitializationException {
+
+		// Create any subdirectories requested as well
+		String dirString = "";
+		// pXNAME +
+		// getRequest().getResourceRef().getRemainingPart().replaceFirst("\\?.*$", "");
+		File dir = new File(projectPath, dirString);
+		if (dir.exists()) {
+			throw new ResourceAlreadyExistsException("Resource with this name already exists.", dirString);
+		} else {
+			if (!dir.mkdirs()) {
+				throw new InitializationException("Could not create resource directory.");
+			}
+		}
+
+	}
+		
+		public void openworkflow(boolean status,String action,String reason,String comment, UserI user, String projectId) throws Exception{
+			PersistentWorkflowI work=WorkflowUtils.buildOpenWorkflow( user, "xnat:projectData", projectId, projectId,EventUtils.newEventInstance(EventUtils.CATEGORY.DATA,EventUtils.TYPE.WEB_FORM,  action,reason,comment));
+			if(status){
+				WorkflowUtils.complete(work, work.buildEvent());		
+			}else{
+				WorkflowUtils.fail(work, work.buildEvent());
+			}
+		}
+		
+		private boolean uploadTriageFile(String projectPath,String xname,String file, boolean inbody,String target,String overwrite,String format,String content,String event_reason, String extract, HttpServletRequest request, UserI user) throws InitializationException {
+
+			// Create any subdirectories requested as well
+			String fileName=null;
+			File directory=null;
+			File resourceFile=new File(projectPath + File.separator + xname);
+			fileName=resourceFile.getName();
+			directory=resourceFile.getParentFile();
+			log.warn("resourceFile:"+resourceFile.getAbsolutePath());
+			log.warn("directory:"+directory.getAbsolutePath());
+
+			
+			//Upload to non-existing resources (auto-create) or fail?  Should auto-create.
+			if (!directory.exists()) {
+				if (!directory.mkdirs()) {
+					throw new InitializationException("Could not create resource directory.");
+				}
+			}
+			
+			saveTriageManifestFile(directory.getAbsolutePath(),fileName,target,overwrite,format,content,event_reason,request,user);
+			
+			
+			if(inbody){
+				return handleInbodyTriageFileUpload(projectPath,directory.getAbsolutePath(),fileName);
+			} else {
+				return handleAttachedTriageFileUpload(projectPath,directory.getAbsolutePath(),fileName, extract);
+			}
+			
+		}
+		
+	  private boolean handleInbodyTriageFileUpload(String projectPath, String dirString, String fileName) throws InitializationException {
+			try {
+				
+				// This is probably redundant due to current doPut/doPost coding, but including it anyway.
+				if (fileName==null || fileName.length()<1) {
+		        	throw new DataFormatException("Please use HTTP PUT request to specify a file name in the URL.");
+				}
+		        
+		        // Write original file if not requesting or have non-archive file
+				File ouf=new File(dirString,fileName);
+				
+				ouf.getParentFile().mkdirs();
+				
+				//(new FileWriterWrapper(this.getRequest().getEntity(),fileName)).write(ouf);  //Pending IMPL
+		        
+				log.warn("fileName "+fileName);
+				log.warn("dirString "+dirString);
+				
+
+		        return true;
+				
+			} catch (Exception e) {
+				log.error("",e);
+				throw new InitializationException(e.getMessage());
+			}
+			
+		}
+
+	  private Map<String,String> bodyParams=Maps.newHashMap();
+	  private boolean handleAttachedTriageFileUpload(String projectPath, String dirString, String requestedName, String extract) throws InitializationException {
+		
+		org.apache.commons.fileupload.DefaultFileItemFactory factory = new org.apache.commons.fileupload.DefaultFileItemFactory();
+		org.restlet.ext.fileupload.RestletFileUpload upload = new  org.restlet.ext.fileupload.RestletFileUpload(factory);
+
+	    List<FileItem> fileItems = null;
+		try {
+			
+			//fileItems = upload.parseRequest(this.getRequest()); // Pending IMPL
+
+			for (FileItem fi:fileItems) {    						         
+		    	
+				if (fi.isFormField()) {
+	            	// Load form field to passed parameters map
+					bodyParams.put(fi.getFieldName(),fi.getString());
+	               	continue;
+	            } 
+				
+		        String fileName;
+				if (requestedName==null || requestedName.length()<1) {
+					fileName=fi.getName();
+				} else {
+					fileName=requestedName;
+				}
+				
+				//sfinal String extract=this.retrieveParam("extract");
+		        /*if (extract!=null && extract.equalsIgnoreCase("true")) {
+		        	// Write extracted files
+		        	CompressionMethod method = getCompressionMethod(fileName);
+		        	if (method != CompressionMethod.NONE) {
+		        		if (!extractCompressedFile(fi.getInputStream(),dirString,fileName,method)) {
+		        			this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL,"Error extracting file.");
+		        			return false;
+		        		} else {
+		        			// If successfully extracted, don't create unextracted file
+		        			continue;
+		        		}
+		        	}
+		        }*/
+	        	fi.write(new File(dirString + "/" + fileName));
+			
+		    }
+			return true;
+	    
+		} catch (Exception e) {
+			log.error("",e);
+			throw new InitializationException(e.getMessage());
+		}
+	}
+		
+		private boolean saveTriageManifestFile(String path,String name, String target,String overwrite,String format,String content,String event_reason, HttpServletRequest request, UserI user) {
+			boolean success=false;
+			
+			File manifestFile;
+			File resourceFile;
+			ObjectMapper mapper = new ObjectMapper();
+			try {
+				
+				if(StringUtils.isNotEmpty(name)){
+					name = StringUtils.stripEnd(name,"/");
+					resourceFile=new File(path+File.separator+name);
+					manifestFile=new File(path+File.separator+MANIFEST);
+				}else{
+					resourceFile=new File(path);
+					manifestFile=this.getManifestFileFromResource(resourceFile);
+				}
+				log.warn(manifestFile.getPath());
+				log.warn(resourceFile.getPath());
+				
+				TriageManifest tManifest=(manifestFile.exists())?mapper.readValue(manifestFile, TriageManifest.class): new TriageManifest();
+				
+				Map<String, String> entry=new HashMap<String,String>();
+				entry.put("Resource", constructResourceURI(resourceFile.getName(),request));
+				entry.put("URI", constructResourceURI(resourceFile.getName(), request));
+				entry.put("TARGET", constructTargetURI(resourceFile.getName(), target, request));
+				entry.put("FTARGET", constructFormattedTargetURI(resourceFile.getName(),target,request, user));
+				//entry.put("FSOURCE", constructResourceNames(resourceFile.getName()));
+
+				entry.put("USER",user.getUsername());
+				entry.put("DATE",(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss")).format( Calendar.getInstance().getTime()));
+
+				//entry.put("DATE",java.util.Calendar.getInstance(java.util.TimeZone.getDefault()).getTime().toString());
+				entry.put(OVERWRITE,constructOverwrite(overwrite));
+				entry.put(EVENT_REASON,constructEventReason(event_reason));
+				
+				entry.put(FORMAT,constructFormat(format));
+				entry.put(CONTENT,constructContent(content));
+				
+				tManifest.addEntry(entry);
+				mapper.writeValue(manifestFile, tManifest);
+				
+				
+				success=true;
+			} catch (JsonGenerationException e) {
+				log.warn(e.getMessage());
+				success=false;
+			} catch (JsonMappingException e) {
+				log.warn(e.getMessage());
+				success=false;
+
+			} catch (IOException e) {
+				log.warn(e.getMessage());
+				success=false;
+			}
+
+			return success;
+		}
+		
+		  private String constructOverwrite(String overwrite) {
+			    if (StringUtils.isEmpty(overwrite)) {
+			    	overwrite="false";
+			    }
+			    return overwrite;
+		     }
+		    private String constructContent(String content) {
+			    if (StringUtils.isEmpty(content)) {
+			    	content="";
+			    }
+			   
+			    return content;
+		     }
+		    private String constructFormat(String format) {
+			    if (StringUtils.isEmpty(format)) {
+			    	format="";
+			    }
+			    return format;
+		     }
+		    
+		    private String constructEventReason( String event_reason) {
+		 	    if (StringUtils.isEmpty(event_reason)) {
+		 	    	event_reason="";
+					
+		 	    }
+		 	    return event_reason;
+		      }
+		
+		 private String constructTargetURI(String resource, String target, HttpServletRequest request) {
+			    if (StringUtils.isEmpty(target)) {
+			    	//construct target from url
+			    	String requestPart = request.getServletPath() + request.getPathInfo();
+			    	requestPart= this.appendFiles(requestPart, resource);
+			    	//replace triage with archive
+			    	target=requestPart.replace(TRIAGE, ARCHIVE);
+			    }
+			    if(!target.startsWith(DATA)){
+			    	target=target.substring(target.indexOf(DATA));
+			    }
+			    if(!target.endsWith(FILES)){
+			    	target=target+File.separator+FILES;
+			    }
+			    return target;
+		     }
+		 
+		 public  String constructFormattedTargetURI(String resource, String target, HttpServletRequest request, UserI user) {
+	    	 String formatted=constructTargetURI(resource, target,request);
+	    	 //need to format IDs to Labels for user.
+	    	
+	    	 String[] params = StringUtils.split(formatted, "/");
+	    	 for(int i=0;i<params.length-1;i++){
+	    		 if("experiments".equals(params[i])){
+	    			 String expid=params[i+1];
+	    			 XnatExperimentdata exp=XnatExperimentdata.getXnatExperimentdatasById(expid, user, false);
+	    			 if(exp!=null){
+	    		    	 formatted=formatted.replace(expid,exp.getLabel());
+	    			 }
+	    		 }
+	    		 if("subjects".equals(params[i])){
+	    			 String subjid=params[i+1];
+	    			 XnatSubjectdata subj=XnatSubjectdata.getXnatSubjectdatasById(subjid, user, false);
+	    			 if(subj!=null){
+	    		    	 formatted=formatted.replace(subjid,subj.getLabel());
+	    			 }
+	    		 }
+	    		 if("assessors".equals(params[i])){
+	    			 String assid=params[i+1];
+	    			 XnatExperimentdata exp=XnatExperimentdata.getXnatExperimentdatasById(assid, user, false);
+	    			 if(exp!=null){
+	    		    	 formatted=formatted.replace(assid,exp.getLabel());
+	    			 }
+	    		 }
+	    	 }
+		   
+	    	 formatted=formatted.replace("/data/archive/projects/","<b>Project</b>: ");
+	    	 formatted=formatted.replace("/subjects/","<br><b>Subject</b>: ");
+	    	 formatted=formatted.replace("/data/archive/experiments/","<b>Session</b>: ");
+	    	 formatted=formatted.replace("/assessors/","<br><b>Assessor</b>: ");
+	    	 formatted=formatted.replace("/scans/","<br><b>Scan</b>: ");
+	    	 formatted=formatted.replace("/resources/","<br><b>Resource</b>: ");
+	    	 formatted=formatted.replace("/resources","<br><b>Resource</b>: ");
+	    	 formatted=formatted.replace("/files/","");
+	    	 formatted=formatted.replace("/files","");
+	    	
+	    	 return formatted;
+	     }
+		
+		
+		private boolean canEditDestination(String target, UserI user) throws Exception {
+			String targetResource = target.replaceAll("(/files)?$", "/files");
+			ResourceURII arcURI = convertValue(targetResource);
+			return arcURI.getSecurityItem().canEdit(user);
+		}
+		public ResourceURII convertValue(final String key) throws ClientException{
+			try {
+				URIManager.DataURIA uri=UriParserUtils.parseURI(key);
+				
+				if(uri instanceof ResourceURII){
+					return (ResourceURII)uri;
+				}else{
+					throw new ClientException("Invalid Destination:"+ key);
+				}
+			} catch (MalformedURLException e) {
+				throw new ClientException("Invalid Destination:"+ key,e);
+			}
+		}
+		
+		String getxName(String project, HttpServletRequest request){
+			String requestPart = this.mapToProjectResources(request.getServletPath() + request.getPathInfo());
+
+			int bindex =StringUtils.indexOf(requestPart, "/projects/"+project);
+			//only compress urls for subject and deeper
+			int lindex =StringUtils.lastIndexOf(requestPart, "/resources");
+			String xName=requestPart.substring(bindex);
+			//mapped=originalResourceUrl.replace(extra, "");
+			
+			return xName;
+		}
+		
+//		private boolean uploadTriageFile(String projectPath,String pXNAME) {
+//			return uploadTriageFile(projectPath,pXNAME,null);
+//		}
+		
+	private void returnFile(XnatProjectdata proj, String projectPath,String xname,String file, UserI user) throws InvalidItemException, Exception {
+			
+			String escapedPath=projectPath+File.separator+ File.separator+"resources"+File.separator+xname+File.separator+"files"+File.separator+file;
+			String resourcePath=projectPath+File.separator+ File.separator+"resources";
+			String path=URLDecoder.decode(escapedPath, "UTF-8");
+			File reqFile = new File (path);
+			if (reqFile.exists() && reqFile.isFile() && canRead(proj, new File(escapedPath), user)) {
+				//sendFileRepresentation(reqFile);
+			} else {
+				throw new NotFoundException("Quarantine file not found.");
+			}
+		}
+
+		@Override
+		public void deleteTriage(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId) {
+			try {   
+			XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+				String projectPath=TriageUtils.getTriageProjectPath(projectId);
+		        if(proj!=null && proj.canRead(user)){//only continue when the user can read the project.
+		        	
+			        if (xname == null && file == null) {
+			        	//fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation.");
+			        } else if (xname != null && file == null) {
+			        	deleteTriageResource(proj,projectPath,xname,user,eventReason, eventComment, eventId, projectId);
+			        } else if (xname != null && file != null) {
+			        	deleteTriageFiles(proj,projectPath,xname,file, user, eventReason, eventComment,eventId,projectId);
+			        }
+		        }
+			} catch (Exception e) {
+				//fail(Status.SERVER_ERROR_INTERNAL,e.getMessage());
+				log.error("",e);
+			}
+		}
+
+
+		private void deleteTriageFiles(XnatProjectdata proj, String projectPath, String xname, String file, UserI user, String eventReason, String eventComment, String eventId, String projectId) throws Exception {
+			File fi = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xname+File.separator+"files"+File.separator+file);
+			if(canDelete(proj, fi,user)){
+				ArrayList<File> fileList=new ArrayList<File>();
+		
+		        if (fi.exists()) {
+		           	fileList.add(fi);
+		        }
+				
+				boolean deleteOK = true;
+				if (fileList.size()>0) {
+		            for (File f : fileList) {  
+		            	if (f.isDirectory()) {
+		            		try {
+		            			FileUtils.deleteDirectory(f);
+		            		} catch (IOException e) {
+		            			deleteOK = false;
+		            		}
+		            	} else {
+		            		if (!f.delete()) {
+		            			deleteOK = false;
+		            		}
+		            	}
+		            }
+		            if (deleteOK) {
+			        	workflow(true,"Delete Quarantine Files", eventReason, eventComment,user, eventId, projectId);
+		            } else {
+		            	throw new InitializationException("Problem deleting one or more server files.");
+		            }
+				} else {
+					throw new NotFoundException("No matching files found.");
+				}
+			}else{
+				throw new InsufficientPrivilegesException("User account doesn't have permission to delete this file.");
+			}
+		}
+		
+		
+
+		private void deleteTriageResource(XnatProjectdata proj, String projectPath, String xname, UserI user, String eventReason, String eventComment, String eventId, String projectId) throws Exception {
+			File dir = new File (projectPath+File.separator+RESOURCES+File.separator+xname);
+			if(this.canDelete(proj, dir, user)){
+				if (dir.exists() && dir.isDirectory()) {
+					
+					try {
+						FileUtils.deleteDirectory(dir);
+			        	workflow(true,"Delete Quarantine Files",eventReason, eventComment, user, eventId, projectId);
+
+					} catch (IOException e) {
+						log.error("",e);
+						throw new InitializationException(e.getMessage());
+					}
+				} else {
+					throw new NotFoundException("Quarantine directory not found or is not a directory.");
+				}
+			}else{
+				throw new InsufficientPrivilegesException("User account doesn't have permission to modify this resource.");
+			}
+		}
+		
+		public void workflow(boolean status,String action,String reason,String comment, UserI user, String eventId, String projectId) throws Exception{
+			PersistentWorkflowI work=WorkflowUtils.getOrCreateWorkflowData(XnatEventUtil.getEventId(eventId), user, "xnat:projectData", projectId, projectId ,EventUtils.newEventInstance(EventUtils.CATEGORY.DATA,EventUtils.TYPE.WEB_FORM, action,reason,comment));
+			if(status){
+				WorkflowUtils.complete(work, work.buildEvent());		
+			}else{
+				WorkflowUtils.fail(work, work.buildEvent());
+			}
+		}
+		
+		boolean canDelete(XnatProjectdata proj,File file, UserI user) throws InvalidItemException, Exception{
+	        boolean allowed=false;
+	        if (Features.checkFeature(user,proj.getSecurityTags().getHash().values(), "QuarantineReview") || StringUtils.equals(user.getUsername(),getUser(file))){
+	            allowed= true;
+	        }else{
+	        	allowed= false;
+	        }
+			return allowed;
+		}
+		
+		String getUser(File file){
+			String username="";
+			File manifest=new File(file+File.separator+FILES+File.separator+MANIFEST);
+			if(file.isFile()){
+				username=this.getPropertyFromManifest(file, USER);
+			}else{
+				username=this.getPropertyFromManifest(manifest, USER);
+			}
+			return username;
+		}
+
+		private TriageUtil getTriageUtil(String fn, File f, HttpServletRequest request) {
+			return TriageUtil.builder()
+					 .resource(fn)
+					 .uri(constructResourceURI(fn, request))
+					 .target(getPropertyFromManifest(f, TARGET))
+					 .user(getPropertyFromManifest(f, USER))
+					 .date(getPropertyFromManifest(f, DATE))
+					 .overwrite(getPropertyFromManifest(f, OVERWRITE))
+					 .eventReason(getPropertyFromManifest(f, EVENT_REASON))
+					 .ftarget(getPropertyFromManifest(f, FTARGET))
+					 .format(getPropertyFromManifest(f, FORMAT))
+					 .content(getPropertyFromManifest(f, CONTENT))
+					 .fSource("").build();
+		}
+
+		private String constructResourceURI(String resource, HttpServletRequest request) {
+			String requestPart = this.mapToProjectResources(request.getServletPath() + request.getPathInfo());
+
+			if (!requestPart.endsWith(resource)) {
+				requestPart += File.separator + resource;
+			}
+			return requestPart;
+
+		}
+
+		String mapToProjectResources(String originalResourceUrl) {
+			String mapped = originalResourceUrl;
+			int bindex = StringUtils.indexOf(originalResourceUrl, "/subjects/");
+			// only compress urls for subject and deeper
+			if (bindex > 0) {
+				int lindex = StringUtils.lastIndexOf(originalResourceUrl, "/resources");
+				String extra = originalResourceUrl.substring(bindex, lindex);
+				mapped = originalResourceUrl.replace(extra, "");
+			}
+			return originalResourceUrl;
+		}
+
+		private String getPropertyFromManifest(File resourceFile, String prop) {
+			ObjectMapper mapper = new ObjectMapper();
+			String target = "";
+			try {
+				File manifestFile = getManifestFileFromResource(resourceFile);
+				TriageManifest tManifest = mapper.readValue(manifestFile, TriageManifest.class);
+				target = tManifest.getFirstMatchingEntry(prop);
+			} catch (JsonParseException e) {
+				log.warn(e.getMessage());
+			} catch (JsonMappingException e) {
+				log.warn(e.getMessage());
+			} catch (IOException e) {
+				log.warn(e.getMessage());
+			}
+			return target;
+		}
+
+		private File getManifestFileFromResource(File resourceFile) {
+			File manifestFile = new File(resourceFile.getParentFile().getAbsolutePath() + File.separator + MANIFEST);
+			if (!manifestFile.exists()) {
+				manifestFile = new File(resourceFile.getAbsolutePath() + File.separator + FILES + File.separator + MANIFEST);
+			}
+			return manifestFile;
+		}
+		
+		private void returnFileList(XnatProjectdata xproj, String projectPath, String xName, HttpServletRequest request) {
+			List<TriageFileUtil> response = new  ArrayList<>();
+			File dir = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
+			//need to ignore .json files.
+			if (dir.exists() && dir.isDirectory()) {
+				ArrayList<File> fileList = new ArrayList<File>();
+				fileList.addAll(FileUtils.listFiles(dir,null,true));
+				Iterator<File> i = fileList.iterator();
+		        while (i.hasNext()) {
+		        	File f = i.next();
+		        	if(!MANIFEST.equals(f.getName())){
+		        		String fileRelativeName= relative(dir, f);
+		        		response.add(getTriageFileData(fileRelativeName, f, request));
+		        	}
+		        }
+			}
+		}
+		
+		private TriageFileUtil getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
+			return TriageFileUtil.builder()
+					 .name(fileRelativeName)
+					 .uri(constructURI(fileRelativeName, request))
+					 .target(getPropertyFromManifest(f, TARGET))
+					 .user(getPropertyFromManifest(f, USER))
+					 .date(getPropertyFromManifest(f, DATE))
+					 .overwrite(getPropertyFromManifest(f, OVERWRITE))
+					 .eventReason(getPropertyFromManifest(f, EVENT_REASON))
+					 .ftarget(getPropertyFromManifest(f, FTARGET))
+					 .format(getPropertyFromManifest(f, FORMAT))
+					 .content(getPropertyFromManifest(f, CONTENT))
+					 .size(f.length()).build();
+		}
+		
+	    private String constructURI(String resource, HttpServletRequest request) {
+	    	String requestPart = this.mapToProjectResources(request.getServletPath() + request.getPathInfo());
+	 
+	    	return appendFiles(requestPart, resource);
+	    	
+	    }
+	    private String appendFiles(String requestPart,String resource){
+	    	if (!requestPart.endsWith(resource) && !requestPart.endsWith("/files") && !requestPart.endsWith("/files/")) {
+	    		requestPart+="/files";
+	    	}
+	    	if (!requestPart.endsWith(resource)){
+	    		requestPart+=File.separator+resource;
+	    	}
+	    	return requestPart;
+	    }
+
+		public String relative( final File base, final File file ) {
+		    final int rootLength = base.getAbsolutePath().length();
+		    final String absFileName = file.getAbsolutePath();
+		    final String relFileName = absFileName.substring(rootLength + 1);
+		    return relFileName;
+		}
+
+		private void returnZippedFiles(XnatProjectdata xproj, String projectPath, String xName,UserI user, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception {
+			String dirPath = File.separator+"resources"+File.separator+xName+File.separator+"files";
+			String resourcePath=projectPath+File.separator+RESOURCES+File.separator+xName;
+			if(canRead(xproj, new File(resourcePath),user)){
+				File dir = new File (projectPath,dirPath);
+				if (dir.exists() && dir.isDirectory()) {
+					ArrayList<File> fileList = new ArrayList<File>();
+					fileList.addAll(FileUtils.listFiles(dir,null,true));
+					sendZippedFiles(projectPath,xName,xName,fileList, request, compression);
+				} else {
+					throw new NotFoundException("Quarantine directory not found or is not a directory.");
+				}
+			}else{
+				throw new InsufficientPrivilegesException("Not authorized");
+			}
+		}
+		
+		private void sendZippedFiles(String projectPath,String pXNAME,String fileName,ArrayList<File> fileList, HttpServletRequest request, String compression) throws ActionException {
+			
+			ZipRepresentationUtil zRep;
+			if(MediaTypeUtil.getRequestedMediaType(request.getContentType())!=null && MediaTypeUtil.getRequestedMediaType(request.getContentType()).equals(MediaTypeUtil.APPLICATION_GNU_TAR)){
+				zRep = new ZipRepresentationUtil(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_GNU_TAR),projectPath,ZipOutputStream.DEFLATED);
+				setContentDisposition(String.format("%s.tar.gz", fileName));
+			}else if(MediaTypeUtil.getRequestedMediaType(request.getContentType())!=null && MediaTypeUtil.getRequestedMediaType(request.getContentType()).equals(MediaTypeUtil.APPLICATION_TAR)){
+				zRep = new ZipRepresentationUtil(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_TAR),projectPath,ZipOutputStream.STORED);
+				setContentDisposition(String.format("%s.tar.gz", fileName));
+			}else{
+				zRep = new ZipRepresentationUtil(MediaType.parseMediaType(MediaTypeUtil.APPLICATION_ZIP), projectPath, identifyCompression(null, compression));
+				setContentDisposition(String.format("%s.zip", fileName));
+			}
+			zRep.addAllAtRelativeDirectory(projectPath,fileList);
+			//this.getResponse().setEntity(zRep);
+		}
+
+		private String setContentDisposition(String fileName) {
+			return String.format(ATTACHMENT_DISPOSITION, fileName);
+		}
+		
+		boolean canRead(XnatProjectdata proj,File f, UserI user) throws InvalidItemException, Exception{
+			boolean allowed=false;
+			if (Features.checkFeature(user,proj.getSecurityTags().getHash().values(), "QuarantineReview") || StringUtils.equals(user.getUsername(),getUser(f))){
+	            allowed= true;
+	        }else{
+	        	allowed= false;
+	        }
+			return allowed;
+		}
+		
+	 /** End Triage Service Methods*/
+		
+   private final String RESOURCES ="resources";
+   private static final String FORMAT = "format";
+   private static final String CONTENT = "content";
+   private final String FILES ="files";
+   private final String MANIFEST=".manifest";	
+   private final String TARGET = "TARGET";
+   private final String FTARGET = "FTARGET";
+   private final String USER = "USER";
+   private final String DATE = "DATE";
+   private final String EVENT_REASON = "EVENT_REASON";
+   private final String OVERWRITE = "OVERWRITE";
+   private final String TRIAGE="/services/triage/";
+   private final String ARCHIVE="/archive/";
+   private final String RESOURCE ="Resource";
+   private final String DATA ="/data";
+   private final String FSOURCE ="FSOURCE";
+   private static final String _ON_FAILURE_RETURN_JS = "_onFailureReturnJS";
+   private static final String _ON_FAILURE_RETURN_HTML = "_onFailureReturnHTML";
+   private static final String COMPRESSION = "compression";
+   //private static final String ATTACHMENT_DISPOSITION = "attachment; filename=\"%s\"";
+	 	
     private CatalogService _catalogService;
 	private List<String> _resources   = Lists.newArrayList();
 	private final List<CatalogService.Operation> _operations  = Lists.newArrayList();
