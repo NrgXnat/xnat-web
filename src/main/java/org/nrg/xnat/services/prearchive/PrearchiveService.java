@@ -6,6 +6,8 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 import org.nrg.action.ActionException;
+import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -17,6 +19,7 @@ import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
 import org.nrg.xnat.dto.prearchive.PrearcSessionScanResFileDto;
 import org.nrg.xnat.dto.prearchive.PrearchiveDto;
 import org.nrg.xnat.helpers.prearchive.SessionException;
+import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 
 public interface PrearchiveService {
 
@@ -35,4 +38,6 @@ public interface PrearchiveService {
 	List<PrearcSessionResourceDto> findAllPrearcSessionResourceByScanId(UserI user,String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException;
 	
 	List<PrearcSessionScanResFileDto> findAllPrearcSessionResourceByScanIdAndResourceId(UserI user,String projectId, String timestamp, String sessionLabel, Integer scanId, String resourceId, String filepath, boolean prettyPrint,HttpServletRequest request) throws ActionException, NotFoundException, DataFormatException;
+
+	List<String> importFiles(UserI user, HttpServletRequest request,XnatResourceInfo xnatResourceInfo) throws DataFormatException, ServerException, ClientException, NotFoundException;
 }
