@@ -2,36 +2,31 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.om.XnatPetsessiondata;
-import org.nrg.xdat.om.XnatSubjectassessordata;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 
 public class XnatPetsessiondataSerializer extends AbstractBaseElementSerializer<XnatPetsessiondata> {
-    public XnatPetsessiondataSerializer() {
+	private static final long serialVersionUID = -7581439107130807310L;
+
+	public XnatPetsessiondataSerializer() {
         super(XnatPetsessiondata.class);
     }
 
     @Override
     protected void serializeImpl(final XnatPetsessiondata xnatPetsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
     	writeNonBlankField(generator, "id", xnatPetsessiondata.getId());
-        writeNonBlankField(generator, "label", xnatPetsessiondata.getLabel());
-        writeNonBlankField(generator, "project", xnatPetsessiondata.getProject());
-        writeNonBlankField(generator, "note", xnatPetsessiondata.getNote());
-        writeNonBlankField(generator, "protocol", xnatPetsessiondata.getProtocol());
-        writeNonBlankField(generator, "original", xnatPetsessiondata.getOriginal());
-        writeNonNullField(generator, "date", xnatPetsessiondata.getDate());
-        writeNonNullNumber(generator, "delay", xnatPetsessiondata.getDelay());
-        writeNonNullNumber(generator, "version", xnatPetsessiondata.getVersion());
-        writeNonBlankField(generator, "acquisitionSite", xnatPetsessiondata.getAcquisitionSite());
-        writeNonBlankField(generator, "visit", xnatPetsessiondata.getVisit());
-        writeNonBlankField(generator, "visitId", xnatPetsessiondata.getVisitId());
-        writeNonBlankField(generator, "description", xnatPetsessiondata.getDescription());
-        writeNonNullField(generator, "subjectId", xnatPetsessiondata.getSubjectId());
-       // writeNonNullField(generator, "experiment", xnatPetsessiondata.getExperimentdata());
+        writeNonBlankField(generator, "stabilization", xnatPetsessiondata.getStabilization());
+        writeNonBlankField(generator, "studyType", xnatPetsessiondata.getStudytype());
+        writeNonBlankField(generator, "patientID", xnatPetsessiondata.getPatientid());
+        writeNonBlankField(generator, "patientName", xnatPetsessiondata.getPatientname());
+        writeNonBlankField(generator, "tracer", xnatPetsessiondata.getTracer_name());
+        writeNonNullField(generator, "start_time", xnatPetsessiondata.getStartTime());
+        writeNonNullField(generator, "start_time_scan", xnatPetsessiondata.getStartTimeScan());
+        writeNonNullField(generator, "start_time_injection", xnatPetsessiondata.getStartTimeInjection());
+        writeNonNullField(generator, "blood_glucose", xnatPetsessiondata.getBloodGlucose());
+        writeNonBlankField(generator, "blood_glucose_units", xnatPetsessiondata.getBloodGlucoseUnits());
+        writeNonNullField(generator, "blood_glucose_time", xnatPetsessiondata.getBloodGlucoseTime());
     }
 
 }

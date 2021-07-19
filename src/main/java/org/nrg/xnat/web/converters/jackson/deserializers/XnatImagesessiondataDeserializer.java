@@ -12,6 +12,7 @@ import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatMrsessiondata;
+import org.nrg.xdat.om.XnatPetsessiondata;
 import org.nrg.xdat.om.XnatReconstructedimagedata;
 import org.nrg.xdat.om.XnatRegionresource;
 import org.nrg.xft.ItemI;
@@ -24,14 +25,16 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class XnatImagesessiondataDeserializer extends XnatSubjectassessordataDeserializer {
+public class XnatImagesessiondataDeserializer<T> extends XnatSubjectassessordataDeserializer {
 	private static final long serialVersionUID = 8714542973804658983L;
 
-	public XnatImagesessiondataDeserializer(Class<XnatMrsessiondata> class1) {
+	public XnatImagesessiondataDeserializer(Class<T> class1) {
         super(XnatImagesessiondata.class);
     }
 
-    @Override
+  
+
+	@Override
     protected XnatImagesessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
     	final XnatImagesessiondata xnatImagesessiondata = Optional.ofNullable((XnatImagesessiondata) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("XnatImagesessiondata can't be created on its own"));
 

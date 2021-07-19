@@ -10,12 +10,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
+@SuppressWarnings("rawtypes")
 public class XnatMrsessiondataDeserializer extends XnatImagesessiondataDeserializer{
 	private static final long serialVersionUID = 8714542973804658983L;
 
+	@SuppressWarnings("unchecked")
 	public XnatMrsessiondataDeserializer() {
         super(XnatMrsessiondata.class);
     }

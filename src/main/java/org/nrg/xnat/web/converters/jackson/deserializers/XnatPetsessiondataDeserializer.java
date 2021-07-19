@@ -2,21 +2,21 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.om.XnatPetsessiondata;
-import org.nrg.xdat.om.XnatSubjectassessordata;
-
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
-public class XnatPetsessiondataDeserializer extends AbstractBaseElementDeserializer<XnatPetsessiondata> {
-    public XnatPetsessiondataDeserializer() {
+@SuppressWarnings("rawtypes")
+public class XnatPetsessiondataDeserializer extends XnatImagesessiondataDeserializer {
+	private static final long serialVersionUID = 8800846152694684817L;
+
+	@SuppressWarnings("unchecked")
+	public XnatPetsessiondataDeserializer() {
         super(XnatPetsessiondata.class);
     }
-
+   
     @Override
     protected XnatPetsessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
         final XnatPetsessiondata xnatPetsessiondata = new XnatPetsessiondata();
@@ -28,47 +28,46 @@ public class XnatPetsessiondataDeserializer extends AbstractBaseElementDeseriali
                 case "id":
                 	xnatPetsessiondata.setId(parser.getText());
                     break;
-                case "label":
-                	xnatPetsessiondata.setLabel(parser.getText());
+                case "stabilization":
+                	xnatPetsessiondata.setStabilization(parser.getText());
                     break;
-                case "project":
-                    xnatPetsessiondata.setProject(parser.getText());
+                case "studyType":
+                    xnatPetsessiondata.setStudytype(parser.getText());
                     break;
-                case "note":
-                    xnatPetsessiondata.setNote(parser.getText());
+                case "patientID":
+                    xnatPetsessiondata.setPatientid(parser.getText());
                     break;
-                case "protocol":
-                    xnatPetsessiondata.setProtocol(parser.getText());
+                case "patientName":
+                    xnatPetsessiondata.setPatientname(parser.getText());
                     break;
-                case "original":
-                    xnatPetsessiondata.setOriginal(parser.getText());
+                case "tracer":
+                    xnatPetsessiondata.setTracer_name(parser.getText());
                     break;
-                case "date":
-                    xnatPetsessiondata.setDate(parseDate(parser.getText()));
+                case "start_time":
+                    xnatPetsessiondata.setStartTime(parser.getText());
                     break;
-                case "delay":
-                    xnatPetsessiondata.setDelay(parser.getIntValue());
+                case "start_time_scan":
+                    xnatPetsessiondata.setStartTimeScan(parser.getText());
                     break;
-                case "version":
-                    xnatPetsessiondata.setVersion(parser.getIntValue());
+                case "start_time_injection":
+                    xnatPetsessiondata.setStartTimeInjection(parser.getText());
                     break;
-                case "acquisitionSite":
-                    xnatPetsessiondata.setAcquisitionSite(parser.getText());
+                case "blood_glucose":
+                    xnatPetsessiondata.setBloodGlucose(Double.parseDouble(parser.getText()));
                     break;
-                case "visit":
-                    xnatPetsessiondata.setVisit(parser.getText());
+                case "blood_glucose_units":
+                    xnatPetsessiondata.setBloodGlucoseUnits(parser.getText());
                     break;
-                case "visitId":
-                    xnatPetsessiondata.setVisitId(parser.getText());
+                case "blood_glucose_time":
+                    xnatPetsessiondata.setBloodGlucoseTime(parser.getText());
                     break;
             }
         }
-        return xnatPetsessiondata;
+        return (XnatPetsessiondata)super.deserializeImpl(parser, context);
     }
 
 	@Override
 	protected XnatPetsessiondata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
