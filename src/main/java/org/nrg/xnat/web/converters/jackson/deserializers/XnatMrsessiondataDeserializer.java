@@ -1,9 +1,9 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.om.XnatMrsessiondata;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -25,27 +25,29 @@ public class XnatMrsessiondataDeserializer extends XnatImagesessiondataDeseriali
     	context.setAttribute("XnatItem", xnatMrsessiondata);
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            if(Objects.nonNull(field)){
+            if(StringUtils.equalsAny(field,"coil","fieldStrength","marker","stabilization")){
             	   switch (field) {
                    case "coil":
+                	parser.nextToken();  //move to next token in string
                    	xnatMrsessiondata.setCoil(parser.getText());
                        break;
                    case "fieldStrength":
+                    parser.nextToken();  //move to next token in string
                    	xnatMrsessiondata.setFieldstrength(parser.getText());
                        break;
                    case "marker":
+                	   parser.nextToken();  //move to next token in string
                        xnatMrsessiondata.setMarker(parser.getText());
                        break;
                    case "stabilization":
+                	   parser.nextToken();  //move to next token in string
                        xnatMrsessiondata.setStabilization(parser.getText());
                        break;
-                   case "protocol":
-                       xnatMrsessiondata.setProtocol(parser.getText());
-                       break;
+                  
 				}
+            }else {
+                super.deserializeImpl(parser, context);
             }
-         
         }
         return (XnatMrsessiondata)super.deserializeImpl(parser, context);
     }

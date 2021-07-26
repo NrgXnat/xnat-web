@@ -4,10 +4,7 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 
-import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatImagesessiondata;
-
 import java.io.IOException;
 
 @Slf4j
@@ -33,10 +30,10 @@ public class XnatExperimentdataSerializer extends AbstractBaseElementSerializer<
         writeNonNullField(generator, "duration", experiment.getDuration());
         writeNonNullField(generator, "time", experiment.getTime());
         writeNonNullField(generator, "date", experiment.getDate());
-//        writeNonNullField(generator, "fields", experiment.getFields_field());
-//        writeNonNullField(generator, "resources", experiment.getResources_resource());
-//        writeNonNullField(generator, "sharing", experiment.getSharing_share());
-       // generator.writeObjectField("investigator", experiment.getInvestigator());
-       // generator.writeObjectField("validation", experiment.getValidation());
+        writeNonNullField(generator, "fields", experiment.getFields_field());
+        writeNonNullField(generator, "resources", experiment.getResources_resource());
+        writeNonNullField(generator, "sharing", experiment.getSharing_share());
+        generator.writeObjectField("investigator", experiment.getInvestigator());
+        generator.writeObjectField("validation", experiment.getValidation());
     }
 }

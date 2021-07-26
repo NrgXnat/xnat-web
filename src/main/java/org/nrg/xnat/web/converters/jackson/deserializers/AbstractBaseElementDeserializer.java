@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @Slf4j
 public abstract class AbstractBaseElementDeserializer<T extends BaseElement> extends StdDeserializer<T> {
-    protected AbstractBaseElementDeserializer(final Class<T> dataType) {
+    protected AbstractBaseElementDeserializer(final Class<? extends T> dataType) {
         super(dataType);
     }
 

@@ -1,25 +1,13 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import java.io.IOException;
-import java.util.Objects;
 import java.util.Optional;
 
-import org.nrg.xdat.model.XnatImageassessordataI;
-import org.nrg.xdat.model.XnatImagescandataI;
-import org.nrg.xdat.model.XnatReconstructedimagedataI;
-import org.nrg.xdat.model.XnatRegionresourceI;
-import org.nrg.xdat.om.XnatImageassessordata;
-import org.nrg.xdat.om.XnatImagescandata;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.om.XnatImagesessiondata;
-import org.nrg.xdat.om.XnatMrsessiondata;
-import org.nrg.xdat.om.XnatPetsessiondata;
-import org.nrg.xdat.om.XnatReconstructedimagedata;
-import org.nrg.xdat.om.XnatRegionresource;
-import org.nrg.xft.ItemI;
+import org.nrg.xdat.om.XnatSubjectassessordata;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 
 import lombok.extern.slf4j.Slf4j;
@@ -28,32 +16,18 @@ import lombok.extern.slf4j.Slf4j;
 public class XnatImagesessiondataDeserializer<T> extends XnatSubjectassessordataDeserializer {
 	private static final long serialVersionUID = 8714542973804658983L;
 
-	public XnatImagesessiondataDeserializer(Class<T> class1) {
-        super(XnatImagesessiondata.class);
+	public XnatImagesessiondataDeserializer(final Class<? extends XnatSubjectassessordata> clazz) {
+        super(clazz);
     }
-
-  
 
 	@Override
     protected XnatImagesessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
     	final XnatImagesessiondata xnatImagesessiondata = Optional.ofNullable((XnatImagesessiondata) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("XnatImagesessiondata can't be created on its own"));
 
-    	XnatImageassessordataI imageAssessorData = new XnatImageassessordata();
-    	XnatReconstructedimagedataI reconstructedimagedata = new XnatReconstructedimagedata();
-    	XnatRegionresourceI regionresource= new XnatRegionresource();
-    	XnatImagescandataI imagescandata= new XnatImagescandata();
-    	 try {
-    		 xnatImagesessiondata.setAssessors_assessor((ItemI) imageAssessorData);
-    		 xnatImagesessiondata.setReconstructions_reconstructedimage((ItemI) reconstructedimagedata);
-    		 xnatImagesessiondata.setRegions_region((ItemI) regionresource);
-    		 xnatImagesessiondata.setScans_scan((ItemI) imagescandata);
-         } catch (Exception e) {
-             log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
-         }
-    	while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
+    	final String field = parser.getCurrentName();
+    	if (StringUtils.equalsAny(field, "dcmAccessionNumber", "dcmPatientBirthDate","dcmPatientId","dcmPatientName","dcmPatientWeight","modality",
+    			"operator","prearchivePath","scanner","studyId","UID")) {
             parser.nextToken();  //move to next token in string
-            if(Objects.nonNull(field)){
             	   switch (field) {
                    case "dcmAccessionNumber":
                 	   xnatImagesessiondata.setDcmaccessionnumber(parser.getText());
@@ -82,21 +56,17 @@ public class XnatImagesessiondataDeserializer<T> extends XnatSubjectassessordata
                    case "scanner":
                 	   xnatImagesessiondata.setScanner(parser.getText());
                        break;
-                   case "study_id":
+                   case "studyId":
                 	   xnatImagesessiondata.setStudyId(parser.getText());
                        break;
                    case "UID":
                 	   xnatImagesessiondata.setUid(parser.getText());
                        break;
 				}
+            	   return xnatImagesessiondata;
             }
-         
-        }
+        
     	return (XnatImagesessiondata)super.deserializeImpl(parser, context);
     }
 
-	@Override
-	protected XnatImagesessiondata getNewInstance() throws JsonProcessingException {
-		return null;
-	}
 }

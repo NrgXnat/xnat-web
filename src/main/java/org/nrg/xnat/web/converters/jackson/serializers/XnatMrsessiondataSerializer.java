@@ -2,7 +2,6 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatMrsessiondata;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;

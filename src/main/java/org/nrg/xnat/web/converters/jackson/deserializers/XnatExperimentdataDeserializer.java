@@ -33,8 +33,9 @@ import java.util.Optional;
 @Slf4j
 public class XnatExperimentdataDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdata> {
 	private static final long serialVersionUID = 1267197324318417600L;
-	public XnatExperimentdataDeserializer(Class<XnatSubjectassessordata> class1) {
-        super(XnatExperimentdata.class);
+	
+	public XnatExperimentdataDeserializer(final Class<? extends XnatExperimentdata> clazz) {
+        super(clazz);
     }
 
     @Override
