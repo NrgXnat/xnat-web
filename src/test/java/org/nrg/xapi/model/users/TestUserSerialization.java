@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nrg.framework.services.SerializerService;
+import org.nrg.xnat.config.TestSerializationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
@@ -23,7 +24,7 @@ import java.io.IOException;
 import static org.junit.Assert.*;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestUserSerializationConfig.class)
+@ContextConfiguration(classes = TestSerializationConfig.class)
 public class TestUserSerialization {
     @Autowired
     public void setSerializer(final SerializerService serializer) {

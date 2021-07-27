@@ -7,13 +7,15 @@
  * Released under the Simplified BSD.
  */
 
-package org.nrg.xapi.model.users;
+package org.nrg.xnat.config;
 
 import org.nrg.framework.configuration.SerializerConfig;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
+@ComponentScan("org.nrg.xnat.web.converters")
 @Import(SerializerConfig.class)
-public class TestUserSerializationConfig {
+public class TestSerializationConfig {
 }

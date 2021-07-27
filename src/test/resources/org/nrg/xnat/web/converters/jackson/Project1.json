@@ -1,0 +1,24 @@
+{
+  "id": "PROJECT_1",
+  "name": "Project 1",
+  "secondaryId": "P_1",
+  "type": "longitudinal",
+  "active": true,
+  "autoArchive": true,
+  "description": "This is longitudinal research project 1",
+  "keywords": "1 stuff other stuff",
+  "aliases": [
+    "A",
+    "Alpha"
+  ],
+  "publications": {},
+  "resources": {},
+  "studyProtocol": {},
+  "pi": {},
+  "investigators": [],
+  "fields": {
+    "field1": "value1",
+    "field2": "value2",
+    "field3": "value3"
+  }
+}
