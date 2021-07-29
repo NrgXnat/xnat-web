@@ -59,7 +59,10 @@ public class XnatImagesessiondataDeserializer<T> extends XnatSubjectassessordata
                    case "studyId":
                 	   xnatImagesessiondata.setStudyId(parser.getText());
                        break;
-                   case "UID":
+                   case "sessionType":
+                	   xnatImagesessiondata.setSessionType(parser.getText());
+                       break;
+                   case "uid":
                 	   xnatImagesessiondata.setUid(parser.getText());
                        break;
 				}

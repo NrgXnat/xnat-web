@@ -34,9 +34,6 @@ public class XnatSubjectassessordataDeserializer extends XnatExperimentdataDeser
                 case "age":
                 	xnatSubjectassessordata.setAge(Double.parseDouble(parser.getText()));
                     break;
-                case "xsiType":
-                	xnatSubjectassessordata.getItem().setXmlType("xnat:mrSessionData");
-                    break;
             }
             return xnatSubjectassessordata;
     	 }

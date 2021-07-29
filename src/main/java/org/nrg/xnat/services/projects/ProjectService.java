@@ -22,9 +22,9 @@ public interface ProjectService {
 
      Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-     XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, String allowDataDelete, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+     XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, boolean allowDataDeletion, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-     XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, String allowDataDelete, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+     XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
      void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
 }

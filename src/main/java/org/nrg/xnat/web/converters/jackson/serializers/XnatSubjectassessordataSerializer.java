@@ -19,7 +19,6 @@ public class XnatSubjectassessordataSerializer extends AbstractBaseElementSerial
     protected void serializeImpl(final XnatSubjectassessordata xnatSubjectassessordata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonNullField(generator, "subjectId", xnatSubjectassessordata.getSubjectId());
         writeNonNullNumber(generator, "age", xnatSubjectassessordata.getAge());
-        writeNonBlankField(generator, "xsiType", xnatSubjectassessordata.getXSIType());
         generator.writeFieldName("experiment");
         provider.findValueSerializer(XnatExperimentdata.class).serialize(xnatSubjectassessordata, generator, provider);
     }

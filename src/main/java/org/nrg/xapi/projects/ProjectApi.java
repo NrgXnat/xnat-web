@@ -119,7 +119,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects",consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
     public XnatProjectdata createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdata project,
-    									 @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
+    									 @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDeletion", defaultValue = "false") boolean allowDataDeletion, 
     									 @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
     									 @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
     									 @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
@@ -128,7 +128,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     									 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
     									 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws UserNotFoundException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException, ActionException, UserInitException  {
         log.debug("User {} requested to create project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.create(getSessionUser(), project,allowDataDelete, accessibility, xsiType,  XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+        return _projectService.create(getSessionUser(), project,allowDataDeletion, accessibility, xsiType,  XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
 
    
@@ -163,7 +163,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdata project,
                                          @ApiParam("The filepath value ") @RequestParam(name = "filepath", required = false)String filepath,
                                          @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
-                                         @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
+                                         @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDeletion", defaultValue = "false") boolean allowDataDeletion, 
                                          @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
                                          @ApiParam("The testHyphen value ") @RequestParam(name = "testHyphen", required = false)boolean testHyphen,
                                          @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
@@ -175,7 +175,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
             throw new DataFormatException("You specified the project " + projectId + " in your request but the project ID is " + project.getProject() + ". These values must be the same.");
         }
         log.debug("User {} requested to update project with ID {}", getSessionUser().getUsername(), project.getId());
-        return _projectService.update(getSessionUser(), project, filepath,allowDataDelete,accessibility,testHyphen,xsiType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+        return _projectService.update(getSessionUser(), project, filepath,allowDataDeletion,accessibility,testHyphen,xsiType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
     }
     
 	/**

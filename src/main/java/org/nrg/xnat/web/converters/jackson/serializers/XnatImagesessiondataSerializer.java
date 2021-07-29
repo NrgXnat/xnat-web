@@ -28,7 +28,8 @@ public class XnatImagesessiondataSerializer extends AbstractBaseElementSerialize
 		writeNonBlankField(generator, "prearchivePath", xnatImagesessiondata.getPrearchivepath());
 		writeNonBlankField(generator, "scanner", xnatImagesessiondata.getScanner());
 		writeNonBlankField(generator, "studyId", xnatImagesessiondata.getStudyId());
-		writeNonBlankField(generator, "UID", xnatImagesessiondata.getUid());
+		writeNonBlankField(generator, "sessionType", xnatImagesessiondata.getSessionType());
+		writeNonBlankField(generator, "uid", xnatImagesessiondata.getUid());
 		generator.writeObjectField("assessors", xnatImagesessiondata.getAssessors());
 		generator.writeObjectField("regions", xnatImagesessiondata.getRegions_region());
 		generator.writeObjectField("scans", xnatImagesessiondata.getScans_scan());
