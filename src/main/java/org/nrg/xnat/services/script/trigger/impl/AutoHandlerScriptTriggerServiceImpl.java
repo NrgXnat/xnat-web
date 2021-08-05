@@ -2,26 +2,42 @@ package org.nrg.xnat.services.script.trigger.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.json.JSONArray;
+import org.nrg.action.ClientException;
 import org.nrg.automation.entities.ScriptTrigger;
 import org.nrg.automation.services.ScriptTriggerService;
+import org.nrg.config.exceptions.ConfigServiceException;
+import org.nrg.config.services.ConfigService;
 import org.nrg.framework.constants.Scope;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xft.event.EventDetails;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
+import org.nrg.xnat.event.util.ImportEventHandlerResults;
+import org.nrg.xnat.event.util.JsonResults;
 import org.nrg.xnat.services.script.trigger.AutoHandlerScriptTriggerService;
 import org.nrg.xnat.services.script.trigger.utils.ScriptTriggerUtils;
+import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Method;
 import org.restlet.data.Status;
 import org.restlet.resource.ResourceException;
+import org.restlet.resource.StringRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -76,6 +92,196 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		}
 	}
 	
+	@Override
+	public void update(UserI user, String projectId, String triggerId,String eventId,String id,ImportEventHandlerResults results) throws DataFormatException, ConfigServiceException, NotFoundException, InitializationException, InsufficientPrivilegesException {
+		setProjectId(projectId);
+		final boolean hasEvent = StringUtils.isNotBlank(eventId);
+		final boolean hasTriggerId = StringUtils.isNotBlank(triggerId);
+		final boolean hasId = StringUtils.isNotBlank(id);
+		if (!hasTriggerId && !hasEvent && !hasId) {
+			_trigger = null;
+		}else {
+			if (hasId || hasTriggerId) {
+				_trigger =  getTrigger(hasId, id, triggerId);
+				projectId = getProjectIdWithAssociation(projectId);
+			}else if (_hasProjectId) {
+				_trigger = null;
+			}else {
+				projectId = null;
+				_trigger = null;
+			}
+		}
+		validateProjectAndTrigger(projectId, eventId, user, hasEvent);
+		
+		
+		Map<String, String> triggerIdMap = new HashMap<String, String>();
+		for (int i = 0; i < results.getEventHandlers().length; i++) {
+			addEventHandler(results.getEventHandlers()[i], triggerIdMap, projectId,user);
+		}
+		if (results.getSourceProjectId() != null) {
+			ConfigService configService = XDAT.getConfigService();
+
+			String currentConfigJson = configService.getConfigContents(TOOL_NAME_AUTOMATION_UPLOADER,PATH_CONFIGURATION, Scope.Project, getProjectId(projectId));
+			JSONArray currentConfig = null;
+			if (currentConfigJson != null)
+				currentConfig = new JSONArray(currentConfigJson);
+			else
+				currentConfig = new JSONArray();
+
+			String sourceConfingJson = configService.getConfigContents(TOOL_NAME_AUTOMATION_UPLOADER, PATH_CONFIGURATION, getScope(), results.getSourceProjectId());
+			JSONArray srcConfig = null;
+			if (sourceConfingJson != null)
+				srcConfig = new JSONArray(sourceConfingJson);
+			if (srcConfig != null) {
+				for (Iterator<String> iterator = triggerIdMap.keySet().iterator(); iterator.hasNext();) {
+					String key = iterator.next();
+					for (int i = 0; i < srcConfig.length(); i++) {
+						if (key.equals(srcConfig.getJSONObject(i).getString(EVENT))) {
+							srcConfig.getJSONObject(i).put(EVENT_TRIGGER_ID, triggerIdMap.get(key));
+							currentConfig.put(srcConfig.getJSONObject(i));
+						}
+					}
+				}
+				configService.replaceConfig(user.getLogin(), null, TOOL_NAME_AUTOMATION_UPLOADER, PATH_CONFIGURATION, currentConfig.toString(), getScope(), getProjectId(projectId));
+			}
+		}
+	}
+	
+	@Override
+	public void delete(UserI user, String eventId, String projectId,String triggerId, String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
+		 	setProjectId(projectId);
+			final boolean hasEvent = StringUtils.isNotBlank(eventId);
+			final boolean hasTriggerId = StringUtils.isNotBlank(triggerId);
+			final boolean hasId = StringUtils.isNotBlank(id);
+			if (!hasTriggerId && !hasEvent && !hasId) {
+				_trigger = null;
+			}else {
+				if (hasId || hasTriggerId) {
+					_trigger =  getTrigger(hasId, id, triggerId);
+					projectId = getProjectIdWithAssociation(projectId);
+				}else if (_hasProjectId) {
+					_trigger = null;
+				}else {
+					projectId = null;
+					_trigger = null;
+				}
+			}
+			validateProjectAndTrigger(projectId, eventId, user, hasEvent);
+			
+			if (log.isDebugEnabled()) {
+				log.debug("Preparing to delete script trigger for " + formatScopeEntityIdAndEvent(projectId, eventId) + " and its associated triggers.");
+			}
+			triggerId = _trigger.getTriggerId();
+			final String containerId = _trigger.getAssociation();
+			_scriptTriggerService.delete(_trigger);
+			recordAutomationEvent(triggerId, containerId, "Delete", ScriptTrigger.class, user);
+	}
+	
+	private void addEventHandler(JsonResults jsonResults, Map<String, String> triggerIdMap, String projectId,UserI user) throws DataFormatException {
+		if (_trigger == null) {
+			if (jsonResults.getEvent() == null || jsonResults.getEvent().length() < 1) {
+				throw new DataFormatException("You must specify the event for your new script trigger.");
+			}
+			if (jsonResults.getScriptId() == null || jsonResults.getScriptId().length() < 1) {
+				throw new DataFormatException("You must specify the script ID for your new script trigger.");
+			}
+			if (log.isDebugEnabled()) {
+				log.debug("Creating new script trigger");
+			}
+			final String scriptId = jsonResults.getScriptId();
+			final String event = jsonResults.getEvent();
+			final String description = jsonResults.getDescription();
+			final String eventClass = jsonResults.getEventClass();
+			final Map<String, List<String>> eventFilters = jsonResults.getFilters();
+			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(projectId),
+					eventClass, event, eventFilters);
+			final ScriptTrigger trigger = _scriptTriggerService.newEntity(triggerId, description, scriptId,
+					getAssociation(projectId), eventClass, event, eventFilters);
+			if (log.isInfoEnabled()) {
+				log.info("Created a new trigger: " + trigger.toString());
+			}
+			recordAutomationEvent(triggerId, getAssociation(projectId), "Create", ScriptTrigger.class, user);
+			// Return the trigger ID in the response test. The upload UI needs it
+			//this.getResponse().setEntity(new StringRepresentation(triggerId));
+			triggerIdMap.put(event, triggerId);
+		} else {
+			final String scriptId = jsonResults.getScriptId();
+			final String event = jsonResults.getEvent();
+			final String description = jsonResults.getDescription();
+			final String eventClass = jsonResults.getEventClass();
+			final Map<String, List<String>> eventFilters = jsonResults.getFilters();
+			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(projectId),
+					eventClass, event, eventFilters);
+			boolean isDirty = false;
+			if (StringUtils.isNotBlank(scriptId) && !scriptId.equals(_trigger.getScriptId())) {
+				_trigger.setScriptId(scriptId);
+				isDirty = true;
+			}
+			if (StringUtils.isNotBlank(event) && !event.equals(_trigger.getEvent())) {
+				_trigger.setEvent(event);
+				isDirty = true;
+			}
+			if (StringUtils.isNotBlank(triggerId) && !triggerId.equals(_trigger.getTriggerId())) {
+				_trigger.setTriggerId(triggerId);
+				isDirty = true;
+			}
+			if (StringUtils.isNotBlank(eventClass) && !eventClass.equals(_trigger.getSrcEventClass())) {
+				_trigger.setSrcEventClass(eventClass);
+				isDirty = true;
+			}
+			if (eventFilters != null && !eventFilters.equals(_trigger.getEventFiltersAsMap())) {
+				_trigger.setEventFiltersAsMap(eventFilters);
+				isDirty = true;
+			}
+			// Description is a little different because you could specify an empty
+			// description.
+			if (description != null && !description.equals(_trigger.getDescription())) {
+				_trigger.setDescription(description);
+				isDirty = true;
+			}
+			if (!getAssociation(projectId).equals(getAssociation(projectId))) {
+				_trigger.setAssociation(getAssociation(projectId));
+				isDirty = true;
+			}
+			if (isDirty) {
+				_scriptTriggerService.update(_trigger);
+				recordAutomationEvent(triggerId, getAssociation(projectId), "Update", ScriptTrigger.class,user);
+				// Return thie trigger ID in the response test. The upload UI needs it
+				//this.getResponse().setEntity(new StringRepresentation(triggerId));
+			}
+			triggerIdMap.put(event, triggerId);
+		}
+	}
+	
+	 protected void recordAutomationEvent(final String automationId, final String containerId, final String operation, final Class<?> type, UserI user) {
+	        try {
+	            final EventDetails instance = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_SERVICE, operation, "", operation + " " + type + " with ID " + automationId);
+	            PersistentWorkflowI workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, type.getName(), automationId, containerId, instance);
+	            assert workflow != null;
+	            workflow.setStatus(PersistentWorkflowUtils.COMPLETE);
+	            WorkflowUtils.save(workflow, workflow.buildEvent());
+	        } catch (PersistentWorkflowUtils.ActionNameAbsent | PersistentWorkflowUtils.IDAbsent | PersistentWorkflowUtils.JustificationAbsent exception) {
+	            // This is not really going to happen because we're providing all the attributes required, but we still have to handle it.
+	            log.warn("An error occurred trying to save a workflow when working with event", exception);
+	        } catch (Exception exception) {
+	            log.error("An error occurred trying to save a workflow when working with event", exception);
+	        }
+	    }
+	
+	 protected String getAssociation(String projectId) {
+	        if (getScope() == null) {
+	            return null;
+	        }
+	        return Scope.encode(getScope(), getProjectId(projectId));
+	    }
+	    protected void setAssociation(final String association) {
+	        final Map<String, String> atoms = Scope.decode(association);
+	        _scope = Scope.getScope(atoms.get("scope"));
+	        _projectId = _scope == Scope.Site ? null : atoms.get("entityId");
+	    }
+	
+	
+	
 	private void validateProjectAndTrigger(String projectId, String eventId, UserI user, boolean hasEvent) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
 		if (StringUtils.isNotBlank(projectId)) {
 			validateProjectAccess(projectId, user);
@@ -119,6 +325,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		}
 		return buffer.toString();
 	}
+	
 	protected void validateProjectAccess(final String projectId, UserI user) throws NotFoundException, InitializationException {
         final XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
         if (project == null) {
@@ -313,4 +520,8 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	private  ScriptTrigger _trigger;
 	private static final String KEY_PROJECTID = "projectId";
 	private static final String EXECUTED_SCRIPT = "Executed script ";
+	private static final String TOOL_NAME_AUTOMATION_UPLOADER = "automation_uploader";
+	private static final String PATH_CONFIGURATION = "configuration";
+	private static final String EVENT = "event";
+	private static final String EVENT_TRIGGER_ID = "eventTriggerId";
 }
