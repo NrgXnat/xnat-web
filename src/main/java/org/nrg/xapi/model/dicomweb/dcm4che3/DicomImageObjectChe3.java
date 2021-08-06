@@ -4,10 +4,9 @@ package org.nrg.xapi.model.dicomweb.dcm4che3;
 //import com.fasterxml.jackson.core.JsonGenerator;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.Fragments;
-import org.dcm4che3.data.Tag;
+import org.dcm4che3.data.*;
 import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.json.JSONWriter;
 import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
 import org.nrg.xapi.rest.dicomweb.JsonDicomObjectSerializer;
@@ -22,10 +21,11 @@ import java.io.*;
 @JsonSerialize(using= JsonDicomObjectSerializer.class)
 public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageObject {
 
+    // Attributes are inherited from DicomObjectChe3
+    //    protected Attributes attributes;
     private final File file;
     private boolean isTemporary;
-    private Attributes attributes = null;
-    private static int PIXEL_DATA = 0x7FE00010;
+    private final static int PIXEL_DATA = 0x7FE00010;
     private TransformerHandler transformerHandler;
 
     private final FrameGrabber frameGrabber;
@@ -164,6 +164,18 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
         DicomInputStream dis = new DicomInputStream( file);
         attributes = dis.getFileMetaInformation();
         attributes.addAll( dis.readDataset( -1, -1));
+    }
+
+    protected final int[] skipTags = { PIXEL_DATA};
+
+    @Override
+    public void writeAsJSON(javax.json.stream.JsonGenerator jsonGenerator) throws IOException {
+        JSONWriter jsonWriter = new JSONWriter( jsonGenerator);
+        Attributes tmpAttributes = new Attributes();
+        tmpAttributes.addNotSelected( attributes, skipTags);
+
+        jsonWriter.write( tmpAttributes);
+        jsonGenerator.flush();
     }
 
     @Override
