@@ -32,7 +32,7 @@ import java.io.OutputStream;
 @JsonSerialize(using= JsonDicomObjectSerializer.class)
 public class DicomObjectChe3 implements DicomObject {
 
-    private Attributes attributes;
+    protected Attributes attributes;
     private TransformerHandler transformerHandler;
 
     public DicomObjectChe3() {
