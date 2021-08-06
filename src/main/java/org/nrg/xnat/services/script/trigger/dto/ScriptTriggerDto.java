@@ -1,4 +1,4 @@
-package org.nrg.xnat.services.script.trigger.utils;
+package org.nrg.xnat.services.script.trigger.dto;
 
 import java.io.Serializable;
 import java.util.List;
@@ -9,8 +9,8 @@ import lombok.Data;
 
 @Data
 @Builder
-public class ScriptTriggerUtils implements Serializable{
-	private static final long serialVersionUID = -3695911063166369038L;
+public class ScriptTriggerDto implements Serializable{
+	private static final long serialVersionUID = 1030751073296290307L;
 	private String id ;
 	private String  triggerId;
 	private String scope ;

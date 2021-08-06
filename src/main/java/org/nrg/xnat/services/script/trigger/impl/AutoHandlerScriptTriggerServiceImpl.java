@@ -11,7 +11,6 @@ import java.util.Map;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
-import org.nrg.action.ClientException;
 import org.nrg.automation.entities.ScriptTrigger;
 import org.nrg.automation.services.ScriptTriggerService;
 import org.nrg.config.exceptions.ConfigServiceException;
@@ -32,12 +31,8 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.event.util.ImportEventHandlerResults;
 import org.nrg.xnat.event.util.JsonResults;
 import org.nrg.xnat.services.script.trigger.AutoHandlerScriptTriggerService;
-import org.nrg.xnat.services.script.trigger.utils.ScriptTriggerUtils;
+import org.nrg.xnat.services.script.trigger.dto.ScriptTriggerDto;
 import org.nrg.xnat.utils.WorkflowUtils;
-import org.restlet.data.Method;
-import org.restlet.data.Status;
-import org.restlet.resource.ResourceException;
-import org.restlet.resource.StringRepresentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -382,13 +377,14 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		return triggers;
 	}
 
+	@SuppressWarnings("unchecked")
 	private T getScriptTiggerData(List<ScriptTrigger> triggers) {
-		List<ScriptTriggerUtils>scriptTriggerUtils = new ArrayList<>();
+		List<ScriptTriggerDto>ScriptTriggerDtos = new ArrayList<>();
 		for (final ScriptTrigger trigger : triggers) {
 		final Map<String, String> atoms = Scope.decode(trigger.getAssociation());
 		final String scope = atoms.get("scope");
 		final String entityId = scope.equals(Scope.Site.code()) ? "" : atoms.get("entityId");
-		scriptTriggerUtils.add(ScriptTriggerUtils.builder()
+		ScriptTriggerDtos.add(ScriptTriggerDto.builder()
 				.id(String.valueOf(trigger.getId()))
 				.triggerId(trigger.getTriggerId())
 				.scope(scope)
@@ -400,7 +396,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 				.description(trigger.getDescription())
 				.build());
 		}
-		return (T)scriptTriggerUtils;
+		return (T)ScriptTriggerDtos;
 	}
 
 	private T getFilteredtriggers(List<ScriptTrigger> triggers) {
