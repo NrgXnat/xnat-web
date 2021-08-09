@@ -56,7 +56,7 @@ public class AutoHandlerScriptTriggerApi<T> extends AbstractXapiProjectRestContr
     		@ApiParam(value = "The ID of the entity.") @PathVariable(required = false) final String entityId,
     		@ApiParam(value = "The ID of the trigger.") @PathVariable(required = false) final String triggerId,
     		@ApiParam(value = "The ID of the event.") @PathVariable(required = false) final String eventId,
-    		@ApiParam(value = "The value of the ID.") @RequestParam(required = false) final String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
+    		@ApiParam(value = "The value of the ID.") @RequestParam(required = false) final String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException, DataFormatException {
     	log.debug("User {} requested automation handlers with ID {}", getSessionUser().getUsername(), projectId);
         return _scriptTriggerService.findScriptTrigger(getSessionUser(), entityId, projectId,triggerId,eventId,id);
     }

@@ -23,16 +23,12 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Roles;
-import org.nrg.xft.event.EventDetails;
-import org.nrg.xft.event.EventUtils;
-import org.nrg.xft.event.persist.PersistentWorkflowI;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.event.util.ImportEventHandlerResults;
 import org.nrg.xnat.event.util.JsonResults;
 import org.nrg.xnat.services.script.trigger.AutoHandlerScriptTriggerService;
 import org.nrg.xnat.services.script.trigger.dto.ScriptTriggerDto;
-import org.nrg.xnat.utils.WorkflowUtils;
+import org.nrg.xnat.services.script.trigger.utils.AutomationScriptTriggerUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -41,7 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 @SuppressWarnings("rawtypes")
 @Service
 @Slf4j
-public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScriptTriggerService {
+public class AutoHandlerScriptTriggerServiceImpl<T> extends AutomationScriptTriggerUtils implements AutoHandlerScriptTriggerService {
 
 	@Autowired
 	public AutoHandlerScriptTriggerServiceImpl(final ScriptTriggerService scriptTriggerService) {
@@ -50,13 +46,13 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	
 	@SuppressWarnings("unchecked")
 	@Override
-	public T findScriptTrigger(UserI user, String entityId, String projectId, String triggerId, String eventId, String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
+	public T findScriptTrigger(UserI user, String entityId, String projectId, String triggerId, String eventId, String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException, DataFormatException {
 		final boolean hasEntityId = StringUtils.isNotBlank(entityId);
         final boolean hasProjectId = StringUtils.isNotBlank(projectId);
         
         setProjectId(projectId);
         
-        validateScop(hasEntityId, hasProjectId, entityId, projectId);
+        validateScop(hasEntityId, hasProjectId, entityId, projectId, user);
 
 		final boolean hasEvent = StringUtils.isNotBlank(eventId);
 		final boolean hasTriggerId = StringUtils.isNotBlank(triggerId);
@@ -116,7 +112,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		if (results.getSourceProjectId() != null) {
 			ConfigService configService = XDAT.getConfigService();
 
-			String currentConfigJson = configService.getConfigContents(TOOL_NAME_AUTOMATION_UPLOADER,PATH_CONFIGURATION, Scope.Project, getProjectId(projectId));
+			String currentConfigJson = configService.getConfigContents(TOOL_NAME_AUTOMATION_UPLOADER,PATH_CONFIGURATION, Scope.Project, getProjectId());
 			JSONArray currentConfig = null;
 			if (currentConfigJson != null)
 				currentConfig = new JSONArray(currentConfigJson);
@@ -137,7 +133,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 						}
 					}
 				}
-				configService.replaceConfig(user.getLogin(), null, TOOL_NAME_AUTOMATION_UPLOADER, PATH_CONFIGURATION, currentConfig.toString(), getScope(), getProjectId(projectId));
+				configService.replaceConfig(user.getLogin(), null, TOOL_NAME_AUTOMATION_UPLOADER, PATH_CONFIGURATION, currentConfig.toString(), getScope(), getProjectId());
 			}
 		}
 	}
@@ -188,14 +184,14 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 			final String description = jsonResults.getDescription();
 			final String eventClass = jsonResults.getEventClass();
 			final Map<String, List<String>> eventFilters = jsonResults.getFilters();
-			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(projectId),
+			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(),
 					eventClass, event, eventFilters);
 			final ScriptTrigger trigger = _scriptTriggerService.newEntity(triggerId, description, scriptId,
-					getAssociation(projectId), eventClass, event, eventFilters);
+					getAssociation(), eventClass, event, eventFilters);
 			if (log.isInfoEnabled()) {
 				log.info("Created a new trigger: " + trigger.toString());
 			}
-			recordAutomationEvent(triggerId, getAssociation(projectId), "Create", ScriptTrigger.class, user);
+			recordAutomationEvent(triggerId, getAssociation(), "Create", ScriptTrigger.class, user);
 			// Return the trigger ID in the response test. The upload UI needs it
 			//this.getResponse().setEntity(new StringRepresentation(triggerId));
 			triggerIdMap.put(event, triggerId);
@@ -205,7 +201,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 			final String description = jsonResults.getDescription();
 			final String eventClass = jsonResults.getEventClass();
 			final Map<String, List<String>> eventFilters = jsonResults.getFilters();
-			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(projectId),
+			final String triggerId = _scriptTriggerService.getDefaultTriggerName(scriptId, getScope(), getProjectId(),
 					eventClass, event, eventFilters);
 			boolean isDirty = false;
 			if (StringUtils.isNotBlank(scriptId) && !scriptId.equals(_trigger.getScriptId())) {
@@ -234,47 +230,19 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 				_trigger.setDescription(description);
 				isDirty = true;
 			}
-			if (!getAssociation(projectId).equals(getAssociation(projectId))) {
-				_trigger.setAssociation(getAssociation(projectId));
+			if (!getAssociation().equals(getAssociation())) {
+				_trigger.setAssociation(getAssociation());
 				isDirty = true;
 			}
 			if (isDirty) {
 				_scriptTriggerService.update(_trigger);
-				recordAutomationEvent(triggerId, getAssociation(projectId), "Update", ScriptTrigger.class,user);
+				recordAutomationEvent(triggerId, getAssociation(), "Update", ScriptTrigger.class,user);
 				// Return thie trigger ID in the response test. The upload UI needs it
 				//this.getResponse().setEntity(new StringRepresentation(triggerId));
 			}
 			triggerIdMap.put(event, triggerId);
 		}
 	}
-	
-	 protected void recordAutomationEvent(final String automationId, final String containerId, final String operation, final Class<?> type, UserI user) {
-	        try {
-	            final EventDetails instance = EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.WEB_SERVICE, operation, "", operation + " " + type + " with ID " + automationId);
-	            PersistentWorkflowI workflow = PersistentWorkflowUtils.buildOpenWorkflow(user, type.getName(), automationId, containerId, instance);
-	            assert workflow != null;
-	            workflow.setStatus(PersistentWorkflowUtils.COMPLETE);
-	            WorkflowUtils.save(workflow, workflow.buildEvent());
-	        } catch (PersistentWorkflowUtils.ActionNameAbsent | PersistentWorkflowUtils.IDAbsent | PersistentWorkflowUtils.JustificationAbsent exception) {
-	            // This is not really going to happen because we're providing all the attributes required, but we still have to handle it.
-	            log.warn("An error occurred trying to save a workflow when working with event", exception);
-	        } catch (Exception exception) {
-	            log.error("An error occurred trying to save a workflow when working with event", exception);
-	        }
-	    }
-	
-	 protected String getAssociation(String projectId) {
-	        if (getScope() == null) {
-	            return null;
-	        }
-	        return Scope.encode(getScope(), getProjectId(projectId));
-	    }
-	    protected void setAssociation(final String association) {
-	        final Map<String, String> atoms = Scope.decode(association);
-	        _scope = Scope.getScope(atoms.get("scope"));
-	        _projectId = _scope == Scope.Site ? null : atoms.get("entityId");
-	    }
-	
 	
 	
 	private void validateProjectAndTrigger(String projectId, String eventId, UserI user, boolean hasEvent) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
@@ -310,7 +278,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 			if (getScope() == Scope.Site) {
 				buffer.append("site");
 			} else {
-				buffer.append("project ").append(getProjectId(projectId));
+				buffer.append("project ").append(getProjectId());
 			}
 			if (StringUtils.isNotBlank(eventId)) {
 				buffer.append(" and event ").append(eventId);
@@ -324,16 +292,16 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	protected void validateProjectAccess(final String projectId, UserI user) throws NotFoundException, InitializationException {
         final XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
         if (project == null) {
-            throw new NotFoundException("Can't find project with ID: " + getProjectId(projectId));
+            throw new NotFoundException("Can't find project with ID: " + getProjectId());
         }
         try {
             if ((!project.canEdit(user)) || !project.canRead(user)) {
-                final String message = "User " + user.getLogin() + " attempted to access project " + getProjectId(projectId) + " with insufficient privileges.";
+                final String message = "User " + user.getLogin() + " attempted to access project " + getProjectId() + " with insufficient privileges.";
                 log.warn(message);
                 throw new InsufficientPrivilegesException(message);
             }
         } catch(Exception e){
-            throw new InitializationException("Something went wrong accessing project info for " + getProjectId(projectId));
+            throw new InitializationException("Something went wrong accessing project info for " + getProjectId());
         }
     }
 
@@ -428,9 +396,6 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		}
 	}
 
-	protected Scope getScope() {
-        return _scope == null ? Scope.Site : _scope;
-    }
 
 	//NEED TO ADD IMPL
 	private ScriptTrigger getScriptTrigger() {
@@ -438,20 +403,9 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	}
 	
 
-	protected boolean hasProjectId() {
-        return _hasProjectId;
-    }
-    protected String getProjectId(String projectId) {
-        return _projectId;
-    }
-    protected void setProjectId(final String projectId) {
-        _projectId = projectId;
-        _hasProjectId = StringUtils.isNotBlank(_projectId);
-    }
-	
 	private String getProjectIdWithAssociation(String projectId) {
 		if (StringUtils.isNotBlank(_trigger.getAssociation())) {
-			setAssociation(_trigger.getAssociation(), projectId);
+			setAssociation(_trigger.getAssociation());
 			projectId = getScope() == Scope.Site ? null : projectId;
 		} else {
 			projectId = null;
@@ -459,11 +413,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		return projectId;
 	}
 	
-	 protected void setAssociation(final String association, String projectId) {
-	        final Map<String, String> atoms = Scope.decode(association);
-	        _scope = Scope.getScope(atoms.get("scope"));
-	        projectId = _scope == Scope.Site ? null : atoms.get("entityId");
-	    }
+
 
 	private ScriptTrigger getTrigger(boolean hasId, String id, String triggerId) throws NotFoundException {
 		_trigger = (hasId) ? _scriptTriggerService.getById(id)
@@ -474,7 +424,7 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 		return _trigger;
 	}
 
-	private void validateScop(boolean hasEntityId, boolean hasProjectId, String entityId, String projectId) {
+	private void validateScop(boolean hasEntityId, boolean hasProjectId, String entityId, String projectId, UserI user) throws InitializationException, NotFoundException, DataFormatException {
 		 if (!hasEntityId && !hasProjectId) {
 	            _scope = null;
 	            _projectId = null;
@@ -488,10 +438,10 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	            if (hasEntityId) {
 	                final Map<String, String> entityProps = Scope.decode(entityId);
 	                _scope = Scope.getScope(entityProps.get("scope"));
-	                values = validateEntityId(entityProps.get("entityId"));
+	                values = validateEntityId(entityProps.get("entityId"), user);
 	            } else {
 	                _scope = Scope.Project;
-	                values = validateEntityId(projectId);
+	                values = validateEntityId(projectId, user);
 	            }
 	            // For now we presume entity ID is a project ID. This will change soon.
 	            if (values != null) {
@@ -504,14 +454,6 @@ public class AutoHandlerScriptTriggerServiceImpl<T> implements AutoHandlerScript
 	        }
 	}
 
-	//NEED TO ADD IMPL
-	private Map<String, String> validateEntityId(String string) {
-		return null;
-	}
-	
-	private Scope _scope;
-	private String  _projectId;
-	private boolean _hasProjectId;
 	private final ScriptTriggerService _scriptTriggerService;
 	private  ScriptTrigger _trigger;
 	private static final String KEY_PROJECTID = "projectId";

@@ -124,7 +124,7 @@ public class AutomationScriptTriggerUtils {
 					"Something went wrong accessing project info for " + getProjectId());
 		}
 	}
-	 private Map<String, String> validateEntityId(final String entityId, UserI user) throws InitializationException, NotFoundException, DataFormatException  {
+	 protected Map<String, String> validateEntityId(final String entityId, UserI user) throws InitializationException, NotFoundException, DataFormatException  {
 	        if (getScope() == null) {
 	            return null;
 	        }
@@ -171,8 +171,8 @@ public class AutomationScriptTriggerUtils {
 	private static final String KEY_PROJECTID = "projectId";
 
 	private String _path;
-	private Scope _scope;
-	private boolean _hasProjectId;
-	private String _projectId;
+	protected Scope _scope;
+	protected boolean _hasProjectId;
+	protected String _projectId;
 	
 }

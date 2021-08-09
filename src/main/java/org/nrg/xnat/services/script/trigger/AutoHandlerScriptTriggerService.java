@@ -10,7 +10,7 @@ import org.nrg.xnat.event.util.ImportEventHandlerResults;
 
 public interface AutoHandlerScriptTriggerService<T> {
 	
-	public T findScriptTrigger(UserI user, String entityId, String projectId, String triggerId, String eventId, String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException;
+	public T findScriptTrigger(UserI user, String entityId, String projectId, String triggerId, String eventId, String id) throws NotFoundException, InitializationException, InsufficientPrivilegesException, DataFormatException;
 
 	public void update(UserI user, String projectId, String triggerId,String eventId,String id,ImportEventHandlerResults results) throws DataFormatException, ConfigServiceException, NotFoundException, InitializationException, InsufficientPrivilegesException;
 	
