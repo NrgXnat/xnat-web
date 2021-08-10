@@ -10,6 +10,7 @@ import java.util.TreeSet;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.action.ClientException;
 import org.nrg.automation.entities.ScriptTrigger;
 import org.nrg.automation.entities.ScriptTriggerTemplate;
 import org.nrg.automation.services.ScriptTriggerService;
@@ -27,6 +28,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.script.trigger.AutoHandlerScriptTriggerTemplateService;
 import org.nrg.xnat.services.script.trigger.dto.ScriptTriggerTemplateDto;
 import org.nrg.xnat.services.script.trigger.utils.AutomationScriptTriggerUtils;
+import org.restlet.data.Status;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
@@ -55,6 +57,34 @@ public class AutoHandlerScriptTriggerTemplateServiceImpl<T> extends AutomationSc
         }
         // If there was a template ID, then list the triggers for that template ID.
             return listTriggers(templateId);
+	}
+	
+	@Override
+	public void update(UserI user, ScriptTriggerTemplate template, String templateId, HttpServletRequest request) throws InitializationException {
+		try {
+            if (StringUtils.isNotBlank(templateId)) {
+                putTemplate(request.getContentType(), template, user);
+            } else {
+                throw new DataFormatException( "You must specify a template ID on the URL to PUT a template to the server.");
+            }
+        } catch (DataFormatException e) {
+           
+        }
+	}
+	
+	@Override
+	public void delete(UserI user, String templateId) throws NotFoundException {
+		if (StringUtils.isBlank(templateId)) {
+            throw new NotFoundException("You must specify a template ID on the REST URL to DELETE a template from the server.");
+        }
+        ScriptTriggerTemplate template = _templateService.getByName(templateId);
+        if (template == null) {
+            throw new NotFoundException("The template ID " + templateId + " was not found on the system.");
+        }
+        final String tempId = template.getTemplateId();
+        final String entities = Joiner.on(", ").join(template.getAssociatedEntities());
+        _templateService.delete(template);
+        recordAutomationEvent(tempId, entities, "Delete", ScriptTriggerTemplate.class, user);
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -90,20 +120,6 @@ public class AutoHandlerScriptTriggerTemplateServiceImpl<T> extends AutomationSc
 		return (T) scriptTriggerTemplateDtos;
 	}
 	
-	
-	@Override
-	public void update(UserI user, ScriptTriggerTemplate template, String templateId, HttpServletRequest request) throws InitializationException {
-		try {
-            if (StringUtils.isNotBlank(templateId)) {
-                putTemplate(request.getContentType(), template, user);
-            } else {
-                throw new DataFormatException( "You must specify a template ID on the URL to PUT a template to the server.");
-            }
-        } catch (DataFormatException e) {
-           
-        }
-	}
-
 	private void putTemplate(String contentType, ScriptTriggerTemplate template, UserI user) throws DataFormatException, InitializationException {
 		if(Objects.nonNull(template)) {
 			throw new DataFormatException("Unable to find template parameters: no data sent?");

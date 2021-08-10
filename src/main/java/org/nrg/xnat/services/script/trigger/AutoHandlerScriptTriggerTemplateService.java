@@ -14,4 +14,5 @@ public interface AutoHandlerScriptTriggerTemplateService<T> {
 	
 	public void update(UserI user, ScriptTriggerTemplate template, String templateId, HttpServletRequest request) throws InitializationException;
 	
+	public void delete(UserI user, String templateId) throws NotFoundException;
 }

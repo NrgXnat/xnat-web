@@ -1,5 +1,6 @@
 package org.nrg.xapi.script.trigger;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -63,12 +65,25 @@ public class AutoHandlerScriptTriggerTemplateApi<T> extends AbstractXapiProjectR
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/automation/templates","/automation/templates/{templateId}", "/projects/{projectId}/automation/templates", 
 			"/projects/{projectId}/automation/templates/{templateId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = PUT)
-    public void updateScriptTriggers(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+    public void updateScriptTriggersTemplate(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
     		@ApiParam(value = "The ID of the template.") @PathVariable(required = false) final String templateId,
     		@ApiParam(value = "The request body") @RequestBody ScriptTriggerTemplate template,
     		@ApiParam("Http serverlet request") HttpServletRequest request) throws ConfigServiceException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException  {
     	log.debug("User {} requested automation handlers with ID {}", getSessionUser().getUsername(), projectId);
     	_scriptTriggerTemplateService.update(getSessionUser(), template, templateId, request);
+    }
+	
+	@ApiOperation(value = "Delete the requested  handlers template", notes = "Returns the  handlers template with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers template."),
+    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested handlers template wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = {"/automation/templates","/automation/templates/{templateId}", "/projects/{projectId}/automation/templates", 
+			"/projects/{projectId}/automation/templates/{templateId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE)
+    public void  deleteScriptTriggersTemplate(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+    		@ApiParam(value = "The ID of the template.") @PathVariable(required = false) final String templateId) throws NotFoundException, InitializationException, InsufficientPrivilegesException {
+    	log.debug("User {} requested automation handlers with ID {}", getSessionUser().getUsername(), projectId);
+    	_scriptTriggerTemplateService.delete(getSessionUser(), templateId);
     }
 	
 	private final AutoHandlerScriptTriggerTemplateService<T> _scriptTriggerTemplateService;
