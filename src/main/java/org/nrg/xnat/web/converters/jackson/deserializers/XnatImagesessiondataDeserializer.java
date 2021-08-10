@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatImagesessiondata;
+import org.nrg.xdat.om.XnatRegionresource;
 
 import java.io.IOException;
 
@@ -53,6 +54,13 @@ public abstract class XnatImagesessiondataDeserializer<T extends XnatImagesessio
                 break;
             case "uid":
                 instance.setUid(parser.getText());
+                break;
+            case "regions":
+                try {
+                    instance.setRegions_region(parser.readValueAs(XnatRegionresource.class));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
                 break;
             default:
                 super.handleField(instance, field, parser, context);

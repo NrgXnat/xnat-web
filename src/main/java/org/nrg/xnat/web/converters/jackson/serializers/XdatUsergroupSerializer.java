@@ -29,6 +29,5 @@ public class XdatUsergroupSerializer<T extends XdatUsergroup> extends AbstractBa
         writeNonBlankField(generator, "tag", userGroup.getTag());
         writeNonNullNumber(generator, "xdatUsergroupId", userGroup.getXdatUsergroupId());
         writeNonNullField(generator, "elementAccess", userGroup.getElementAccess());
-        //writeNonNullField(generator, "user", userGroup.getUser());
     }
 }

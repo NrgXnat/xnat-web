@@ -45,6 +45,11 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
         if (insertUser != null) {
             writeNonBlankField(generator, "createdBy", insertUser.getUsername());
         }
+        writeNonNullDate(generator, "lastModified", element.getItem().getLastModified());
+        final UserI lastModifiedUser = element.getItem().getUser();
+        if (lastModifiedUser != null) {
+            writeNonBlankField(generator, "lastModifiedBy", lastModifiedUser.getUsername());
+        }
         generator.writeEndObject();
     }
 
@@ -55,7 +60,7 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
     }
 
     /**
-     * Writes a field named <b>name</b> with the the value inserted directly as JSON, i.e. no escaping of significant characters.
+     * Writes a field named <b>name</b> with the value inserted directly as JSON, i.e. no escaping of significant characters.
      * This allows the "conversion" of JSON stored as a string into JSON directly in the serialized output.
      *
      * @param generator The generator for the serialization operation.
@@ -64,6 +69,7 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
      *
      * @throws IOException When an error occurs during the serialization write operations.
      */
+    @SuppressWarnings("unused")
     protected void writeNonBlankJson(final JsonGenerator generator, final String name, final String value) throws IOException {
         if (StringUtils.isNotBlank(value)) {
             generator.writeFieldName(name);

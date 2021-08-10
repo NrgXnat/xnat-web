@@ -3,22 +3,22 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xdat.om.XnatXcscandata;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 @Component
 @Slf4j
-public class XnatResourcecatalogDeserializer<T extends XnatResourcecatalog> extends XnatResourceDeserializer<T> {
-    private static final long serialVersionUID = 3231255490942201806L;
+public class XnatXcscandataDeserializer<T extends XnatXcscandata> extends XnatImagescandataDeserializer<T> {
+    private static final long serialVersionUID = 655137282489634573L;
 
     @SuppressWarnings("unchecked")
-    public XnatResourcecatalogDeserializer() {
-        this((Class<T>) XnatResourcecatalog.class);
+    public XnatXcscandataDeserializer() {
+        this((Class<T>) XnatXcscandata.class);
     }
 
-    protected XnatResourcecatalogDeserializer(final Class<T> clazz) {
+    protected XnatXcscandataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 

@@ -2,11 +2,13 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.om.XnatImagescandata;
 
 import java.io.IOException;
 
+@Slf4j
 public abstract class XnatImagescandataDeserializer<T extends XnatImagescandata> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = -8411039314137244911L;
 

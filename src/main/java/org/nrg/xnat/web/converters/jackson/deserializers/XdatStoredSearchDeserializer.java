@@ -3,6 +3,7 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+import net.logstash.logback.encoder.org.apache.commons.lang.StringUtils;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatUser;
 import org.nrg.xdat.om.XdatUsergroup;
@@ -11,7 +12,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -57,28 +57,28 @@ public class XdatStoredSearchDeserializer<T extends XdatStoredSearch> extends Ab
                 instance.setAllowDiffColumns(parser.getBooleanValue());
                 break;
             case "briefDescription":
-                instance.setBriefDescription(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setBriefDescription(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "description":
-                instance.setDescription(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setDescription(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "layeredSequence":
-                instance.setLayeredsequence(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setLayeredsequence(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "secure":
                 instance.setSecure(parser.getBooleanValue());
                 break;
             case "rootElementName":
-                instance.setRootElementName(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setRootElementName(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "id":
-                instance.setId(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setId(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "tag":
-                instance.setTag(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setTag(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             case "sortByElementName":
-                instance.setSortBy_elementName(Objects.nonNull(parser.getText()) ? parser.getText() : "");
+                instance.setSortBy_elementName(StringUtils.defaultIfBlank(parser.getText(), ""));
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -5,9 +5,11 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatInvestigatordata;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Component
 @Slf4j
 public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = 3867498404888076051L;

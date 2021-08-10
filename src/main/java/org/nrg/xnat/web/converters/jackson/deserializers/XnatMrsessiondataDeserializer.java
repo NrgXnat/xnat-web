@@ -26,19 +26,15 @@ public class XnatMrsessiondataDeserializer<T extends XnatMrsessiondata> extends 
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         switch (field) {
             case "coil":
-                parser.nextToken();  //move to next token in string
                 instance.setCoil(parser.getText());
                 break;
             case "fieldStrength":
-                parser.nextToken();  //move to next token in string
                 instance.setFieldstrength(parser.getText());
                 break;
             case "marker":
-                parser.nextToken();  //move to next token in string
                 instance.setMarker(parser.getText());
                 break;
             case "stabilization":
-                parser.nextToken();  //move to next token in string
                 instance.setStabilization(parser.getText());
                 break;
             default:

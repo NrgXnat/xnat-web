@@ -33,8 +33,7 @@ public class XnatPetscandataDeserializer<T extends XnatPetscandata> extends Xnat
                 instance.setId(parser.getText());
                 break;
             case "project":
-                // TODO: duplicate branch in switch
-                instance.setId(parser.getText());
+                instance.setProject(parser.getText());
                 break;
             case "imageSessionId":
                 instance.setImageSessionId(parser.getText());

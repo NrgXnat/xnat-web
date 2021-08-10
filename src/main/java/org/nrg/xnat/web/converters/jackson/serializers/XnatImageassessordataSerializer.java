@@ -8,7 +8,7 @@ import org.nrg.xdat.om.XnatImageassessordata;
 import java.io.IOException;
 
 @Slf4j
-public abstract class XnatImageassessordataSerializer<T extends XnatImageassessordata> extends AbstractBaseElementSerializer<T> {
+public abstract class XnatImageassessordataSerializer<T extends XnatImageassessordata> extends XnatDeriveddataSerializer<T> {
     private static final long serialVersionUID = -5866321865427372083L;
 
     @SuppressWarnings("unchecked")
@@ -21,22 +21,23 @@ public abstract class XnatImageassessordataSerializer<T extends XnatImageassesso
     }
 
     @Override
-    protected void serializeImpl(final XnatImageassessordata assessor, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonBlankField(generator, "id", assessor.getId());
-        writeNonBlankField(generator, "label", assessor.getLabel());
-        writeNonBlankField(generator, "project", assessor.getProject());
-        writeNonBlankField(generator, "note", assessor.getNote());
-        writeNonBlankField(generator, "protocol", assessor.getProtocol());
-        writeNonBlankField(generator, "original", assessor.getOriginal());
-        writeNonNullField(generator, "date", assessor.getDate());
-        writeNonNullNumber(generator, "delay", assessor.getDelay());
-        writeNonNullNumber(generator, "version", assessor.getVersion());
-        writeNonBlankField(generator, "description", assessor.getDescription());
-        writeNonNullField(generator, "fields", assessor.getFields_field());
-        writeNonNullField(generator, "resources", assessor.getResources_resource());
-        writeNonNullField(generator, "experiment", assessor.getExperimentdata());
-        writeNonNullField(generator, "sessionData", assessor.getImageSessionData());
-        writeNonNullField(generator, "scans", assessor.getImageSessionData().getScans_scan());
-        writeNonNullField(generator, "outFile", assessor.getOut_file());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "note", instance.getNote());
+        writeNonBlankField(generator, "protocol", instance.getProtocol());
+        writeNonBlankField(generator, "original", instance.getOriginal());
+        writeNonNullField(generator, "date", instance.getDate());
+        writeNonNullNumber(generator, "delay", instance.getDelay());
+        writeNonNullNumber(generator, "version", instance.getVersion());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonNullField(generator, "fields", instance.getFields_field());
+        writeNonNullField(generator, "resources", instance.getResources_resource());
+        writeNonNullField(generator, "experiment", instance.getExperimentdata());
+        writeNonNullField(generator, "sessionData", instance.getImageSessionData());
+        writeNonNullField(generator, "scans", instance.getImageSessionData().getScans_scan());
+        writeNonNullField(generator, "outFile", instance.getOut_file());
     }
 }

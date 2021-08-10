@@ -53,9 +53,6 @@ public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> ex
             case "version":
                 instance.setVersion(parser.getIntValue());
                 break;
-            case "acquisitionSite":
-                instance.setAcquisitionSite(parser.getText());
-                break;
             case "visit":
                 instance.setVisit(parser.getText());
                 break;
