@@ -1,75 +1,66 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatPetmrsessiondata;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatMrsessiondata;
-import org.nrg.xdat.om.XnatPetmrsessiondata;
-import org.nrg.xdat.om.XnatSubjectassessordata;
+@Component
+@Slf4j
+public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> extends XnatImagesessiondataDeserializer<T> {
+    private static final long serialVersionUID = -6623396410189809068L;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-
-public class XnatPetmrsessiondataDeserializer extends AbstractBaseElementDeserializer<XnatPetmrsessiondata> {
+    @SuppressWarnings("unchecked")
     public XnatPetmrsessiondataDeserializer() {
-        super(XnatPetmrsessiondata.class);
+        this((Class<T>) XnatPetmrsessiondata.class);
+    }
+
+    protected XnatPetmrsessiondataDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XnatPetmrsessiondata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatPetmrsessiondata xnatPetmrsessiondata = new XnatPetmrsessiondata();
-
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "id":
-                	xnatPetmrsessiondata.setId(parser.getText());
-                    break;
-                case "label":
-                	xnatPetmrsessiondata.setLabel(parser.getText());
-                    break;
-                case "project":
-                    xnatPetmrsessiondata.setProject(parser.getText());
-                    break;
-                case "note":
-                    xnatPetmrsessiondata.setNote(parser.getText());
-                    break;
-                case "protocol":
-                    xnatPetmrsessiondata.setProtocol(parser.getText());
-                    break;
-                case "original":
-                    xnatPetmrsessiondata.setOriginal(parser.getText());
-                    break;
-                case "date":
-                    xnatPetmrsessiondata.setDate(parseDate(parser.getText()));
-                    break;
-                case "delay":
-                    xnatPetmrsessiondata.setDelay(parser.getIntValue());
-                    break;
-                case "version":
-                    xnatPetmrsessiondata.setVersion(parser.getIntValue());
-                    break;
-                case "acquisitionSite":
-                    xnatPetmrsessiondata.setAcquisitionSite(parser.getText());
-                    break;
-                case "visit":
-                    xnatPetmrsessiondata.setVisit(parser.getText());
-                    break;
-                case "visitId":
-                    xnatPetmrsessiondata.setVisitId(parser.getText());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        // TODO: Mostly properties on superclass, not PET/MR specific
+        switch (field) {
+            case "id":
+                instance.setId(parser.getText());
+                break;
+            case "label":
+                instance.setLabel(parser.getText());
+                break;
+            case "project":
+                instance.setProject(parser.getText());
+                break;
+            case "note":
+                instance.setNote(parser.getText());
+                break;
+            case "protocol":
+                instance.setProtocol(parser.getText());
+                break;
+            case "original":
+                instance.setOriginal(parser.getText());
+                break;
+            case "date":
+                instance.setDate(parseDate(parser.getText()));
+                break;
+            case "delay":
+                instance.setDelay(parser.getIntValue());
+                break;
+            case "version":
+                instance.setVersion(parser.getIntValue());
+                break;
+            case "visit":
+                instance.setVisit(parser.getText());
+                break;
+            case "visitId":
+                instance.setVisitId(parser.getText());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return xnatPetmrsessiondata;
     }
-
-	@Override
-	protected XnatPetmrsessiondata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
 }

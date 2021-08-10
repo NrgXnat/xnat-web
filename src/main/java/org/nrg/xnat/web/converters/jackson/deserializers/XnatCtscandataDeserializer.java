@@ -1,89 +1,86 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
-import java.io.IOException;
-import java.util.Objects;
-
-import org.nrg.xdat.om.XnatCtscandata;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatCtscandata;
+import org.springframework.stereotype.Component;
 
-public class XnatCtscandataDeserializer extends AbstractBaseElementDeserializer<XnatCtscandata> {
+import java.io.IOException;
+
+@Component
+@Slf4j
+public class XnatCtscandataDeserializer<T extends XnatCtscandata> extends XnatImagescandataDeserializer<T> {
+    private static final long serialVersionUID = 3228933791844472050L;
+
+    @SuppressWarnings("unchecked")
     public XnatCtscandataDeserializer() {
-        super(XnatCtscandata.class);
-    }
-    
-    @Override
-    protected XnatCtscandata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatCtscandata scans = new XnatCtscandata();
-        
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "xnatImagescandataId":
-                	scans.setXnatImagescandataId(parser.getIntValue());
-                    break;
-                case "id":
-                	scans.setId(parser.getText());
-                    break;
-                case "project":
-                	scans.setId(parser.getText());
-                    break;
-                case "imageSessionId":
-                	scans.setImageSessionId(parser.getText());
-                    break;
-                case "type":
-                	scans.setType(parser.getText());
-                    break;
-                case "note":
-                	scans.setNote(parser.getText());
-                    break;
-                case "quality":
-                	scans.setQuality(parser.getText());
-                    break;
-                case "modality":
-                	scans.setModality(parser.getText());
-                    break;
-                case "seriesDescription":
-                	scans.setSeriesDescription(Objects.nonNull(parser.getText()) || !parser.getText().isEmpty() ? parser.getText() : "");
-                    break;
-                case "condition":
-                	scans.setCondition(parser.getText());
-                    break;
-                case "documentation":
-                	scans.setDocumentation(parser.getText());
-                    break;
-                case "scanner":
-                	scans.setScanner(parser.getText());
-                    break;
-                case "scannerManufacturer":
-                	scans.setScanner_manufacturer(parser.getText());
-                    break;
-                case "scannerModel":
-                	scans.setScanner_model(parser.getText());
-                    break;
-                case "scannerSoftwareVersion":
-                	scans.setScanner_softwareversion(parser.getText());
-                    break;
-                case "seriesClass":
-                	scans.setSeriesClass(parser.getText());
-                    break;
-                case "operator":
-                	scans.setOperator(parser.getText());
-                    break;
-                case "frame":
-                	scans.setFrames(parser.getIntValue());
-                    break;
-            }
-        }
-        return scans;
+        this((Class<T>) XnatCtscandata.class);
     }
 
-	@Override
-	protected XnatCtscandata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    protected XnatCtscandataDeserializer(final Class<T> clazz) {
+        super(clazz);
+    }
+
+    @Override
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "dcmValidation":
+                instance.setDcmvalidation(parser.getText());
+                break;
+            case "dcmValidationStatus":
+                instance.setDcmvalidation_status(parser.getBooleanValue());
+                break;
+            case "parameters":
+                /*
+                Handle all CT scan-specific parameters:
+
+                voxelRes
+                    units
+                    x
+                    y
+                    z
+                orientation
+                subjectPosition
+                fov
+                    x
+                    y
+                rescale
+                    intercept
+                    slope
+                kvp
+                acquisitionNumber
+                imageType
+                options
+                collectionDiameter
+                distanceSourceToDetector
+                distanceSourceToPatient
+                gantryTilt
+                tableHeight
+                rotationDirection
+                exposureTime
+                xrayTubeCurrent
+                exposure
+                filter
+                generatorPower
+                focalSpots
+                    focalSpot
+                convolutionKernel
+                collimationWidth
+                    single
+                    total
+                tableSpeed
+                tableFeedPerRotation
+                pitchFactor
+                estimatedDoseSaving
+                    modulation
+                ctDIvol
+                derivation
+                contrastBolus
+                */
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
+        }
+    }
 }

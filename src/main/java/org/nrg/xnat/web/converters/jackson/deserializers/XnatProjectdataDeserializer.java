@@ -1,74 +1,55 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-
-import org.nrg.xdat.om.XnatDemographicdata;
 import org.nrg.xdat.om.XnatInvestigatordata;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xft.ItemI;
-import org.nrg.xft.security.UserI;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Component
 @Slf4j
-public class XnatProjectdataDeserializer extends AbstractBaseElementDeserializer<XnatProjectdata> {
+public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 3867498404888076051L;
+
+    @SuppressWarnings("unchecked")
     public XnatProjectdataDeserializer() {
-        super(XnatProjectdata.class);
+        this((Class<T>) XnatProjectdata.class);
+    }
+
+    protected XnatProjectdataDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XnatProjectdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatProjectdata project = new XnatProjectdata();
-        final XnatInvestigatordata investigator = new XnatInvestigatordata();
-        try {
-        	project.setInvestigators_investigator((ItemI) investigator);
-        } catch (Exception e) {
-            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "id":
+                instance.setId(parser.getText());
+                break;
+            case "description":
+                instance.setDescription(parser.getText());
+                break;
+            case "name":
+                instance.setName(parser.getText());
+                break;
+            case "secondaryId":
+                instance.setSecondaryId(parser.getText());
+                break;
+            case "keywords":
+                instance.setKeywords(parser.getText());
+                break;
+            case "active":
+                instance.setActive(parser.getText());
+                break;
+            case "investigator":
+                final XnatInvestigatordata investigator = parser.readValueAs(XnatInvestigatordata.class);
+                investigator.setXnatInvestigatordataId(investigator.getXnatInvestigatordataId());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "id":
-                    project.setId(parser.getText());
-                    break;
-                case "description":
-                    project.setDescription(parser.getText());
-                    break;
-                case "name":
-                    project.setName(parser.getText());
-                    break;
-                case "secondaryId":
-                    project.setSecondaryId(parser.getText());
-                    break;
-                case "keywords":
-                    project.setKeywords(parser.getText());
-                    break;
-                case "active":
-                    project.setActive(parser.getText());
-                    break;
-                case "firstName":
-                	investigator.setFirstname(parser.getText());
-                    break;
-                case "lastName":
-                	investigator.setLastname(parser.getText());
-                    break;
-                case "email":
-                	investigator.setEmail(parser.getText());
-                    break;
-              
-            }
-        }
-        return project;
     }
-
-	@Override
-	protected XnatProjectdata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

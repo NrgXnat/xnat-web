@@ -1,71 +1,65 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatDemographicdata;
-import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xft.ItemI;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Component
 @Slf4j
-public class XnatDemographicdataDeserializer extends AbstractBaseElementDeserializer<XnatDemographicdata> {
+public class XnatDemographicdataDeserializer<T extends XnatDemographicdata> extends XnatAbstractdemographicdataDeserializer<T> {
+    private static final long serialVersionUID = -2139974715236848755L;
+
+    @SuppressWarnings("unchecked")
     public XnatDemographicdataDeserializer() {
-        super(XnatDemographicdata.class);
+        this((Class<T>) XnatDemographicdata.class);
+    }
+
+    protected XnatDemographicdataDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XnatDemographicdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatDemographicdata demographics = new XnatDemographicdata();
-       
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "dob":
-                    demographics.setDob(parseDate(parser.getText()));
-                    break;
-                case "educationDesc":
-                    demographics.setEducationdesc(parser.getText());
-                    break;
-                case "education":
-                    demographics.setEducation(parser.getIntValue());
-                    break;
-                case "age":
-                    demographics.setAge(parser.getIntValue());
-                    break;
-                case "ses":
-                    demographics.setSes(parser.getIntValue());
-                    break;
-                case "gender":
-                    demographics.setGender(parser.getText());
-                    break;
-                case "handedness":
-                    demographics.setHandedness(parser.getText());
-                    break;
-                case "ethnicity":
-                    demographics.setEthnicity(parser.getText());
-                    break;
-                case "race":
-                    demographics.setRace(parser.getText());
-                    break;
-                case "weight":
-                    demographics.setWeight(parser.getDoubleValue());
-                    break;
-                case "height":
-                    demographics.setHeight(parser.getDoubleValue());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "dob":
+                instance.setDob(parseDate(parser.getText()));
+                break;
+            case "educationDesc":
+                instance.setEducationdesc(parser.getText());
+                break;
+            case "education":
+                instance.setEducation(parser.getIntValue());
+                break;
+            case "age":
+                instance.setAge(parser.getIntValue());
+                break;
+            case "ses":
+                instance.setSes(parser.getIntValue());
+                break;
+            case "gender":
+                instance.setGender(parser.getText());
+                break;
+            case "handedness":
+                instance.setHandedness(parser.getText());
+                break;
+            case "ethnicity":
+                instance.setEthnicity(parser.getText());
+                break;
+            case "race":
+                instance.setRace(parser.getText());
+                break;
+            case "weight":
+                instance.setWeight(parser.getDoubleValue());
+                break;
+            case "height":
+                instance.setHeight(parser.getDoubleValue());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return demographics;
     }
-
-	@Override
-	protected XnatDemographicdata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

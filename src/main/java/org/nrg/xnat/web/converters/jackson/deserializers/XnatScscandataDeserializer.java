@@ -1,57 +1,29 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
-import java.io.IOException;
-import java.util.Objects;
-
-import org.nrg.xdat.om.XnatDemographicdata;
-import org.nrg.xdat.om.XnatScscandata;
-import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xft.ItemI;
-
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatScscandata;
+import org.springframework.stereotype.Component;
 
-public class XnatScscandataDeserializer extends AbstractBaseElementDeserializer<XnatScscandata> {
+import java.io.IOException;
+
+@Component
+@Slf4j
+public class XnatScscandataDeserializer<T extends XnatScscandata> extends XnatImagescandataDeserializer<T> {
+    private static final long serialVersionUID = -5184931345671845364L;
+
+    @SuppressWarnings("unchecked")
     public XnatScscandataDeserializer() {
-        super(XnatScscandata.class);
-    }
-    
-    @Override
-    protected XnatScscandata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatScscandata scans = new XnatScscandata();
-        
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "xnatImagescandataId":
-                	scans.setXnatImagescandataId(parser.getIntValue());
-                    break;
-                case "seriesDescription":
-                	scans.setSeriesDescription(Objects.nonNull(parser.getText()) || !parser.getText().isEmpty() ? parser.getText() : "");
-                    break;
-                case "type":
-                	scans.setType(parser.getText());
-                    break;
-                case "note":
-                	scans.setNote(parser.getText());
-                    break;
-                case "id":
-                	scans.setId(parser.getText());
-                    break;
-                case "quality":
-                	scans.setQuality(parser.getText());
-                    break;
-            }
-        }
-        return scans;
+        this((Class<T>) XnatScscandata.class);
     }
 
-	@Override
-	protected XnatScscandata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+    protected XnatScscandataDeserializer(final Class<T> clazz) {
+        super(clazz);
+    }
+
+    @Override
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        super.handleField(instance, field, parser, context);
+    }
 }
