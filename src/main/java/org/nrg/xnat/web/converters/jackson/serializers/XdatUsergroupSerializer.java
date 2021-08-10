@@ -1,12 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XdatUsergroup;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XdatUsergroup;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Slf4j
@@ -23,7 +23,7 @@ public class XdatUsergroupSerializer<T extends XdatUsergroup> extends AbstractBa
     }
 
     @Override
-    protected void serializeImpl(final XdatUsergroup userGroup, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T userGroup, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonBlankField(generator, "id", userGroup.getId());
         writeNonBlankField(generator, "displayName", userGroup.getDisplayname());
         writeNonBlankField(generator, "tag", userGroup.getTag());

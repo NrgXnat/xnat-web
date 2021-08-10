@@ -23,9 +23,8 @@ public class XdatElementAccessSerializer<T extends XdatElementAccess> extends Ab
     }
 
     @Override
-    protected void serializeImpl(final XdatElementAccess elementAccess, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T elementAccess, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonNullNumber(generator, "xdatElementAccessId", elementAccess.getXdatElementAccessId());
         writeNonBlankField(generator, "elementName", elementAccess.getElementName());
-        writeNonBlankField(generator, "xsiType", elementAccess.getXSIType());
     }
 }

@@ -1,13 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatValidationdata;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatValidationdata;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Slf4j
@@ -24,7 +23,7 @@ public class XnatValidationDataSerializer<T extends XnatValidationdata> extends 
     }
 
     @Override
-    protected void serializeImpl(final XnatValidationdata xnatValidationdata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T xnatValidationdata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonBlankField(generator, "method", xnatValidationdata.getMethod());
         generator.writeObjectField("date", xnatValidationdata.getDate());
         writeNonBlankField(generator, "notes", xnatValidationdata.getNotes());

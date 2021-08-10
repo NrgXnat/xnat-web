@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ser.std.StdSerializer;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xft.security.UserI;
@@ -21,7 +22,9 @@ import java.util.Date;
 public abstract class AbstractBaseElementSerializer<T extends BaseElement> extends StdSerializer<T> {
     private static final long serialVersionUID = -700539324483437169L;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final DateTimeFormatter DATE_FORMATTER  = DateTimeFormatter.ISO_LOCAL_DATE;
+    public static final  String            FIELD_VOXEL_RES = "voxelRes";
+    public static final  String            FIELD_FOV       = "fov";
 
     private final Class<T> _serializableType;
 
@@ -110,6 +113,35 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
     protected void writeNonNullDate(final JsonGenerator generator, final String name, final Date date) throws IOException {
         if (date != null) {
             generator.writeObjectField(name, DATE_FORMATTER.format(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()));
+        }
+    }
+
+    protected void writeVoxelRes(final JsonGenerator generator, final Double x, final Double y, final Double z, final String units) throws IOException {
+        if (ObjectUtils.allNotNull(x, y, z, units)) {
+            generator.writeObjectFieldStart(FIELD_VOXEL_RES);
+            generator.writeNumberField("x", x);
+            generator.writeNumberField("y", y);
+            generator.writeNumberField("y", z);
+            generator.writeStringField("units", units);
+            generator.writeEndObject();
+        }
+    }
+
+    protected void writeFov(final JsonGenerator generator, final Integer x, final Integer y) throws IOException {
+        if (ObjectUtils.allNotNull(x, y)) {
+            generator.writeObjectFieldStart(FIELD_FOV);
+            generator.writeNumberField("x", x);
+            generator.writeNumberField("y", y);
+            generator.writeEndObject();
+        }
+    }
+
+    protected void writeDcmValidation(final JsonGenerator generator, final String validation, final Boolean status) throws IOException {
+        if (ObjectUtils.anyNotNull(validation, status)) {
+            generator.writeObjectFieldStart("dcmValidation");
+            writeNonBlankField(generator, "value", validation);
+            writeNonNullBoolean(generator, "status", status);
+            generator.writeEndObject();
         }
     }
 }

@@ -3,7 +3,6 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
-
 import org.nrg.xdat.om.XnatExperimentdata;
 
 import java.io.IOException;
@@ -22,24 +21,23 @@ public abstract class XnatExperimentdataSerializer<T extends XnatExperimentdata>
     }
 
     @Override
-    protected void serializeImpl(final XnatExperimentdata experiment, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonBlankField(generator, "label", experiment.getLabel());
-        writeNonBlankField(generator, "protocol", experiment.getProtocol());
-        writeNonNullNumber(generator, "version", experiment.getVersion());
-        writeNonBlankField(generator, "visit", experiment.getVisit());
-        writeNonBlankField(generator, "visitId", experiment.getVisitId());
-        writeNonBlankField(generator, "project", experiment.getProject());
-        writeNonBlankField(generator, "id", experiment.getId());
-        writeNonBlankField(generator, "xsiType", experiment.getXSIType());
-        writeNonBlankField(generator, "acquisitionSite", experiment.getAcquisitionSite());
-        writeNonBlankField(generator, "note", experiment.getNote());
-        writeNonNullField(generator, "duration", experiment.getDuration());
-        writeNonNullField(generator, "time", experiment.getTime());
-        writeNonNullField(generator, "date", experiment.getDate());
-        writeNonNullField(generator, "fields", experiment.getFields_field());
-        writeNonNullField(generator, "resources", experiment.getResources_resource());
-        writeNonNullField(generator, "sharing", experiment.getSharing_share());
-        generator.writeObjectField("investigator", experiment.getInvestigator());
-        generator.writeObjectField("validation", experiment.getValidation());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "protocol", instance.getProtocol());
+        writeNonNullNumber(generator, "version", instance.getVersion());
+        writeNonBlankField(generator, "visit", instance.getVisit());
+        writeNonBlankField(generator, "visitId", instance.getVisitId());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "acquisitionSite", instance.getAcquisitionSite());
+        writeNonBlankField(generator, "note", instance.getNote());
+        writeNonNullField(generator, "duration", instance.getDuration());
+        writeNonNullField(generator, "time", instance.getTime());
+        writeNonNullField(generator, "date", instance.getDate());
+        writeNonNullField(generator, "fields", instance.getFields_field());
+        writeNonNullField(generator, "resources", instance.getResources_resource());
+        writeNonNullField(generator, "sharing", instance.getSharing_share());
+        generator.writeObjectField("investigator", instance.getInvestigator());
+        generator.writeObjectField("validation", instance.getValidation());
     }
 }

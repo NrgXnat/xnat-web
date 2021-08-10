@@ -23,23 +23,23 @@ public class XnatPetmrsessiondataSerializer<T extends XnatPetmrsessiondata> exte
     }
 
     @Override
-    protected void serializeImpl(final XnatPetmrsessiondata xnatPetmrsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(xnatPetmrsessiondata, generator, provider);
-        writeNonBlankField(generator, "id", xnatPetmrsessiondata.getId());
-        writeNonBlankField(generator, "label", xnatPetmrsessiondata.getLabel());
-        writeNonBlankField(generator, "project", xnatPetmrsessiondata.getProject());
-        writeNonBlankField(generator, "note", xnatPetmrsessiondata.getNote());
-        writeNonBlankField(generator, "protocol", xnatPetmrsessiondata.getProtocol());
-        writeNonBlankField(generator, "original", xnatPetmrsessiondata.getOriginal());
-        writeNonNullField(generator, "date", xnatPetmrsessiondata.getDate());
-        writeNonNullNumber(generator, "delay", xnatPetmrsessiondata.getDelay());
-        writeNonNullNumber(generator, "version", xnatPetmrsessiondata.getVersion());
-        writeNonBlankField(generator, "acquisitionSite", xnatPetmrsessiondata.getAcquisitionSite());
-        writeNonBlankField(generator, "visit", xnatPetmrsessiondata.getVisit());
-        writeNonBlankField(generator, "visitId", xnatPetmrsessiondata.getVisitId());
-        writeNonBlankField(generator, "description", xnatPetmrsessiondata.getDescription());
-        writeNonNullField(generator, "subjectId", xnatPetmrsessiondata.getSubjectId());
-        // writeNonNullField(generator, "experiment", xnatPetmrsessiondata.getExperimentdata());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "note", instance.getNote());
+        writeNonBlankField(generator, "protocol", instance.getProtocol());
+        writeNonBlankField(generator, "original", instance.getOriginal());
+        writeNonNullField(generator, "date", instance.getDate());
+        writeNonNullNumber(generator, "delay", instance.getDelay());
+        writeNonNullNumber(generator, "version", instance.getVersion());
+        writeNonBlankField(generator, "acquisitionSite", instance.getAcquisitionSite());
+        writeNonBlankField(generator, "visit", instance.getVisit());
+        writeNonBlankField(generator, "visitId", instance.getVisitId());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonNullField(generator, "subjectId", instance.getSubjectId());
+        // writeNonNullField(generator, "experiment", instance.getExperimentdata());
     }
 
 }

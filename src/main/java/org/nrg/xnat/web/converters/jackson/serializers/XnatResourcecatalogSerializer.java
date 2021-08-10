@@ -23,7 +23,7 @@ public class XnatResourcecatalogSerializer<T extends XnatResourcecatalog> extend
     }
 
     @Override
-    protected void serializeImpl(final XnatResourcecatalog resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         super.serializeImpl(resource, generator, provider);
         writeNonNullNumber(generator, "fileCount", resource.getFileCount());
         writeNonBlankField(generator, "label", resource.getLabel());

@@ -359,7 +359,7 @@
     <logger name="org.nrg.xnat.web" additivity="false" level="WARN">
         <appender-ref ref="xapi"/>
     </logger>
-    <logger name="org.nrg.xnat.web.converters" additivity="false" level="INFO">
+    <logger name="org.nrg.xnat.web.converters" additivity="false" level="WARN">
         <appender-ref ref="xapi"/>
     </logger>
     <logger name="org.apache.bcel" additivity="false" level="ERROR">

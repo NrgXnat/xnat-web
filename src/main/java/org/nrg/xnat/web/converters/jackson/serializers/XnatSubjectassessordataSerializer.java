@@ -1,14 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.springframework.stereotype.Component;
+import java.io.IOException;
 
 @Slf4j
 public abstract class XnatSubjectassessordataSerializer<T extends XnatSubjectassessordata> extends XnatExperimentdataSerializer<T> {
@@ -24,11 +22,9 @@ public abstract class XnatSubjectassessordataSerializer<T extends XnatSubjectass
     }
 
     @Override
-    protected void serializeImpl(final XnatSubjectassessordata xnatSubjectassessordata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(xnatSubjectassessordata, generator, provider);
-        writeNonNullField(generator, "subjectId", xnatSubjectassessordata.getSubjectId());
-        writeNonNullNumber(generator, "age", xnatSubjectassessordata.getAge());
-        generator.writeFieldName("experiment");
-        provider.findValueSerializer(XnatExperimentdata.class).serialize(xnatSubjectassessordata, generator, provider);
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonNullField(generator, "subjectId", instance.getSubjectId());
+        writeNonNullNumber(generator, "age", instance.getAge());
     }
 }

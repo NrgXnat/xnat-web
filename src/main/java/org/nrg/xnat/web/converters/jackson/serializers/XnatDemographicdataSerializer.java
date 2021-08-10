@@ -23,20 +23,20 @@ public class XnatDemographicdataSerializer<T extends XnatDemographicdata> extend
     }
 
     @Override
-    protected void serializeImpl(final XnatDemographicdata demographic, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(demographic, generator, provider);
-        writeNonBlankField(generator, "ethnicity", demographic.getEthnicity());
-        writeNonBlankField(generator, "race", demographic.getRace());
-        writeNonBlankField(generator, "gender", demographic.getGender());
-        writeNonBlankField(generator, "handedness", demographic.getHandedness());
-        writeNonNullField(generator, "dob", demographic.getDob());
-        writeNonNullNumber(generator, "weight", demographic.getWeight());
-        writeNonNullNumber(generator, "age", demographic.getAge());
-        writeNonNullNumber(generator, "height", demographic.getHeight());
-        writeNonNullNumber(generator, "ses", demographic.getSes());
-        writeNonBlankField(generator, "gender", demographic.getGender());
-        writeNonBlankField(generator, "educationDesc", demographic.getEducationdesc());
-        writeNonNullNumber(generator, "education", demographic.getEducation());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "ethnicity", instance.getEthnicity());
+        writeNonBlankField(generator, "race", instance.getRace());
+        writeNonBlankField(generator, "gender", instance.getGender());
+        writeNonBlankField(generator, "handedness", instance.getHandedness());
+        writeNonNullField(generator, "dob", instance.getDob());
+        writeNonNullNumber(generator, "weight", instance.getWeight());
+        writeNonNullNumber(generator, "age", instance.getAge());
+        writeNonNullNumber(generator, "height", instance.getHeight());
+        writeNonNullNumber(generator, "ses", instance.getSes());
+        writeNonBlankField(generator, "gender", instance.getGender());
+        writeNonBlankField(generator, "educationDesc", instance.getEducationdesc());
+        writeNonNullNumber(generator, "education", instance.getEducation());
 
     }
 }

@@ -21,7 +21,7 @@ public abstract class XnatAbstractResourceSerializer<T extends XnatAbstractresou
     }
 
     @Override
-    protected void serializeImpl(final XnatAbstractresource resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonNullNumber(generator, "fileCount", resource.getFileCount());
         writeNonBlankField(generator, "label", resource.getLabel());
         writeNonBlankField(generator, "format", resource.getFormat());

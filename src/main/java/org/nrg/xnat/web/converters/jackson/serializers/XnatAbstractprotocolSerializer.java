@@ -27,6 +27,5 @@ public abstract class XnatAbstractprotocolSerializer<T extends XnatAbstractproto
         writeNonBlankField(generator, "id", protocol.getId());
         writeNonBlankField(generator, "dataType", protocol.getDataType());
         writeNonBlankField(generator, "description", protocol.getDescription());
-        writeNonBlankField(generator, "xsiType", protocol.getXSIType());
     }
 }

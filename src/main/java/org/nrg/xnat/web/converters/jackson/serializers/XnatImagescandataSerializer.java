@@ -1,11 +1,11 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatImagescandata;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatImagescandata;
+
+import java.io.IOException;
 
 @Slf4j
 public abstract class XnatImagescandataSerializer<T extends XnatImagescandata> extends AbstractBaseElementSerializer<T> {
@@ -21,9 +21,9 @@ public abstract class XnatImagescandataSerializer<T extends XnatImagescandata> e
     }
 
     @Override
-    protected void serializeImpl(final XnatImagescandata scan, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonNullNumber(generator, "xnatImagescandataId", scan.getXnatImagescandataId());
+    protected void serializeImpl(final T scan, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonBlankField(generator, "id", scan.getId());
+        writeNonNullNumber(generator, "xnatImagescandataId", scan.getXnatImagescandataId());
         writeNonBlankField(generator, "project", scan.getProject());
         writeNonBlankField(generator, "imageSessionId", scan.getImageSessionId());
         writeNonBlankField(generator, "seriesDescription", scan.getSeriesDescription());
@@ -41,7 +41,5 @@ public abstract class XnatImagescandataSerializer<T extends XnatImagescandata> e
         writeNonNullNumber(generator, "frame", scan.getFrames());
         writeNonBlankField(generator, "modality", scan.getModality());
         writeNonNullField(generator, "file", scan.getFile());
-
-
     }
 }

@@ -1,17 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XdatCriteria;
-import org.nrg.xdat.om.XdatCriteriaSet;
-import org.nrg.xdat.om.XdatSearchField;
-import org.nrg.xdat.om.XdatStoredSearch;
-import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.*;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Slf4j
@@ -28,7 +23,7 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
     }
 
     @Override
-    protected void serializeImpl(final XdatStoredSearch search, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T search, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonNullBoolean(generator, "allowDiffColumns", search.getAllowDiffColumns());
         writeNonBlankField(generator, "sortByFieldId", search.getSortBy_fieldId());
         writeNonBlankField(generator, "briefDescription", search.getBriefDescription());

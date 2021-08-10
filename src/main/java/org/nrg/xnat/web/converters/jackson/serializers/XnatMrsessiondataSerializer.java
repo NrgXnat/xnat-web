@@ -1,12 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatMrsessiondata;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatMrsessiondata;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Slf4j
@@ -23,11 +23,11 @@ public class XnatMrsessiondataSerializer<T extends XnatMrsessiondata> extends Xn
     }
 
     @Override
-    protected void serializeImpl(final XnatMrsessiondata xnatMrsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(xnatMrsessiondata, generator, provider);
-        writeNonBlankField(generator, "coil", xnatMrsessiondata.getCoil());
-        writeNonBlankField(generator, "fieldStrength", xnatMrsessiondata.getFieldstrength());
-        writeNonBlankField(generator, "marker", xnatMrsessiondata.getMarker());
-        writeNonBlankField(generator, "stabilization", xnatMrsessiondata.getStabilization());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "coil", instance.getCoil());
+        writeNonBlankField(generator, "fieldStrength", instance.getFieldstrength());
+        writeNonBlankField(generator, "marker", instance.getMarker());
+        writeNonBlankField(generator, "stabilization", instance.getStabilization());
     }
 }

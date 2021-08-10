@@ -1,12 +1,12 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatCtsessiondata;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatCtsessiondata;
 import org.springframework.stereotype.Component;
+
+import java.io.IOException;
 
 @Component
 @Slf4j
@@ -23,22 +23,22 @@ public class XnatCtsessiondataSerializer<T extends XnatCtsessiondata> extends Xn
     }
 
     @Override
-    protected void serializeImpl(final XnatCtsessiondata xnatCtsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(xnatCtsessiondata, generator, provider);
-        writeNonBlankField(generator, "id", xnatCtsessiondata.getId());
-        writeNonBlankField(generator, "label", xnatCtsessiondata.getLabel());
-        writeNonBlankField(generator, "project", xnatCtsessiondata.getProject());
-        writeNonBlankField(generator, "note", xnatCtsessiondata.getNote());
-        writeNonBlankField(generator, "protocol", xnatCtsessiondata.getProtocol());
-        writeNonBlankField(generator, "original", xnatCtsessiondata.getOriginal());
-        writeNonNullField(generator, "date", xnatCtsessiondata.getDate());
-        writeNonNullNumber(generator, "delay", xnatCtsessiondata.getDelay());
-        writeNonNullNumber(generator, "version", xnatCtsessiondata.getVersion());
-        writeNonBlankField(generator, "acquisitionSite", xnatCtsessiondata.getAcquisitionSite());
-        writeNonBlankField(generator, "visit", xnatCtsessiondata.getVisit());
-        writeNonBlankField(generator, "visitId", xnatCtsessiondata.getVisitId());
-        writeNonBlankField(generator, "description", xnatCtsessiondata.getDescription());
-        writeNonNullField(generator, "subjectId", xnatCtsessiondata.getSubjectId());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "note", instance.getNote());
+        writeNonBlankField(generator, "protocol", instance.getProtocol());
+        writeNonBlankField(generator, "original", instance.getOriginal());
+        writeNonNullField(generator, "date", instance.getDate());
+        writeNonNullNumber(generator, "delay", instance.getDelay());
+        writeNonNullNumber(generator, "version", instance.getVersion());
+        writeNonBlankField(generator, "acquisitionSite", instance.getAcquisitionSite());
+        writeNonBlankField(generator, "visit", instance.getVisit());
+        writeNonBlankField(generator, "visitId", instance.getVisitId());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonNullField(generator, "subjectId", instance.getSubjectId());
         // writeNonNullField(generator, "experiment", xnatCrsessiondata.getExperimentdata());
     }
 

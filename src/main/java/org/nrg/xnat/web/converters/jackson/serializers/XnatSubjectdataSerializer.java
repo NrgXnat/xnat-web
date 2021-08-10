@@ -24,7 +24,7 @@ public class XnatSubjectdataSerializer<T extends XnatSubjectdata> extends Abstra
     }
 
     @Override
-    protected void serializeImpl(final XnatSubjectdata subject, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+    protected void serializeImpl(final T subject, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonBlankField(generator, "id", subject.getId());
         writeNonBlankField(generator, "label", subject.getLabel());
         writeNonBlankField(generator, "project", subject.getProject());
@@ -38,45 +38,5 @@ public class XnatSubjectdataSerializer<T extends XnatSubjectdata> extends Abstra
             generator.writeString(experiment.getId());
         }
         generator.writeEndArray();
-//        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
-//        if (experiments != null && !experiments.isEmpty()) {
-//        	experiments.forEach(expe -> {
-//    			try {
-//    				generator.writeStartObject();
-//    				generator.writeObjectField("experiments", expe);
-//    				generator.writeEndObject();
-//    			} catch (IOException e) {
-//    				e.printStackTrace();
-//    			} catch (Exception e) {
-//    				e.printStackTrace();
-//    			}
-//    		});
-//        }
-
-        //writeNonNullField(generator, "experiments", subject.getExperiments_experiment());
-
-//        final List<XnatSubjectassessordataI> experiments = subject.getExperiments_experiment();
-//        if (experiments != null && !experiments.isEmpty()) {
-//            generator.writeStartArray();
-//            for (final XnatSubjectassessordataI experiment : experiments) {
-//                final JsonSerializer<Object> serializer = provider.findValueSerializer(experiment.getClass());
-//                if (serializer != null) {
-//                    serializer.serialize(experiment, generator, provider);
-//                } else {
-//                    log.warn("I tried to serialize an experiment of type {} but couldn't find a valid serializer", experiment.getClass());
-//                }
-//            }
-//            generator.writeEndArray();
-//        }
-
-//        final List<XnatSubjectdataFieldI> fields = subject.getFields_field();
-//        if (!fields.isEmpty()) {
-//            generator.writeStartArray();
-//            for (final XnatSubjectdataFieldI field : fields) {
-//                writeNonBlankField(generator, field.getName(), field.getField());
-//            }
-//            generator.writeEndArray();
-//        }
-
     }
 }
