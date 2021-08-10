@@ -3,24 +3,26 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
-
-import org.nrg.xdat.model.XnatSubjectassessordataI;
-import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
-import org.nrg.xdat.om.XnatSubjectdata;
 
 import java.io.IOException;
-import java.util.List;
 
 @Slf4j
-public class XnatImageassessordataSerializer extends AbstractBaseElementSerializer<XnatImageassessordata> {
+public abstract class XnatImageassessordataSerializer<T extends XnatImageassessordata> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = -5866321865427372083L;
+
+    @SuppressWarnings("unchecked")
     public XnatImageassessordataSerializer() {
-        super(XnatImageassessordata.class);
+        this((Class<T>) XnatImageassessordata.class);
+    }
+
+    protected XnatImageassessordataSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
     protected void serializeImpl(final XnatImageassessordata assessor, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "id", assessor.getId());
+        writeNonBlankField(generator, "id", assessor.getId());
         writeNonBlankField(generator, "label", assessor.getLabel());
         writeNonBlankField(generator, "project", assessor.getProject());
         writeNonBlankField(generator, "note", assessor.getNote());
@@ -36,7 +38,5 @@ public class XnatImageassessordataSerializer extends AbstractBaseElementSerializ
         writeNonNullField(generator, "sessionData", assessor.getImageSessionData());
         writeNonNullField(generator, "scans", assessor.getImageSessionData().getScans_scan());
         writeNonNullField(generator, "outFile", assessor.getOut_file());
-        
-        
     }
 }

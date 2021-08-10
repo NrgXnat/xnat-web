@@ -5,14 +5,20 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import org.nrg.xdat.om.XnatExperimentdata;
+
 import java.io.IOException;
 
 @Slf4j
-public class XnatExperimentdataSerializer extends AbstractBaseElementSerializer<XnatExperimentdata> {
-	private static final long serialVersionUID = -745536640121672797L;
+public abstract class XnatExperimentdataSerializer<T extends XnatExperimentdata> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = -745536640121672797L;
 
-	public XnatExperimentdataSerializer() {
-        super(XnatExperimentdata.class);
+    @SuppressWarnings("unchecked")
+    public XnatExperimentdataSerializer() {
+        this((Class<T>) XnatExperimentdata.class);
+    }
+
+    protected XnatExperimentdataSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override

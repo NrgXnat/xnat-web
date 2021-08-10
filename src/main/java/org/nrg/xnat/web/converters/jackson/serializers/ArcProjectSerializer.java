@@ -5,12 +5,22 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 
 import org.nrg.xdat.om.ArcProject;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
+@Component
 @Slf4j
-public class ArcProjectSerializer extends AbstractBaseElementSerializer<ArcProject> {
+public class ArcProjectSerializer<T extends ArcProject> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = 3810695382068553705L;
+
+    @SuppressWarnings("unchecked")
     public ArcProjectSerializer() {
-        super(ArcProject.class);
+        this((Class<T>) ArcProject.class);
+    }
+
+    protected ArcProjectSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override

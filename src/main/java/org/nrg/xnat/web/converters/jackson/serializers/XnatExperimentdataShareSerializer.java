@@ -2,23 +2,31 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatExperimentdataShare;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import org.springframework.stereotype.Component;
 
-public class XnatExperimentdataShareSerializer extends AbstractBaseElementSerializer<XnatExperimentdataShare> {
-	private static final long serialVersionUID = 3246369647669211355L;
+@Component
+@Slf4j
+public class XnatExperimentdataShareSerializer<T extends XnatExperimentdataShare> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = 3246369647669211355L;
 
-	public XnatExperimentdataShareSerializer() {
-        super(XnatExperimentdataShare.class);
+    @SuppressWarnings("unchecked")
+    public XnatExperimentdataShareSerializer() {
+        this((Class<T>) XnatExperimentdataShare.class);
+    }
+
+    protected XnatExperimentdataShareSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
     protected void serializeImpl(final XnatExperimentdataShare xnatExperimentdataShare, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "label", xnatExperimentdataShare.getLabel());
-    	generator.writeObjectField("visit", xnatExperimentdataShare.getVisit());
-		writeNonBlankField(generator, "project", xnatExperimentdataShare.getProject());
-		writeNonBlankField(generator, "protcol", xnatExperimentdataShare.getProtocol());
+        writeNonBlankField(generator, "label", xnatExperimentdataShare.getLabel());
+        generator.writeObjectField("visit", xnatExperimentdataShare.getVisit());
+        writeNonBlankField(generator, "project", xnatExperimentdataShare.getProject());
+        writeNonBlankField(generator, "protcol", xnatExperimentdataShare.getProtocol());
     }
-
 }

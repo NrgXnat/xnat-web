@@ -1,23 +1,31 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatMrsessiondata;
-import org.nrg.xdat.om.XnatPetmrsessiondata;
-import org.nrg.xdat.om.XnatSubjectassessordata;
-
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatPetmrsessiondata;
+import org.springframework.stereotype.Component;
 
-public class XnatPetmrsessiondataSerializer extends AbstractBaseElementSerializer<XnatPetmrsessiondata> {
+import java.io.IOException;
+
+@Component
+@Slf4j
+public class XnatPetmrsessiondataSerializer<T extends XnatPetmrsessiondata> extends XnatImagesessiondataSerializer<T> {
+    private static final long serialVersionUID = -4049493112160240580L;
+
+    @SuppressWarnings("unchecked")
     public XnatPetmrsessiondataSerializer() {
-        super(XnatPetmrsessiondata.class);
+        this((Class<T>) XnatPetmrsessiondata.class);
+    }
+
+    protected XnatPetmrsessiondataSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
     protected void serializeImpl(final XnatPetmrsessiondata xnatPetmrsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "id", xnatPetmrsessiondata.getId());
+        super.serializeImpl(xnatPetmrsessiondata, generator, provider);
+        writeNonBlankField(generator, "id", xnatPetmrsessiondata.getId());
         writeNonBlankField(generator, "label", xnatPetmrsessiondata.getLabel());
         writeNonBlankField(generator, "project", xnatPetmrsessiondata.getProject());
         writeNonBlankField(generator, "note", xnatPetmrsessiondata.getNote());
@@ -31,7 +39,7 @@ public class XnatPetmrsessiondataSerializer extends AbstractBaseElementSerialize
         writeNonBlankField(generator, "visitId", xnatPetmrsessiondata.getVisitId());
         writeNonBlankField(generator, "description", xnatPetmrsessiondata.getDescription());
         writeNonNullField(generator, "subjectId", xnatPetmrsessiondata.getSubjectId());
-       // writeNonNullField(generator, "experiment", xnatPetmrsessiondata.getExperimentdata());
+        // writeNonNullField(generator, "experiment", xnatPetmrsessiondata.getExperimentdata());
     }
 
 }

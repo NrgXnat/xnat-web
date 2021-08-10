@@ -3,6 +3,9 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import lombok.Getter;
+import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xft.security.UserI;
@@ -12,10 +15,20 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
+@Getter
+@Accessors(prefix = "_")
+@Slf4j
 public abstract class AbstractBaseElementSerializer<T extends BaseElement> extends StdSerializer<T> {
-    protected AbstractBaseElementSerializer(final Class<T> dataType) {
-        super(dataType);
-        _dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE;
+    private static final long serialVersionUID = -700539324483437169L;
+
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
+
+    private final Class<T> _serializableType;
+
+    public AbstractBaseElementSerializer(final Class<T> clazz) {
+        super(clazz);
+        _serializableType = clazz;
+        log.info("Created the {} serializer for handling instances of the {} class", getClass().getName(), _serializableType.getName());
     }
 
     protected abstract void serializeImpl(final T element, final JsonGenerator generator, final SerializerProvider provider) throws IOException;
@@ -90,9 +103,7 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
 
     protected void writeNonNullDate(final JsonGenerator generator, final String name, final Date date) throws IOException {
         if (date != null) {
-            generator.writeObjectField(name, _dateFormatter.format(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()));
+            generator.writeObjectField(name, DATE_FORMATTER.format(date.toInstant().atZone(ZoneId.systemDefault()).toLocalDate()));
         }
     }
-
-    private final DateTimeFormatter _dateFormatter;
 }

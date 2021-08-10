@@ -8,9 +8,16 @@ import org.nrg.xdat.om.XnatAbstractresource;
 import java.io.IOException;
 
 @Slf4j
-public class XnatAbstractResourceSerializer extends AbstractBaseElementSerializer<XnatAbstractresource> {
+public abstract class XnatAbstractResourceSerializer<T extends XnatAbstractresource> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = 7262248936715165602L;
+
+    @SuppressWarnings("unchecked")
     public XnatAbstractResourceSerializer() {
-        super(XnatAbstractresource.class);
+        this((Class<T>) XnatAbstractresource.class);
+    }
+
+    protected XnatAbstractResourceSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override

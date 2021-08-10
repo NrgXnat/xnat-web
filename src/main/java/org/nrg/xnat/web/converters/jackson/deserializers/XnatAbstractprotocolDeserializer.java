@@ -3,22 +3,15 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatDatatypeprotocol;
-import org.springframework.stereotype.Component;
+import org.nrg.xdat.om.XnatAbstractprotocol;
 
 import java.io.IOException;
 
-@Component
 @Slf4j
-public class XnatDatatypeprotocolDeserializer<T extends XnatDatatypeprotocol> extends XnatAbstractprotocolDeserializer<T> {
-    private static final long serialVersionUID = 3313417256437766930L;
+public abstract class XnatAbstractprotocolDeserializer<T extends XnatAbstractprotocol> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = -8950581491368249478L;
 
-    @SuppressWarnings("unchecked")
-    public XnatDatatypeprotocolDeserializer() {
-        super((Class<T>) XnatDatatypeprotocol.class);
-    }
-
-    protected XnatDatatypeprotocolDeserializer(final Class<T> clazz) {
+    protected XnatAbstractprotocolDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -28,17 +21,20 @@ public class XnatDatatypeprotocolDeserializer<T extends XnatDatatypeprotocol> ex
             case "id":
                 instance.setId(parser.getText());
                 break;
-            case "description":
-                instance.setDescription(parser.getText());
+            case "xnatAbstractProtocolId":
+                instance.setXnatAbstractprotocolId(parser.getIntValue());
                 break;
             case "name":
                 instance.setName(parser.getText());
                 break;
-            case "xnatAbstractProtocolId":
-                instance.setXnatAbstractprotocolId(parser.getIntValue());
+            case "description":
+                instance.setDescription(parser.getText());
                 break;
             case "dataType":
                 instance.setDataType(parser.getText());
+                break;
+            case "user":
+                instance.setUser(getUserI(parser.getText()));
                 break;
             default:
                 super.handleField(instance, field, parser, context);

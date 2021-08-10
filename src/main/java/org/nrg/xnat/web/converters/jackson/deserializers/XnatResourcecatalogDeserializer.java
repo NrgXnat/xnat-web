@@ -1,8 +1,6 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatResourcecatalog;
@@ -10,56 +8,51 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import java.io.IOException;
 
 @Slf4j
-public class XnatResourcecatalogDeserializer extends AbstractBaseElementDeserializer<XnatResourcecatalog> {
+public class XnatResourcecatalogDeserializer<T extends XnatResourcecatalog> extends XnatResourceDeserializer<T> {
+    private static final long serialVersionUID = 3231255490942201806L;
+
+    @SuppressWarnings("unchecked")
     public XnatResourcecatalogDeserializer() {
-        super(XnatResourcecatalog.class);
+        this((Class<T>) XnatResourcecatalog.class);
     }
 
-  
+    protected XnatResourcecatalogDeserializer(final Class<T> clazz) {
+        super(clazz);
+    }
+
     @Override
-    protected XnatResourcecatalog deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatResourcecatalog resource = new XnatResourcecatalog();
-
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "fileCount":
-                    resource.setFileCount(parser.getIntValue());
-                    break;
-                case "label":
-                    resource.setLabel(parser.getText());
-                    break;
-                case "note":
-                    resource.setNote(parser.getText());
-                    break;
-                case "description":
-                    resource.setDescription(parser.getText());
-                    break;
-                case "content":
-                    resource.setContent(parser.getText());
-                    break;
-                case "format":
-                    resource.setFormat(parser.getText());
-                    break;
-                case "fileSize":
-                    resource.setFileSize(parser.getText());
-                    break;
-                case "uri":
-                    resource.setUri(parser.getText());
-                    break;
-                case "xnatAbstractResourceId":
-                    resource.setXnatAbstractresourceId(parser.getIntValue());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        // TODO: These are all lower-level properties.
+        switch (field) {
+            case "fileCount":
+                instance.setFileCount(parser.getIntValue());
+                break;
+            case "label":
+                instance.setLabel(parser.getText());
+                break;
+            case "note":
+                instance.setNote(parser.getText());
+                break;
+            case "description":
+                instance.setDescription(parser.getText());
+                break;
+            case "content":
+                instance.setContent(parser.getText());
+                break;
+            case "format":
+                instance.setFormat(parser.getText());
+                break;
+            case "fileSize":
+                instance.setFileSize(parser.getText());
+                break;
+            case "uri":
+                instance.setUri(parser.getText());
+                break;
+            case "xnatAbstractResourceId":
+                instance.setXnatAbstractresourceId(parser.getIntValue());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return resource;
     }
-
-
-	@Override
-	protected XnatResourcecatalog getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }

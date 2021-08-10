@@ -2,18 +2,30 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 
 import java.io.IOException;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatCtsessiondata;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import org.springframework.stereotype.Component;
 
-public class XnatCtsessiondataSerializer extends AbstractBaseElementSerializer<XnatCtsessiondata> {
+@Component
+@Slf4j
+public class XnatCtsessiondataSerializer<T extends XnatCtsessiondata> extends XnatImagesessiondataSerializer<T> {
+    private static final long serialVersionUID = -2317154238007680655L;
+
+    @SuppressWarnings("unchecked")
     public XnatCtsessiondataSerializer() {
-        super(XnatCtsessiondata.class);
+        this((Class<T>) XnatCtsessiondata.class);
+    }
+
+    protected XnatCtsessiondataSerializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
     protected void serializeImpl(final XnatCtsessiondata xnatCtsessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	writeNonBlankField(generator, "id", xnatCtsessiondata.getId());
+        super.serializeImpl(xnatCtsessiondata, generator, provider);
+        writeNonBlankField(generator, "id", xnatCtsessiondata.getId());
         writeNonBlankField(generator, "label", xnatCtsessiondata.getLabel());
         writeNonBlankField(generator, "project", xnatCtsessiondata.getProject());
         writeNonBlankField(generator, "note", xnatCtsessiondata.getNote());
@@ -27,7 +39,7 @@ public class XnatCtsessiondataSerializer extends AbstractBaseElementSerializer<X
         writeNonBlankField(generator, "visitId", xnatCtsessiondata.getVisitId());
         writeNonBlankField(generator, "description", xnatCtsessiondata.getDescription());
         writeNonNullField(generator, "subjectId", xnatCtsessiondata.getSubjectId());
-       // writeNonNullField(generator, "experiment", xnatCrsessiondata.getExperimentdata());
+        // writeNonNullField(generator, "experiment", xnatCrsessiondata.getExperimentdata());
     }
 
 }

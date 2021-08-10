@@ -1,55 +1,50 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
-import java.io.IOException;
-import java.util.Optional;
-
-import org.nrg.xdat.om.ArcPathinfo;
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.ArcPathinfo;
+import org.springframework.stereotype.Component;
 
-public class ArcPathinfoDeserializer extends AbstractBaseElementDeserializer<ArcPathinfo> {
-	private static final long serialVersionUID = -5473780316917413125L;
+import java.io.IOException;
 
-	public ArcPathinfoDeserializer() {
-        super(ArcPathinfo.class);
+@Component
+@Slf4j
+public class ArcPathinfoDeserializer<T extends ArcPathinfo> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = -5473780316917413125L;
+
+    @SuppressWarnings("unchecked")
+    public ArcPathinfoDeserializer() {
+        this((Class<T>) ArcPathinfo.class);
+    }
+
+    public ArcPathinfoDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected ArcPathinfo deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final ArcPathinfo arcPathinfo = Optional.ofNullable((ArcPathinfo) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("ArcPathinfo can't be created on its own"));      
-        
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "archivePath":
-                	arcPathinfo.setArchivepath(parser.getText());
-                    break;
-                case "prearchivePath":
-                	arcPathinfo.setPipelinepath(parser.getText());
-                    break;
-                case "cachePath":
-                	arcPathinfo.setCachepath(parser.getText());
-                    break;
-                case "buildPath":
-                	arcPathinfo.setBuildpath(parser.getText());
-                    break;
-                case "ftpPath":
-                	arcPathinfo.setFtppath(parser.getText());
-                    break;
-                case "pipelinePath":
-                	arcPathinfo.setPipelinepath(parser.getText());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "archivePath":
+                instance.setArchivepath(parser.getText());
+                break;
+            case "prearchivePath":
+                instance.setPrearchivepath(parser.getText());
+                break;
+            case "cachePath":
+                instance.setCachepath(parser.getText());
+                break;
+            case "buildPath":
+                instance.setBuildpath(parser.getText());
+                break;
+            case "ftpPath":
+                instance.setFtppath(parser.getText());
+                break;
+            case "pipelinePath":
+                instance.setPipelinepath(parser.getText());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return arcPathinfo;
     }
-
-	@Override
-	protected ArcPathinfo getNewInstance() throws JsonProcessingException {
-		return null;
-	}
-
 }

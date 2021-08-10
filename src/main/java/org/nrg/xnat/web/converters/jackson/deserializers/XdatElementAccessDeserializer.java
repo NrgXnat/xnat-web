@@ -1,49 +1,58 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XdatElementAccess;
+import org.nrg.xdat.om.XdatElementAccessSecureIp;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 
-import org.nrg.xdat.om.XdatUsergroup;
-import org.nrg.xdat.om.XdatElementAccess;
-import org.nrg.xdat.om.XdatUser;
-import org.nrg.xdat.om.XnatDemographicdata;
-import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xdat.security.user.XnatUserProvider;
-import org.nrg.xft.ItemI;
-import org.nrg.xft.security.UserI;
+@Component
+@Slf4j
+public class XdatElementAccessDeserializer<T extends XdatElementAccess> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 1300556169889589133L;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.DeserializationContext;
-
-public class XdatElementAccessDeserializer extends AbstractBaseElementDeserializer<XdatElementAccess> {
+    @SuppressWarnings("unchecked")
     public XdatElementAccessDeserializer() {
-        super(XdatElementAccess.class);
+        this((Class<T>) XdatElementAccess.class);
+    }
+
+    protected XdatElementAccessDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XdatElementAccess deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XdatElementAccess elementAccess = new XdatElementAccess();
-        
-        
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "xdatElementAccessId":
-                	elementAccess.setXdatElementAccessId(parser.getIntValue());
-                    break;
-                case "elementName":
-                	elementAccess.setElementName(parser.getText());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "xdatElementAccessId":
+                instance.setXdatElementAccessId(parser.getIntValue());
+                break;
+            case "elementName":
+                instance.setElementName(parser.getText());
+                break;
+            case "secondaryPassword":
+                instance.setSecondaryPassword(parser.getText());
+                break;
+            case "secondaryPasswordEncrypt":
+                instance.setSecondaryPassword_encrypt(parser.getBooleanValue());
+                break;
+            case "secureIp":
+                final XdatElementAccessSecureIp secureIp = new XdatElementAccessSecureIp();
+                final String value = parser.getText();
+                secureIp.setSecureIp(value);
+                try {
+                    instance.setSecureIp(secureIp);
+                } catch (Exception e) {
+                    log.error("An error occurred trying to set the secure IP value {} for an XdatElementAccess instance", value, e);
+                }
+                break;
+            case "permissionsAllowSet":
+                log.warn("This is not currently implemented and probably doesn't need to be");
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return elementAccess;
     }
-
-	@Override
-	protected XdatElementAccess getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
 }
