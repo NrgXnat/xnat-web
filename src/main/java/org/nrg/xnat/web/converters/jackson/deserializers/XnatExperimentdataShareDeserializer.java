@@ -1,54 +1,44 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
-import java.io.IOException;
-import java.util.Objects;
-import java.util.Optional;
-
-import org.nrg.xdat.om.XnatExperimentdataShare;
-
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatExperimentdataShare;
+import org.springframework.stereotype.Component;
 
-public class XnatExperimentdataShareDeserializer extends AbstractBaseElementDeserializer<XnatExperimentdataShare> {
-	private static final long serialVersionUID = 8714542973804658983L;
+import java.io.IOException;
 
-	public XnatExperimentdataShareDeserializer() {
-        super(XnatExperimentdataShare.class);
+@Component
+@Slf4j
+public class XnatExperimentdataShareDeserializer<T extends XnatExperimentdataShare> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 8714542973804658983L;
+
+    @SuppressWarnings("unchecked")
+    public XnatExperimentdataShareDeserializer() {
+        super((Class<T>) XnatExperimentdataShare.class);
+    }
+
+    protected XnatExperimentdataShareDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XnatExperimentdataShare deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-    	final XnatExperimentdataShare xnatExperimentdataShare = Optional.ofNullable((XnatExperimentdataShare) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("XnatExperimentdataShare can't be created on its own"));
-    	context.setAttribute("XnatItem", xnatExperimentdataShare);
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            if(Objects.nonNull(field)){
-            	   switch (field) {
-                   case "label":
-                	   xnatExperimentdataShare.setLabel(parser.getText());
-                       break;
-                   case "visit":
-                	   xnatExperimentdataShare.setVisit(parser.getText());
-                       break;
-                   case "project":
-                	   xnatExperimentdataShare.setProject(parser.getText());
-                       break;
-                   case "protocol":
-                	   xnatExperimentdataShare.setProtocol(parser.getText());
-                       break;
-				}
-            }
-         
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "label":
+                instance.setLabel(parser.getText());
+                break;
+            case "visit":
+                instance.setVisit(parser.getText());
+                break;
+            case "project":
+                instance.setProject(parser.getText());
+                break;
+            case "protocol":
+                instance.setProtocol(parser.getText());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return xnatExperimentdataShare;
-}
-
-	@Override
-	protected XnatExperimentdataShare getNewInstance() throws JsonProcessingException {
-		return null;
-	}
-
+    }
 }

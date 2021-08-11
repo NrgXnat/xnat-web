@@ -1,40 +1,42 @@
 package org.nrg.xnat.web.converters.jackson.serializers;
 
-import java.io.IOException;
-
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
 
-public class XnatImagesessiondataSerializer extends AbstractBaseElementSerializer<XnatImagesessiondata> {
-	private static final long serialVersionUID = 5305227943944237734L;
+public abstract class XnatImagesessiondataSerializer<T extends XnatImagesessiondata> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = 5305227943944237734L;
 
-	public XnatImagesessiondataSerializer() {
-        super(XnatImagesessiondata.class);
+    @SuppressWarnings("unchecked")
+    public XnatImagesessiondataSerializer() {
+        this((Class<T>) XnatImagesessiondata.class);
     }
-	
+
+    protected XnatImagesessiondataSerializer(final Class<T> clazz) {
+        super(clazz);
+    }
+
     @Override
-    protected void serializeImpl(final XnatImagesessiondata xnatImagesessiondata, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-    	
-		writeNonBlankField(generator, "dcmAccessionNumber", xnatImagesessiondata.getDcmaccessionnumber());
-		writeNonNullField(generator, "dcmPatientBirthDate", xnatImagesessiondata.getDcmpatientbirthdate());
-		writeNonBlankField(generator, "dcmPatientId", xnatImagesessiondata.getDcmpatientid());
-		writeNonBlankField(generator, "dcmPatientName", xnatImagesessiondata.getDcmpatientname());
-		writeNonNullNumber(generator, "dcmPatientWeight", xnatImagesessiondata.getDcmpatientweight());
-		writeNonBlankField(generator, "modality", xnatImagesessiondata.getModality());
-		writeNonBlankField(generator, "operator", xnatImagesessiondata.getOperator());
-		writeNonBlankField(generator, "prearchivePath", xnatImagesessiondata.getPrearchivepath());
-		writeNonBlankField(generator, "scanner", xnatImagesessiondata.getScanner());
-		writeNonBlankField(generator, "studyId", xnatImagesessiondata.getStudyId());
-		writeNonBlankField(generator, "sessionType", xnatImagesessiondata.getSessionType());
-		writeNonBlankField(generator, "uid", xnatImagesessiondata.getUid());
-		generator.writeObjectField("assessors", xnatImagesessiondata.getAssessors());
-		generator.writeObjectField("regions", xnatImagesessiondata.getRegions_region());
-		generator.writeObjectField("scans", xnatImagesessiondata.getScans_scan());
-		generator.writeFieldName("subjectAssessor");
-		provider.findValueSerializer(XnatSubjectassessordata.class).serialize(xnatImagesessiondata, generator, provider);
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        super.serializeImpl(instance, generator, provider);
+        writeNonBlankField(generator, "dcmAccessionNumber", instance.getDcmaccessionnumber());
+        writeNonNullField(generator, "dcmPatientBirthDate", instance.getDcmpatientbirthdate());
+        writeNonBlankField(generator, "dcmPatientId", instance.getDcmpatientid());
+        writeNonBlankField(generator, "dcmPatientName", instance.getDcmpatientname());
+        writeNonNullNumber(generator, "dcmPatientWeight", instance.getDcmpatientweight());
+        writeNonBlankField(generator, "modality", instance.getModality());
+        writeNonBlankField(generator, "operator", instance.getOperator());
+        writeNonBlankField(generator, "prearchivePath", instance.getPrearchivepath());
+        writeNonBlankField(generator, "scanner", instance.getScanner());
+        writeNonBlankField(generator, "studyId", instance.getStudyId());
+        writeNonBlankField(generator, "sessionType", instance.getSessionType());
+        writeNonBlankField(generator, "uid", instance.getUid());
+        generator.writeObjectField("assessors", instance.getAssessors());
+        generator.writeObjectField("regions", instance.getRegions_region());
+        generator.writeObjectField("scans", instance.getScans_scan());
     }
 
 }

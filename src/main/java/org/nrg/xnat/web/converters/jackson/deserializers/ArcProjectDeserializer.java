@@ -1,46 +1,41 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-
 import org.nrg.xdat.om.ArcProject;
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
-import java.util.Optional;
 
+@Component
 @Slf4j
-public class ArcProjectDeserializer extends AbstractBaseElementDeserializer<ArcProject> {
-	private static final long serialVersionUID = 2687825671261474280L;
+public class ArcProjectDeserializer<T extends ArcProject> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 2687825671261474280L;
 
-	public ArcProjectDeserializer() {
-        super(ArcProject.class);
+    @SuppressWarnings("unchecked")
+    public ArcProjectDeserializer() {
+        this((Class<T>) ArcProject.class);
+    }
+
+    protected ArcProjectDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected ArcProject deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final ArcProject arcProject = Optional.ofNullable((ArcProject) context.getAttribute("XnatItem")).orElseThrow(() -> new RuntimeException("ArcProject can't be created on its own"));
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "id":
-                	arcProject.setId(parser.getText());
-                    break;
-                case "currentArc":
-                	arcProject.setCurrentArc(parser.getText());
-                    break;
-                case "prearchiveCode":
-                	arcProject.setPrearchiveCode(parser.getIntValue());
-                    break;
-            }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "id":
+                instance.setId(parser.getText());
+                break;
+            case "currentArc":
+                instance.setCurrentArc(parser.getText());
+                break;
+            case "prearchiveCode":
+                instance.setPrearchiveCode(parser.getIntValue());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
-        return arcProject;
     }
-
-	@Override
-	protected ArcProject getNewInstance() throws JsonProcessingException {
-		return null;
-	}
 }

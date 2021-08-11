@@ -1,85 +1,78 @@
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonToken;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatDemographicdata;
 import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xft.ItemI;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Component
 @Slf4j
-public class XnatSubjectdataDeserializer extends AbstractBaseElementDeserializer<XnatSubjectdata> {
+public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 1154625120496783681L;
+
+    @SuppressWarnings("unchecked")
     public XnatSubjectdataDeserializer() {
-        super(XnatSubjectdata.class);
+        this((Class<T>) XnatSubjectdata.class);
+    }
+
+    protected XnatSubjectdataDeserializer(final Class<T> clazz) {
+        super(clazz);
     }
 
     @Override
-    protected XnatSubjectdata deserializeImpl(final JsonParser parser, final DeserializationContext context) throws IOException {
-        final XnatSubjectdata     subject      = new XnatSubjectdata();
-        final XnatDemographicdata demographics = new XnatDemographicdata();
-        try {
-            subject.setDemographics((ItemI) demographics);
-        } catch (Exception e) {
-            log.error("An error occurred trying to set demographics data while deserializing an object. Sorry about that.", e);
-        }
-        while (parser.nextToken() != JsonToken.END_OBJECT) {
-            final String field = parser.getCurrentName();
-            parser.nextToken();  //move to next token in string
-            switch (field) {
-                case "id":
-                    subject.setId(parser.getText());
-                    break;
-                case "label":
-                    subject.setLabel(parser.getText());
-                    break;
-                case "project":
-                    subject.setProject(parser.getText());
-                    break;
-                case "group":
-                    subject.setGroup(parser.getText());
-                    break;
-                case "dob":
-                    demographics.setDob(parseDate(parser.getText()));
-                    break;
-                case "educationDesc":
-                    demographics.setEducationdesc(parser.getText());
-                    break;
-                case "education":
-                    demographics.setEducation(parser.getIntValue());
-                    break;
-                case "age":
-                    demographics.setAge(parser.getIntValue());
-                    break;
-                case "ses":
-                    demographics.setSes(parser.getIntValue());
-                    break;
-                case "gender":
-                    demographics.setGender(parser.getText());
-                    break;
-                case "handedness":
-                    demographics.setHandedness(parser.getText());
-                    break;
-                case "ethnicity":
-                    demographics.setEthnicity(parser.getText());
-                    break;
-                case "race":
-                    demographics.setRace(parser.getText());
-                    break;
-                case "initials":
-                    subject.setInitials(parser.getText());
-                    break;
-            }
-        }
-        return subject;
-    }
+    protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        switch (field) {
+            case "id":
+                instance.setId(parser.getText());
+                break;
+            case "label":
+                instance.setLabel(parser.getText());
+                break;
+            case "project":
+                instance.setProject(parser.getText());
+                break;
+            case "group":
+                instance.setGroup(parser.getText());
+                break;
+            case "initials":
+                instance.setInitials(parser.getText());
+                break;
+            /*
+            TODO: This is all demographics data. Let the demographics data deserializer handle this.
 
-	@Override
-	protected XnatSubjectdata getNewInstance() throws JsonProcessingException {
-		// TODO Auto-generated method stub
-		return null;
-	}
+            case "dob":
+                demographics.setDob(parseDate(parser.getText()));
+                break;
+            case "educationDesc":
+                demographics.setEducationdesc(parser.getText());
+                break;
+            case "education":
+                demographics.setEducation(parser.getIntValue());
+                break;
+            case "age":
+                demographics.setAge(parser.getIntValue());
+                break;
+            case "ses":
+                demographics.setSes(parser.getIntValue());
+                break;
+            case "gender":
+                demographics.setGender(parser.getText());
+                break;
+            case "handedness":
+                demographics.setHandedness(parser.getText());
+                break;
+            case "ethnicity":
+                demographics.setEthnicity(parser.getText());
+                break;
+            case "race":
+                demographics.setRace(parser.getText());
+                break;
+            */
+            default:
+                super.handleField(instance, field, parser, context);
+        }
+    }
 }
