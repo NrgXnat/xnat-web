@@ -3,9 +3,9 @@ package org.nrg.xnat.eventservice.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.nrg.xdat.model.XnatImageassessordataI;
 import org.nrg.xdat.model.XnatImagescandataI;
@@ -24,6 +24,7 @@ import org.nrg.xnat.eventservice.model.JsonPathFilterNode;
 import org.nrg.xnat.eventservice.model.xnat.Scan;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,13 +35,13 @@ import java.util.Map;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.when;
 
 @Slf4j
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @Transactional
 @ContextConfiguration(classes = EventServiceTestConfig.class)
 public class EventPropertyServiceTest {
@@ -58,7 +59,7 @@ public class EventPropertyServiceTest {
     private Scan ctScan1 = new Scan();
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         mrScan1.setId("1111");
         mrScan1.setLabel("TestLabel");

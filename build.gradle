@@ -38,10 +38,11 @@ repositories {
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot" }
     mavenCentral()
+    maven { url "https://jitpack.io" }
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
 
 war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web"
 
@@ -130,7 +131,7 @@ configurations.all {
 }
 
 dependencies {
-    annotationProcessor "org.nrg:framework:1.8.3-SNAPSHOT"
+    annotationProcessor "org.nrg:framework"
     annotationProcessor "com.google.auto.value:auto-value"
 
     api platform("org.nrg:parent:${vXnat}")
@@ -139,7 +140,7 @@ dependencies {
     // NRG dependencies first.
     api "org.nrg.xdat:core"
     api "org.nrg.xnat:xnat-data-models"
-    api "org.nrg:framework:1.8.3-SNAPSHOT"
+    api "org.nrg:framework"
     api "org.springframework.security:spring-security-ldap"
     api "org.springframework.security.oauth:spring-security-oauth2"
     api "org.springframework.security:spring-security-jwt"
@@ -152,7 +153,7 @@ dependencies {
 
     implementation "org.nrg.xnat:spawner"
     implementation "org.nrg.xdat:core"
-    implementation "org.nrg:framework:1.8.3-SNAPSHOT"
+    implementation "org.nrg:framework"
     implementation "org.nrg:transaction"
     implementation "org.nrg:prefs"
     implementation "org.nrg:config"
@@ -325,7 +326,8 @@ dependencies {
             "ch.qos.logback:logback-core"
 
     testImplementation "org.nrg:test"
-    testImplementation "junit:junit"
+    testImplementation "com.github.sbrannen:spring-test-junit5:1.5.0"
+    testImplementation "org.junit.jupiter:junit-jupiter-api"
     testImplementation "org.springframework:spring-test"
     testImplementation "org.assertj:assertj-core"
     testImplementation "org.springframework.security:spring-security-test"
@@ -334,6 +336,10 @@ dependencies {
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.powermock:powermock-api-mockito2"
     testImplementation "org.powermock:powermock-module-junit4"
+
+    testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+    testImplementation "org.junit.vintage:junit-vintage-engine"
+    testRuntimeOnly "ch.qos.logback:logback-classic"
 
     javadocCoverage "com.manoelcampos:javadoc-coverage"
 }
@@ -457,10 +463,6 @@ war {
     }
 }
 
-test {
-    systemProperties["xnat.home"] = "${buildDir}/tmp/test"
-}
-
 jacoco {
     toolVersion = dependencyManagement.importedProperties["jacoco.version"] as String
 }
@@ -469,10 +471,22 @@ jacocoTestReport {
     dependsOn test
     reports {
         xml.required = false
-        csv.required = false
+        csv.required = true
         html.required = true
     }
 }
+
+test {
+    systemProperties["xnat.home"] = "${buildDir}/tmp/test"
+
+    useJUnitPlatform {
+        includeEngines("junit-jupiter", "junit-vintage")
+    }
+
+    minHeapSize = "512m"
+    maxHeapSize = "4g"
+}
+
 
 task javadocCoverageReport(type: Javadoc, dependsOn: javadoc) {
     source = sourceSets.main.allJava

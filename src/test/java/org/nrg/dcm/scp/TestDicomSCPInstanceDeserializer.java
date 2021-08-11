@@ -1,18 +1,18 @@
 package org.nrg.dcm.scp;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.nrg.framework.services.SerializerService;
 import org.nrg.xnat.config.TestSerializationConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.io.IOException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = TestSerializationConfig.class)
 public class TestDicomSCPInstanceDeserializer {
     private static final String INSTANCE_ENABLED_TRUE  = "{\"port\": 8104, \"id\": 1, \"aeTitle\": \"XNAT\", \"enabled\": true}";

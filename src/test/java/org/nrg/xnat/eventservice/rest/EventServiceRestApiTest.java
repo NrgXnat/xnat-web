@@ -1,9 +1,9 @@
 package org.nrg.xnat.eventservice.rest;
 
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.nrg.framework.services.ContextService;
 import org.nrg.xdat.security.services.RoleServiceI;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -17,7 +17,7 @@ import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @WebAppConfiguration
 @Transactional
 @ContextConfiguration(classes = EventServiceRestApiTestConfig.class)
@@ -86,7 +86,7 @@ public class EventServiceRestApiTest {
         "}"
             ;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         mockMvc = MockMvcBuilders.webAppContextSetup(wac).build();
 
@@ -128,7 +128,7 @@ public class EventServiceRestApiTest {
 
     @Test
     @DirtiesContext
-    @Ignore
+    @Disabled
     public void createSubscription() throws Exception {
         final String path = "/events/subscription";
 
@@ -153,28 +153,33 @@ public class EventServiceRestApiTest {
     }
 
     @Test
+    @Disabled
     public void createProjectSubscription() throws Exception {
 
     }
 
 
     @Test
+    @Disabled
     public void getAllSubscriptions() throws Exception {
 
     }
 
     @Test
+    @Disabled
     public void retrieveSubscription() throws Exception {
 
     }
 
     @Test
+    @Disabled
     public void getInstalledListeners() throws Exception {
 
     }
 
     @Test
-    public void getInstalledActions() throws Exception {
+    @Disabled
+    public void getInstalledActions() {
 
     }
 

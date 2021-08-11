@@ -1,11 +1,11 @@
 package org.nrg.xnat.eventservice.services;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class EventSubscriptionEntityServiceTest {
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
     }
 

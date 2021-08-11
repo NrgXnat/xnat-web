@@ -2,11 +2,11 @@ package org.nrg.xnat.eventservice.events;
 
 import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.text.IsEmptyString;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.nrg.framework.services.ContextService;
 import org.nrg.framework.utilities.BasicXnatResourceLocator;
@@ -17,19 +17,19 @@ import org.nrg.xnat.eventservice.services.EventServiceComponentManager;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.when;
 
-@Ignore("Event unit tests ")
+@Disabled("Event unit tests")
 @Slf4j
-@RunWith(SpringJUnit4ClassRunner.class)
+@ExtendWith(SpringExtension.class)
 @Transactional
 @ContextConfiguration(classes = EventServiceTestConfig.class)
 public class TestInstalledEvents {
@@ -44,16 +44,15 @@ public class TestInstalledEvents {
     @Autowired private EventServiceComponentManager componentManager;
 
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
-
         // Mock the userI
         mockUser = Mockito.mock(UserI.class);
         when(mockUser.getLogin()).thenReturn(FAKE_USER);
         when(mockUser.getID()).thenReturn(FAKE_USER_ID);
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
 
     }

@@ -97,6 +97,7 @@ public abstract class AbstractBaseElementDeserializer<T extends BaseElement> ext
     protected T deserializeImpl(final JsonParser parser, final DeserializationContext context, final T instance) throws IOException {
         while (parser.nextToken() != JsonToken.END_OBJECT) {
             final String field = parser.getCurrentName();
+            parser.nextToken();
             handleField(instance, field, parser, context);
         }
         return instance;
