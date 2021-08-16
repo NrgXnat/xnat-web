@@ -25,7 +25,6 @@ public class XnatPetsessiondataSerializer<T extends XnatPetsessiondata> extends 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         super.serializeImpl(instance, generator, provider);
-        writeNonBlankField(generator, "id", instance.getId());
         writeNonBlankField(generator, "stabilization", instance.getStabilization());
         writeNonBlankField(generator, "studyType", instance.getStudytype());
         writeNonBlankField(generator, "patientID", instance.getPatientid());

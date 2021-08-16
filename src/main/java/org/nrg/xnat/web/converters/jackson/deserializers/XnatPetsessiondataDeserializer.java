@@ -66,9 +66,6 @@ public class XnatPetsessiondataDeserializer<T extends XnatPetsessiondata> extend
         be handled in that case block.
         */
         switch (field) {
-            case "id":
-                instance.setId(parser.getText());
-                break;
             case "stabilization":
                 instance.setStabilization(parser.getText());
                 break;

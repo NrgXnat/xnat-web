@@ -3,10 +3,16 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.om.XnatImageassessordata;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatRegionresource;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Slf4j
 public abstract class XnatImagesessiondataDeserializer<T extends XnatImagesessiondata> extends XnatSubjectassessordataDeserializer<T> {
@@ -62,6 +68,20 @@ public abstract class XnatImagesessiondataDeserializer<T extends XnatImagesessio
                     e.printStackTrace();
                 }
                 break;
+            case "assessors":
+            	try {
+            		instance.setAssessors_assessor(parser.readValueAs(XnatImageassessordata.class));
+            	} catch (Exception e) {
+            		e.printStackTrace();
+            	}
+            	break;
+            case "scans":
+            	try {
+            		instance.setScans_scan(parser.readValueAs(XnatImagescandata.class));
+            	} catch (Exception e) {
+            		e.printStackTrace();
+            	}
+            	break;
             default:
                 super.handleField(instance, field, parser, context);
         }

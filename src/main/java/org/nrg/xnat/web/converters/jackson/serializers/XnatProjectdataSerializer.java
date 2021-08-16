@@ -27,9 +27,15 @@ public class XnatProjectdataSerializer<T extends XnatProjectdata> extends Abstra
         writeNonBlankField(generator, "id", project.getId());
         writeNonBlankField(generator, "description", project.getDescription());
         writeNonBlankField(generator, "name", project.getName());
+        writeNonBlankField(generator, "type", project.getType());
         writeNonBlankField(generator, "secondaryId", project.getSecondaryId());
         writeNonBlankField(generator, "keywords", project.getKeywords());
         writeNonNullBoolean(generator, "active", project.getActive());
+        writeNonNullField(generator, "publications", project.getPublications_publication());
+        writeNonNullField(generator, "resources", project.getResources_resource());
+        writeNonNullField(generator, "studyProtocol", project.getStudyprotocol());
+        writeNonNullField(generator, "aliases", project.getAliases_alias());
+        writeNonNullField(generator, "fields", project.getFields_field());
         writeNonNullField(generator, "pi", project.getPi());
         writeNonNullField(generator, "investigators", project.getInvestigators_investigator());
     }
