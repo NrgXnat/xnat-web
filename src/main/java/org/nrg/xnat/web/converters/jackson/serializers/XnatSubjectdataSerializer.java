@@ -24,17 +24,22 @@ public class XnatSubjectdataSerializer<T extends XnatSubjectdata> extends Abstra
     }
 
     @Override
-    protected void serializeImpl(final T subject, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonBlankField(generator, "id", subject.getId());
-        writeNonBlankField(generator, "label", subject.getLabel());
-        writeNonBlankField(generator, "project", subject.getProject());
-        writeNonBlankField(generator, "group", subject.getGroup());
-        writeNonNullNumber(generator, "ses", subject.getSes());
-        writeNonBlankField(generator, "initials", subject.getInitials());
-        writeNonNullField(generator, "demographics", subject.getDemographics());
-
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "group", instance.getGroup());
+        writeNonBlankField(generator, "src", instance.getSrc());
+        writeNonBlankField(generator, "initials", instance.getInitials());
+        writeNonNullField(generator, "demographics", instance.getDemographics());
+        writeNonNullField(generator, "sharing", instance.getSharing_share());
+        writeNonNullField(generator, "resources", instance.getResources_resource());
+        writeNonNullField(generator, "investigator", instance.getInvestigator());
+        writeNonNullField(generator, "metadata", instance.getMetadata());
+        writeNonNullField(generator, "addID", instance.getAddid());
+        writeNonNullField(generator, "fields", instance.getFields_field());
         generator.writeArrayFieldStart("experiments");
-        for (final XnatSubjectassessordataI experiment : subject.getExperiments_experiment()) {
+        for (final XnatSubjectassessordataI experiment : instance.getExperiments_experiment()) {
             generator.writeString(experiment.getId());
         }
         generator.writeEndArray();
