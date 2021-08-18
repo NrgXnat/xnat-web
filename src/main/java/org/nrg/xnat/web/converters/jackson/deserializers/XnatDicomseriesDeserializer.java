@@ -9,7 +9,7 @@ import java.io.IOException;
 
 @XnatDeserializer
 @Slf4j
-public class XnatDicomseriesDeserializer<T extends XnatDicomseries> extends XnatAbstractresourceDeserializer<T> {
+public class XnatDicomseriesDeserializer<T extends XnatDicomseries> extends XnatAbstractResourceDeserializer<T> {
     private static final long serialVersionUID = 4647687366287043723L;
 
     @SuppressWarnings({"unchecked", "unused"})

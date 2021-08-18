@@ -9,7 +9,7 @@ import java.io.IOException;
 
 @XnatSerializer
 @Slf4j
-public class XnatResourceSerializer<T extends XnatResource> extends XnatAbstractresourceSerializer<T> {
+public class XnatResourceSerializer<T extends XnatResource> extends XnatAbstractResourceSerializer<T> {
     private static final long serialVersionUID = 4446488002228061583L;
 
     @SuppressWarnings({"unchecked", "unused"})

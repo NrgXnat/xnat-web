@@ -11,10 +11,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Slf4j
-public abstract class XnatAbstractresourceDeserializer<T extends XnatAbstractresource> extends AbstractBaseElementDeserializer<T> {
+public abstract class XnatAbstractResourceDeserializer<T extends XnatAbstractresource> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = -7694265172552963272L;
 
-    protected XnatAbstractresourceDeserializer(final Class<T> clazz) {
+    protected XnatAbstractResourceDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 

@@ -9,15 +9,15 @@ import java.io.IOException;
 
 @XnatDeserializer
 @Slf4j
-public class XnatValidationdataDeserializer<T extends XnatValidationdata> extends AbstractBaseElementDeserializer<T> {
+public class XnatValidationDataDeserializer<T extends XnatValidationdata> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = 3211819690500955629L;
 
     @SuppressWarnings({"unchecked", "unused"})
-    public XnatValidationdataDeserializer() {
+    public XnatValidationDataDeserializer() {
         this((Class<T>) XnatValidationdata.class);
     }
 
-    protected XnatValidationdataDeserializer(final Class<T> clazz) {
+    protected XnatValidationDataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 

@@ -10,15 +10,15 @@ import java.util.Date;
 
 @XnatSerializer
 @Slf4j
-public class XnatValidationdataSerializer<T extends XnatValidationdata> extends AbstractBaseElementSerializer<T> {
+public class XnatValidationDataSerializer<T extends XnatValidationdata> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -4680148921293489049L;
 
     @SuppressWarnings({"unchecked", "unused"})
-    public XnatValidationdataSerializer() {
+    public XnatValidationDataSerializer() {
         this((Class<T>) XnatValidationdata.class);
     }
 
-    protected XnatValidationdataSerializer(final Class<T> clazz) {
+    protected XnatValidationDataSerializer(final Class<T> clazz) {
         super(clazz);
     }
 
