@@ -48,6 +48,7 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
                 instance.setGroup(parser.getText());
                 break;
             case "src":
+                // TODO: This is a repeat of the case above. Turn on warnings for duplicate branches.
                 instance.setGroup(parser.getText());
                 break;
             case "initials":
@@ -57,6 +58,7 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
             	try {
             		instance.setDemographics((ItemI)parser.readValueAs(XnatAbstractdemographicdata.class));
             	} catch (Exception e) {
+                    // TODO: Use log.error("message", e) here, not e.printStackTrace()
             		e.printStackTrace();
             	}
             	break;
@@ -64,6 +66,7 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
             	try {
             		instance.setSharing_share(parser.readValueAs(XnatProjectparticipant.class));
             	} catch (Exception e) {
+                    // TODO: Use log.error("message", e) here, not e.printStackTrace()
             		e.printStackTrace();
             	}
             	break;
@@ -71,6 +74,7 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
             	try {
             		instance.setResources_resource(parser.readValueAs(XnatAbstractresource.class));
             	} catch (Exception e) {
+                    // TODO: Use log.error("message", e) here, not e.printStackTrace()
             		e.printStackTrace();
             	}
             	break;
@@ -89,11 +93,13 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
             		e.printStackTrace();
             	}
             	break;  
-            	
+            // TODO: Treat common acronyms and abbreviations as single words, capitalizing only the first letter: "ID" becomes "Id", "UID" becomes "Uid".
             case "addID":
+                // TODO: This is a repeat of the case above. Turn on warnings for duplicate branches.
             	try {
             		instance.setMetadata((ItemI)parser.readValueAs(XnatAbstractsubjectmetadata.class));
             	} catch (Exception e) {
+                    // TODO: Use log.error("message", e) here, not e.printStackTrace()
             		e.printStackTrace();
             	}
             	break;
@@ -114,6 +120,7 @@ public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends Abst
             	try {
             		instance.setExperiments_experiment(parser.readValueAs(XnatSubjectassessordata.class));
             	} catch (Exception e) {
+                    // TODO: Use log.error("message", e) here, not e.printStackTrace()
             		e.printStackTrace();
             	}
             	break;    
