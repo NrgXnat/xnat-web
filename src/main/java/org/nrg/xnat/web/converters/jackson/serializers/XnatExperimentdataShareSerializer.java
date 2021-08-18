@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatExperimentdataShare;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatExperimentdataShareSerializer<T extends XnatExperimentdataShare> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 3246369647669211355L;
+    private static final long serialVersionUID = -4471877867170777957L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatExperimentdataShareSerializer() {
         this((Class<T>) XnatExperimentdataShare.class);
     }
@@ -23,10 +22,14 @@ public class XnatExperimentdataShareSerializer<T extends XnatExperimentdataShare
     }
 
     @Override
-    protected void serializeImpl(final T xnatExperimentdataShare, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonBlankField(generator, "label", xnatExperimentdataShare.getLabel());
-        generator.writeObjectField("visit", xnatExperimentdataShare.getVisit());
-        writeNonBlankField(generator, "project", xnatExperimentdataShare.getProject());
-        writeNonBlankField(generator, "protcol", xnatExperimentdataShare.getProtocol());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "project", instance.getProject());
+        writeNonBlankField(generator, "protocol", instance.getProtocol());
+        writeNonBlankField(generator, "share", instance.getShare());
+        writeNonBlankField(generator, "visit", instance.getVisit());
+        writeNonNullNumber(generator, "xnatExperimentdataShareId", instance.getXnatExperimentdataShareId());
     }
 }
+

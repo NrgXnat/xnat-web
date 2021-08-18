@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAygtssdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatAygtssdataSerializer<T extends XnatAygtssdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -6774888516925866335L;
+public class XnatAygtssdataSerializer<T extends XnatAygtssdata> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = 7269582507610307611L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAygtssdataSerializer() {
         this((Class<T>) XnatAygtssdata.class);
     }
@@ -25,24 +24,23 @@ public class XnatAygtssdataSerializer<T extends XnatAygtssdata> extends Abstract
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "filledoutby" property here: String
-        // TODO: Write out the "impairment" property here: Integer
-        // TODO: Write out the "motor_complexity" property here: Integer
-        // TODO: Write out the "motor_frequency" property here: Integer
-        // TODO: Write out the "motor_intensity" property here: Integer
-        // TODO: Write out the "motor_interference" property here: Integer
-        // TODO: Write out the "motor_inventory" property here: String
-        // TODO: Write out the "motor_number" property here: Integer
-        // TODO: Write out the "period" property here: String
-        // TODO: Write out the "phonic_complexity" property here: Integer
-        // TODO: Write out the "phonic_frequency" property here: Integer
-        // TODO: Write out the "phonic_intensity" property here: Integer
-        // TODO: Write out the "phonic_interference" property here: Integer
-        // TODO: Write out the "phonic_inventory" property here: String
-        // TODO: Write out the "phonic_number" property here: Integer
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
-        // TODO: Write out the "worsteverage" property here: Double
+        writeNonBlankField(generator, "filledoutby", instance.getFilledoutby());
+        writeNonNullNumber(generator, "impairment", instance.getImpairment());
+        writeNonNullNumber(generator, "motor_complexity", instance.getMotor_complexity());
+        writeNonNullNumber(generator, "motor_frequency", instance.getMotor_frequency());
+        writeNonNullNumber(generator, "motor_intensity", instance.getMotor_intensity());
+        writeNonNullNumber(generator, "motor_interference", instance.getMotor_interference());
+        writeNonBlankField(generator, "motor_inventory", instance.getMotor_inventory());
+        writeNonNullNumber(generator, "motor_number", instance.getMotor_number());
+        writeNonBlankField(generator, "period", instance.getPeriod());
+        writeNonNullNumber(generator, "phonic_complexity", instance.getPhonic_complexity());
+        writeNonNullNumber(generator, "phonic_frequency", instance.getPhonic_frequency());
+        writeNonNullNumber(generator, "phonic_intensity", instance.getPhonic_intensity());
+        writeNonNullNumber(generator, "phonic_interference", instance.getPhonic_interference());
+        writeNonBlankField(generator, "phonic_inventory", instance.getPhonic_inventory());
+        writeNonNullNumber(generator, "phonic_number", instance.getPhonic_number());
+        writeNonNullNumber(generator, "worsteverage", instance.getWorsteverage());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

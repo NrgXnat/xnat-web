@@ -20,7 +20,7 @@ import java.util.Date;
 @Accessors(prefix = "_")
 @Slf4j
 public abstract class AbstractBaseElementSerializer<T extends BaseElement> extends StdSerializer<T> {
-    private static final long serialVersionUID = -700539324483437169L;
+    private static final long serialVersionUID = -436288323864228414L;
 
     private static final DateTimeFormatter DATE_FORMATTER  = DateTimeFormatter.ISO_LOCAL_DATE;
     public static final  String            FIELD_VOXEL_RES = "voxelRes";

@@ -8,26 +8,27 @@ import org.nrg.xdat.om.XnatAbstractresource;
 import java.io.IOException;
 
 @Slf4j
-public abstract class XnatAbstractResourceSerializer<T extends XnatAbstractresource> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 7262248936715165602L;
+public abstract class XnatAbstractresourceSerializer<T extends XnatAbstractresource> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = -4233245037929255353L;
 
-    @SuppressWarnings("unchecked")
-    public XnatAbstractResourceSerializer() {
+    @SuppressWarnings({"unchecked", "unused"})
+    public XnatAbstractresourceSerializer() {
         this((Class<T>) XnatAbstractresource.class);
     }
 
-    protected XnatAbstractResourceSerializer(final Class<T> clazz) {
+    protected XnatAbstractresourceSerializer(final Class<T> clazz) {
         super(clazz);
     }
 
     @Override
-    protected void serializeImpl(final T resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonNullNumber(generator, "fileCount", resource.getFileCount());
-        writeNonBlankField(generator, "label", resource.getLabel());
-        writeNonBlankField(generator, "format", resource.getFormat());
-        writeNonBlankField(generator, "content", resource.getContent());
-        writeNonNullNumber(generator, "xnatAbstractResourceId", resource.getXnatAbstractresourceId());
-        writeNonBlankField(generator, "tags", resource.getTagString());
-        writeNonNullField(generator, "fileSize", resource.getFileSize());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonNullNumber(generator, "fileCount", instance.getFileCount());
+        // TODO: Write out the "fileSize" property here: Object
+        writeNonBlankField(generator, "label", instance.getLabel());
+        writeNonBlankField(generator, "note", instance.getNote());
+        // TODO: Write out the "tags_tag" property here: java.util.List
+        writeNonNullNumber(generator, "xnatAbstractresourceId", instance.getXnatAbstractresourceId());
     }
 }
+

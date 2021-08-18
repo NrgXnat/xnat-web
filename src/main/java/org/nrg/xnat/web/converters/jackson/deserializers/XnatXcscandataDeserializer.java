@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatXcscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatXcscandataDeserializer<T extends XnatXcscandata> extends XnatImagescandataDeserializer<T> {
-    private static final long serialVersionUID = 655137282489634573L;
+    private static final long serialVersionUID = 1904934266658975840L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatXcscandataDeserializer() {
         this((Class<T>) XnatXcscandata.class);
     }
@@ -24,6 +23,8 @@ public class XnatXcscandataDeserializer<T extends XnatXcscandata> extends XnatIm
 
     @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        // No class-specific properties to deserialize
         super.handleField(instance, field, parser, context);
     }
 }
+

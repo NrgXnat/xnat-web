@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ProvProcess;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class ProvProcessDeserializer<T extends ProvProcess> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 9030876025041241768L;
+    private static final long serialVersionUID = 5937257802247199332L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ProvProcessDeserializer() {
         this((Class<T>) ProvProcess.class);
     }
 
-    public ProvProcessDeserializer(final Class<T> clazz) {
+    protected ProvProcessDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -30,10 +28,7 @@ public class ProvProcessDeserializer<T extends ProvProcess> extends AbstractBase
                 // TODO: Handle the "processstep" property here: java.util.List
                 break;
             case "provProcessId":
-                // TODO: Handle the "provProcessId" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setProvProcessId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

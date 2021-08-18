@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatEcgscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatEcgscandataSerializer<T extends XnatEcgscandata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -2490727264439638999L;
+public class XnatEcgscandataSerializer<T extends XnatEcgscandata> extends XnatImagescandataSerializer<T> {
+    private static final long serialVersionUID = 7837432765835815917L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatEcgscandataSerializer() {
         this((Class<T>) XnatEcgscandata.class);
     }
@@ -24,9 +23,8 @@ public class XnatEcgscandataSerializer<T extends XnatEcgscandata> extends Abstra
 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "imagescandata" property here: org.nrg.xdat.om.XnatImagescandata
-        // TODO: Write out the "schemaElementName" property here: String
+        // No class-specific properties to serialize
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

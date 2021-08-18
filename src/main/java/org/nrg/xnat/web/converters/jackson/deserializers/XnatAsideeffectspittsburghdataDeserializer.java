@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAsideeffectspittsburghdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatAsideeffectspittsburghdataDeserializer<T extends XnatAsideeffectspittsburghdata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 1960062034355761944L;
+public class XnatAsideeffectspittsburghdataDeserializer<T extends XnatAsideeffectspittsburghdata> extends XnatSubjectassessordataDeserializer<T> {
+    private static final long serialVersionUID = 7718805059312657300L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAsideeffectspittsburghdataDeserializer() {
         this((Class<T>) XnatAsideeffectspittsburghdata.class);
     }
 
-    public XnatAsideeffectspittsburghdataDeserializer(final Class<T> clazz) {
+    protected XnatAsideeffectspittsburghdataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,67 +26,61 @@ public class XnatAsideeffectspittsburghdataDeserializer<T extends XnatAsideeffec
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "buccalLingualmovements":
-                // TODO: Handle the "buccalLingualmovements" property here: Integer
+                instance.setBuccalLingualmovements(parser.getIntValue());
                 break;
             case "crabbyIrritable":
-                // TODO: Handle the "crabbyIrritable" property here: Integer
+                instance.setCrabbyIrritable(parser.getIntValue());
                 break;
             case "dizzinessLightheadedness":
-                // TODO: Handle the "dizzinessLightheadedness" property here: Integer
+                instance.setDizzinessLightheadedness(parser.getIntValue());
                 break;
             case "drymouth":
-                // TODO: Handle the "drymouth" property here: Integer
+                instance.setDrymouth(parser.getIntValue());
                 break;
             case "dullTiredListless":
-                // TODO: Handle the "dullTiredListless" property here: Integer
+                instance.setDullTiredListless(parser.getIntValue());
                 break;
             case "hallucinations":
-                // TODO: Handle the "hallucinations" property here: Integer
+                instance.setHallucinations(parser.getIntValue());
                 break;
             case "headaches":
-                // TODO: Handle the "headaches" property here: Integer
+                instance.setHeadaches(parser.getIntValue());
                 break;
             case "lossofappetite":
-                // TODO: Handle the "lossofappetite" property here: Integer
+                instance.setLossofappetite(parser.getIntValue());
                 break;
             case "motortics":
-                // TODO: Handle the "motortics" property here: Integer
+                instance.setMotortics(parser.getIntValue());
                 break;
             case "nauseaVomiting":
-                // TODO: Handle the "nauseaVomiting" property here: Integer
+                instance.setNauseaVomiting(parser.getIntValue());
                 break;
             case "palpitations":
-                // TODO: Handle the "palpitations" property here: Integer
+                instance.setPalpitations(parser.getIntValue());
                 break;
             case "pickingSkinFingersNailsLip":
-                // TODO: Handle the "pickingSkinFingersNailsLip" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setPickingSkinFingersNailsLip(parser.getIntValue());
                 break;
             case "sedation":
-                // TODO: Handle the "sedation" property here: Integer
+                instance.setSedation(parser.getIntValue());
                 break;
             case "socialwithdrawal":
-                // TODO: Handle the "socialwithdrawal" property here: Integer
+                instance.setSocialwithdrawal(parser.getIntValue());
                 break;
             case "stomachache":
-                // TODO: Handle the "stomachache" property here: Integer
-                break;
-            case "subjectassessordata":
-                // TODO: Handle the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
+                instance.setStomachache(parser.getIntValue());
                 break;
             case "tearfulSadDepressed":
-                // TODO: Handle the "tearfulSadDepressed" property here: Integer
+                instance.setTearfulSadDepressed(parser.getIntValue());
                 break;
             case "troubleconcentratingDistractible":
-                // TODO: Handle the "troubleconcentratingDistractible" property here: Integer
+                instance.setTroubleconcentratingDistractible(parser.getIntValue());
                 break;
             case "troublesleeping":
-                // TODO: Handle the "troublesleeping" property here: Integer
+                instance.setTroublesleeping(parser.getIntValue());
                 break;
             case "worriedAnxious":
-                // TODO: Handle the "worriedAnxious" property here: Integer
+                instance.setWorriedAnxious(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatResource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatResourceSerializer<T extends XnatResource> extends XnatAbstractResourceSerializer<T> {
-    private static final long serialVersionUID = -427794813436644000L;
+public class XnatResourceSerializer<T extends XnatResource> extends XnatAbstractresourceSerializer<T> {
+    private static final long serialVersionUID = 4446488002228061583L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatResourceSerializer() {
         this((Class<T>) XnatResource.class);
     }
@@ -23,19 +22,15 @@ public class XnatResourceSerializer<T extends XnatResource> extends XnatAbstract
     }
 
     @Override
-    protected void serializeImpl(final T resource, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        super.serializeImpl(resource, generator, provider);
-        writeNonNullNumber(generator, "fileCount", resource.getFileCount());
-        writeNonBlankField(generator, "label", resource.getLabel());
-        writeNonBlankField(generator, "format", resource.getFormat());
-        writeNonBlankField(generator, "content", resource.getContent());
-        writeNonBlankField(generator, "description", resource.getDescription());
-        writeNonBlankField(generator, "note", resource.getNote());
-        writeNonNullNumber(generator, "xnatAbstractResourceId", resource.getXnatAbstractresourceId());
-        writeNonNullField(generator, "tags", resource.getTags_tag());
-        writeNonNullField(generator, "fileSize", resource.getFileSize());
-        writeNonNullField(generator, "resource", resource.getAbstractresource());
-        writeNonNullField(generator, "files", resource.getCorrespondingFiles());
-        writeNonNullField(generator, "uri", resource.getUri());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonBlankField(generator, "cachepath", instance.getCachepath());
+        writeNonBlankField(generator, "content", instance.getContent());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "format", instance.getFormat());
+        // TODO: Write out the "provenance" property here: org.nrg.xdat.model.ProvProcessI
+        writeNonBlankField(generator, "uri", instance.getUri());
+        super.serializeImpl(instance, generator, provider);
     }
 }
+

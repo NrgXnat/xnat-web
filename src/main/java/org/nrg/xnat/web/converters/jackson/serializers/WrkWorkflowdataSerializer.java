@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.WrkWorkflowdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class WrkWorkflowdataSerializer<T extends WrkWorkflowdata> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -3878837757663055370L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public WrkWorkflowdataSerializer() {
         this((Class<T>) WrkWorkflowdata.class);
     }
@@ -25,35 +24,29 @@ public class WrkWorkflowdataSerializer<T extends WrkWorkflowdata> extends Abstra
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "category" property here: String
-        // TODO: Write out the "comments" property here: String
-        // TODO: Write out the "createUser" property here: String
-        // TODO: Write out the "currentStepId" property here: String
+        writeNonBlankField(generator, "category", instance.getCategory());
+        writeNonBlankField(generator, "comments", instance.getComments());
+        writeNonBlankField(generator, "createUser", instance.getCreateUser());
+        writeNonBlankField(generator, "currentStepId", instance.getCurrentStepId());
         // TODO: Write out the "currentStepLaunchTime" property here: Object
-        // TODO: Write out the "currentStepLaunchTimeDate" property here: java.util.Date
-        // TODO: Write out the "dataType" property here: String
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "details" property here: String
-        // TODO: Write out the "eventId" property here: Number
-        // TODO: Write out the "executionenvironment" property here: org.nrg.xdat.model.WrkAbstractexecutionenvironmentI
-        // TODO: Write out the "externalid" property here: String
-        // TODO: Write out the "jobid" property here: String
-        // TODO: Write out the "justification" property here: String
+        writeNonBlankField(generator, "dataType", instance.getDataType());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "details", instance.getDetails());
+        // TODO: Write out the "executionenvironment" property here: org.nrg.xdat.om.WrkAbstractexecutionenvironment
+        writeNonBlankField(generator, "externalid", instance.getExternalid());
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "jobid", instance.getJobid());
+        writeNonBlankField(generator, "justification", instance.getJustification());
         // TODO: Write out the "launchTime" property here: Object
-        // TODO: Write out the "launchTimeDate" property here: java.util.Date
-        // TODO: Write out the "nextStepId" property here: String
-        // TODO: Write out the "onlyPipelineName" property here: String
-        // TODO: Write out the "percentagecomplete" property here: String
-        // TODO: Write out the "pipelineName" property here: String
-        // TODO: Write out the "scanId" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "status" property here: String
-        // TODO: Write out the "stepDescription" property here: String
-        // TODO: Write out the "type" property here: String
-        // TODO: Write out the "userId" property here: Integer
-        // TODO: Write out the "username" property here: String
-        // TODO: Write out the "workflowId" property here: Integer
-        // TODO: Write out the "wrkWorkflowdataId" property here: Integer
+        writeNonBlankField(generator, "nextStepId", instance.getNextStepId());
+        writeNonBlankField(generator, "percentagecomplete", instance.getPercentagecomplete());
+        writeNonBlankField(generator, "pipelineName", instance.getPipelineName());
+        writeNonBlankField(generator, "scanId", instance.getScanId());
+        writeNonBlankField(generator, "src", instance.getSrc());
+        writeNonBlankField(generator, "status", instance.getStatus());
+        writeNonBlankField(generator, "stepDescription", instance.getStepDescription());
+        writeNonBlankField(generator, "type", instance.getType());
+        writeNonNullNumber(generator, "wrkWorkflowdataId", instance.getWrkWorkflowdataId());
     }
 }
 

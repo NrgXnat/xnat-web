@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ValProtocoldataScanCheckComment;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class ValProtocoldataScanCheckCommentSerializer<T extends ValProtocoldataScanCheckComment> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 4869060408034511203L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ValProtocoldataScanCheckCommentSerializer() {
         this((Class<T>) ValProtocoldataScanCheckComment.class);
     }
@@ -25,11 +24,10 @@ public class ValProtocoldataScanCheckCommentSerializer<T extends ValProtocoldata
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "comment" property here: String
+        writeNonBlankField(generator, "comment", instance.getComment());
         // TODO: Write out the "datetime" property here: Object
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "username" property here: String
-        // TODO: Write out the "valProtocoldataScanCheckCommentId" property here: Integer
+        writeNonBlankField(generator, "username", instance.getUsername());
+        writeNonNullNumber(generator, "valProtocoldataScanCheckCommentId", instance.getValProtocoldataScanCheckCommentId());
     }
 }
 

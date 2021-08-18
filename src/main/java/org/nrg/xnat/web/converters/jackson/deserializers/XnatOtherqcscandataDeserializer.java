@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatOtherqcscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatOtherqcscandataDeserializer<T extends XnatOtherqcscandata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 3367773591718567874L;
+public class XnatOtherqcscandataDeserializer<T extends XnatOtherqcscandata> extends XnatQcscandataDeserializer<T> {
+    private static final long serialVersionUID = 8030185264767426425L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatOtherqcscandataDeserializer() {
         this((Class<T>) XnatOtherqcscandata.class);
     }
 
-    public XnatOtherqcscandataDeserializer(final Class<T> clazz) {
+    protected XnatOtherqcscandataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,13 +26,7 @@ public class XnatOtherqcscandataDeserializer<T extends XnatOtherqcscandata> exte
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "other":
-                // TODO: Handle the "other" property here: String
-                break;
-            case "qcscandata":
-                // TODO: Handle the "qcscandata" property here: org.nrg.xdat.om.XnatQcscandata
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setOther(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

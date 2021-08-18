@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatDicomseries;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatDicomseriesDeserializer<T extends XnatDicomseries> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 310111835470118214L;
+public class XnatDicomseriesDeserializer<T extends XnatDicomseries> extends XnatAbstractresourceDeserializer<T> {
+    private static final long serialVersionUID = 4647687366287043723L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatDicomseriesDeserializer() {
         this((Class<T>) XnatDicomseries.class);
     }
 
-    public XnatDicomseriesDeserializer(final Class<T> clazz) {
+    protected XnatDicomseriesDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,59 +25,50 @@ public class XnatDicomseriesDeserializer<T extends XnatDicomseries> extends Abst
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "abstractresource":
-                // TODO: Handle the "abstractresource" property here: org.nrg.xdat.om.XnatAbstractresource
-                break;
             case "cachepath":
-                // TODO: Handle the "cachepath" property here: String
+                instance.setCachepath(parser.getText());
                 break;
             case "content":
-                // TODO: Handle the "content" property here: String
+                instance.setContent(parser.getText());
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "dimensions_volumes":
-                // TODO: Handle the "dimensions_volumes" property here: Integer
+                instance.setDimensions_volumes(parser.getIntValue());
                 break;
             case "dimensions_x":
-                // TODO: Handle the "dimensions_x" property here: Integer
+                instance.setDimensions_x(parser.getIntValue());
                 break;
             case "dimensions_y":
-                // TODO: Handle the "dimensions_y" property here: Integer
+                instance.setDimensions_y(parser.getIntValue());
                 break;
             case "dimensions_z":
-                // TODO: Handle the "dimensions_z" property here: Integer
+                instance.setDimensions_z(parser.getIntValue());
                 break;
             case "format":
-                // TODO: Handle the "format" property here: String
+                instance.setFormat(parser.getText());
                 break;
             case "imageset_image":
                 // TODO: Handle the "imageset_image" property here: java.util.List
                 break;
-            case "label":
-                // TODO: Handle the "label" property here: String
-                break;
             case "orientation":
-                // TODO: Handle the "orientation" property here: String
+                instance.setOrientation(parser.getText());
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
-            case "unresolvedPaths":
-                // TODO: Handle the "unresolvedPaths" property here: java.util.ArrayList
+            case "uid":
+                instance.setUid(parser.getText());
                 break;
             case "voxelres_units":
-                // TODO: Handle the "voxelres_units" property here: String
+                instance.setVoxelres_units(parser.getText());
                 break;
             case "voxelres_x":
-                // TODO: Handle the "voxelres_x" property here: Double
+                instance.setVoxelres_x(parser.getDoubleValue());
                 break;
             case "voxelres_y":
-                // TODO: Handle the "voxelres_y" property here: Double
+                instance.setVoxelres_y(parser.getDoubleValue());
                 break;
             case "voxelres_z":
-                // TODO: Handle the "voxelres_z" property here: Double
+                instance.setVoxelres_z(parser.getDoubleValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatProjectdataSerializer<T extends XnatProjectdata> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 5168583339226819279L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatProjectdataSerializer() {
         this((Class<T>) XnatProjectdata.class);
     }

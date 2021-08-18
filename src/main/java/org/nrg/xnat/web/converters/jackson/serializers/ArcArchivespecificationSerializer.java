@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ArcArchivespecification;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class ArcArchivespecificationSerializer<T extends ArcArchivespecification> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 800525773763916393L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcArchivespecificationSerializer() {
         this((Class<T>) ArcArchivespecification.class);
     }
@@ -25,35 +24,30 @@ public class ArcArchivespecificationSerializer<T extends ArcArchivespecification
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "arcArchivespecificationId" property here: Integer
-        // TODO: Write out the "dcm_appletLink" property here: Boolean
-        // TODO: Write out the "dcm_dcmAe" property here: String
-        // TODO: Write out the "dcm_dcmHost" property here: String
-        // TODO: Write out the "dcm_dcmPort" property here: String
-        // TODO: Write out the "dcm_httpUrl" property here: String
-        // TODO: Write out the "emailspecifications_newUserRegistration" property here: Boolean
-        // TODO: Write out the "emailspecifications_pageEmail" property here: Boolean
-        // TODO: Write out the "emailspecifications_pipeline" property here: Boolean
-        // TODO: Write out the "emailspecifications_projectAccess" property here: Boolean
-        // TODO: Write out the "emailspecifications_transfer" property here: Boolean
-        // TODO: Write out the "enableCsrfToken" property here: Boolean
-        // TODO: Write out the "enableNewRegistrations" property here: Boolean
+        writeNonNullNumber(generator, "arcArchivespecificationId", instance.getArcArchivespecificationId());
+        writeNonNullBoolean(generator, "dcm_appletLink", instance.getDcm_appletLink());
+        writeNonBlankField(generator, "dcm_dcmAe", instance.getDcm_dcmAe());
+        writeNonBlankField(generator, "dcm_dcmHost", instance.getDcm_dcmHost());
+        writeNonBlankField(generator, "dcm_dcmPort", instance.getDcm_dcmPort());
+        writeNonBlankField(generator, "dcm_httpUrl", instance.getDcm_httpUrl());
+        writeNonNullBoolean(generator, "emailspecifications_newUserRegistration", instance.getEmailspecifications_newUserRegistration());
+        writeNonNullBoolean(generator, "emailspecifications_pageEmail", instance.getEmailspecifications_pageEmail());
+        writeNonNullBoolean(generator, "emailspecifications_pipeline", instance.getEmailspecifications_pipeline());
+        writeNonNullBoolean(generator, "emailspecifications_projectAccess", instance.getEmailspecifications_projectAccess());
+        writeNonNullBoolean(generator, "emailspecifications_transfer", instance.getEmailspecifications_transfer());
+        writeNonNullBoolean(generator, "enableCsrfToken", instance.getEnableCsrfToken());
+        writeNonNullBoolean(generator, "enableNewRegistrations", instance.getEnableNewRegistrations());
         // TODO: Write out the "fieldspecifications_fieldspecification" property here: java.util.List
-        // TODO: Write out the "globalArchivePath" property here: String
-        // TODO: Write out the "globalBuildPath" property here: String
-        // TODO: Write out the "globalCachePath" property here: String
-        // TODO: Write out the "globalPrearchivePath" property here: String
-        // TODO: Write out the "globalpaths" property here: org.nrg.xdat.om.ArcPathinfo
+        // TODO: Write out the "globalpaths" property here: org.nrg.xdat.model.ArcPathinfoI
         // TODO: Write out the "notificationTypes_notificationType" property here: java.util.List
-        // TODO: Write out the "prearchiveCode" property here: Integer
+        writeNonNullNumber(generator, "prearchiveCode", instance.getPrearchiveCode());
         // TODO: Write out the "projects_project" property here: java.util.List
-        // TODO: Write out the "quarantineCode" property here: Integer
-        // TODO: Write out the "requireLogin" property here: Boolean
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "siteAdminEmail" property here: String
-        // TODO: Write out the "siteId" property here: String
-        // TODO: Write out the "siteUrl" property here: String
-        // TODO: Write out the "smtpHost" property here: String
+        writeNonNullNumber(generator, "quarantineCode", instance.getQuarantineCode());
+        writeNonNullBoolean(generator, "requireLogin", instance.getRequireLogin());
+        writeNonBlankField(generator, "siteAdminEmail", instance.getSiteAdminEmail());
+        writeNonBlankField(generator, "siteId", instance.getSiteId());
+        writeNonBlankField(generator, "siteUrl", instance.getSiteUrl());
+        writeNonBlankField(generator, "smtpHost", instance.getSmtpHost());
     }
 }
 

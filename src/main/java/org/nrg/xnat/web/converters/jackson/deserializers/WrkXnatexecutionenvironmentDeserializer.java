@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.WrkXnatexecutionenvironment;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class WrkXnatexecutionenvironmentDeserializer<T extends WrkXnatexecutionenvironment> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 7893179577482365764L;
+public class WrkXnatexecutionenvironmentDeserializer<T extends WrkXnatexecutionenvironment> extends WrkAbstractexecutionenvironmentDeserializer<T> {
+    private static final long serialVersionUID = -7716101583701743075L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public WrkXnatexecutionenvironmentDeserializer() {
         this((Class<T>) WrkXnatexecutionenvironment.class);
     }
 
-    public WrkXnatexecutionenvironmentDeserializer(final Class<T> clazz) {
+    protected WrkXnatexecutionenvironmentDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,44 +25,44 @@ public class WrkXnatexecutionenvironmentDeserializer<T extends WrkXnatexecutione
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "abstractexecutionenvironment":
-                // TODO: Handle the "abstractexecutionenvironment" property here: org.nrg.xdat.om.WrkAbstractexecutionenvironment
-                break;
             case "catalogpath":
-                // TODO: Handle the "catalogpath" property here: String
+                instance.setCatalogpath(parser.getText());
                 break;
             case "datatype":
-                // TODO: Handle the "datatype" property here: String
+                instance.setDatatype(parser.getText());
                 break;
             case "host":
-                // TODO: Handle the "host" property here: String
+                instance.setHost(parser.getText());
+                break;
+            case "id":
+                instance.setId(parser.getText());
+                break;
+            case "log":
+                instance.setLog(parser.getText());
                 break;
             case "notify":
                 // TODO: Handle the "notify" property here: java.util.List
                 break;
             case "parameterfile_path":
-                // TODO: Handle the "parameterfile_path" property here: String
+                instance.setParameterfile_path(parser.getText());
                 break;
             case "parameterfile_xml":
-                // TODO: Handle the "parameterfile_xml" property here: String
+                instance.setParameterfile_xml(parser.getText());
                 break;
             case "parameters_parameter":
                 // TODO: Handle the "parameters_parameter" property here: java.util.List
                 break;
             case "pipeline":
-                // TODO: Handle the "pipeline" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setPipeline(parser.getText());
                 break;
             case "startat":
-                // TODO: Handle the "startat" property here: String
+                instance.setStartat(parser.getText());
                 break;
             case "supressnotification":
-                // TODO: Handle the "supressnotification" property here: Boolean
+                instance.setSupressnotification(parser.getBooleanValue());
                 break;
             case "xnatuser":
-                // TODO: Handle the "xnatuser" property here: String
+                instance.setXnatuser(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

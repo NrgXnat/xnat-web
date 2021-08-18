@@ -9,7 +9,7 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatImageassessordataDeserializer<T extends XnatImageassessordata> extends XnatDeriveddataDeserializer<T> {
-    private static final long serialVersionUID = 2749117185396878158L;
+    private static final long serialVersionUID = 2093349878306252288L;
 
     protected XnatImageassessordataDeserializer(final Class<T> clazz) {
         super(clazz);
@@ -17,36 +17,23 @@ public abstract class XnatImageassessordataDeserializer<T extends XnatImageasses
 
     @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "id":
-                instance.setId(parser.getText());
+            case "imagesessionId":
+                instance.setImagesessionId(parser.getText());
                 break;
-            case "label":
-                instance.setLabel(parser.getText());
+            case "in_file":
+                // TODO: Handle the "in_file" property here: java.util.List
                 break;
-            case "project":
-                instance.setProject(parser.getText());
+            case "out_file":
+                // TODO: Handle the "out_file" property here: java.util.List
                 break;
-            case "note":
-                instance.setNote(parser.getText());
-                break;
-            case "protocol":
-                instance.setProtocol(parser.getText());
-                break;
-            case "original":
-                instance.setOriginal(parser.getText());
-                break;
-            case "date":
-                instance.setDate(parseDate(parser.getText()));
-                break;
-            case "delay":
-                instance.setDelay(parser.getIntValue());
-                break;
-            case "version":
-                instance.setVersion(parser.getIntValue());
+            case "parameters_addparam":
+                // TODO: Handle the "parameters_addparam" property here: java.util.List
                 break;
             default:
                 super.handleField(instance, field, parser, context);
         }
     }
 }
+

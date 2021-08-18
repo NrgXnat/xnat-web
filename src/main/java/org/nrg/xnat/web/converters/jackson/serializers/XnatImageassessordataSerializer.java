@@ -9,9 +9,9 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatImageassessordataSerializer<T extends XnatImageassessordata> extends XnatDeriveddataSerializer<T> {
-    private static final long serialVersionUID = -5866321865427372083L;
+    private static final long serialVersionUID = 8256008207344888109L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatImageassessordataSerializer() {
         this((Class<T>) XnatImageassessordata.class);
     }
@@ -22,22 +22,12 @@ public abstract class XnatImageassessordataSerializer<T extends XnatImageassesso
 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonBlankField(generator, "imagesessionId", instance.getImagesessionId());
+        // TODO: Write out the "in_file" property here: java.util.List
+        // TODO: Write out the "out_file" property here: java.util.List
+        // TODO: Write out the "parameters_addparam" property here: java.util.List
         super.serializeImpl(instance, generator, provider);
-        writeNonBlankField(generator, "id", instance.getId());
-        writeNonBlankField(generator, "label", instance.getLabel());
-        writeNonBlankField(generator, "project", instance.getProject());
-        writeNonBlankField(generator, "note", instance.getNote());
-        writeNonBlankField(generator, "protocol", instance.getProtocol());
-        writeNonBlankField(generator, "original", instance.getOriginal());
-        writeNonNullField(generator, "date", instance.getDate());
-        writeNonNullNumber(generator, "delay", instance.getDelay());
-        writeNonNullNumber(generator, "version", instance.getVersion());
-        writeNonBlankField(generator, "description", instance.getDescription());
-        writeNonNullField(generator, "fields", instance.getFields_field());
-        writeNonNullField(generator, "resources", instance.getResources_resource());
-        writeNonNullField(generator, "experiment", instance.getExperimentdata());
-        writeNonNullField(generator, "sessionData", instance.getImageSessionData());
-        writeNonNullField(generator, "scans", instance.getImageSessionData().getScans_scan());
-        writeNonNullField(generator, "outFile", instance.getOut_file());
     }
 }
+

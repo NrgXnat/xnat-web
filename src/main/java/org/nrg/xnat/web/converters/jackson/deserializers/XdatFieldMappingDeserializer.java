@@ -4,57 +4,52 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatFieldMapping;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatFieldMappingDeserializer<T extends XdatFieldMapping> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -2040888106326906417L;
+    private static final long serialVersionUID = 3193645982034119956L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatFieldMappingDeserializer() {
         this((Class<T>) XdatFieldMapping.class);
     }
 
-    public XdatFieldMappingDeserializer(final Class<T> clazz) {
+    protected XdatFieldMappingDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "activeElement":
-                // TODO: Handle the "activeElement" property here: Boolean
+                instance.setActiveElement(parser.getBooleanValue());
                 break;
             case "comparisonType":
-                // TODO: Handle the "comparisonType" property here: String
+                instance.setComparisonType(parser.getText());
                 break;
             case "createElement":
-                // TODO: Handle the "createElement" property here: Boolean
+                instance.setCreateElement(parser.getBooleanValue());
                 break;
             case "deleteElement":
-                // TODO: Handle the "deleteElement" property here: Boolean
+                instance.setDeleteElement(parser.getBooleanValue());
                 break;
             case "editElement":
-                // TODO: Handle the "editElement" property here: Boolean
+                instance.setEditElement(parser.getBooleanValue());
                 break;
             case "field":
-                // TODO: Handle the "field" property here: String
+                instance.setField(parser.getText());
                 break;
             case "fieldValue":
-                // TODO: Handle the "fieldValue" property here: String
+                instance.setFieldValue(parser.getText());
                 break;
             case "readElement":
-                // TODO: Handle the "readElement" property here: Boolean
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setReadElement(parser.getBooleanValue());
                 break;
             case "xdatFieldMappingId":
-                // TODO: Handle the "xdatFieldMappingId" property here: Integer
+                instance.setXdatFieldMappingId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -14,7 +14,7 @@ import java.util.Map;
 
 @Slf4j
 public abstract class XnatExperimentdataDeserializer<T extends XnatExperimentdata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 1267197324318417600L;
+    private static final long serialVersionUID = -7931537200114274721L;
 
     protected XnatExperimentdataDeserializer(final Class<T> clazz) {
         super(clazz);

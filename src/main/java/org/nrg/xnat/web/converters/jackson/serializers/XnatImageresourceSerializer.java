@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatImageresource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatImageresourceSerializer<T extends XnatImageresource> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 3699055420548361701L;
+public class XnatImageresourceSerializer<T extends XnatImageresource> extends XnatResourceSerializer<T> {
+    private static final long serialVersionUID = 6869483985730500782L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatImageresourceSerializer() {
         this((Class<T>) XnatImageresource.class);
     }
@@ -25,17 +24,16 @@ public class XnatImageresourceSerializer<T extends XnatImageresource> extends Ab
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "dimensions_volumes" property here: Integer
-        // TODO: Write out the "dimensions_x" property here: Integer
-        // TODO: Write out the "dimensions_y" property here: Integer
-        // TODO: Write out the "dimensions_z" property here: Integer
-        // TODO: Write out the "orientation" property here: String
-        // TODO: Write out the "resource" property here: org.nrg.xdat.om.XnatResource
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "voxelres_units" property here: String
-        // TODO: Write out the "voxelres_x" property here: Double
-        // TODO: Write out the "voxelres_y" property here: Double
-        // TODO: Write out the "voxelres_z" property here: Double
+        writeNonNullNumber(generator, "dimensions_volumes", instance.getDimensions_volumes());
+        writeNonNullNumber(generator, "dimensions_x", instance.getDimensions_x());
+        writeNonNullNumber(generator, "dimensions_y", instance.getDimensions_y());
+        writeNonNullNumber(generator, "dimensions_z", instance.getDimensions_z());
+        writeNonBlankField(generator, "orientation", instance.getOrientation());
+        writeNonBlankField(generator, "voxelres_units", instance.getVoxelres_units());
+        writeNonNullNumber(generator, "voxelres_x", instance.getVoxelres_x());
+        writeNonNullNumber(generator, "voxelres_y", instance.getVoxelres_y());
+        writeNonNullNumber(generator, "voxelres_z", instance.getVoxelres_z());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

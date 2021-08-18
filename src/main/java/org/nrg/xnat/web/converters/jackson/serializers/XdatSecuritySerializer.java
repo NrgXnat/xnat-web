@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatSecurity;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatSecuritySerializer<T extends XdatSecurity> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 5661757594455166842L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatSecuritySerializer() {
         this((Class<T>) XdatSecurity.class);
     }
@@ -30,12 +29,11 @@ public class XdatSecuritySerializer<T extends XdatSecurity> extends AbstractBase
         // TODO: Write out the "groups_group" property here: java.util.ArrayList
         // TODO: Write out the "infolist_info" property here: org.nrg.xdat.om.XdatInfoentryI
         // TODO: Write out the "newslist_news" property here: org.nrg.xdat.om.XdatNewsentryI
-        // TODO: Write out the "requireLogin" property here: Boolean
+        writeNonNullBoolean(generator, "requireLogin", instance.getRequireLogin());
         // TODO: Write out the "roles_role" property here: java.util.ArrayList
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "system" property here: String
+        writeNonBlankField(generator, "system", instance.getSystem());
         // TODO: Write out the "users_user" property here: java.util.ArrayList
-        // TODO: Write out the "xdatSecurityId" property here: Integer
+        writeNonNullNumber(generator, "xdatSecurityId", instance.getXdatSecurityId());
     }
 }
 

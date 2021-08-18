@@ -4,57 +4,52 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatContrastbolus;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatContrastbolusDeserializer<T extends XnatContrastbolus> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 7550447834814006352L;
+    private static final long serialVersionUID = 4371780905971215243L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatContrastbolusDeserializer() {
         this((Class<T>) XnatContrastbolus.class);
     }
 
-    public XnatContrastbolusDeserializer(final Class<T> clazz) {
+    protected XnatContrastbolusDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "activeingredient":
-                // TODO: Handle the "activeingredient" property here: String
+                instance.setActiveingredient(parser.getText());
                 break;
             case "agent":
-                // TODO: Handle the "agent" property here: String
+                instance.setAgent(parser.getText());
                 break;
             case "concentration":
-                // TODO: Handle the "concentration" property here: Double
+                instance.setConcentration(parser.getDoubleValue());
                 break;
             case "flowduration":
-                // TODO: Handle the "flowduration" property here: Double
+                instance.setFlowduration(parser.getDoubleValue());
                 break;
             case "flowrate":
-                // TODO: Handle the "flowrate" property here: Double
+                instance.setFlowrate(parser.getDoubleValue());
                 break;
             case "route":
-                // TODO: Handle the "route" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setRoute(parser.getText());
                 break;
             case "totaldose":
-                // TODO: Handle the "totaldose" property here: Double
+                instance.setTotaldose(parser.getDoubleValue());
                 break;
             case "volume":
-                // TODO: Handle the "volume" property here: Double
+                instance.setVolume(parser.getDoubleValue());
                 break;
             case "xnatContrastbolusId":
-                // TODO: Handle the "xnatContrastbolusId" property here: Integer
+                instance.setXnatContrastbolusId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ArcProjectDescendantPipeline;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class ArcProjectDescendantPipelineDeserializer<T extends ArcProjectDescendantPipeline> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 4974533576886532482L;
+public class ArcProjectDescendantPipelineDeserializer<T extends ArcProjectDescendantPipeline> extends ArcPipelinedataDeserializer<T> {
+    private static final long serialVersionUID = 9200860657544650678L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcProjectDescendantPipelineDeserializer() {
         this((Class<T>) ArcProjectDescendantPipeline.class);
     }
 
-    public ArcProjectDescendantPipelineDeserializer(final Class<T> clazz) {
+    protected ArcProjectDescendantPipelineDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,16 +26,10 @@ public class ArcProjectDescendantPipelineDeserializer<T extends ArcProjectDescen
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "dependent":
-                // TODO: Handle the "dependent" property here: Boolean
+                instance.setDependent(parser.getBooleanValue());
                 break;
-            case "pipelinedata":
-                // TODO: Handle the "pipelinedata" property here: org.nrg.xdat.om.ArcPipelinedata
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
-            case "stepid":
-                // TODO: Handle the "stepid" property here: String
+            case "stepId":
+                instance.setStepid(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

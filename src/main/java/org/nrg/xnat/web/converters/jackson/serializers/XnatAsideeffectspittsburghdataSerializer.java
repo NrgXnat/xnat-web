@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAsideeffectspittsburghdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatAsideeffectspittsburghdataSerializer<T extends XnatAsideeffectspittsburghdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -1939345542023291613L;
+public class XnatAsideeffectspittsburghdataSerializer<T extends XnatAsideeffectspittsburghdata> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = -7102134939545744174L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAsideeffectspittsburghdataSerializer() {
         this((Class<T>) XnatAsideeffectspittsburghdata.class);
     }
@@ -25,27 +24,26 @@ public class XnatAsideeffectspittsburghdataSerializer<T extends XnatAsideeffects
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "buccalLingualmovements" property here: Integer
-        // TODO: Write out the "crabbyIrritable" property here: Integer
-        // TODO: Write out the "dizzinessLightheadedness" property here: Integer
-        // TODO: Write out the "drymouth" property here: Integer
-        // TODO: Write out the "dullTiredListless" property here: Integer
-        // TODO: Write out the "hallucinations" property here: Integer
-        // TODO: Write out the "headaches" property here: Integer
-        // TODO: Write out the "lossofappetite" property here: Integer
-        // TODO: Write out the "motortics" property here: Integer
-        // TODO: Write out the "nauseaVomiting" property here: Integer
-        // TODO: Write out the "palpitations" property here: Integer
-        // TODO: Write out the "pickingSkinFingersNailsLip" property here: Integer
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "sedation" property here: Integer
-        // TODO: Write out the "socialwithdrawal" property here: Integer
-        // TODO: Write out the "stomachache" property here: Integer
-        // TODO: Write out the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
-        // TODO: Write out the "tearfulSadDepressed" property here: Integer
-        // TODO: Write out the "troubleconcentratingDistractible" property here: Integer
-        // TODO: Write out the "troublesleeping" property here: Integer
-        // TODO: Write out the "worriedAnxious" property here: Integer
+        writeNonNullNumber(generator, "buccalLingualmovements", instance.getBuccalLingualmovements());
+        writeNonNullNumber(generator, "crabbyIrritable", instance.getCrabbyIrritable());
+        writeNonNullNumber(generator, "dizzinessLightheadedness", instance.getDizzinessLightheadedness());
+        writeNonNullNumber(generator, "drymouth", instance.getDrymouth());
+        writeNonNullNumber(generator, "dullTiredListless", instance.getDullTiredListless());
+        writeNonNullNumber(generator, "hallucinations", instance.getHallucinations());
+        writeNonNullNumber(generator, "headaches", instance.getHeadaches());
+        writeNonNullNumber(generator, "lossofappetite", instance.getLossofappetite());
+        writeNonNullNumber(generator, "motortics", instance.getMotortics());
+        writeNonNullNumber(generator, "nauseaVomiting", instance.getNauseaVomiting());
+        writeNonNullNumber(generator, "palpitations", instance.getPalpitations());
+        writeNonNullNumber(generator, "pickingSkinFingersNailsLip", instance.getPickingSkinFingersNailsLip());
+        writeNonNullNumber(generator, "sedation", instance.getSedation());
+        writeNonNullNumber(generator, "socialwithdrawal", instance.getSocialwithdrawal());
+        writeNonNullNumber(generator, "stomachache", instance.getStomachache());
+        writeNonNullNumber(generator, "tearfulSadDepressed", instance.getTearfulSadDepressed());
+        writeNonNullNumber(generator, "troubleconcentratingDistractible", instance.getTroubleconcentratingDistractible());
+        writeNonNullNumber(generator, "troublesleeping", instance.getTroublesleeping());
+        writeNonNullNumber(generator, "worriedAnxious", instance.getWorriedAnxious());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatStatisticsdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatStatisticsdataDeserializer<T extends XnatStatisticsdata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -5981992353397891927L;
+public class XnatStatisticsdataDeserializer<T extends XnatStatisticsdata> extends XnatAbstractstatisticsDeserializer<T> {
+    private static final long serialVersionUID = -6374194849341151499L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatStatisticsdataDeserializer() {
         this((Class<T>) XnatStatisticsdata.class);
     }
 
-    public XnatStatisticsdataDeserializer(final Class<T> clazz) {
+    protected XnatStatisticsdataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,26 +25,29 @@ public class XnatStatisticsdataDeserializer<T extends XnatStatisticsdata> extend
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "abstractstatistics":
-                // TODO: Handle the "abstractstatistics" property here: org.nrg.xdat.om.XnatAbstractstatistics
-                break;
             case "addfield":
                 // TODO: Handle the "addfield" property here: java.util.List
                 break;
             case "additionalstatistics":
                 // TODO: Handle the "additionalstatistics" property here: java.util.List
                 break;
+            case "max":
+                instance.setMax(parser.getDoubleValue());
+                break;
             case "mean":
-                // TODO: Handle the "mean" property here: Double
+                instance.setMean(parser.getDoubleValue());
+                break;
+            case "min":
+                instance.setMin(parser.getDoubleValue());
                 break;
             case "noOfVoxels":
-                // TODO: Handle the "noOfVoxels" property here: Integer
+                instance.setNoOfVoxels(parser.getIntValue());
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+            case "snr":
+                instance.setSnr(parser.getDoubleValue());
                 break;
             case "stddev":
-                // TODO: Handle the "stddev" property here: Double
+                instance.setStddev(parser.getDoubleValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -9,9 +9,9 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatAbstractprotocolSerializer<T extends XnatAbstractprotocol> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -6912627144885118417L;
+    private static final long serialVersionUID = 6722564158384602535L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAbstractprotocolSerializer() {
         this((Class<T>) XnatAbstractprotocol.class);
     }
@@ -21,11 +21,13 @@ public abstract class XnatAbstractprotocolSerializer<T extends XnatAbstractproto
     }
 
     @Override
-    protected void serializeImpl(final T protocol, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonNullField(generator, "xnatAbstractProtocolId", protocol.getXnatAbstractprotocolId());
-        writeNonBlankField(generator, "name", protocol.getName());
-        writeNonBlankField(generator, "id", protocol.getId());
-        writeNonBlankField(generator, "dataType", protocol.getDataType());
-        writeNonBlankField(generator, "description", protocol.getDescription());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonBlankField(generator, "dataType", instance.getDataType());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "name", instance.getName());
+        writeNonNullNumber(generator, "xnatAbstractprotocolId", instance.getXnatAbstractprotocolId());
     }
 }
+

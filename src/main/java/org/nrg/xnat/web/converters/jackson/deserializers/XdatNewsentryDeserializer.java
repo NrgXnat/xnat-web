@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatNewsentry;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatNewsentryDeserializer<T extends XdatNewsentry> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 1655667694369379825L;
+    private static final long serialVersionUID = 6501882288173422789L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatNewsentryDeserializer() {
         this((Class<T>) XdatNewsentry.class);
     }
 
-    public XdatNewsentryDeserializer(final Class<T> clazz) {
+    protected XdatNewsentryDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -30,19 +28,16 @@ public class XdatNewsentryDeserializer<T extends XdatNewsentry> extends Abstract
                 // TODO: Handle the "date" property here: Object
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "link":
-                // TODO: Handle the "link" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setLink(parser.getText());
                 break;
             case "title":
-                // TODO: Handle the "title" property here: String
+                instance.setTitle(parser.getText());
                 break;
             case "xdatNewsentryId":
-                // TODO: Handle the "xdatNewsentryId" property here: Integer
+                instance.setXdatNewsentryId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

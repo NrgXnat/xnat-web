@@ -4,39 +4,34 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ProvProcessstepLibrary;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class ProvProcessstepLibraryDeserializer<T extends ProvProcessstepLibrary> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 7361028737057080240L;
+    private static final long serialVersionUID = -1616522092116714678L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ProvProcessstepLibraryDeserializer() {
         this((Class<T>) ProvProcessstepLibrary.class);
     }
 
-    public ProvProcessstepLibraryDeserializer(final Class<T> clazz) {
+    protected ProvProcessstepLibraryDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "library":
-                // TODO: Handle the "library" property here: String
+                instance.setLibrary(parser.getText());
                 break;
             case "provProcessstepLibraryId":
-                // TODO: Handle the "provProcessstepLibraryId" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setProvProcessstepLibraryId(parser.getIntValue());
                 break;
             case "version":
-                // TODO: Handle the "version" property here: String
+                instance.setVersion(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

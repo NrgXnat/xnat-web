@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ArcPathinfo;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class ArcPathinfoSerializer<T extends ArcPathinfo> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -3815153536091317883L;
+    private static final long serialVersionUID = -8618290491746282463L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcPathinfoSerializer() {
         this((Class<T>) ArcPathinfo.class);
     }
@@ -24,6 +23,7 @@ public class ArcPathinfoSerializer<T extends ArcPathinfo> extends AbstractBaseEl
 
     @Override
     protected void serializeImpl(final T arcPathinfo, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        writeNonNullNumber(generator, "arcPathinfoId", arcPathinfo.getArcPathinfoId());
         writeNonBlankField(generator, "archivePath", arcPathinfo.getArchivepath());
         writeNonBlankField(generator, "prearchivePath", arcPathinfo.getPrearchivepath());
         writeNonBlankField(generator, "cachePath", arcPathinfo.getCachepath());

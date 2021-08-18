@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatUser;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatUserSerializer<T extends XdatUser> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 985812685408187862L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatUserSerializer() {
         this((Class<T>) XdatUser.class);
     }
@@ -27,19 +26,18 @@ public class XdatUserSerializer<T extends XdatUser> extends AbstractBaseElementS
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "assignedRoles_assignedRole" property here: java.util.ArrayList
         // TODO: Write out the "elementAccess" property here: java.util.ArrayList
-        // TODO: Write out the "email" property here: String
-        // TODO: Write out the "enabled" property here: Boolean
-        // TODO: Write out the "firstname" property here: String
+        writeNonBlankField(generator, "email", instance.getEmail());
+        writeNonNullBoolean(generator, "enabled", instance.getEnabled());
+        writeNonBlankField(generator, "firstname", instance.getFirstname());
         // TODO: Write out the "groups_groupid" property here: java.util.ArrayList
-        // TODO: Write out the "lastname" property here: String
-        // TODO: Write out the "login" property here: String
-        // TODO: Write out the "primaryPassword" property here: String
-        // TODO: Write out the "primaryPassword_encrypt" property here: Boolean
-        // TODO: Write out the "quarantinePath" property here: String
-        // TODO: Write out the "salt" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "verified" property here: Boolean
-        // TODO: Write out the "xdatUserId" property here: Integer
+        writeNonBlankField(generator, "lastname", instance.getLastname());
+        writeNonBlankField(generator, "login", instance.getLogin());
+        writeNonBlankField(generator, "primaryPassword", instance.getPrimaryPassword());
+        writeNonNullBoolean(generator, "primaryPassword_encrypt", instance.getPrimaryPassword_encrypt());
+        writeNonBlankField(generator, "quarantinePath", instance.getQuarantinePath());
+        writeNonBlankField(generator, "salt", instance.getSalt());
+        writeNonNullBoolean(generator, "verified", instance.getVerified());
+        writeNonNullNumber(generator, "xdatUserId", instance.getXdatUserId());
     }
 }
 

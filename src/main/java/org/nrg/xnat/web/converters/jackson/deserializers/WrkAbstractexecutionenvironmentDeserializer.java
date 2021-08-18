@@ -17,15 +17,10 @@ public abstract class WrkAbstractexecutionenvironmentDeserializer<T extends WrkA
 
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
-        switch (field) {
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
-            case "wrkAbstractexecutionenvironmentId":
-                // TODO: Handle the "wrkAbstractexecutionenvironmentId" property here: Integer
-                break;
-            default:
-                super.handleField(instance, field, parser, context);
+        if ("wrkAbstractexecutionenvironmentId".equals(field)) {
+            instance.setWrkAbstractexecutionenvironmentId(parser.getIntValue());
+        } else {
+            super.handleField(instance, field, parser, context);
         }
     }
 }

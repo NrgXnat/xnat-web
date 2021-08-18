@@ -4,14 +4,13 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAupdrs3data;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatAupdrs3dataDeserializer<T extends XnatAupdrs3data> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -5392234993929839350L;
+public class XnatAupdrs3dataDeserializer<T extends XnatAupdrs3data> extends XnatSubjectassessordataDeserializer<T> {
+    private static final long serialVersionUID = 1206404689880735076L;
 
     @SuppressWarnings("unchecked")
     public XnatAupdrs3dataDeserializer() {
@@ -27,109 +26,103 @@ public class XnatAupdrs3dataDeserializer<T extends XnatAupdrs3data> extends Abst
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "actionposturaltremor_left":
-                // TODO: Handle the "actionposturaltremor_left" property here: Integer
+                instance.setActionposturaltremor_left(parser.getIntValue());
                 break;
             case "actionposturaltremor_right":
-                // TODO: Handle the "actionposturaltremor_right" property here: Integer
+                instance.setActionposturaltremor_right(parser.getIntValue());
                 break;
             case "arisefromchair":
-                // TODO: Handle the "arisefromchair" property here: Integer
+                instance.setArisefromchair(parser.getIntValue());
                 break;
             case "bodybradykinesiahypokinesia":
-                // TODO: Handle the "bodybradykinesiahypokinesia" property here: Integer
+                instance.setBodybradykinesiahypokinesia(parser.getIntValue());
                 break;
             case "clicker_interval":
-                // TODO: Handle the "clicker_interval" property here: Integer
+                instance.setClicker_interval(parser.getIntValue());
                 break;
             case "clicker_left":
-                // TODO: Handle the "clicker_left" property here: Integer
+                instance.setClicker_left(parser.getIntValue());
                 break;
             case "clicker_right":
-                // TODO: Handle the "clicker_right" property here: Integer
+                instance.setClicker_right(parser.getIntValue());
                 break;
             case "facialexpression":
-                // TODO: Handle the "facialexpression" property here: Integer
+                instance.setFacialexpression(parser.getIntValue());
                 break;
             case "fingertaps_left":
-                // TODO: Handle the "fingertaps_left" property here: Integer
+                instance.setFingertaps_left(parser.getIntValue());
                 break;
             case "fingertaps_right":
-                // TODO: Handle the "fingertaps_right" property here: Integer
+                instance.setFingertaps_right(parser.getIntValue());
                 break;
             case "foottaps_left":
-                // TODO: Handle the "foottaps_left" property here: Integer
+                instance.setFoottaps_left(parser.getIntValue());
                 break;
             case "foottaps_right":
-                // TODO: Handle the "foottaps_right" property here: Integer
+                instance.setFoottaps_right(parser.getIntValue());
                 break;
             case "gait":
-                // TODO: Handle the "gait" property here: Integer
+                instance.setGait(parser.getIntValue());
                 break;
             case "handmovementsgrip_left":
-                // TODO: Handle the "handmovementsgrip_left" property here: Integer
+                instance.setHandmovementsgrip_left(parser.getIntValue());
                 break;
             case "handmovementsgrip_right":
-                // TODO: Handle the "handmovementsgrip_right" property here: Integer
+                instance.setHandmovementsgrip_right(parser.getIntValue());
                 break;
             case "handsram_left":
-                // TODO: Handle the "handsram_left" property here: Integer
+                instance.setHandsram_left(parser.getIntValue());
                 break;
             case "handsram_right":
-                // TODO: Handle the "handsram_right" property here: Integer
+                instance.setHandsram_right(parser.getIntValue());
                 break;
             case "inscanner":
-                // TODO: Handle the "inscanner" property here: Boolean
+                instance.setInscanner(parser.getBooleanValue());
                 break;
             case "posturalstability":
-                // TODO: Handle the "posturalstability" property here: Integer
+                instance.setPosturalstability(parser.getIntValue());
                 break;
             case "posture":
-                // TODO: Handle the "posture" property here: Integer
+                instance.setPosture(parser.getIntValue());
                 break;
             case "problem":
-                // TODO: Handle the "problem" property here: Boolean
+                instance.setProblem(parser.getBooleanValue());
                 break;
             case "rigidity_lle":
-                // TODO: Handle the "rigidity_lle" property here: String
+                instance.setRigidity_lle(parser.getText());
                 break;
             case "rigidity_lue":
-                // TODO: Handle the "rigidity_lue" property here: String
+                instance.setRigidity_lue(parser.getText());
                 break;
             case "rigidity_neck":
-                // TODO: Handle the "rigidity_neck" property here: String
+                instance.setRigidity_neck(parser.getText());
                 break;
             case "rigidity_rle":
-                // TODO: Handle the "rigidity_rle" property here: String
+                instance.setRigidity_rle(parser.getText());
                 break;
             case "rigidity_rue":
-                // TODO: Handle the "rigidity_rue" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setRigidity_rue(parser.getText());
                 break;
             case "speech":
-                // TODO: Handle the "speech" property here: Integer
-                break;
-            case "subjectassessordata":
-                // TODO: Handle the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
+                instance.setSpeech(parser.getIntValue());
                 break;
             case "tremorrest_face":
-                // TODO: Handle the "tremorrest_face" property here: String
+                instance.setTremorrest_face(parser.getText());
                 break;
             case "tremorrest_lle":
-                // TODO: Handle the "tremorrest_lle" property here: String
+                instance.setTremorrest_lle(parser.getText());
                 break;
             case "tremorrest_lue":
-                // TODO: Handle the "tremorrest_lue" property here: String
+                instance.setTremorrest_lue(parser.getText());
                 break;
             case "tremorrest_rle":
-                // TODO: Handle the "tremorrest_rle" property here: String
+                instance.setTremorrest_rle(parser.getText());
                 break;
             case "tremorrest_rue":
-                // TODO: Handle the "tremorrest_rue" property here: String
+                instance.setTremorrest_rue(parser.getText());
                 break;
             case "writing":
-                // TODO: Handle the "writing" property here: Integer
+                instance.setWriting(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

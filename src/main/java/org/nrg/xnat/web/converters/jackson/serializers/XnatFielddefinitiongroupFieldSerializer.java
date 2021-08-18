@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatFielddefinitiongroupField;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatFielddefinitiongroupFieldSerializer<T extends XnatFielddefinitiongroupField> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -5835717402032422055L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatFielddefinitiongroupFieldSerializer() {
         this((Class<T>) XnatFielddefinitiongroupField.class);
     }
@@ -25,17 +24,15 @@ public class XnatFielddefinitiongroupFieldSerializer<T extends XnatFielddefiniti
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "cleanedXMLPath" property here: String
-        // TODO: Write out the "datatype" property here: String
-        // TODO: Write out the "group" property here: String
-        // TODO: Write out the "name" property here: String
+        writeNonBlankField(generator, "datatype", instance.getDatatype());
+        writeNonBlankField(generator, "group", instance.getGroup());
+        writeNonBlankField(generator, "name", instance.getName());
         // TODO: Write out the "possiblevalues_possiblevalue" property here: java.util.List
-        // TODO: Write out the "required" property here: Boolean
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "sequence" property here: Integer
-        // TODO: Write out the "type" property here: String
-        // TODO: Write out the "xmlpath" property here: String
-        // TODO: Write out the "xnatFielddefinitiongroupFieldId" property here: Integer
+        writeNonNullBoolean(generator, "required", instance.getRequired());
+        writeNonNullNumber(generator, "sequence", instance.getSequence());
+        writeNonBlankField(generator, "type", instance.getType());
+        writeNonBlankField(generator, "xmlpath", instance.getXmlpath());
+        writeNonNullNumber(generator, "xnatFielddefinitiongroupFieldId", instance.getXnatFielddefinitiongroupFieldId());
     }
 }
 

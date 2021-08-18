@@ -8,10 +8,10 @@ import org.nrg.xdat.om.XnatGenericdata;
 import java.io.IOException;
 
 @Slf4j
-public abstract class XnatGenericdataSerializer<T extends XnatGenericdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -7772705614457677723L;
+public abstract class XnatGenericdataSerializer<T extends XnatGenericdata> extends XnatExperimentdataSerializer<T> {
+    private static final long serialVersionUID = -3201145954551111669L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatGenericdataSerializer() {
         this((Class<T>) XnatGenericdata.class);
     }
@@ -22,9 +22,8 @@ public abstract class XnatGenericdataSerializer<T extends XnatGenericdata> exten
 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "experimentdata" property here: org.nrg.xdat.om.XnatExperimentdata
-        // TODO: Write out the "schemaElementName" property here: String
+        // No class-specific properties to serialize
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

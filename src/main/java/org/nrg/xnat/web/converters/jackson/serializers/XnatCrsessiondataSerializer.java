@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatCrsessiondata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatCrsessiondataSerializer<T extends XnatCrsessiondata> extends XnatImagesessiondataSerializer<T> {
-    private static final long serialVersionUID = 8658472985438578233L;
+    private static final long serialVersionUID = 6842289745928608910L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatCrsessiondataSerializer() {
         this((Class<T>) XnatCrsessiondata.class);
     }
@@ -24,6 +23,8 @@ public class XnatCrsessiondataSerializer<T extends XnatCrsessiondata> extends Xn
 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // No class-specific properties to serialize
         super.serializeImpl(instance, generator, provider);
     }
 }
+

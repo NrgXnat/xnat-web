@@ -8,17 +8,16 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.model.XnatCtscandataFocalspotI;
 import org.nrg.xdat.om.XnatContrastbolus;
 import org.nrg.xdat.om.XnatCtscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatCtscandataSerializer<T extends XnatCtscandata> extends XnatImagescandataSerializer<T> {
-    private static final long serialVersionUID = 5325245843724733448L;
+    private static final long serialVersionUID = -6887654045879012695L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatCtscandataSerializer() {
         this((Class<T>) XnatCtscandata.class);
     }
@@ -89,6 +88,7 @@ public class XnatCtscandataSerializer<T extends XnatCtscandata> extends XnatImag
         writeNonNullNumber(generator, "pitchFactor", scan.getParameters_pitchfactor());
         writeNonNullNumber(generator, "ctdiVol", scan.getParameters_ctdivol());
         writeNonBlankField(generator, "derivation", scan.getParameters_derivation());
+        writeNonBlankField(generator, "convolutionKernel", scan.getParameters_convolutionkernel());
         final XnatContrastbolus contrastBolus = scan.getParameters_contrastbolus();
         if (contrastBolus != null) {
             generator.writeObjectField("contrastBolus", contrastBolus);

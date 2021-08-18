@@ -9,14 +9,21 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatAbstractdemographicdataSerializer<T extends XnatAbstractdemographicdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 7888323666317690764L;
+    private static final long serialVersionUID = -6682960780894782111L;
+
+    @SuppressWarnings({"unchecked", "unused"})
+    public XnatAbstractdemographicdataSerializer() {
+        this((Class<T>) XnatAbstractdemographicdata.class);
+    }
 
     protected XnatAbstractdemographicdataSerializer(final Class<T> clazz) {
         super(clazz);
     }
 
     @Override
-    protected void serializeImpl(final T demographic, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonNullNumber(generator, "xnatAbstractDemographicDataId", demographic.getXnatAbstractdemographicdataId());
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonNullNumber(generator, "xnatAbstractdemographicdataId", instance.getXnatAbstractdemographicdataId());
     }
 }
+

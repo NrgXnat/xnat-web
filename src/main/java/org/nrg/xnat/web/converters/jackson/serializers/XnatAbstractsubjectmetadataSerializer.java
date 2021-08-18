@@ -11,7 +11,7 @@ import java.io.IOException;
 public abstract class XnatAbstractsubjectmetadataSerializer<T extends XnatAbstractsubjectmetadata> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -2002556991961905005L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAbstractsubjectmetadataSerializer() {
         this((Class<T>) XnatAbstractsubjectmetadata.class);
     }
@@ -23,8 +23,7 @@ public abstract class XnatAbstractsubjectmetadataSerializer<T extends XnatAbstra
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "xnatAbstractsubjectmetadataId" property here: Integer
+        writeNonNullNumber(generator, "xnatAbstractsubjectmetadataId", instance.getXnatAbstractsubjectmetadataId());
     }
 }
 

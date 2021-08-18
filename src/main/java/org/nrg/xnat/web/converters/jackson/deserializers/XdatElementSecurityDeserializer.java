@@ -4,96 +4,91 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatElementSecurity;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatElementSecurityDeserializer<T extends XdatElementSecurity> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -2556290323057632551L;
+    private static final long serialVersionUID = -8146264746581387047L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatElementSecurityDeserializer() {
         this((Class<T>) XdatElementSecurity.class);
     }
 
-    public XdatElementSecurityDeserializer(final Class<T> clazz) {
+    protected XdatElementSecurityDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "accessible":
-                // TODO: Handle the "accessible" property here: Boolean
+                instance.setAccessible(parser.getBooleanValue());
                 break;
             case "browse":
-                // TODO: Handle the "browse" property here: Boolean
+                instance.setBrowse(parser.getBooleanValue());
                 break;
             case "category":
-                // TODO: Handle the "category" property here: String
+                instance.setCategory(parser.getText());
                 break;
             case "code":
-                // TODO: Handle the "code" property here: String
+                instance.setCode(parser.getText());
                 break;
             case "elementActions_elementAction":
                 // TODO: Handle the "elementActions_elementAction" property here: java.util.ArrayList
                 break;
             case "elementName":
-                // TODO: Handle the "elementName" property here: String
+                instance.setElementName(parser.getText());
                 break;
             case "listingActions_listingAction":
                 // TODO: Handle the "listingActions_listingAction" property here: java.util.ArrayList
                 break;
             case "plural":
-                // TODO: Handle the "plural" property here: String
+                instance.setPlural(parser.getText());
                 break;
             case "preLoad":
-                // TODO: Handle the "preLoad" property here: Boolean
+                instance.setPreLoad(parser.getBooleanValue());
                 break;
             case "primarySecurityFields_primarySecurityField":
                 // TODO: Handle the "primarySecurityFields_primarySecurityField" property here: java.util.ArrayList
                 break;
             case "quarantine":
-                // TODO: Handle the "quarantine" property here: Boolean
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setQuarantine(parser.getBooleanValue());
                 break;
             case "searchable":
-                // TODO: Handle the "searchable" property here: Boolean
+                instance.setSearchable(parser.getBooleanValue());
                 break;
             case "secondaryPassword":
-                // TODO: Handle the "secondaryPassword" property here: Boolean
+                instance.setSecondaryPassword(parser.getBooleanValue());
                 break;
             case "secure":
-                // TODO: Handle the "secure" property here: Boolean
+                instance.setSecure(parser.getBooleanValue());
                 break;
             case "secureCreate":
-                // TODO: Handle the "secureCreate" property here: Boolean
+                instance.setSecureCreate(parser.getBooleanValue());
                 break;
             case "secureDelete":
-                // TODO: Handle the "secureDelete" property here: Boolean
+                instance.setSecureDelete(parser.getBooleanValue());
                 break;
             case "secureEdit":
-                // TODO: Handle the "secureEdit" property here: Boolean
+                instance.setSecureEdit(parser.getBooleanValue());
                 break;
             case "secureIp":
-                // TODO: Handle the "secureIp" property here: Boolean
+                instance.setSecureIp(parser.getBooleanValue());
                 break;
             case "secureRead":
-                // TODO: Handle the "secureRead" property here: Boolean
+                instance.setSecureRead(parser.getBooleanValue());
                 break;
             case "sequence":
-                // TODO: Handle the "sequence" property here: Integer
+                instance.setSequence(parser.getIntValue());
                 break;
             case "singular":
-                // TODO: Handle the "singular" property here: String
+                instance.setSingular(parser.getText());
                 break;
             case "usage":
-                // TODO: Handle the "usage" property here: String
+                instance.setUsage(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

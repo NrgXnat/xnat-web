@@ -4,39 +4,37 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatDicomseriesImage;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatDicomseriesImageDeserializer<T extends XnatDicomseriesImage> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 9198378698160654118L;
+    private static final long serialVersionUID = -8540423417029388243L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatDicomseriesImageDeserializer() {
         this((Class<T>) XnatDicomseriesImage.class);
     }
 
-    public XnatDicomseriesImageDeserializer(final Class<T> clazz) {
+    protected XnatDicomseriesImageDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "instanceNumber":
-                // TODO: Handle the "instanceNumber" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setInstanceNumber(parser.getIntValue());
                 break;
             case "sopInstanceUid":
-                // TODO: Handle the "sopInstanceUid" property here: String
+                instance.setSopInstanceUid(parser.getText());
+                break;
+            case "uri":
+                instance.setUri(parser.getText());
                 break;
             case "xnatDicomseriesImageId":
-                // TODO: Handle the "xnatDicomseriesImageId" property here: Integer
+                instance.setXnatDicomseriesImageId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

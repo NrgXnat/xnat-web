@@ -7,9 +7,15 @@ import org.nrg.xdat.om.XnatQcscandata;
 
 import java.io.IOException;
 
+@XnatDeserializer
 @Slf4j
-public abstract class XnatQcscandataDeserializer<T extends XnatQcscandata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -7800770534405847949L;
+public class XnatQcscandataDeserializer<T extends XnatQcscandata> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = -7654435521427410595L;
+
+    @SuppressWarnings({"unchecked", "unused"})
+    public XnatQcscandataDeserializer() {
+        this((Class<T>) XnatQcscandata.class);
+    }
 
     protected XnatQcscandataDeserializer(final Class<T> clazz) {
         super(clazz);
@@ -19,43 +25,37 @@ public abstract class XnatQcscandataDeserializer<T extends XnatQcscandata> exten
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "comments":
-                // TODO: Handle the "comments" property here: String
+                instance.setComments(parser.getText());
                 break;
             case "coverage":
-                // TODO: Handle the "coverage" property here: String
+                instance.setCoverage(parser.getText());
                 break;
             case "fields_field":
                 // TODO: Handle the "fields_field" property here: java.util.List
                 break;
             case "imagescanId":
-                // TODO: Handle the "imagescanId" property here: String
+                instance.setImagescanId(parser.getText());
                 break;
             case "motion":
-                // TODO: Handle the "motion" property here: String
+                instance.setMotion(parser.getText());
                 break;
             case "otherimageartifacts":
-                // TODO: Handle the "otherimageartifacts" property here: String
+                instance.setOtherimageartifacts(parser.getText());
                 break;
             case "pass":
-                // TODO: Handle the "pass" property here: String
+                instance.setPass(parser.getText());
                 break;
             case "rater":
-                // TODO: Handle the "rater" property here: String
+                instance.setRater(parser.getText());
                 break;
             case "rating":
-                // TODO: Handle the "rating" property here: String
+                instance.setRating(parser.getText());
                 break;
             case "rating_scale":
-                // TODO: Handle the "rating_scale" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
-            case "summary":
-                // TODO: Handle the "summary" property here: String
+                instance.setRating_scale(parser.getText());
                 break;
             case "xnatQcscandataId":
-                // TODO: Handle the "xnatQcscandataId" property here: Integer
+                instance.setXnatQcscandataId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

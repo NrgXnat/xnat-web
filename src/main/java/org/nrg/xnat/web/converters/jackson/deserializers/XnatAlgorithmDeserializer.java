@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAlgorithm;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatAlgorithmDeserializer<T extends XnatAlgorithm> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 377961451058435628L;
+    private static final long serialVersionUID = -2866520238185881707L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAlgorithmDeserializer() {
         this((Class<T>) XnatAlgorithm.class);
     }
 
-    public XnatAlgorithmDeserializer(final Class<T> clazz) {
+    protected XnatAlgorithmDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -30,25 +28,22 @@ public class XnatAlgorithmDeserializer<T extends XnatAlgorithm> extends Abstract
                 // TODO: Handle the "family" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
+                instance.setName(parser.getText());
                 break;
             case "namecode":
                 // TODO: Handle the "namecode" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
                 break;
             case "parameters":
-                // TODO: Handle the "parameters" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setParameters(parser.getText());
                 break;
             case "source":
-                // TODO: Handle the "source" property here: String
+                instance.setSource(parser.getText());
                 break;
             case "version":
-                // TODO: Handle the "version" property here: String
+                instance.setVersion(parser.getText());
                 break;
             case "xnatAlgorithmId":
-                // TODO: Handle the "xnatAlgorithmId" property here: Integer
+                instance.setXnatAlgorithmId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

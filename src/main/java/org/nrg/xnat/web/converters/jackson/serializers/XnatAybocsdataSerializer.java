@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAybocsdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatAybocsdataSerializer<T extends XnatAybocsdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -2370108742538657968L;
+public class XnatAybocsdataSerializer<T extends XnatAybocsdata> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = -5549086340670857802L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAybocsdataSerializer() {
         this((Class<T>) XnatAybocsdata.class);
     }
@@ -25,25 +24,24 @@ public class XnatAybocsdataSerializer<T extends XnatAybocsdata> extends Abstract
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "behaviordrivestrength" property here: Integer
-        // TODO: Write out the "behaviorsinterferefunctioning" property here: Integer
-        // TODO: Write out the "controloverthoughts" property here: Integer
-        // TODO: Write out the "currentorworstever" property here: String
-        // TODO: Write out the "distresscaused" property here: Integer
-        // TODO: Write out the "efforttoresistbehaviors" property here: Integer
-        // TODO: Write out the "efforttoresistthoughts" property here: Integer
-        // TODO: Write out the "feelingifprevented" property here: Integer
-        // TODO: Write out the "firstuntiljustrightage" property here: Double
-        // TODO: Write out the "frequencyuntiljustright" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
-        // TODO: Write out the "thoughtsinterferefunctioning" property here: Integer
-        // TODO: Write out the "timeoccupiedwiththoughts" property here: Integer
-        // TODO: Write out the "timeperforming" property here: Integer
-        // TODO: Write out the "untiljustright" property here: Boolean
-        // TODO: Write out the "untiljustrightawareness" property here: String
-        // TODO: Write out the "untiljustrightperceptions" property here: String
-        // TODO: Write out the "whenstartuntiljustright" property here: String
+        writeNonNullNumber(generator, "behaviordrivestrength", instance.getBehaviordrivestrength());
+        writeNonNullNumber(generator, "behaviorsinterferefunctioning", instance.getBehaviorsinterferefunctioning());
+        writeNonNullNumber(generator, "controloverthoughts", instance.getControloverthoughts());
+        writeNonBlankField(generator, "currentorworstever", instance.getCurrentorworstever());
+        writeNonNullNumber(generator, "distresscaused", instance.getDistresscaused());
+        writeNonNullNumber(generator, "efforttoresistbehaviors", instance.getEfforttoresistbehaviors());
+        writeNonNullNumber(generator, "efforttoresistthoughts", instance.getEfforttoresistthoughts());
+        writeNonNullNumber(generator, "feelingifprevented", instance.getFeelingifprevented());
+        writeNonNullNumber(generator, "firstuntiljustrightage", instance.getFirstuntiljustrightage());
+        writeNonBlankField(generator, "frequencyuntiljustright", instance.getFrequencyuntiljustright());
+        writeNonNullNumber(generator, "thoughtsinterferefunctioning", instance.getThoughtsinterferefunctioning());
+        writeNonNullNumber(generator, "timeoccupiedwiththoughts", instance.getTimeoccupiedwiththoughts());
+        writeNonNullNumber(generator, "timeperforming", instance.getTimeperforming());
+        writeNonNullBoolean(generator, "untiljustright", instance.getUntiljustright());
+        writeNonBlankField(generator, "untiljustrightawareness", instance.getUntiljustrightawareness());
+        writeNonBlankField(generator, "untiljustrightperceptions", instance.getUntiljustrightperceptions());
+        writeNonBlankField(generator, "whenstartuntiljustright", instance.getWhenstartuntiljustright());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

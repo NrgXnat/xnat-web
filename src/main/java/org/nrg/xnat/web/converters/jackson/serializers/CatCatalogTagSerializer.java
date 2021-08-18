@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.CatCatalogTag;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class CatCatalogTagSerializer<T extends CatCatalogTag> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 6902667040728100676L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public CatCatalogTagSerializer() {
         this((Class<T>) CatCatalogTag.class);
     }
@@ -25,8 +24,8 @@ public class CatCatalogTagSerializer<T extends CatCatalogTag> extends AbstractBa
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "catCatalogTagId" property here: Integer
-        // TODO: Write out the "schemaElementName" property here: String
+        writeNonNullNumber(generator, "catCatalogTagId", instance.getCatCatalogTagId());
+        writeNonBlankField(generator, "tag", instance.getTag());
     }
 }
 

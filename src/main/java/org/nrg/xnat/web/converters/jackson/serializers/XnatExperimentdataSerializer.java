@@ -9,9 +9,9 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatExperimentdataSerializer<T extends XnatExperimentdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -745536640121672797L;
+    private static final long serialVersionUID = 2018250332148962334L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatExperimentdataSerializer() {
         this((Class<T>) XnatExperimentdata.class);
     }
@@ -39,5 +39,10 @@ public abstract class XnatExperimentdataSerializer<T extends XnatExperimentdata>
         writeNonNullField(generator, "sharing", instance.getSharing_share());
         generator.writeObjectField("investigator", instance.getInvestigator());
         generator.writeObjectField("validation", instance.getValidation());
+        writeNonNullNumber(generator, "delay", instance.getDelay());
+        writeNonBlankField(generator, "delay_refExptId", instance.getDelay_refExptId());
+        writeNonBlankField(generator, "original", instance.getOriginal());
+        // TODO: Write out the "resources_resource" property here: java.util.List
+        // TODO: Write out the "sharing_share" property here: java.util.List
     }
 }

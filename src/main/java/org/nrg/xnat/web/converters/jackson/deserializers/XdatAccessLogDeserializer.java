@@ -4,42 +4,40 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatAccessLog;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatAccessLogDeserializer<T extends XdatAccessLog> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -829781479386032747L;
+    private static final long serialVersionUID = 1004185398548676033L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatAccessLogDeserializer() {
         this((Class<T>) XdatAccessLog.class);
     }
 
-    public XdatAccessLogDeserializer(final Class<T> clazz) {
+    protected XdatAccessLogDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "accessDate":
                 // TODO: Handle the "accessDate" property here: Object
                 break;
+            case "ip":
+                instance.setIp(parser.getText());
+                break;
             case "login":
-                // TODO: Handle the "login" property here: String
+                instance.setLogin(parser.getText());
                 break;
             case "method":
-                // TODO: Handle the "method" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setMethod(parser.getText());
                 break;
             case "xdatAccessLogId":
-                // TODO: Handle the "xdatAccessLogId" property here: Integer
+                instance.setXdatAccessLogId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatPetmrsessiondata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> extends XnatImagesessiondataDeserializer<T> {
-    private static final long serialVersionUID = -6623396410189809068L;
+    private static final long serialVersionUID = -4654262586792043038L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatPetmrsessiondataDeserializer() {
         this((Class<T>) XnatPetmrsessiondata.class);
     }
@@ -24,43 +23,89 @@ public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> ex
 
     @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
-        // TODO: Mostly properties on superclass, not PET/MR specific
+        // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "id":
-                instance.setId(parser.getText());
+            case "bloodGlucose":
+                instance.setBloodGlucose(parser.getDoubleValue());
                 break;
-            case "label":
-                instance.setLabel(parser.getText());
+            case "bloodGlucoseTime":
+                // TODO: Handle the "bloodGlucoseTime" property here: Object
                 break;
-            case "project":
-                instance.setProject(parser.getText());
+            case "bloodGlucoseUnits":
+                instance.setBloodGlucoseUnits(parser.getText());
                 break;
-            case "note":
-                instance.setNote(parser.getText());
+            case "coil":
+                instance.setCoil(parser.getText());
                 break;
-            case "protocol":
-                instance.setProtocol(parser.getText());
+            case "fieldstrength":
+                instance.setFieldstrength(parser.getText());
                 break;
-            case "original":
-                instance.setOriginal(parser.getText());
+            case "marker":
+                instance.setMarker(parser.getText());
                 break;
-            case "date":
-                instance.setDate(parseDate(parser.getText()));
+            case "patientid":
+                instance.setPatientid(parser.getText());
                 break;
-            case "delay":
-                instance.setDelay(parser.getIntValue());
+            case "patientname":
+                instance.setPatientname(parser.getText());
                 break;
-            case "version":
-                instance.setVersion(parser.getIntValue());
+            case "stabilization":
+                instance.setStabilization(parser.getText());
                 break;
-            case "visit":
-                instance.setVisit(parser.getText());
+            case "startTime":
+                // TODO: Handle the "startTime" property here: Object
                 break;
-            case "visitId":
-                instance.setVisitId(parser.getText());
+            case "startTimeInjection":
+                // TODO: Handle the "startTimeInjection" property here: Object
+                break;
+            case "startTimeScan":
+                // TODO: Handle the "startTimeScan" property here: Object
+                break;
+            case "studytype":
+                instance.setStudytype(parser.getText());
+                break;
+            case "tracer_dose":
+                instance.setTracer_dose(parser.getDoubleValue());
+                break;
+            case "tracer_dose_units":
+                instance.setTracer_dose_units(parser.getText());
+                break;
+            case "tracer_intermediate":
+                instance.setTracer_intermediate(parser.getDoubleValue());
+                break;
+            case "tracer_intermediate_units":
+                instance.setTracer_intermediate_units(parser.getText());
+                break;
+            case "tracer_isotope":
+                instance.setTracer_isotope(parser.getText());
+                break;
+            case "tracer_isotope_halfLife":
+                instance.setTracer_isotope_halfLife(parser.getDoubleValue());
+                break;
+            case "tracer_name":
+                instance.setTracer_name(parser.getText());
+                break;
+            case "tracer_specificactivity":
+                instance.setTracer_specificactivity(parser.getDoubleValue());
+                break;
+            case "tracer_starttime":
+                // TODO: Handle the "tracer_starttime" property here: Object
+                break;
+            case "tracer_totalmass":
+                instance.setTracer_totalmass(parser.getDoubleValue());
+                break;
+            case "tracer_totalmass_units":
+                instance.setTracer_totalmass_units(parser.getText());
+                break;
+            case "tracer_transmissions":
+                instance.setTracer_transmissions(parser.getIntValue());
+                break;
+            case "tracer_transmissionsStarttime":
+                // TODO: Handle the "tracer_transmissionsStarttime" property here: Object
                 break;
             default:
                 super.handleField(instance, field, parser, context);
         }
     }
 }
+

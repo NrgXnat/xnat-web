@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatElementActionType;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatElementActionTypeSerializer<T extends XdatElementActionType> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -6799689820540613247L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatElementActionTypeSerializer() {
         this((Class<T>) XdatElementActionType.class);
     }
@@ -25,16 +24,15 @@ public class XdatElementActionTypeSerializer<T extends XdatElementActionType> ex
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "displayName" property here: String
-        // TODO: Write out the "elementActionName" property here: String
-        // TODO: Write out the "image" property here: String
-        // TODO: Write out the "parameterstring" property here: String
-        // TODO: Write out the "popup" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "secureaccess" property here: String
-        // TODO: Write out the "securefeature" property here: String
-        // TODO: Write out the "sequence" property here: Integer
-        // TODO: Write out the "xdatElementActionTypeId" property here: Integer
+        writeNonBlankField(generator, "displayName", instance.getDisplayName());
+        writeNonBlankField(generator, "elementActionName", instance.getElementActionName());
+        writeNonBlankField(generator, "image", instance.getImage());
+        writeNonBlankField(generator, "parameterstring", instance.getParameterstring());
+        writeNonBlankField(generator, "popup", instance.getPopup());
+        writeNonBlankField(generator, "secureaccess", instance.getSecureaccess());
+        writeNonBlankField(generator, "securefeature", instance.getSecurefeature());
+        writeNonNullNumber(generator, "sequence", instance.getSequence());
+        writeNonNullNumber(generator, "xdatElementActionTypeId", instance.getXdatElementActionTypeId());
     }
 }
 

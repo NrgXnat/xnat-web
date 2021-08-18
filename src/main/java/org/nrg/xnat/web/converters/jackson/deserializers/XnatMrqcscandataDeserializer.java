@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatMrqcscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatMrqcscandataDeserializer<T extends XnatMrqcscandata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 7165340820277203642L;
+public class XnatMrqcscandataDeserializer<T extends XnatMrqcscandata> extends XnatQcscandataDeserializer<T> {
+    private static final long serialVersionUID = 4243732266216672913L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatMrqcscandataDeserializer() {
         this((Class<T>) XnatMrqcscandata.class);
     }
 
-    public XnatMrqcscandataDeserializer(final Class<T> clazz) {
+    protected XnatMrqcscandataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,31 +26,25 @@ public class XnatMrqcscandataDeserializer<T extends XnatMrqcscandata> extends Ab
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "blurring":
-                // TODO: Handle the "blurring" property here: String
+                instance.setBlurring(parser.getText());
                 break;
             case "flow":
-                // TODO: Handle the "flow" property here: String
+                instance.setFlow(parser.getText());
                 break;
             case "imagecontrast":
-                // TODO: Handle the "imagecontrast" property here: String
+                instance.setImagecontrast(parser.getText());
                 break;
             case "inhomogeneity":
-                // TODO: Handle the "inhomogeneity" property here: String
+                instance.setInhomogeneity(parser.getText());
                 break;
             case "interpacmotion":
-                // TODO: Handle the "interpacmotion" property here: String
-                break;
-            case "qcscandata":
-                // TODO: Handle the "qcscandata" property here: org.nrg.xdat.om.XnatQcscandata
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setInterpacmotion(parser.getText());
                 break;
             case "susceptibility":
-                // TODO: Handle the "susceptibility" property here: String
+                instance.setSusceptibility(parser.getText());
                 break;
             case "wrap":
-                // TODO: Handle the "wrap" property here: String
+                instance.setWrap(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

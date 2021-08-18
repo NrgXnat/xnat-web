@@ -4,39 +4,37 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatStudyprotocolCondition;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatStudyprotocolConditionDeserializer<T extends XnatStudyprotocolCondition> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 13448782788469024L;
+    private static final long serialVersionUID = -3200225143427234970L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatStudyprotocolConditionDeserializer() {
         this((Class<T>) XnatStudyprotocolCondition.class);
     }
 
-    public XnatStudyprotocolConditionDeserializer(final Class<T> clazz) {
+    protected XnatStudyprotocolConditionDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
+                break;
+            case "id":
+                instance.setId(parser.getText());
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setName(parser.getText());
                 break;
             case "xnatStudyprotocolConditionId":
-                // TODO: Handle the "xnatStudyprotocolConditionId" property here: Integer
+                instance.setXnatStudyprotocolConditionId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

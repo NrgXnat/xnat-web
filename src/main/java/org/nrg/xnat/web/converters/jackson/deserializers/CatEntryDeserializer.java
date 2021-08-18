@@ -7,9 +7,15 @@ import org.nrg.xdat.om.CatEntry;
 
 import java.io.IOException;
 
+@XnatDeserializer
 @Slf4j
-public abstract class CatEntryDeserializer<T extends CatEntry> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 4819360655425440410L;
+public class CatEntryDeserializer<T extends CatEntry> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = -4014803643452142183L;
+
+    @SuppressWarnings({"unchecked", "unused"})
+    public CatEntryDeserializer() {
+        this((Class<T>) CatEntry.class);
+    }
 
     protected CatEntryDeserializer(final Class<T> clazz) {
         super(clazz);
@@ -19,52 +25,55 @@ public abstract class CatEntryDeserializer<T extends CatEntry> extends AbstractB
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "cachepath":
-                // TODO: Handle the "cachepath" property here: String
+                instance.setCachepath(parser.getText());
                 break;
             case "catEntryId":
-                // TODO: Handle the "catEntryId" property here: Integer
+                instance.setCatEntryId(parser.getIntValue());
                 break;
             case "content":
-                // TODO: Handle the "content" property here: String
+                instance.setContent(parser.getText());
                 break;
             case "createdby":
-                // TODO: Handle the "createdby" property here: String
+                instance.setCreatedby(parser.getText());
                 break;
             case "createdeventid":
-                // TODO: Handle the "createdeventid" property here: Integer
+                instance.setCreatedeventid(parser.getIntValue());
                 break;
             case "createdtime":
                 // TODO: Handle the "createdtime" property here: Object
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "digest":
-                // TODO: Handle the "digest" property here: String
+                instance.setDigest(parser.getText());
                 break;
             case "format":
-                // TODO: Handle the "format" property here: String
+                instance.setFormat(parser.getText());
+                break;
+            case "id":
+                instance.setId(parser.getText());
                 break;
             case "metafields_metafield":
                 // TODO: Handle the "metafields_metafield" property here: java.util.List
                 break;
             case "modifiedby":
-                // TODO: Handle the "modifiedby" property here: String
+                instance.setModifiedby(parser.getText());
                 break;
             case "modifiedeventid":
-                // TODO: Handle the "modifiedeventid" property here: Integer
+                instance.setModifiedeventid(parser.getIntValue());
                 break;
             case "modifiedtime":
                 // TODO: Handle the "modifiedtime" property here: Object
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setName(parser.getText());
                 break;
             case "tags_tag":
                 // TODO: Handle the "tags_tag" property here: java.util.List
+                break;
+            case "uri":
+                instance.setUri(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

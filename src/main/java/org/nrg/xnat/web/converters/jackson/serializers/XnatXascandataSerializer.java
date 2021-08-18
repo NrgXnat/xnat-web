@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatXascandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatXascandataSerializer<T extends XnatXascandata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 7241077284273024818L;
+public class XnatXascandataSerializer<T extends XnatXascandata> extends XnatImagescandataSerializer<T> {
+    private static final long serialVersionUID = -7410095958518300692L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatXascandataSerializer() {
         this((Class<T>) XnatXascandata.class);
     }
@@ -25,18 +24,17 @@ public class XnatXascandataSerializer<T extends XnatXascandata> extends Abstract
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "imagescandata" property here: org.nrg.xdat.om.XnatImagescandata
-        // TODO: Write out the "parameters_contrastbolus" property here: org.nrg.xdat.model.XnatContrastbolusI
-        // TODO: Write out the "parameters_derivation" property here: String
-        // TODO: Write out the "parameters_fov_x" property here: Integer
-        // TODO: Write out the "parameters_fov_y" property here: Integer
-        // TODO: Write out the "parameters_imagetype" property here: String
-        // TODO: Write out the "parameters_options" property here: String
-        // TODO: Write out the "parameters_orientation" property here: String
-        // TODO: Write out the "parameters_pixelres_units" property here: String
-        // TODO: Write out the "parameters_pixelres_x" property here: Integer
-        // TODO: Write out the "parameters_pixelres_y" property here: Integer
-        // TODO: Write out the "schemaElementName" property here: String
+        // TODO: Write out the "parameters_contrastbolus" property here: org.nrg.xdat.om.XnatContrastbolus
+        writeNonBlankField(generator, "parameters_derivation", instance.getParameters_derivation());
+        writeNonNullNumber(generator, "parameters_fov_x", instance.getParameters_fov_x());
+        writeNonNullNumber(generator, "parameters_fov_y", instance.getParameters_fov_y());
+        writeNonBlankField(generator, "parameters_imagetype", instance.getParameters_imagetype());
+        writeNonBlankField(generator, "parameters_options", instance.getParameters_options());
+        writeNonBlankField(generator, "parameters_orientation", instance.getParameters_orientation());
+        writeNonBlankField(generator, "parameters_pixelres_units", instance.getParameters_pixelres_units());
+        writeNonNullNumber(generator, "parameters_pixelres_x", instance.getParameters_pixelres_x());
+        writeNonNullNumber(generator, "parameters_pixelres_y", instance.getParameters_pixelres_y());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

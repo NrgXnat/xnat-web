@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatStudyprotocolSession;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatStudyprotocolSessionSerializer<T extends XnatStudyprotocolSession> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -3630580560922390861L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatStudyprotocolSessionSerializer() {
         this((Class<T>) XnatStudyprotocolSession.class);
     }
@@ -25,10 +24,10 @@ public class XnatStudyprotocolSessionSerializer<T extends XnatStudyprotocolSessi
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "name" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "xnatStudyprotocolSessionId" property here: Integer
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "id", instance.getId());
+        writeNonBlankField(generator, "name", instance.getName());
+        writeNonNullNumber(generator, "xnatStudyprotocolSessionId", instance.getXnatStudyprotocolSessionId());
     }
 }
 

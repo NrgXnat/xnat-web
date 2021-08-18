@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatPetsessiondata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatPetsessiondataDeserializer<T extends XnatPetsessiondata> extends XnatImagesessiondataDeserializer<T> {
-    private static final long serialVersionUID = 8800846152694684817L;
+    private static final long serialVersionUID = -7377326668367557003L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatPetsessiondataDeserializer() {
         this((Class<T>) XnatPetsessiondata.class);
     }
@@ -66,41 +65,78 @@ public class XnatPetsessiondataDeserializer<T extends XnatPetsessiondata> extend
         be handled in that case block.
         */
         switch (field) {
+            case "bloodGlucose":
+                instance.setBloodGlucose(parser.getDoubleValue());
+                break;
+            case "bloodGlucoseTime":
+                // TODO: Handle the "bloodGlucoseTime" property here: Object
+                break;
+            case "bloodGlucoseUnits":
+                instance.setBloodGlucoseUnits(parser.getText());
+                break;
+            case "patientid":
+                instance.setPatientid(parser.getText());
+                break;
+            case "patientname":
+                instance.setPatientname(parser.getText());
+                break;
             case "stabilization":
                 instance.setStabilization(parser.getText());
                 break;
-            case "studyType":
+            case "startTime":
+                // TODO: Handle the "startTime" property here: Object
+                break;
+            case "startTimeInjection":
+                // TODO: Handle the "startTimeInjection" property here: Object
+                break;
+            case "startTimeScan":
+                // TODO: Handle the "startTimeScan" property here: Object
+                break;
+            case "studytype":
                 instance.setStudytype(parser.getText());
                 break;
-            case "patientID":
-                instance.setPatientid(parser.getText());
+            case "tracer_dose":
+                instance.setTracer_dose(parser.getDoubleValue());
                 break;
-            case "patientName":
-                instance.setPatientname(parser.getText());
+            case "tracer_dose_units":
+                instance.setTracer_dose_units(parser.getText());
                 break;
-            case "tracer":
+            case "tracer_intermediate":
+                instance.setTracer_intermediate(parser.getDoubleValue());
+                break;
+            case "tracer_intermediate_units":
+                instance.setTracer_intermediate_units(parser.getText());
+                break;
+            case "tracer_isotope":
+                instance.setTracer_isotope(parser.getText());
+                break;
+            case "tracer_isotope_halfLife":
+                instance.setTracer_isotope_halfLife(parser.getDoubleValue());
+                break;
+            case "tracer_name":
                 instance.setTracer_name(parser.getText());
                 break;
-            case "start_time":
-                instance.setStartTime(parser.getText());
+            case "tracer_specificactivity":
+                instance.setTracer_specificactivity(parser.getDoubleValue());
                 break;
-            case "start_time_scan":
-                instance.setStartTimeScan(parser.getText());
+            case "tracer_starttime":
+                // TODO: Handle the "tracer_starttime" property here: Object
                 break;
-            case "start_time_injection":
-                instance.setStartTimeInjection(parser.getText());
+            case "tracer_totalmass":
+                instance.setTracer_totalmass(parser.getDoubleValue());
                 break;
-            case "blood_glucose":
-                instance.setBloodGlucose(Double.parseDouble(parser.getText()));
+            case "tracer_totalmass_units":
+                instance.setTracer_totalmass_units(parser.getText());
                 break;
-            case "blood_glucose_units":
-                instance.setBloodGlucoseUnits(parser.getText());
+            case "tracer_transmissions":
+                instance.setTracer_transmissions(parser.getIntValue());
                 break;
-            case "blood_glucose_time":
-                instance.setBloodGlucoseTime(parser.getText());
+            case "tracer_transmissionsStarttime":
+                // TODO: Handle the "tracer_transmissionsStarttime" property here: Object
                 break;
             default:
                 super.handleField(instance, field, parser, context);
         }
     }
 }
+

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatStatisticsdataAdditionalstatistics;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatStatisticsdataAdditionalstatisticsSerializer<T extends XnatStatisticsdataAdditionalstatistics> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -570756789408898989L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatStatisticsdataAdditionalstatisticsSerializer() {
         this((Class<T>) XnatStatisticsdataAdditionalstatistics.class);
     }
@@ -25,10 +24,9 @@ public class XnatStatisticsdataAdditionalstatisticsSerializer<T extends XnatStat
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "additionalstatistics" property here: Double
-        // TODO: Write out the "name" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "xnatStatisticsdataAdditionalstatisticsId" property here: Integer
+        writeNonNullNumber(generator, "additionalstatistics", instance.getAdditionalstatistics());
+        writeNonBlankField(generator, "name", instance.getName());
+        writeNonNullNumber(generator, "xnatStatisticsdataAdditionalstatisticsId", instance.getXnatStatisticsdataAdditionalstatisticsId());
     }
 }
 

@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatDicomseries;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatDicomseriesSerializer<T extends XnatDicomseries> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 3396470327475524284L;
+public class XnatDicomseriesSerializer<T extends XnatDicomseries> extends XnatAbstractresourceSerializer<T> {
+    private static final long serialVersionUID = -6763127352367888535L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatDicomseriesSerializer() {
         this((Class<T>) XnatDicomseries.class);
     }
@@ -25,24 +24,22 @@ public class XnatDicomseriesSerializer<T extends XnatDicomseries> extends Abstra
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "abstractresource" property here: org.nrg.xdat.om.XnatAbstractresource
-        // TODO: Write out the "cachepath" property here: String
-        // TODO: Write out the "content" property here: String
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "dimensions_volumes" property here: Integer
-        // TODO: Write out the "dimensions_x" property here: Integer
-        // TODO: Write out the "dimensions_y" property here: Integer
-        // TODO: Write out the "dimensions_z" property here: Integer
-        // TODO: Write out the "format" property here: String
+        writeNonBlankField(generator, "cachepath", instance.getCachepath());
+        writeNonBlankField(generator, "content", instance.getContent());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonNullNumber(generator, "dimensions_volumes", instance.getDimensions_volumes());
+        writeNonNullNumber(generator, "dimensions_x", instance.getDimensions_x());
+        writeNonNullNumber(generator, "dimensions_y", instance.getDimensions_y());
+        writeNonNullNumber(generator, "dimensions_z", instance.getDimensions_z());
+        writeNonBlankField(generator, "format", instance.getFormat());
         // TODO: Write out the "imageset_image" property here: java.util.List
-        // TODO: Write out the "label" property here: String
-        // TODO: Write out the "orientation" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "unresolvedPaths" property here: java.util.ArrayList
-        // TODO: Write out the "voxelres_units" property here: String
-        // TODO: Write out the "voxelres_x" property here: Double
-        // TODO: Write out the "voxelres_y" property here: Double
-        // TODO: Write out the "voxelres_z" property here: Double
+        writeNonBlankField(generator, "orientation", instance.getOrientation());
+        writeNonBlankField(generator, "uid", instance.getUid());
+        writeNonBlankField(generator, "voxelres_units", instance.getVoxelres_units());
+        writeNonNullNumber(generator, "voxelres_x", instance.getVoxelres_x());
+        writeNonNullNumber(generator, "voxelres_y", instance.getVoxelres_y());
+        writeNonNullNumber(generator, "voxelres_z", instance.getVoxelres_z());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

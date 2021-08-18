@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatPetqcscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatPetqcscandataDeserializer<T extends XnatPetqcscandata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 6098203297984165315L;
+public class XnatPetqcscandataDeserializer<T extends XnatPetqcscandata> extends XnatQcscandataDeserializer<T> {
+    private static final long serialVersionUID = -4983053614309290984L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatPetqcscandataDeserializer() {
         this((Class<T>) XnatPetqcscandata.class);
     }
 
-    public XnatPetqcscandataDeserializer(final Class<T> clazz) {
+    protected XnatPetqcscandataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,52 +26,46 @@ public class XnatPetqcscandataDeserializer<T extends XnatPetqcscandata> extends 
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "acceptablevoxelsize":
-                // TODO: Handle the "acceptablevoxelsize" property here: String
+                instance.setAcceptablevoxelsize(parser.getText());
                 break;
             case "acquisition":
-                // TODO: Handle the "acquisition" property here: String
+                instance.setAcquisition(parser.getText());
                 break;
             case "bottomcutoff":
-                // TODO: Handle the "bottomcutoff" property here: String
+                instance.setBottomcutoff(parser.getText());
                 break;
             case "correctfilters":
-                // TODO: Handle the "correctfilters" property here: String
+                instance.setCorrectfilters(parser.getText());
                 break;
             case "correctiterationsandsubsets":
-                // TODO: Handle the "correctiterationsandsubsets" property here: String
+                instance.setCorrectiterationsandsubsets(parser.getText());
                 break;
             case "correctreconstructionalgorithm":
-                // TODO: Handle the "correctreconstructionalgorithm" property here: String
+                instance.setCorrectreconstructionalgorithm(parser.getText());
                 break;
             case "correctslicethickness":
-                // TODO: Handle the "correctslicethickness" property here: String
+                instance.setCorrectslicethickness(parser.getText());
                 break;
             case "processingerrors_processingerror":
                 // TODO: Handle the "processingerrors_processingerror" property here: java.util.List
                 break;
             case "qcoutcome":
-                // TODO: Handle the "qcoutcome" property here: String
+                instance.setQcoutcome(parser.getText());
                 break;
             case "qcoutcomereason":
-                // TODO: Handle the "qcoutcomereason" property here: String
-                break;
-            case "qcscandata":
-                // TODO: Handle the "qcscandata" property here: org.nrg.xdat.om.XnatQcscandata
+                instance.setQcoutcomereason(parser.getText());
                 break;
             case "reasonframesunacceptable":
-                // TODO: Handle the "reasonframesunacceptable" property here: String
+                instance.setReasonframesunacceptable(parser.getText());
                 break;
             case "reconstructionalgorithmused":
-                // TODO: Handle the "reconstructionalgorithmused" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setReconstructionalgorithmused(parser.getText());
                 break;
             case "topcutoff":
-                // TODO: Handle the "topcutoff" property here: String
+                instance.setTopcutoff(parser.getText());
                 break;
             case "unacceptableframes":
-                // TODO: Handle the "unacceptableframes" property here: String
+                instance.setUnacceptableframes(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

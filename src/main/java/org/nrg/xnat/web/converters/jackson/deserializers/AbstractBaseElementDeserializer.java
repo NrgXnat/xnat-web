@@ -29,16 +29,16 @@ import java.util.*;
 @Accessors(prefix = "_")
 @Slf4j
 public abstract class AbstractBaseElementDeserializer<T extends BaseElement> extends StdDeserializer<T> {
+    private static final long serialVersionUID = 1972493724227250974L;
+
     public static final TypeReference<? extends Map<String, String>> MAP_STRING_STRING = new TypeReference<HashMap<String, String>>() {
     };
     public static final TypeReference<? extends List<String>>        LIST_STRING       = new TypeReference<ArrayList<String>>() {
     };
 
-    private static final long serialVersionUID = -3794209460383176862L;
-
     private final Class<T> _serializableType;
 
-    public AbstractBaseElementDeserializer(final Class<T> clazz) {
+    protected AbstractBaseElementDeserializer(final Class<T> clazz) {
         super(clazz);
         _serializableType = clazz;
         log.info("Created the {} deserializer for handling instances of the {} class", getClass().getName(), _serializableType.getName());

@@ -7,9 +7,15 @@ import org.nrg.xdat.om.ArcPipelinedata;
 
 import java.io.IOException;
 
+@XnatDeserializer
 @Slf4j
-public abstract class ArcPipelinedataDeserializer<T extends ArcPipelinedata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 6130106489474567474L;
+public class ArcPipelinedataDeserializer<T extends ArcPipelinedata> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = -6357759436959142866L;
+
+    @SuppressWarnings({"unchecked", "unused"})
+    public ArcPipelinedataDeserializer() {
+        this((Class<T>) ArcPipelinedata.class);
+    }
 
     protected ArcPipelinedataDeserializer(final Class<T> clazz) {
         super(clazz);
@@ -19,28 +25,25 @@ public abstract class ArcPipelinedataDeserializer<T extends ArcPipelinedata> ext
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "arcPipelinedataId":
-                // TODO: Handle the "arcPipelinedataId" property here: Integer
+                instance.setArcPipelinedataId(parser.getIntValue());
                 break;
             case "customwebpage":
-                // TODO: Handle the "customwebpage" property here: String
+                instance.setCustomwebpage(parser.getText());
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "displaytext":
-                // TODO: Handle the "displaytext" property here: String
+                instance.setDisplaytext(parser.getText());
                 break;
             case "location":
-                // TODO: Handle the "location" property here: String
+                instance.setLocation(parser.getText());
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
+                instance.setName(parser.getText());
                 break;
             case "parameters_parameter":
                 // TODO: Handle the "parameters_parameter" property here: java.util.List
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
                 break;
             default:
                 super.handleField(instance, field, parser, context);

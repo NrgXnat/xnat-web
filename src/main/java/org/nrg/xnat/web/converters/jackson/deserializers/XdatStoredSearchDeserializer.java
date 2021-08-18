@@ -8,23 +8,22 @@ import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatUser;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.security.XDATUser;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatStoredSearchDeserializer<T extends XdatStoredSearch> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = -5423193050766202850L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatStoredSearchDeserializer() {
         super((Class<T>) XdatStoredSearch.class);
     }
 
-    public XdatStoredSearchDeserializer(final Class<T> clazz) {
+    protected XdatStoredSearchDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 

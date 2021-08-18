@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatPublicationresource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatPublicationresourceDeserializer<T extends XnatPublicationresource> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -2613006007730533091L;
+public class XnatPublicationresourceDeserializer<T extends XnatPublicationresource> extends XnatAbstractresourceDeserializer<T> {
+    private static final long serialVersionUID = -5072414654198519130L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatPublicationresourceDeserializer() {
         this((Class<T>) XnatPublicationresource.class);
     }
 
-    public XnatPublicationresourceDeserializer(final Class<T> clazz) {
+    protected XnatPublicationresourceDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,43 +26,37 @@ public class XnatPublicationresourceDeserializer<T extends XnatPublicationresour
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "abstract":
-                // TODO: Handle the "abstract" property here: String
-                break;
-            case "abstractresource":
-                // TODO: Handle the "abstractresource" property here: org.nrg.xdat.om.XnatAbstractresource
+                instance.setAbstract(parser.getText());
                 break;
             case "citation":
-                // TODO: Handle the "citation" property here: String
+                instance.setCitation(parser.getText());
                 break;
             case "commentary":
-                // TODO: Handle the "commentary" property here: String
+                instance.setCommentary(parser.getText());
+                break;
+            case "doi":
+                instance.setDoi(parser.getText());
                 break;
             case "isprimary":
-                // TODO: Handle the "isprimary" property here: Boolean
-                break;
-            case "label":
-                // TODO: Handle the "label" property here: String
+                instance.setIsprimary(parser.getBooleanValue());
                 break;
             case "medline":
-                // TODO: Handle the "medline" property here: String
+                instance.setMedline(parser.getText());
                 break;
             case "other":
-                // TODO: Handle the "other" property here: String
+                instance.setOther(parser.getText());
                 break;
             case "pubmed":
-                // TODO: Handle the "pubmed" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setPubmed(parser.getText());
                 break;
             case "title":
-                // TODO: Handle the "title" property here: String
+                instance.setTitle(parser.getText());
                 break;
             case "type":
-                // TODO: Handle the "type" property here: String
+                instance.setType(parser.getText());
                 break;
-            case "unresolvedPaths":
-                // TODO: Handle the "unresolvedPaths" property here: java.util.ArrayList
+            case "uri":
+                instance.setUri(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

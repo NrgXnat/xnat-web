@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatEegsessiondata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatEegsessiondataSerializer<T extends XnatEegsessiondata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 2219243428416879329L;
+public class XnatEegsessiondataSerializer<T extends XnatEegsessiondata> extends XnatImagesessiondataSerializer<T> {
+    private static final long serialVersionUID = 5990651366591260224L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatEegsessiondataSerializer() {
         this((Class<T>) XnatEegsessiondata.class);
     }
@@ -25,14 +24,13 @@ public class XnatEegsessiondataSerializer<T extends XnatEegsessiondata> extends 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "dataformatversion" property here: String
-        // TODO: Write out the "imagesessiondata" property here: org.nrg.xdat.om.XnatImagesessiondata
-        // TODO: Write out the "numberofchannels" property here: Integer
-        // TODO: Write out the "samplinginterval" property here: Double
-        // TODO: Write out the "samplinginterval_units" property here: String
-        // TODO: Write out the "samplingrate" property here: Double
-        // TODO: Write out the "samplingrate_units" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
+        writeNonBlankField(generator, "dataformatversion", instance.getDataformatversion());
+        writeNonNullNumber(generator, "numberofchannels", instance.getNumberofchannels());
+        writeNonNullNumber(generator, "samplinginterval", instance.getSamplinginterval());
+        writeNonBlankField(generator, "samplinginterval_units", instance.getSamplinginterval_units());
+        writeNonNullNumber(generator, "samplingrate", instance.getSamplingrate());
+        writeNonBlankField(generator, "samplingrate_units", instance.getSamplingrate_units());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

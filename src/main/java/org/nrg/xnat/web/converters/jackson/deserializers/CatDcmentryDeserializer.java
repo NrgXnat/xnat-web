@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.CatDcmentry;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class CatDcmentryDeserializer<T extends CatDcmentry> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -5168165575249015540L;
+public class CatDcmentryDeserializer<T extends CatDcmentry> extends CatEntryDeserializer<T> {
+    private static final long serialVersionUID = -3630665626183936680L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public CatDcmentryDeserializer() {
         this((Class<T>) CatDcmentry.class);
     }
 
-    public CatDcmentryDeserializer(final Class<T> clazz) {
+    protected CatDcmentryDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,14 +25,11 @@ public class CatDcmentryDeserializer<T extends CatDcmentry> extends AbstractBase
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "entry":
-                // TODO: Handle the "entry" property here: org.nrg.xdat.om.CatEntry
-                break;
             case "instancenumber":
-                // TODO: Handle the "instancenumber" property here: Integer
+                instance.setInstancenumber(parser.getIntValue());
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+            case "uid":
+                instance.setUid(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

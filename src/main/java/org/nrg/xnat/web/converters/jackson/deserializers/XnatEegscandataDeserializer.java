@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatEegscandata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatEegscandataDeserializer<T extends XnatEegscandata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -2432170054339054812L;
+public class XnatEegscandataDeserializer<T extends XnatEegscandata> extends XnatImagescandataDeserializer<T> {
+    private static final long serialVersionUID = 4399647718364032172L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatEegscandataDeserializer() {
         this((Class<T>) XnatEegscandata.class);
     }
 
-    public XnatEegscandataDeserializer(final Class<T> clazz) {
+    protected XnatEegscandataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -29,26 +28,20 @@ public class XnatEegscandataDeserializer<T extends XnatEegscandata> extends Abst
             case "channels_channel":
                 // TODO: Handle the "channels_channel" property here: java.util.List
                 break;
-            case "imagescandata":
-                // TODO: Handle the "imagescandata" property here: org.nrg.xdat.om.XnatImagescandata
-                break;
             case "parameters_datarecord_duration":
-                // TODO: Handle the "parameters_datarecord_duration" property here: Double
+                instance.setParameters_datarecord_duration(parser.getDoubleValue());
                 break;
             case "parameters_datarecord_units":
-                // TODO: Handle the "parameters_datarecord_units" property here: String
+                instance.setParameters_datarecord_units(parser.getText());
                 break;
             case "parameters_numberofdatarecords":
-                // TODO: Handle the "parameters_numberofdatarecords" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setParameters_numberofdatarecords(parser.getIntValue());
                 break;
             case "softwarefiltersimpedances_impedance":
                 // TODO: Handle the "softwarefiltersimpedances_impedance" property here: java.util.List
                 break;
             case "softwarefiltersimpedances_mean":
-                // TODO: Handle the "softwarefiltersimpedances_mean" property here: Double
+                instance.setSoftwarefiltersimpedances_mean(parser.getDoubleValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

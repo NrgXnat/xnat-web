@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.CatDcmcatalog;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class CatDcmcatalogDeserializer<T extends CatDcmcatalog> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 6646723640524625711L;
+public class CatDcmcatalogDeserializer<T extends CatDcmcatalog> extends CatCatalogDeserializer<T> {
+    private static final long serialVersionUID = 4747918885463583799L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public CatDcmcatalogDeserializer() {
         this((Class<T>) CatDcmcatalog.class);
     }
 
-    public CatDcmcatalogDeserializer(final Class<T> clazz) {
+    protected CatDcmcatalogDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,38 +25,35 @@ public class CatDcmcatalogDeserializer<T extends CatDcmcatalog> extends Abstract
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "catalog":
-                // TODO: Handle the "catalog" property here: org.nrg.xdat.om.CatCatalog
-                break;
             case "dimensions_volumes":
-                // TODO: Handle the "dimensions_volumes" property here: Integer
+                instance.setDimensions_volumes(parser.getIntValue());
                 break;
             case "dimensions_x":
-                // TODO: Handle the "dimensions_x" property here: Integer
+                instance.setDimensions_x(parser.getIntValue());
                 break;
             case "dimensions_y":
-                // TODO: Handle the "dimensions_y" property here: Integer
+                instance.setDimensions_y(parser.getIntValue());
                 break;
             case "dimensions_z":
-                // TODO: Handle the "dimensions_z" property here: Integer
+                instance.setDimensions_z(parser.getIntValue());
                 break;
             case "orientation":
-                // TODO: Handle the "orientation" property here: String
+                instance.setOrientation(parser.getText());
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+            case "uid":
+                instance.setUid(parser.getText());
                 break;
             case "voxelres_units":
-                // TODO: Handle the "voxelres_units" property here: String
+                instance.setVoxelres_units(parser.getText());
                 break;
             case "voxelres_x":
-                // TODO: Handle the "voxelres_x" property here: Double
+                instance.setVoxelres_x(parser.getDoubleValue());
                 break;
             case "voxelres_y":
-                // TODO: Handle the "voxelres_y" property here: Double
+                instance.setVoxelres_y(parser.getDoubleValue());
                 break;
             case "voxelres_z":
-                // TODO: Handle the "voxelres_z" property here: Double
+                instance.setVoxelres_z(parser.getDoubleValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

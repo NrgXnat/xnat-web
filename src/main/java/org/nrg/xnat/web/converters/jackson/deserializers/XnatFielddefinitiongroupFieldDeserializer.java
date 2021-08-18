@@ -4,60 +4,52 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatFielddefinitiongroupField;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatFielddefinitiongroupFieldDeserializer<T extends XnatFielddefinitiongroupField> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -9068897545679996759L;
+    private static final long serialVersionUID = -7545726840188669493L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatFielddefinitiongroupFieldDeserializer() {
         this((Class<T>) XnatFielddefinitiongroupField.class);
     }
 
-    public XnatFielddefinitiongroupFieldDeserializer(final Class<T> clazz) {
+    protected XnatFielddefinitiongroupFieldDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "cleanedXMLPath":
-                // TODO: Handle the "cleanedXMLPath" property here: String
-                break;
             case "datatype":
-                // TODO: Handle the "datatype" property here: String
+                instance.setDatatype(parser.getText());
                 break;
             case "group":
-                // TODO: Handle the "group" property here: String
+                instance.setGroup(parser.getText());
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
+                instance.setName(parser.getText());
                 break;
             case "possiblevalues_possiblevalue":
                 // TODO: Handle the "possiblevalues_possiblevalue" property here: java.util.List
                 break;
             case "required":
-                // TODO: Handle the "required" property here: Boolean
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setRequired(parser.getBooleanValue());
                 break;
             case "sequence":
-                // TODO: Handle the "sequence" property here: Integer
+                instance.setSequence(parser.getIntValue());
                 break;
             case "type":
-                // TODO: Handle the "type" property here: String
+                instance.setType(parser.getText());
                 break;
             case "xmlpath":
-                // TODO: Handle the "xmlpath" property here: String
+                instance.setXmlpath(parser.getText());
                 break;
             case "xnatFielddefinitiongroupFieldId":
-                // TODO: Handle the "xnatFielddefinitiongroupFieldId" property here: Integer
+                instance.setXnatFielddefinitiongroupFieldId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

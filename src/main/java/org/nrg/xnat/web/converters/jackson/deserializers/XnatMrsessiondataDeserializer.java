@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatMrsessiondata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatMrsessiondataDeserializer<T extends XnatMrsessiondata> extends XnatImagesessiondataDeserializer<T> {
-    private static final long serialVersionUID = 8714542973804658983L;
+    private static final long serialVersionUID = 6343007508302993389L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatMrsessiondataDeserializer() {
-        super((Class<T>) XnatMrsessiondata.class);
+        this((Class<T>) XnatMrsessiondata.class);
     }
 
-    public XnatMrsessiondataDeserializer(final Class<T> clazz) {
+    protected XnatMrsessiondataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 

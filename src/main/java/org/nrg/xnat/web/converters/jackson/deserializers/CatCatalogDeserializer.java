@@ -7,9 +7,15 @@ import org.nrg.xdat.om.CatCatalog;
 
 import java.io.IOException;
 
+@XnatDeserializer
 @Slf4j
-public abstract class CatCatalogDeserializer<T extends CatCatalog> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 3822624066199110750L;
+public class CatCatalogDeserializer<T extends CatCatalog> extends AbstractBaseElementDeserializer<T> {
+    private static final long serialVersionUID = 6571002377858573194L;
+
+    @SuppressWarnings({"unchecked", "unused"})
+    public CatCatalogDeserializer() {
+        this((Class<T>) CatCatalog.class);
+    }
 
     protected CatCatalogDeserializer(final Class<T> clazz) {
         super(clazz);
@@ -19,22 +25,22 @@ public abstract class CatCatalogDeserializer<T extends CatCatalog> extends Abstr
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "catCatalogId":
-                // TODO: Handle the "catCatalogId" property here: Integer
+                instance.setCatCatalogId(parser.getIntValue());
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "entries_entry":
                 // TODO: Handle the "entries_entry" property here: java.util.List
+                break;
+            case "id":
+                instance.setId(parser.getText());
                 break;
             case "metafields_metafield":
                 // TODO: Handle the "metafields_metafield" property here: java.util.List
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setName(parser.getText());
                 break;
             case "sets_entryset":
                 // TODO: Handle the "sets_entryset" property here: java.util.List

@@ -5,16 +5,15 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatElementAccess;
 import org.nrg.xdat.om.XdatElementAccessSecureIp;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatElementAccessDeserializer<T extends XdatElementAccess> extends AbstractBaseElementDeserializer<T> {
     private static final long serialVersionUID = 1300556169889589133L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatElementAccessDeserializer() {
         this((Class<T>) XdatElementAccess.class);
     }

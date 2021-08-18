@@ -4,57 +4,52 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatElementActionType;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatElementActionTypeDeserializer<T extends XdatElementActionType> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 8549659363209856391L;
+    private static final long serialVersionUID = -2453258674571012076L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatElementActionTypeDeserializer() {
         this((Class<T>) XdatElementActionType.class);
     }
 
-    public XdatElementActionTypeDeserializer(final Class<T> clazz) {
+    protected XdatElementActionTypeDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "displayName":
-                // TODO: Handle the "displayName" property here: String
+                instance.setDisplayName(parser.getText());
                 break;
             case "elementActionName":
-                // TODO: Handle the "elementActionName" property here: String
+                instance.setElementActionName(parser.getText());
                 break;
             case "image":
-                // TODO: Handle the "image" property here: String
+                instance.setImage(parser.getText());
                 break;
             case "parameterstring":
-                // TODO: Handle the "parameterstring" property here: String
+                instance.setParameterstring(parser.getText());
                 break;
             case "popup":
-                // TODO: Handle the "popup" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setPopup(parser.getText());
                 break;
             case "secureaccess":
-                // TODO: Handle the "secureaccess" property here: String
+                instance.setSecureaccess(parser.getText());
                 break;
             case "securefeature":
-                // TODO: Handle the "securefeature" property here: String
+                instance.setSecurefeature(parser.getText());
                 break;
             case "sequence":
-                // TODO: Handle the "sequence" property here: Integer
+                instance.setSequence(parser.getIntValue());
                 break;
             case "xdatElementActionTypeId":
-                // TODO: Handle the "xdatElementActionTypeId" property here: Integer
+                instance.setXdatElementActionTypeId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

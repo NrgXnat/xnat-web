@@ -7,11 +7,12 @@ import org.nrg.xdat.om.ArcPipelinedata;
 
 import java.io.IOException;
 
+@XnatSerializer
 @Slf4j
-public abstract class ArcPipelinedataSerializer<T extends ArcPipelinedata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 1754414931284522029L;
+public class ArcPipelinedataSerializer<T extends ArcPipelinedata> extends AbstractBaseElementSerializer<T> {
+    private static final long serialVersionUID = -5293047609755294346L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcPipelinedataSerializer() {
         this((Class<T>) ArcPipelinedata.class);
     }
@@ -23,14 +24,13 @@ public abstract class ArcPipelinedataSerializer<T extends ArcPipelinedata> exten
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "arcPipelinedataId" property here: Integer
-        // TODO: Write out the "customwebpage" property here: String
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "displaytext" property here: String
-        // TODO: Write out the "location" property here: String
-        // TODO: Write out the "name" property here: String
+        writeNonNullNumber(generator, "arcPipelinedataId", instance.getArcPipelinedataId());
+        writeNonBlankField(generator, "customwebpage", instance.getCustomwebpage());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "displaytext", instance.getDisplaytext());
+        writeNonBlankField(generator, "location", instance.getLocation());
+        writeNonBlankField(generator, "name", instance.getName());
         // TODO: Write out the "parameters_parameter" property here: java.util.List
-        // TODO: Write out the "schemaElementName" property here: String
     }
 }
 

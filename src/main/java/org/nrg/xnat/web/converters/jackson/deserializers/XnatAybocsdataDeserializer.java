@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAybocsdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatAybocsdataDeserializer<T extends XnatAybocsdata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 5958369912500625099L;
+public class XnatAybocsdataDeserializer<T extends XnatAybocsdata> extends XnatSubjectassessordataDeserializer<T> {
+    private static final long serialVersionUID = -8675613870496517340L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatAybocsdataDeserializer() {
         this((Class<T>) XnatAybocsdata.class);
     }
 
-    public XnatAybocsdataDeserializer(final Class<T> clazz) {
+    protected XnatAybocsdataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,61 +26,55 @@ public class XnatAybocsdataDeserializer<T extends XnatAybocsdata> extends Abstra
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "behaviordrivestrength":
-                // TODO: Handle the "behaviordrivestrength" property here: Integer
+                instance.setBehaviordrivestrength(parser.getIntValue());
                 break;
             case "behaviorsinterferefunctioning":
-                // TODO: Handle the "behaviorsinterferefunctioning" property here: Integer
+                instance.setBehaviorsinterferefunctioning(parser.getIntValue());
                 break;
             case "controloverthoughts":
-                // TODO: Handle the "controloverthoughts" property here: Integer
+                instance.setControloverthoughts(parser.getIntValue());
                 break;
             case "currentorworstever":
-                // TODO: Handle the "currentorworstever" property here: String
+                instance.setCurrentorworstever(parser.getText());
                 break;
             case "distresscaused":
-                // TODO: Handle the "distresscaused" property here: Integer
+                instance.setDistresscaused(parser.getIntValue());
                 break;
             case "efforttoresistbehaviors":
-                // TODO: Handle the "efforttoresistbehaviors" property here: Integer
+                instance.setEfforttoresistbehaviors(parser.getIntValue());
                 break;
             case "efforttoresistthoughts":
-                // TODO: Handle the "efforttoresistthoughts" property here: Integer
+                instance.setEfforttoresistthoughts(parser.getIntValue());
                 break;
             case "feelingifprevented":
-                // TODO: Handle the "feelingifprevented" property here: Integer
+                instance.setFeelingifprevented(parser.getIntValue());
                 break;
             case "firstuntiljustrightage":
-                // TODO: Handle the "firstuntiljustrightage" property here: Double
+                instance.setFirstuntiljustrightage(parser.getDoubleValue());
                 break;
             case "frequencyuntiljustright":
-                // TODO: Handle the "frequencyuntiljustright" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
-            case "subjectassessordata":
-                // TODO: Handle the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
+                instance.setFrequencyuntiljustright(parser.getText());
                 break;
             case "thoughtsinterferefunctioning":
-                // TODO: Handle the "thoughtsinterferefunctioning" property here: Integer
+                instance.setThoughtsinterferefunctioning(parser.getIntValue());
                 break;
             case "timeoccupiedwiththoughts":
-                // TODO: Handle the "timeoccupiedwiththoughts" property here: Integer
+                instance.setTimeoccupiedwiththoughts(parser.getIntValue());
                 break;
             case "timeperforming":
-                // TODO: Handle the "timeperforming" property here: Integer
+                instance.setTimeperforming(parser.getIntValue());
                 break;
             case "untiljustright":
-                // TODO: Handle the "untiljustright" property here: Boolean
+                instance.setUntiljustright(parser.getBooleanValue());
                 break;
             case "untiljustrightawareness":
-                // TODO: Handle the "untiljustrightawareness" property here: String
+                instance.setUntiljustrightawareness(parser.getText());
                 break;
             case "untiljustrightperceptions":
-                // TODO: Handle the "untiljustrightperceptions" property here: String
+                instance.setUntiljustrightperceptions(parser.getText());
                 break;
             case "whenstartuntiljustright":
-                // TODO: Handle the "whenstartuntiljustright" property here: String
+                instance.setWhenstartuntiljustright(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

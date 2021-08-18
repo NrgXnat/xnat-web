@@ -4,14 +4,13 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatAupdrs3data;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatAupdrs3dataSerializer<T extends XnatAupdrs3data> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -5595743721084830420L;
+public class XnatAupdrs3dataSerializer<T extends XnatAupdrs3data> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = 1707032806823320928L;
 
     @SuppressWarnings("unchecked")
     public XnatAupdrs3dataSerializer() {
@@ -25,41 +24,40 @@ public class XnatAupdrs3dataSerializer<T extends XnatAupdrs3data> extends Abstra
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "actionposturaltremor_left" property here: Integer
-        // TODO: Write out the "actionposturaltremor_right" property here: Integer
-        // TODO: Write out the "arisefromchair" property here: Integer
-        // TODO: Write out the "bodybradykinesiahypokinesia" property here: Integer
-        // TODO: Write out the "clicker_interval" property here: Integer
-        // TODO: Write out the "clicker_left" property here: Integer
-        // TODO: Write out the "clicker_right" property here: Integer
-        // TODO: Write out the "facialexpression" property here: Integer
-        // TODO: Write out the "fingertaps_left" property here: Integer
-        // TODO: Write out the "fingertaps_right" property here: Integer
-        // TODO: Write out the "foottaps_left" property here: Integer
-        // TODO: Write out the "foottaps_right" property here: Integer
-        // TODO: Write out the "gait" property here: Integer
-        // TODO: Write out the "handmovementsgrip_left" property here: Integer
-        // TODO: Write out the "handmovementsgrip_right" property here: Integer
-        // TODO: Write out the "handsram_left" property here: Integer
-        // TODO: Write out the "handsram_right" property here: Integer
-        // TODO: Write out the "inscanner" property here: Boolean
-        // TODO: Write out the "posturalstability" property here: Integer
-        // TODO: Write out the "posture" property here: Integer
-        // TODO: Write out the "problem" property here: Boolean
-        // TODO: Write out the "rigidity_lle" property here: String
-        // TODO: Write out the "rigidity_lue" property here: String
-        // TODO: Write out the "rigidity_neck" property here: String
-        // TODO: Write out the "rigidity_rle" property here: String
-        // TODO: Write out the "rigidity_rue" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "speech" property here: Integer
-        // TODO: Write out the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
-        // TODO: Write out the "tremorrest_face" property here: String
-        // TODO: Write out the "tremorrest_lle" property here: String
-        // TODO: Write out the "tremorrest_lue" property here: String
-        // TODO: Write out the "tremorrest_rle" property here: String
-        // TODO: Write out the "tremorrest_rue" property here: String
-        // TODO: Write out the "writing" property here: Integer
+        writeNonNullNumber(generator, "actionposturaltremor_left", instance.getActionposturaltremor_left());
+        writeNonNullNumber(generator, "actionposturaltremor_right", instance.getActionposturaltremor_right());
+        writeNonNullNumber(generator, "arisefromchair", instance.getArisefromchair());
+        writeNonNullNumber(generator, "bodybradykinesiahypokinesia", instance.getBodybradykinesiahypokinesia());
+        writeNonNullNumber(generator, "clicker_interval", instance.getClicker_interval());
+        writeNonNullNumber(generator, "clicker_left", instance.getClicker_left());
+        writeNonNullNumber(generator, "clicker_right", instance.getClicker_right());
+        writeNonNullNumber(generator, "facialexpression", instance.getFacialexpression());
+        writeNonNullNumber(generator, "fingertaps_left", instance.getFingertaps_left());
+        writeNonNullNumber(generator, "fingertaps_right", instance.getFingertaps_right());
+        writeNonNullNumber(generator, "foottaps_left", instance.getFoottaps_left());
+        writeNonNullNumber(generator, "foottaps_right", instance.getFoottaps_right());
+        writeNonNullNumber(generator, "gait", instance.getGait());
+        writeNonNullNumber(generator, "handmovementsgrip_left", instance.getHandmovementsgrip_left());
+        writeNonNullNumber(generator, "handmovementsgrip_right", instance.getHandmovementsgrip_right());
+        writeNonNullNumber(generator, "handsram_left", instance.getHandsram_left());
+        writeNonNullNumber(generator, "handsram_right", instance.getHandsram_right());
+        writeNonNullBoolean(generator, "inscanner", instance.getInscanner());
+        writeNonNullNumber(generator, "posturalstability", instance.getPosturalstability());
+        writeNonNullNumber(generator, "posture", instance.getPosture());
+        writeNonNullBoolean(generator, "problem", instance.getProblem());
+        writeNonBlankField(generator, "rigidity_lle", instance.getRigidity_lle());
+        writeNonBlankField(generator, "rigidity_lue", instance.getRigidity_lue());
+        writeNonBlankField(generator, "rigidity_neck", instance.getRigidity_neck());
+        writeNonBlankField(generator, "rigidity_rle", instance.getRigidity_rle());
+        writeNonBlankField(generator, "rigidity_rue", instance.getRigidity_rue());
+        writeNonNullNumber(generator, "speech", instance.getSpeech());
+        writeNonBlankField(generator, "tremorrest_face", instance.getTremorrest_face());
+        writeNonBlankField(generator, "tremorrest_lle", instance.getTremorrest_lle());
+        writeNonBlankField(generator, "tremorrest_lue", instance.getTremorrest_lue());
+        writeNonBlankField(generator, "tremorrest_rle", instance.getTremorrest_rle());
+        writeNonBlankField(generator, "tremorrest_rue", instance.getTremorrest_rue());
+        writeNonNullNumber(generator, "writing", instance.getWriting());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

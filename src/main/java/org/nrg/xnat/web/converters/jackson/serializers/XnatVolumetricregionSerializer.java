@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatVolumetricregion;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatVolumetricregionSerializer<T extends XnatVolumetricregion> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 7384670888819046737L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatVolumetricregionSerializer() {
         this((Class<T>) XnatVolumetricregion.class);
     }
@@ -25,13 +24,12 @@ public class XnatVolumetricregionSerializer<T extends XnatVolumetricregion> exte
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "hemisphere" property here: String
-        // TODO: Write out the "name" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
+        writeNonBlankField(generator, "hemisphere", instance.getHemisphere());
+        writeNonBlankField(generator, "name", instance.getName());
         // TODO: Write out the "subregions_subregion" property here: java.util.List
-        // TODO: Write out the "units" property here: String
-        // TODO: Write out the "voxels" property here: Integer
-        // TODO: Write out the "xnatVolumetricregionId" property here: Integer
+        writeNonBlankField(generator, "units", instance.getUnits());
+        writeNonNullNumber(generator, "voxels", instance.getVoxels());
+        writeNonNullNumber(generator, "xnatVolumetricregionId", instance.getXnatVolumetricregionId());
     }
 }
 

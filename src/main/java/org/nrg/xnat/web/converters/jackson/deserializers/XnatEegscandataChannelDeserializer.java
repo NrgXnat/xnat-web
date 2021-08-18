@@ -4,48 +4,43 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatEegscandataChannel;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatEegscandataChannelDeserializer<T extends XnatEegscandataChannel> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -7486402119272249219L;
+    private static final long serialVersionUID = -2567433593866550742L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatEegscandataChannelDeserializer() {
         this((Class<T>) XnatEegscandataChannel.class);
     }
 
-    public XnatEegscandataChannelDeserializer(final Class<T> clazz) {
+    protected XnatEegscandataChannelDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "highcutoff":
-                // TODO: Handle the "highcutoff" property here: String
+                instance.setHighcutoff(parser.getText());
                 break;
             case "lowcutoff":
-                // TODO: Handle the "lowcutoff" property here: String
+                instance.setLowcutoff(parser.getText());
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
+                instance.setName(parser.getText());
                 break;
             case "notch":
-                // TODO: Handle the "notch" property here: String
+                instance.setNotch(parser.getText());
                 break;
             case "resolution":
-                // TODO: Handle the "resolution" property here: Double
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setResolution(parser.getDoubleValue());
                 break;
             case "xnatEegscandataChannelId":
-                // TODO: Handle the "xnatEegscandataChannelId" property here: Integer
+                instance.setXnatEegscandataChannelId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

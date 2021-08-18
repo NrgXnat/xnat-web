@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatSubjectvariablesdata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
-public class XnatSubjectvariablesdataSerializer<T extends XnatSubjectvariablesdata> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -6871178784231535753L;
+public class XnatSubjectvariablesdataSerializer<T extends XnatSubjectvariablesdata> extends XnatSubjectassessordataSerializer<T> {
+    private static final long serialVersionUID = -5631358071313424072L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatSubjectvariablesdataSerializer() {
         this((Class<T>) XnatSubjectvariablesdata.class);
     }
@@ -25,9 +24,8 @@ public class XnatSubjectvariablesdataSerializer<T extends XnatSubjectvariablesda
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "subjectassessordata" property here: org.nrg.xdat.om.XnatSubjectassessordata
         // TODO: Write out the "variables_variable" property here: java.util.List
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

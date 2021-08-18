@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.*;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 4065543805756070441L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatStoredSearchSerializer() {
         this((Class<T>) XdatStoredSearch.class);
     }
@@ -25,7 +24,6 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
     @Override
     protected void serializeImpl(final T search, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         writeNonNullBoolean(generator, "allowDiffColumns", search.getAllowDiffColumns());
-        writeNonBlankField(generator, "sortByFieldId", search.getSortBy_fieldId());
         writeNonBlankField(generator, "briefDescription", search.getBriefDescription());
         writeNonBlankField(generator, "description", search.getDescription());
         writeNonBlankField(generator, "layeredSequence", search.getLayeredsequence());
@@ -34,6 +32,7 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
         writeNonBlankField(generator, "id", search.getId());
         writeNonBlankField(generator, "tag", search.getTag());
         writeNonBlankField(generator, "sortByElementName", search.getSortBy_elementName());
+        writeNonBlankField(generator, "sortByFieldId", search.getSortBy_fieldId());
 
         generator.writeArrayFieldStart("login");
         for (final XdatStoredSearchAllowedUser user : search.getAllowedUser()) {
@@ -66,6 +65,9 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
             generator.writeEndArray();
         }
         generator.writeEndArray();
+        // TODO: Write out the "allowedGroups_groupid" property here: java.util.ArrayList
+        // TODO: Write out the "allowedUser" property here: java.util.ArrayList
+
     }
 }
 

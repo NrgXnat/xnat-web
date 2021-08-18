@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatCriteriaSet;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatCriteriaSetDeserializer<T extends XdatCriteriaSet> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 8983065949905735862L;
+    private static final long serialVersionUID = -4719713787940232032L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatCriteriaSetDeserializer() {
         this((Class<T>) XdatCriteriaSet.class);
     }
 
-    public XdatCriteriaSetDeserializer(final Class<T> clazz) {
+    protected XdatCriteriaSetDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -33,13 +31,10 @@ public class XdatCriteriaSetDeserializer<T extends XdatCriteriaSet> extends Abst
                 // TODO: Handle the "criteria" property here: java.util.ArrayList
                 break;
             case "method":
-                // TODO: Handle the "method" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setMethod(parser.getText());
                 break;
             case "xdatCriteriaSetId":
-                // TODO: Handle the "xdatCriteriaSetId" property here: Integer
+                instance.setXdatCriteriaSetId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatSearch;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XdatSearchDeserializer<T extends XdatSearch> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -8391285857313722096L;
+public class XdatSearchDeserializer<T extends XdatSearch> extends XdatStoredSearchDeserializer<T> {
+    private static final long serialVersionUID = 3889468560202826434L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatSearchDeserializer() {
         this((Class<T>) XdatSearch.class);
     }
 
-    public XdatSearchDeserializer(final Class<T> clazz) {
+    protected XdatSearchDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -27,10 +26,7 @@ public class XdatSearchDeserializer<T extends XdatSearch> extends AbstractBaseEl
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "page":
-                // TODO: Handle the "page" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setPage(parser.getIntValue());
                 break;
             case "storedSearch":
                 // TODO: Handle the "storedSearch" property here: org.nrg.xdat.om.XdatStoredSearchI

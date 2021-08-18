@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatExperimentdataField;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XnatExperimentdataFieldSerializer<T extends XnatExperimentdataField> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -5035580015368884431L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatExperimentdataFieldSerializer() {
         this((Class<T>) XnatExperimentdataField.class);
     }
@@ -25,10 +24,9 @@ public class XnatExperimentdataFieldSerializer<T extends XnatExperimentdataField
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "field" property here: String
-        // TODO: Write out the "name" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "xnatExperimentdataFieldId" property here: Integer
+        writeNonBlankField(generator, "field", instance.getField());
+        writeNonBlankField(generator, "name", instance.getName());
+        writeNonNullNumber(generator, "xnatExperimentdataFieldId", instance.getXnatExperimentdataFieldId());
     }
 }
 

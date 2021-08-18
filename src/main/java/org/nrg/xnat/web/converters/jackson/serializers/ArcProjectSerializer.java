@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ArcProject;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class ArcProjectSerializer<T extends ArcProject> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 3810695382068553705L;
+    private static final long serialVersionUID = -2801751366397830646L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcProjectSerializer() {
         this((Class<T>) ArcProject.class);
     }
@@ -23,11 +22,18 @@ public class ArcProjectSerializer<T extends ArcProject> extends AbstractBaseElem
     }
 
     @Override
-    protected void serializeImpl(final T arcProject, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
-        writeNonBlankField(generator, "id", arcProject.getId());
-        writeNonBlankField(generator, "currentArc", arcProject.getCurrentArc());
-        writeNonNullNumber(generator, "prearchiveCode", arcProject.getPrearchiveCode());
-        generator.writeObjectField("paths", arcProject.getPaths());
-
+    protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
+        // TODO: Implement datatype-specific serialization
+        writeNonNullNumber(generator, "arcProjectId", instance.getArcProjectId());
+        writeNonBlankField(generator, "currentArc", instance.getCurrentArc());
+        // TODO: Write out the "fieldspecifications_fieldspecification" property here: java.util.List
+        writeNonBlankField(generator, "id", instance.getId());
+        // TODO: Write out the "paths" property here: org.nrg.xdat.model.ArcPathinfoI
+        // TODO: Write out the "pipelines_descendants_descendant" property here: java.util.List
+        // TODO: Write out the "pipelines_pipeline" property here: java.util.List
+        writeNonNullNumber(generator, "prearchiveCode", instance.getPrearchiveCode());
+        // TODO: Write out the "properties_property" property here: java.util.List
+        writeNonNullNumber(generator, "quarantineCode", instance.getQuarantineCode());
     }
 }
+

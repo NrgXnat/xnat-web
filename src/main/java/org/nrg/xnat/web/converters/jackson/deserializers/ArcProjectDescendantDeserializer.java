@@ -4,39 +4,34 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ArcProjectDescendant;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class ArcProjectDescendantDeserializer<T extends ArcProjectDescendant> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -5322398695667766647L;
+    private static final long serialVersionUID = -6571465769663938208L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ArcProjectDescendantDeserializer() {
         this((Class<T>) ArcProjectDescendant.class);
     }
 
-    public ArcProjectDescendantDeserializer(final Class<T> clazz) {
+    protected ArcProjectDescendantDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "arcProjectDescendantId":
-                // TODO: Handle the "arcProjectDescendantId" property here: Integer
+                instance.setArcProjectDescendantId(parser.getIntValue());
                 break;
             case "pipeline":
                 // TODO: Handle the "pipeline" property here: java.util.List
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
             case "xsitype":
-                // TODO: Handle the "xsitype" property here: String
+                instance.setXsitype(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

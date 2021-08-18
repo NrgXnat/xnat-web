@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatSecurity;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XdatSecurityDeserializer<T extends XdatSecurity> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 1104501993560096985L;
+    private static final long serialVersionUID = -4389160022125301720L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatSecurityDeserializer() {
         this((Class<T>) XdatSecurity.class);
     }
 
-    public XdatSecurityDeserializer(final Class<T> clazz) {
+    protected XdatSecurityDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -42,22 +40,19 @@ public class XdatSecurityDeserializer<T extends XdatSecurity> extends AbstractBa
                 // TODO: Handle the "newslist_news" property here: org.nrg.xdat.om.XdatNewsentryI
                 break;
             case "requireLogin":
-                // TODO: Handle the "requireLogin" property here: Boolean
+                instance.setRequireLogin(parser.getBooleanValue());
                 break;
             case "roles_role":
                 // TODO: Handle the "roles_role" property here: java.util.ArrayList
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
             case "system":
-                // TODO: Handle the "system" property here: String
+                instance.setSystem(parser.getText());
                 break;
             case "users_user":
                 // TODO: Handle the "users_user" property here: java.util.ArrayList
                 break;
             case "xdatSecurityId":
-                // TODO: Handle the "xdatSecurityId" property here: Integer
+                instance.setXdatSecurityId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

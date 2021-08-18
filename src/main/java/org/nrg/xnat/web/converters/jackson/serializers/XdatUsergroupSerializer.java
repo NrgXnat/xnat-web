@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatUsergroup;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatUsergroupSerializer<T extends XdatUsergroup> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = -1475290633593214098L;
+    private static final long serialVersionUID = -6376083510255516680L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatUsergroupSerializer() {
         this((Class<T>) XdatUsergroup.class);
     }

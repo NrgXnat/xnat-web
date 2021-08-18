@@ -4,60 +4,58 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.ProvProcessstep;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class ProvProcessstepDeserializer<T extends ProvProcessstep> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 7821397282363558043L;
+    private static final long serialVersionUID = -559791238462222057L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public ProvProcessstepDeserializer() {
         this((Class<T>) ProvProcessstep.class);
     }
 
-    public ProvProcessstepDeserializer(final Class<T> clazz) {
+    protected ProvProcessstepDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "compiler":
-                // TODO: Handle the "compiler" property here: String
+                instance.setCompiler(parser.getText());
                 break;
             case "compiler_version":
-                // TODO: Handle the "compiler_version" property here: String
+                instance.setCompiler_version(parser.getText());
+                break;
+            case "cvs":
+                instance.setCvs(parser.getText());
                 break;
             case "library":
                 // TODO: Handle the "library" property here: java.util.List
                 break;
             case "machine":
-                // TODO: Handle the "machine" property here: String
+                instance.setMachine(parser.getText());
                 break;
             case "platform":
-                // TODO: Handle the "platform" property here: String
+                instance.setPlatform(parser.getText());
                 break;
             case "platform_version":
-                // TODO: Handle the "platform_version" property here: String
+                instance.setPlatform_version(parser.getText());
                 break;
             case "program":
-                // TODO: Handle the "program" property here: String
+                instance.setProgram(parser.getText());
                 break;
             case "program_arguments":
-                // TODO: Handle the "program_arguments" property here: String
+                instance.setProgram_arguments(parser.getText());
                 break;
             case "program_version":
-                // TODO: Handle the "program_version" property here: String
+                instance.setProgram_version(parser.getText());
                 break;
             case "provProcessstepId":
-                // TODO: Handle the "provProcessstepId" property here: Integer
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setProvProcessstepId(parser.getIntValue());
                 break;
             case "timestamp":
                 // TODO: Handle the "timestamp" property here: Object

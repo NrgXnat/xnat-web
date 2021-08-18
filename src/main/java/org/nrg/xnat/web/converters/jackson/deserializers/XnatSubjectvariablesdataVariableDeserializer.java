@@ -4,39 +4,34 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatSubjectvariablesdataVariable;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatSubjectvariablesdataVariableDeserializer<T extends XnatSubjectvariablesdataVariable> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -246849031018214860L;
+    private static final long serialVersionUID = 6800315396514434625L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatSubjectvariablesdataVariableDeserializer() {
         this((Class<T>) XnatSubjectvariablesdataVariable.class);
     }
 
-    public XnatSubjectvariablesdataVariableDeserializer(final Class<T> clazz) {
+    protected XnatSubjectvariablesdataVariableDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "name":
-                // TODO: Handle the "name" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setName(parser.getText());
                 break;
             case "variable":
-                // TODO: Handle the "variable" property here: String
+                instance.setVariable(parser.getText());
                 break;
             case "xnatSubjectvariablesdataVariableId":
-                // TODO: Handle the "xnatSubjectvariablesdataVariableId" property here: Integer
+                instance.setXnatSubjectvariablesdataVariableId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

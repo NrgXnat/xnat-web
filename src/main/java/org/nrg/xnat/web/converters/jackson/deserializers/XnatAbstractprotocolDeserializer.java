@@ -9,35 +9,33 @@ import java.io.IOException;
 
 @Slf4j
 public abstract class XnatAbstractprotocolDeserializer<T extends XnatAbstractprotocol> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -8950581491368249478L;
+    private static final long serialVersionUID = 769619859928799874L;
 
     protected XnatAbstractprotocolDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
+        // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "id":
-                instance.setId(parser.getText());
-                break;
-            case "xnatAbstractProtocolId":
-                instance.setXnatAbstractprotocolId(parser.getIntValue());
-                break;
-            case "name":
-                instance.setName(parser.getText());
+            case "dataType":
+                instance.setDataType(parser.getText());
                 break;
             case "description":
                 instance.setDescription(parser.getText());
                 break;
-            case "dataType":
-                instance.setDataType(parser.getText());
+            case "id":
+                instance.setId(parser.getText());
                 break;
-            case "user":
-                instance.setUser(getUserI(parser.getText()));
+            case "name":
+                instance.setName(parser.getText());
+                break;
+            case "xnatAbstractprotocolId":
+                instance.setXnatAbstractprotocolId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);
         }
     }
 }
+

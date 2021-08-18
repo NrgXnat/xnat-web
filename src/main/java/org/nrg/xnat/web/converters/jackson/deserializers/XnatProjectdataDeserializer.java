@@ -3,26 +3,17 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-
-import org.nrg.xdat.om.XnatAbstractprotocol;
-import org.nrg.xdat.om.XnatExperimentdataField;
-import org.nrg.xdat.om.XnatInvestigatordata;
-import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.om.XnatProjectdataAlias;
-import org.nrg.xdat.om.XnatProjectdataField;
-import org.nrg.xdat.om.XnatPublicationresource;
-import org.nrg.xdat.om.XnatRegionresource;
-import org.springframework.stereotype.Component;
+import org.nrg.xdat.om.*;
 
 import java.io.IOException;
 import java.util.Map;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 3867498404888076051L;
+    private static final long serialVersionUID = -2441594064844506957L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatProjectdataDeserializer() {
         this((Class<T>) XnatProjectdata.class);
     }
@@ -45,7 +36,7 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
                 break;
             case "type":
                 instance.setType(parser.getText());
-                break;    
+                break;
             case "secondaryId":
                 instance.setSecondaryId(parser.getText());
                 break;
@@ -56,23 +47,23 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
                 instance.setActive(parser.getText());
                 break;
             case "publications":
-            	 try {
-                     instance.setPublications_publication(parser.readValueAs(XnatPublicationresource.class));
-                 } catch (Exception e) {
-                     e.printStackTrace();
-                 }
-            	 break;
+                try {
+                    instance.setPublications_publication(parser.readValueAs(XnatPublicationresource.class));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                break;
             case "studyProtocol":
-            	try {
+                try {
                     instance.setStudyprotocol(parser.readValueAs(XnatAbstractprotocol.class));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-            	 break;
-            	
+                break;
+
             case "aliases":
-            	final Map<String, String> projfields = parser.readValueAs(MAP_STRING_STRING);
-            	projfields.forEach((key, value) -> {
+                final Map<String, String> projfields = parser.readValueAs(MAP_STRING_STRING);
+                projfields.forEach((key, value) -> {
                     final XnatProjectdataAlias projAliase = new XnatProjectdataAlias();
                     projAliase.setSource(key);
                     projAliase.setAlias(value);
@@ -82,10 +73,10 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
                         log.error("Tried to set a field on an project with source {} and alias {} but failed", key, value, e);
                     }
                 });
-            	 break;
-            	
+                break;
+
             case "fields":
-            	final Map<String, String> fields = parser.readValueAs(MAP_STRING_STRING);
+                final Map<String, String> fields = parser.readValueAs(MAP_STRING_STRING);
                 fields.forEach((key, value) -> {
                     final XnatProjectdataField projField = new XnatProjectdataField();
                     projField.setName(key);
@@ -97,7 +88,7 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
                     }
                 });
                 break;
-            	
+
             case "investigator":
                 final XnatInvestigatordata investigator = parser.readValueAs(XnatInvestigatordata.class);
                 investigator.setXnatInvestigatordataId(investigator.getXnatInvestigatordataId());

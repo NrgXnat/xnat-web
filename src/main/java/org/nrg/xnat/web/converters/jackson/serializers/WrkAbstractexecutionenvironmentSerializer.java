@@ -11,7 +11,7 @@ import java.io.IOException;
 public abstract class WrkAbstractexecutionenvironmentSerializer<T extends WrkAbstractexecutionenvironment> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = 4836434967737132001L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public WrkAbstractexecutionenvironmentSerializer() {
         this((Class<T>) WrkAbstractexecutionenvironment.class);
     }
@@ -23,8 +23,7 @@ public abstract class WrkAbstractexecutionenvironmentSerializer<T extends WrkAbs
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "wrkAbstractexecutionenvironmentId" property here: Integer
+        writeNonNullNumber(generator, "wrkAbstractexecutionenvironmentId", instance.getWrkAbstractexecutionenvironmentId());
     }
 }
 

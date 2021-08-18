@@ -4,25 +4,23 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatRegionresource;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatRegionresourceDeserializer<T extends XnatRegionresource> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -2594977814706062363L;
+    private static final long serialVersionUID = -6384721418363550725L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatRegionresourceDeserializer() {
         this((Class<T>) XnatRegionresource.class);
     }
 
-    public XnatRegionresourceDeserializer(final Class<T> clazz) {
+    protected XnatRegionresourceDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
@@ -30,31 +28,28 @@ public class XnatRegionresourceDeserializer<T extends XnatRegionresource> extend
                 // TODO: Handle the "baseimage" property here: org.nrg.xdat.model.XnatAbstractresourceI
                 break;
             case "creator_firstname":
-                // TODO: Handle the "creator_firstname" property here: String
+                instance.setCreator_firstname(parser.getText());
                 break;
             case "creator_lastname":
-                // TODO: Handle the "creator_lastname" property here: String
+                instance.setCreator_lastname(parser.getText());
                 break;
             case "file":
-                // TODO: Handle the "file" property here: org.nrg.xdat.om.XnatAbstractresource
+                // TODO: Handle the "file" property here: org.nrg.xdat.model.XnatAbstractresourceI
                 break;
             case "hemisphere":
-                // TODO: Handle the "hemisphere" property here: String
+                instance.setHemisphere(parser.getText());
                 break;
             case "name":
-                // TODO: Handle the "name" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setName(parser.getText());
                 break;
             case "sessionId":
-                // TODO: Handle the "sessionId" property here: String
+                instance.setSessionId(parser.getText());
                 break;
             case "subregionlabels_label":
                 // TODO: Handle the "subregionlabels_label" property here: java.util.List
                 break;
             case "xnatRegionresourceId":
-                // TODO: Handle the "xnatRegionresourceId" property here: Integer
+                instance.setXnatRegionresourceId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

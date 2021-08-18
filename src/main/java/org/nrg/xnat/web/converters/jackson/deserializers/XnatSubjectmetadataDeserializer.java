@@ -4,21 +4,20 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatSubjectmetadata;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
-public class XnatSubjectmetadataDeserializer<T extends XnatSubjectmetadata> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = -549073060644868809L;
+public class XnatSubjectmetadataDeserializer<T extends XnatSubjectmetadata> extends XnatAbstractsubjectmetadataDeserializer<T> {
+    private static final long serialVersionUID = -5786162254756362493L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatSubjectmetadataDeserializer() {
         this((Class<T>) XnatSubjectmetadata.class);
     }
 
-    public XnatSubjectmetadataDeserializer(final Class<T> clazz) {
+    protected XnatSubjectmetadataDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
@@ -26,14 +25,8 @@ public class XnatSubjectmetadataDeserializer<T extends XnatSubjectmetadata> exte
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "abstractsubjectmetadata":
-                // TODO: Handle the "abstractsubjectmetadata" property here: org.nrg.xdat.om.XnatAbstractsubjectmetadata
-                break;
             case "cohort":
-                // TODO: Handle the "cohort" property here: String
-                break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+                instance.setCohort(parser.getText());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

@@ -3,7 +3,6 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.om.XnatAbstractdemographicdata;
 
 import java.io.IOException;
@@ -17,10 +16,14 @@ public abstract class XnatAbstractdemographicdataDeserializer<T extends XnatAbst
     }
 
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
-        if (StringUtils.equals(field, "xnatAbstractdemographicdataId")) {
-            instance.setXnatAbstractdemographicdataId(parser.getIntValue());
-        } else {
-            super.handleField(instance, field, parser, context);
+        // TODO: Implement datatype-specific deserialization
+        switch (field) {
+            case "xnatAbstractdemographicdataId":
+                instance.setXnatAbstractdemographicdataId(parser.getIntValue());
+                break;
+            default:
+                super.handleField(instance, field, parser, context);
         }
     }
 }
+

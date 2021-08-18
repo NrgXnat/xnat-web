@@ -7,11 +7,12 @@ import org.nrg.xdat.om.XnatResourceseries;
 
 import java.io.IOException;
 
+@XnatSerializer
 @Slf4j
-public abstract class XnatResourceseriesSerializer<T extends XnatResourceseries> extends AbstractBaseElementSerializer<T> {
-    private static final long serialVersionUID = 5747797703911644376L;
+public class XnatResourceseriesSerializer<T extends XnatResourceseries> extends XnatAbstractresourceSerializer<T> {
+    private static final long serialVersionUID = 1290253542884083316L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatResourceseriesSerializer() {
         this((Class<T>) XnatResourceseries.class);
     }
@@ -23,17 +24,15 @@ public abstract class XnatResourceseriesSerializer<T extends XnatResourceseries>
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        // TODO: Write out the "abstractresource" property here: org.nrg.xdat.om.XnatAbstractresource
-        // TODO: Write out the "cachepath" property here: String
-        // TODO: Write out the "content" property here: String
-        // TODO: Write out the "count" property here: Integer
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "format" property here: String
-        // TODO: Write out the "name" property here: String
-        // TODO: Write out the "path" property here: String
-        // TODO: Write out the "pattern" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "unresolvedPaths" property here: java.util.ArrayList
+        writeNonBlankField(generator, "cachepath", instance.getCachepath());
+        writeNonBlankField(generator, "content", instance.getContent());
+        writeNonNullNumber(generator, "count", instance.getCount());
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "format", instance.getFormat());
+        writeNonBlankField(generator, "name", instance.getName());
+        writeNonBlankField(generator, "path", instance.getPath());
+        writeNonBlankField(generator, "pattern", instance.getPattern());
+        super.serializeImpl(instance, generator, provider);
     }
 }
 

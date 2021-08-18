@@ -4,48 +4,46 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatFielddefinitiongroup;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatDeserializer
 @Slf4j
 public class XnatFielddefinitiongroupDeserializer<T extends XnatFielddefinitiongroup> extends AbstractBaseElementDeserializer<T> {
-    private static final long serialVersionUID = 6255046688760205608L;
+    private static final long serialVersionUID = 101061338839874876L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XnatFielddefinitiongroupDeserializer() {
         this((Class<T>) XnatFielddefinitiongroup.class);
     }
 
-    public XnatFielddefinitiongroupDeserializer(final Class<T> clazz) {
+    protected XnatFielddefinitiongroupDeserializer(final Class<T> clazz) {
         super(clazz);
     }
 
-    @Override
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
             case "dataType":
-                // TODO: Handle the "dataType" property here: String
+                instance.setDataType(parser.getText());
                 break;
             case "description":
-                // TODO: Handle the "description" property here: String
+                instance.setDescription(parser.getText());
                 break;
             case "fields_field":
                 // TODO: Handle the "fields_field" property here: java.util.List
                 break;
-            case "projectSpecific":
-                // TODO: Handle the "projectSpecific" property here: Boolean
+            case "id":
+                instance.setId(parser.getText());
                 break;
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
+            case "projectSpecific":
+                instance.setProjectSpecific(parser.getBooleanValue());
                 break;
             case "shareable":
-                // TODO: Handle the "shareable" property here: Boolean
+                instance.setShareable(parser.getBooleanValue());
                 break;
             case "xnatFielddefinitiongroupId":
-                // TODO: Handle the "xnatFielddefinitiongroupId" property here: Integer
+                instance.setXnatFielddefinitiongroupId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);

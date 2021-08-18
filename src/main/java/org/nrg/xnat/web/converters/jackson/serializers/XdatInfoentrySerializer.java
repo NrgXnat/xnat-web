@@ -4,16 +4,15 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XdatInfoentry;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
+@XnatSerializer
 @Slf4j
 public class XdatInfoentrySerializer<T extends XdatInfoentry> extends AbstractBaseElementSerializer<T> {
     private static final long serialVersionUID = -4238370310089772827L;
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "unused"})
     public XdatInfoentrySerializer() {
         this((Class<T>) XdatInfoentry.class);
     }
@@ -26,11 +25,10 @@ public class XdatInfoentrySerializer<T extends XdatInfoentry> extends AbstractBa
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "date" property here: Object
-        // TODO: Write out the "description" property here: String
-        // TODO: Write out the "link" property here: String
-        // TODO: Write out the "schemaElementName" property here: String
-        // TODO: Write out the "title" property here: String
-        // TODO: Write out the "xdatInfoentryId" property here: Integer
+        writeNonBlankField(generator, "description", instance.getDescription());
+        writeNonBlankField(generator, "link", instance.getLink());
+        writeNonBlankField(generator, "title", instance.getTitle());
+        writeNonNullNumber(generator, "xdatInfoentryId", instance.getXdatInfoentryId());
     }
 }
 

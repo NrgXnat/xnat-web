@@ -18,11 +18,8 @@ public abstract class XnatAbstractstatisticsDeserializer<T extends XnatAbstracts
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "schemaElementName":
-                // TODO: Handle the "schemaElementName" property here: String
-                break;
             case "xnatAbstractstatisticsId":
-                // TODO: Handle the "xnatAbstractstatisticsId" property here: Integer
+                instance.setXnatAbstractstatisticsId(parser.getIntValue());
                 break;
             default:
                 super.handleField(instance, field, parser, context);
