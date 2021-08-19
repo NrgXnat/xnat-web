@@ -36,7 +36,7 @@ public class XnatSubjectdataSerializer<T extends XnatSubjectdata> extends Abstra
         writeNonNullField(generator, "resources", instance.getResources_resource());
         writeNonNullField(generator, "investigator", instance.getInvestigator());
         writeNonNullField(generator, "metadata", instance.getMetadata());
-        writeNonNullField(generator, "addID", instance.getAddid());
+        writeNonNullField(generator, "addId", instance.getAddid());
         writeNonNullField(generator, "fields", instance.getFields_field());
         generator.writeArrayFieldStart("experiments");
         for (final XnatSubjectassessordataI experiment : instance.getExperiments_experiment()) {

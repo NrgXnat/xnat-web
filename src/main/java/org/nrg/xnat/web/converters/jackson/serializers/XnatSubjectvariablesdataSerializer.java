@@ -25,6 +25,7 @@ public class XnatSubjectvariablesdataSerializer<T extends XnatSubjectvariablesda
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "variables_variable" property here: java.util.List
+    	writeNonNullField(generator, "variables", instance.getVariables_variable());
         super.serializeImpl(instance, generator, provider);
     }
 }

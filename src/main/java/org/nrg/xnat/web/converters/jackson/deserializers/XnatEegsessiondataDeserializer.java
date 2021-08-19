@@ -25,24 +25,24 @@ public class XnatEegsessiondataDeserializer<T extends XnatEegsessiondata> extend
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "dataformatversion":
+            case "dataFormatVersion":
                 instance.setDataformatversion(parser.getText());
                 break;
-            case "numberofchannels":
+            case "numberOfChannels":
                 instance.setNumberofchannels(parser.getIntValue());
                 break;
-            case "samplinginterval":
+            case "samplingInterval":
                 instance.setSamplinginterval(parser.getDoubleValue());
                 break;
-            case "samplinginterval_units":
-                instance.setSamplinginterval_units(parser.getText());
-                break;
-            case "samplingrate":
+            case "samplingRate":
                 instance.setSamplingrate(parser.getDoubleValue());
                 break;
-            case "samplingrate_units":
-                instance.setSamplingrate_units(parser.getText());
-                break;
+//            case "samplinginterval_units":
+//                instance.setSamplinginterval_units(parser.getText());
+//                break; 
+//            case "samplingrate_units":
+//                instance.setSamplingrate_units(parser.getText());
+//                break;
             default:
                 super.handleField(instance, field, parser, context);
         }

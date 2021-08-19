@@ -26,30 +26,48 @@ public class XnatPetmrsessiondataSerializer<T extends XnatPetmrsessiondata> exte
         // TODO: Implement datatype-specific serialization
         writeNonNullNumber(generator, "bloodGlucose", instance.getBloodGlucose());
         // TODO: Write out the "bloodGlucoseTime" property here: Object
+        generator.writeStartObject();
+        generator.writeObjectField("bloodGlucoseTime", instance.getBloodGlucoseTime());
+        generator.writeEndObject();
         writeNonBlankField(generator, "bloodGlucoseUnits", instance.getBloodGlucoseUnits());
         writeNonBlankField(generator, "coil", instance.getCoil());
-        writeNonBlankField(generator, "fieldstrength", instance.getFieldstrength());
+        writeNonBlankField(generator, "fieldStrength", instance.getFieldstrength());
         writeNonBlankField(generator, "marker", instance.getMarker());
-        writeNonBlankField(generator, "patientid", instance.getPatientid());
-        writeNonBlankField(generator, "patientname", instance.getPatientname());
+        writeNonBlankField(generator, "patientId", instance.getPatientid());
+        writeNonBlankField(generator, "patientName", instance.getPatientname());
         writeNonBlankField(generator, "stabilization", instance.getStabilization());
         // TODO: Write out the "startTime" property here: Object
+        generator.writeStartObject();
+        generator.writeObjectField("startTime", instance.getStartTime());
+        generator.writeEndObject();
         // TODO: Write out the "startTimeInjection" property here: Object
+        generator.writeStartObject();
+        generator.writeObjectField("startTimeInjection", instance.getStartTimeInjection());
+        generator.writeEndObject();
         // TODO: Write out the "startTimeScan" property here: Object
-        writeNonBlankField(generator, "studytype", instance.getStudytype());
-        writeNonNullNumber(generator, "tracer_dose", instance.getTracer_dose());
-        writeNonBlankField(generator, "tracer_dose_units", instance.getTracer_dose_units());
-        writeNonNullNumber(generator, "tracer_intermediate", instance.getTracer_intermediate());
-        writeNonBlankField(generator, "tracer_intermediate_units", instance.getTracer_intermediate_units());
-        writeNonBlankField(generator, "tracer_isotope", instance.getTracer_isotope());
-        writeNonNullNumber(generator, "tracer_isotope_halfLife", instance.getTracer_isotope_halfLife());
-        writeNonBlankField(generator, "tracer_name", instance.getTracer_name());
-        writeNonNullNumber(generator, "tracer_specificactivity", instance.getTracer_specificactivity());
+        generator.writeStartObject();
+        generator.writeObjectField("startTimeScan", instance.getStartTimeScan());
+        generator.writeEndObject();
+        writeNonBlankField(generator, "studyType", instance.getStudytype());
+        writeNonNullNumber(generator, "tracerDose", instance.getTracer_dose());
+        writeNonBlankField(generator, "tracerDoseUnits", instance.getTracer_dose_units());
+        writeNonNullNumber(generator, "tracerIntermediate", instance.getTracer_intermediate());
+        writeNonBlankField(generator, "tracerIntermediateUnits", instance.getTracer_intermediate_units());
+        writeNonBlankField(generator, "tracerIsotope", instance.getTracer_isotope());
+        writeNonNullNumber(generator, "tracerIsotopeHalfLife", instance.getTracer_isotope_halfLife());
+        writeNonBlankField(generator, "tracerName", instance.getTracer_name());
+        writeNonNullNumber(generator, "tracerSpecificActivity", instance.getTracer_specificactivity());
         // TODO: Write out the "tracer_starttime" property here: Object
-        writeNonNullNumber(generator, "tracer_totalmass", instance.getTracer_totalmass());
-        writeNonBlankField(generator, "tracer_totalmass_units", instance.getTracer_totalmass_units());
-        writeNonNullNumber(generator, "tracer_transmissions", instance.getTracer_transmissions());
+        generator.writeStartObject();
+        generator.writeObjectField("tracerStartTime", instance.getTracer_starttime());
+        generator.writeEndObject();
+        writeNonNullNumber(generator, "tracerTotalMass", instance.getTracer_totalmass());
+        writeNonBlankField(generator, "tracerTotalMassUnits", instance.getTracer_totalmass_units());
+        writeNonNullNumber(generator, "tracerTransmissions", instance.getTracer_transmissions());
         // TODO: Write out the "tracer_transmissionsStarttime" property here: Object
+        generator.writeStartObject();
+        generator.writeObjectField("tracerTransmissionsStartTime", instance.getTracer_transmissionsStarttime());
+        generator.writeEndObject();
         super.serializeImpl(instance, generator, provider);
     }
 }

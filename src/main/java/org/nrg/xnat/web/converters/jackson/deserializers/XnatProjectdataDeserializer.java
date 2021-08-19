@@ -50,14 +50,14 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
                 try {
                     instance.setPublications_publication(parser.readValueAs(XnatPublicationresource.class));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                	log.error("Tried to set a field publications but failed", e);
                 }
                 break;
             case "studyProtocol":
                 try {
                     instance.setStudyprotocol(parser.readValueAs(XnatAbstractprotocol.class));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log.error("Tried to set a field study protocol but failed", e);
                 }
                 break;
 

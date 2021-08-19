@@ -24,12 +24,12 @@ public class XnatEegsessiondataSerializer<T extends XnatEegsessiondata> extends 
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        writeNonBlankField(generator, "dataformatversion", instance.getDataformatversion());
-        writeNonNullNumber(generator, "numberofchannels", instance.getNumberofchannels());
-        writeNonNullNumber(generator, "samplinginterval", instance.getSamplinginterval());
-        writeNonBlankField(generator, "samplinginterval_units", instance.getSamplinginterval_units());
-        writeNonNullNumber(generator, "samplingrate", instance.getSamplingrate());
-        writeNonBlankField(generator, "samplingrate_units", instance.getSamplingrate_units());
+        writeNonBlankField(generator, "dataFormatVersion", instance.getDataformatversion());
+        writeNonNullNumber(generator, "numberOfChannels", instance.getNumberofchannels());
+        writeNonNullNumber(generator, "samplingInterval", instance.getSamplinginterval());
+        writeNonNullNumber(generator, "samplingRate", instance.getSamplingrate());
+        //writeNonBlankField(generator, "samplingIntervalUnits", instance.getSamplinginterval_units());
+       // writeNonBlankField(generator, "samplingRateUnits", instance.getSamplingrate_units());
         super.serializeImpl(instance, generator, provider);
     }
 }

@@ -37,13 +37,13 @@ public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> ex
             case "coil":
                 instance.setCoil(parser.getText());
                 break;
-            case "fieldstrength":
+            case "fieldStrength":
                 instance.setFieldstrength(parser.getText());
                 break;
             case "marker":
                 instance.setMarker(parser.getText());
                 break;
-            case "patientid":
+            case "patientId":
                 instance.setPatientid(parser.getText());
                 break;
             case "patientname":
@@ -61,46 +61,46 @@ public class XnatPetmrsessiondataDeserializer<T extends XnatPetmrsessiondata> ex
             case "startTimeScan":
                 // TODO: Handle the "startTimeScan" property here: Object
                 break;
-            case "studytype":
+            case "studyType":
                 instance.setStudytype(parser.getText());
                 break;
-            case "tracer_dose":
+            case "tracerDose":
                 instance.setTracer_dose(parser.getDoubleValue());
                 break;
-            case "tracer_dose_units":
+            case "tracerDoseUnits":
                 instance.setTracer_dose_units(parser.getText());
                 break;
-            case "tracer_intermediate":
+            case "tracerIntermediate":
                 instance.setTracer_intermediate(parser.getDoubleValue());
                 break;
-            case "tracer_intermediate_units":
+            case "tracerIntermediateUnits":
                 instance.setTracer_intermediate_units(parser.getText());
                 break;
-            case "tracer_isotope":
+            case "tracerIsotope":
                 instance.setTracer_isotope(parser.getText());
                 break;
-            case "tracer_isotope_halfLife":
+            case "tracerIsotopeHalfLife":
                 instance.setTracer_isotope_halfLife(parser.getDoubleValue());
                 break;
-            case "tracer_name":
+            case "tracerName":
                 instance.setTracer_name(parser.getText());
                 break;
-            case "tracer_specificactivity":
+            case "tracerSpecificActivity":
                 instance.setTracer_specificactivity(parser.getDoubleValue());
                 break;
-            case "tracer_starttime":
+            case "tracerStartTime":
                 // TODO: Handle the "tracer_starttime" property here: Object
                 break;
-            case "tracer_totalmass":
+            case "tracerTotalMass":
                 instance.setTracer_totalmass(parser.getDoubleValue());
                 break;
-            case "tracer_totalmass_units":
+            case "tracerTotalMassUnits":
                 instance.setTracer_totalmass_units(parser.getText());
                 break;
-            case "tracer_transmissions":
+            case "tracerTransmissions":
                 instance.setTracer_transmissions(parser.getIntValue());
                 break;
-            case "tracer_transmissionsStarttime":
+            case "tracerTransmissionsStartTime":
                 // TODO: Handle the "tracer_transmissionsStarttime" property here: Object
                 break;
             default:
