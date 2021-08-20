@@ -1,5 +1,6 @@
 package org.nrg.xapi.rest.dicomweb.search.xftItem;
 
+import javax.validation.constraints.NotNull;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalField;
@@ -94,7 +95,7 @@ public class DateTimeService {
      * @param timeString
      * @return
      */
-    public Interval parseDicomTimeRangeString(String timeString, ZoneOffset zoneOffset) {
+    public Interval parseDicomTimeRangeString(@NotNull String timeString, ZoneOffset zoneOffset) {
         String ts = timeString.trim();
         Interval interval;
         if( ts.contains("-")) {

@@ -129,6 +129,7 @@ public class XftSearchEngine implements SearchEngineI {
 
         // ItemSearch is not doing combined date-time search. ItemSearch searches by study date.
         // Do combined date-time matching here by filtering responses.
+        // Dicom instances with missing studyDate or studyTime do not match.
         if (queryParameters.hasStudyTime() && queryParameters.hasStudyDate()) {
             ZoneOffset zoneOffset = OffsetDateTime.now().getOffset();
             String studyDateRangeString = queryParameters.getStudyDateRange();
@@ -136,10 +137,15 @@ public class XftSearchEngine implements SearchEngineI {
             Interval queryInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings(studyDateRangeString, studyTimeRangeString, zoneOffset);
             responses = responses.stream()
                     .filter(response -> {
-                        String responseDateRangeString = response.getStudyDate();
-                        String responseTimeRangeString = response.getStudyTime();
-                        Interval responseInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings(responseDateRangeString, responseTimeRangeString, zoneOffset);
-                        return _dateTimeService.hasOverlap(responseInterval, queryInterval);
+                        String responseDateString = response.getStudyDate();
+                        String responseTimeString = response.getStudyTime();
+                        if( responseTimeString == null || responseDateString == null) {
+                            return false;
+                        }
+                        else {
+                            Interval responseInterval = _dateTimeService.parseDicomDateAndTimeRangeStrings(responseDateString, responseTimeString, zoneOffset);
+                            return _dateTimeService.hasOverlap(responseInterval, queryInterval);
+                        }
                     })
                     .collect(Collectors.toCollection(QIDOStudyResponseList::new));
         }
