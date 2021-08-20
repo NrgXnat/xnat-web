@@ -9,12 +9,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.base.BaseElement;
+import org.nrg.xdat.model.XnatAddfieldI;
 import org.nrg.xft.security.UserI;
 
 import java.io.IOException;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Accessors(prefix = "_")
@@ -142,6 +144,16 @@ public abstract class AbstractBaseElementSerializer<T extends BaseElement> exten
             writeNonBlankField(generator, "value", validation);
             writeNonNullBoolean(generator, "status", status);
             generator.writeEndObject();
+        }
+    }
+    
+    protected void writeParametersAddpParam(final JsonGenerator generator, final List<XnatAddfieldI> parametersAddParams) throws IOException {
+    	if (parametersAddParams != null && !parametersAddParams.isEmpty()) {
+            generator.writeArrayFieldStart("parametersAddParam");
+            for (final XnatAddfieldI parametersAddParam : parametersAddParams) {
+                generator.writeObject(parametersAddParam);
+            }
+            generator.writeEndArray();
         }
     }
 }

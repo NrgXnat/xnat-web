@@ -3,8 +3,9 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatMrscandata;
 
+import org.nrg.xdat.om.XnatAddfield;
+import org.nrg.xdat.om.XnatMrscandata;
 import java.io.IOException;
 
 @XnatDeserializer
@@ -31,145 +32,150 @@ public class XnatMrscandataDeserializer<T extends XnatMrscandata> extends XnatIm
             case "dcmvalidation":
                 instance.setDcmvalidation(parser.getText());
                 break;
-            case "dcmvalidation_status":
+            case "dcmvalidationStatus":
                 instance.setDcmvalidation_status(parser.getBooleanValue());
                 break;
-            case "fieldstrength":
+            case "fieldStrength":
                 instance.setFieldstrength(parser.getText());
                 break;
-            case "filenameuuid":
+            case "fileNameUuid":
                 instance.setFilenameuuid(parser.getText());
                 break;
             case "marker":
                 instance.setMarker(parser.getText());
                 break;
-            case "parameters_acqtime":
+            case "parametersAcqtime":
                 instance.setParameters_acqtime(parser.getText());
                 break;
-            case "parameters_acqtype":
+            case "parametersAcqtype":
                 instance.setParameters_acqtype(parser.getText());
                 break;
-            case "parameters_addparam":
+            case "parametersAddParam":
                 // TODO: Handle the "parameters_addparam" property here: java.util.List
+            	try {
+            		instance.setParameters_addparam(parser.readValueAs(XnatAddfield.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field parameters add param in Mrscandata but failed", e);
+            	}
                 break;
-            case "parameters_coil":
+            case "parametersCoil":
                 instance.setParameters_coil(parser.getText());
                 break;
-            case "parameters_coilelements":
+            case "parametersCoilElements":
                 instance.setParameters_coilelements(parser.getText());
                 break;
-            case "parameters_deltate":
+            case "parametersDeltate":
                 instance.setParameters_deltate(parser.getDoubleValue());
                 break;
-            case "parameters_diffusion_anisotropytype":
+            case "parametersDiffusionAnisotropytype":
                 instance.setParameters_diffusion_anisotropytype(parser.getText());
                 break;
-            case "parameters_diffusion_bmax":
+            case "parametersDiffusionBmax":
                 instance.setParameters_diffusion_bmax(parser.getText());
                 break;
-            case "parameters_diffusion_bvalues":
+            case "parametersDiffusionBvalues":
                 instance.setParameters_diffusion_bvalues(parser.getText());
                 break;
-            case "parameters_diffusion_directionality":
+            case "parametersDiffusionDirectionality":
                 instance.setParameters_diffusion_directionality(parser.getText());
                 break;
-            case "parameters_diffusion_orientations":
+            case "parametersDiffusionOrientations":
                 instance.setParameters_diffusion_orientations(parser.getText());
                 break;
-            case "parameters_diffusion_refocusflipangle":
+            case "parametersDiffusionRefocusflipangle":
                 instance.setParameters_diffusion_refocusflipangle(parser.getText());
                 break;
-            case "parameters_dtiacqcount":
+            case "parametersDtiacqcount":
                 instance.setParameters_dtiacqcount(parser.getIntValue());
                 break;
-            case "parameters_echospacing":
+            case "parametersEchospacing":
                 instance.setParameters_echospacing(parser.getDoubleValue());
                 break;
-            case "parameters_flip":
+            case "parametersFlip":
                 instance.setParameters_flip(parser.getIntValue());
                 break;
-            case "parameters_fov_x":
+            case "parametersFov_x":
                 instance.setParameters_fov_x(parser.getIntValue());
                 break;
-            case "parameters_fov_y":
+            case "parametersFov_y":
                 instance.setParameters_fov_y(parser.getIntValue());
                 break;
-            case "parameters_imagetype":
+            case "parametersImageType":
                 instance.setParameters_imagetype(parser.getText());
                 break;
-            case "parameters_inplanephaseencoding_direction":
+            case "parametersInplanephaseencodingDirection":
                 instance.setParameters_inplanephaseencoding_direction(parser.getText());
                 break;
-            case "parameters_inplanephaseencoding_directionpositive":
+            case "parametersInplanephaseencodingDirectionpositive":
                 instance.setParameters_inplanephaseencoding_directionpositive(parser.getText());
                 break;
-            case "parameters_inplanephaseencoding_polarityswap":
+            case "parametersInplanephaseencodingPolarityswap":
                 instance.setParameters_inplanephaseencoding_polarityswap(parser.getText());
                 break;
-            case "parameters_inplanephaseencoding_rotation":
+            case "parametersInplanephaseencodingRotation":
                 instance.setParameters_inplanephaseencoding_rotation(parser.getText());
                 break;
-            case "parameters_matrix_x":
+            case "parametersMatrix_x":
                 instance.setParameters_matrix_x(parser.getIntValue());
                 break;
-            case "parameters_matrix_y":
+            case "parametersMatrix_y":
                 instance.setParameters_matrix_y(parser.getIntValue());
                 break;
-            case "parameters_orientation":
+            case "parametersOrientation":
                 instance.setParameters_orientation(parser.getText());
                 break;
-            case "parameters_origin":
+            case "parametersOrigin":
                 instance.setParameters_origin(parser.getText());
                 break;
-            case "parameters_partitions":
+            case "parametersPartitions":
                 instance.setParameters_partitions(parser.getIntValue());
                 break;
-            case "parameters_phaseencodingdirection":
+            case "parametersPhaseEncodingDirection":
                 instance.setParameters_phaseencodingdirection(parser.getText());
                 break;
-            case "parameters_pixelbandwidth":
+            case "parametersPixelBandwidth":
                 instance.setParameters_pixelbandwidth(parser.getDoubleValue());
                 break;
-            case "parameters_pmc":
+            case "parametersPmc":
                 instance.setParameters_pmc(parser.getText());
                 break;
-            case "parameters_readoutsamplespacing":
+            case "parametersReadoutSampleSpacing":
                 instance.setParameters_readoutsamplespacing(parser.getText());
                 break;
-            case "parameters_scanoptions":
+            case "parametersScanOptions":
                 instance.setParameters_scanoptions(parser.getText());
                 break;
-            case "parameters_scansequence":
+            case "parametersScanSequence":
                 instance.setParameters_scansequence(parser.getText());
                 break;
-            case "parameters_sequence":
+            case "parametersSequence":
                 instance.setParameters_sequence(parser.getText());
                 break;
-            case "parameters_seqvariant":
+            case "parametersSeqvariant":
                 instance.setParameters_seqvariant(parser.getText());
                 break;
-            case "parameters_subjectposition":
+            case "parametersSubjectPosition":
                 instance.setParameters_subjectposition(parser.getText());
                 break;
-            case "parameters_te":
+            case "parametersTe":
                 instance.setParameters_te(parser.getDoubleValue());
                 break;
-            case "parameters_ti":
+            case "parametersTi":
                 instance.setParameters_ti(parser.getDoubleValue());
                 break;
-            case "parameters_tr":
+            case "parametersTr":
                 instance.setParameters_tr(parser.getDoubleValue());
                 break;
-            case "parameters_voxelres_units":
+            case "parametersVoxelresUnits":
                 instance.setParameters_voxelres_units(parser.getText());
                 break;
-            case "parameters_voxelres_x":
+            case "parametersVoxelresX":
                 instance.setParameters_voxelres_x(parser.getDoubleValue());
                 break;
-            case "parameters_voxelres_y":
+            case "parametersVoxelresY":
                 instance.setParameters_voxelres_y(parser.getDoubleValue());
                 break;
-            case "parameters_voxelres_z":
+            case "parametersVoxelresZ":
                 instance.setParameters_voxelres_z(parser.getDoubleValue());
                 break;
             case "stabilization":

@@ -24,18 +24,18 @@ public class XnatOptscandataSerializer<T extends XnatOptscandata> extends XnatIm
     @Override
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
-        writeNonBlankField(generator, "dcmvalidation", instance.getDcmvalidation());
-        writeNonNullBoolean(generator, "dcmvalidation_status", instance.getDcmvalidation_status());
-        writeNonNullNumber(generator, "parameters_fov_x", instance.getParameters_fov_x());
-        writeNonNullNumber(generator, "parameters_fov_y", instance.getParameters_fov_y());
-        writeNonBlankField(generator, "parameters_illuminationPower", instance.getParameters_illuminationPower());
-        writeNonBlankField(generator, "parameters_illuminationWavelength", instance.getParameters_illuminationWavelength());
-        writeNonBlankField(generator, "parameters_imagetype", instance.getParameters_imagetype());
-        writeNonBlankField(generator, "parameters_laterality", instance.getParameters_laterality());
-        writeNonBlankField(generator, "parameters_voxelres_units", instance.getParameters_voxelres_units());
-        writeNonNullNumber(generator, "parameters_voxelres_x", instance.getParameters_voxelres_x());
-        writeNonNullNumber(generator, "parameters_voxelres_y", instance.getParameters_voxelres_y());
-        writeNonNullNumber(generator, "parameters_voxelres_z", instance.getParameters_voxelres_z());
+        writeNonBlankField(generator, "dcmValidation", instance.getDcmvalidation());
+        writeNonNullBoolean(generator, "dcmValidationStatus", instance.getDcmvalidation_status());
+        writeNonNullNumber(generator, "parametersFovX", instance.getParameters_fov_x());
+        writeNonNullNumber(generator, "parametersFovY", instance.getParameters_fov_y());
+        writeNonBlankField(generator, "parametersIlluminationPower", instance.getParameters_illuminationPower());
+        writeNonBlankField(generator, "parametersIlluminationWaveLength", instance.getParameters_illuminationWavelength());
+        writeNonBlankField(generator, "parametersImageType", instance.getParameters_imagetype());
+        writeNonBlankField(generator, "parametersLaterality", instance.getParameters_laterality());
+        writeNonBlankField(generator, "parametersVoxelResUnits", instance.getParameters_voxelres_units());
+        writeNonNullNumber(generator, "parametersVoxelResX", instance.getParameters_voxelres_x());
+        writeNonNullNumber(generator, "parametersVoxelResY", instance.getParameters_voxelres_y());
+        writeNonNullNumber(generator, "parametersVoxelResZ", instance.getParameters_voxelres_z());
         super.serializeImpl(instance, generator, provider);
     }
 }

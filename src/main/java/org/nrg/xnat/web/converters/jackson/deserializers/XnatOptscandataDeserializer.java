@@ -25,40 +25,40 @@ public class XnatOptscandataDeserializer<T extends XnatOptscandata> extends Xnat
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "dcmvalidation":
+            case "dcmValidation":
                 instance.setDcmvalidation(parser.getText());
                 break;
-            case "dcmvalidation_status":
+            case "dcmValidationStatus":
                 instance.setDcmvalidation_status(parser.getBooleanValue());
                 break;
-            case "parameters_fov_x":
+            case "parametersFovX":
                 instance.setParameters_fov_x(parser.getIntValue());
                 break;
-            case "parameters_fov_y":
+            case "parametersFovY":
                 instance.setParameters_fov_y(parser.getIntValue());
                 break;
-            case "parameters_illuminationPower":
+            case "parametersIlluminationPower":
                 instance.setParameters_illuminationPower(parser.getText());
                 break;
-            case "parameters_illuminationWavelength":
+            case "parametersIlluminationWaveLength":
                 instance.setParameters_illuminationWavelength(parser.getText());
                 break;
-            case "parameters_imagetype":
+            case "parametersImageType":
                 instance.setParameters_imagetype(parser.getText());
                 break;
-            case "parameters_laterality":
+            case "parametersLaterality":
                 instance.setParameters_laterality(parser.getText());
                 break;
-            case "parameters_voxelres_units":
+            case "parametersVoxelResUnits":
                 instance.setParameters_voxelres_units(parser.getText());
                 break;
-            case "parameters_voxelres_x":
+            case "parametersVoxelResX":
                 instance.setParameters_voxelres_x(parser.getDoubleValue());
                 break;
-            case "parameters_voxelres_y":
+            case "parametersVoxelResY":
                 instance.setParameters_voxelres_y(parser.getDoubleValue());
                 break;
-            case "parameters_voxelres_z":
+            case "parametersVoxelResZ":
                 instance.setParameters_voxelres_z(parser.getDoubleValue());
                 break;
             default:

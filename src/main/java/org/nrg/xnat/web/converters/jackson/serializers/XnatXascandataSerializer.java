@@ -25,15 +25,16 @@ public class XnatXascandataSerializer<T extends XnatXascandata> extends XnatImag
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "parameters_contrastbolus" property here: org.nrg.xdat.om.XnatContrastbolus
-        writeNonBlankField(generator, "parameters_derivation", instance.getParameters_derivation());
-        writeNonNullNumber(generator, "parameters_fov_x", instance.getParameters_fov_x());
-        writeNonNullNumber(generator, "parameters_fov_y", instance.getParameters_fov_y());
-        writeNonBlankField(generator, "parameters_imagetype", instance.getParameters_imagetype());
-        writeNonBlankField(generator, "parameters_options", instance.getParameters_options());
-        writeNonBlankField(generator, "parameters_orientation", instance.getParameters_orientation());
-        writeNonBlankField(generator, "parameters_pixelres_units", instance.getParameters_pixelres_units());
-        writeNonNullNumber(generator, "parameters_pixelres_x", instance.getParameters_pixelres_x());
-        writeNonNullNumber(generator, "parameters_pixelres_y", instance.getParameters_pixelres_y());
+    	writeNonNullField(generator, "parametersContrastbolus", instance.getParameters_contrastbolus());
+        writeNonBlankField(generator, "parametersDerivation", instance.getParameters_derivation());
+        writeNonNullNumber(generator, "parametersFovX", instance.getParameters_fov_x());
+        writeNonNullNumber(generator, "parametersFovY", instance.getParameters_fov_y());
+        writeNonBlankField(generator, "parametersImageType", instance.getParameters_imagetype());
+        writeNonBlankField(generator, "parametersOptions", instance.getParameters_options());
+        writeNonBlankField(generator, "parametersOrientation", instance.getParameters_orientation());
+        writeNonBlankField(generator, "parametersPixelResUnits", instance.getParameters_pixelres_units());
+        writeNonNullNumber(generator, "parametersPixelResX", instance.getParameters_pixelres_x());
+        writeNonNullNumber(generator, "parametersPixelResY", instance.getParameters_pixelres_y());
         super.serializeImpl(instance, generator, provider);
     }
 }

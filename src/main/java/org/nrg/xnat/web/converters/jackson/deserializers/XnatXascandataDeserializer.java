@@ -3,7 +3,10 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.om.XnatContrastbolus;
 import org.nrg.xdat.om.XnatXascandata;
+import org.nrg.xft.ItemI;
 
 import java.io.IOException;
 
@@ -25,34 +28,39 @@ public class XnatXascandataDeserializer<T extends XnatXascandata> extends XnatIm
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "parameters_contrastbolus":
+            case "parametersContrastbolus":
                 // TODO: Handle the "parameters_contrastbolus" property here: org.nrg.xdat.om.XnatContrastbolus
+            	try {
+            	instance.setParameters_contrastbolus((ItemI)parser.readValuesAs(XnatContrastbolus.class));
+            	}catch (Exception e) {
+            		log.error("Tried to set a field parameters_contrastbolus in XnatXascandata but failed", e);
+				}
                 break;
-            case "parameters_derivation":
+            case "parametersDerivation":
                 instance.setParameters_derivation(parser.getText());
                 break;
-            case "parameters_fov_x":
+            case "parametersFovX":
                 instance.setParameters_fov_x(parser.getIntValue());
                 break;
-            case "parameters_fov_y":
+            case "parametersFovY":
                 instance.setParameters_fov_y(parser.getIntValue());
                 break;
-            case "parameters_imagetype":
+            case "parametersImagetype":
                 instance.setParameters_imagetype(parser.getText());
                 break;
-            case "parameters_options":
+            case "parametersOptions":
                 instance.setParameters_options(parser.getText());
                 break;
-            case "parameters_orientation":
+            case "parametersOrientation":
                 instance.setParameters_orientation(parser.getText());
                 break;
-            case "parameters_pixelres_units":
+            case "parametersPixelresUnits":
                 instance.setParameters_pixelres_units(parser.getText());
                 break;
-            case "parameters_pixelres_x":
+            case "parametersPixelResX":
                 instance.setParameters_pixelres_x(parser.getIntValue());
                 break;
-            case "parameters_pixelres_y":
+            case "parametersPixelResY":
                 instance.setParameters_pixelres_y(parser.getIntValue());
                 break;
             default:

@@ -25,202 +25,202 @@ public class XnatPetscandataDeserializer<T extends XnatPetscandata> extends Xnat
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "ecatvalidation":
+            case "ecatValidation":
                 instance.setEcatvalidation(parser.getText());
                 break;
-            case "ecatvalidation_status":
+            case "ecatValidationStatus":
                 instance.setEcatvalidation_status(parser.getBooleanValue());
                 break;
-            case "parameters_acqtype":
+            case "parametersAcqtype":
                 instance.setParameters_acqtype(parser.getIntValue());
                 break;
-            case "parameters_addparam":
+            case "parametersAddParam":
                 // TODO: Handle the "parameters_addparam" property here: java.util.List
                 break;
-            case "parameters_annotation":
+            case "parametersAnnotation":
                 instance.setParameters_annotation(parser.getText());
                 break;
-            case "parameters_bedposition":
+            case "parametersBedPosition":
                 instance.setParameters_bedposition(parser.getDoubleValue());
                 break;
-            case "parameters_binsize":
+            case "parametersBinSize":
                 instance.setParameters_binsize(parser.getDoubleValue());
                 break;
-            case "parameters_datatype":
+            case "parametersDataType":
                 instance.setParameters_datatype(parser.getIntValue());
                 break;
-            case "parameters_dimensions_num":
+            case "parametersDimensionsNum":
                 instance.setParameters_dimensions_num(parser.getIntValue());
                 break;
-            case "parameters_dimensions_x":
+            case "parametersDimensionsX":
                 instance.setParameters_dimensions_x(parser.getIntValue());
                 break;
-            case "parameters_dimensions_y":
+            case "parametersDimensionsY":
                 instance.setParameters_dimensions_y(parser.getIntValue());
                 break;
-            case "parameters_dimensions_z":
+            case "parametersDimensionsZ":
                 instance.setParameters_dimensions_z(parser.getIntValue());
                 break;
-            case "parameters_ecatcalibrationfactor":
+            case "parametersEcatCalibrationFactor":
                 instance.setParameters_ecatcalibrationfactor(parser.getDoubleValue());
                 break;
-            case "parameters_facility":
+            case "parametersFacility":
                 instance.setParameters_facility(parser.getText());
                 break;
-            case "parameters_filetype":
+            case "parametersFileType":
                 instance.setParameters_filetype(parser.getIntValue());
                 break;
-            case "parameters_filter_cutoff":
+            case "parametersFilterCutoff":
                 instance.setParameters_filter_cutoff(parser.getDoubleValue());
                 break;
-            case "parameters_filtercode":
+            case "parametersFilterCode":
                 instance.setParameters_filtercode(parser.getIntValue());
                 break;
-            case "parameters_frames_frame":
+            case "parametersFramesFrame":
                 // TODO: Handle the "parameters_frames_frame" property here: java.util.List
                 break;
-            case "parameters_frames_numframes":
+            case "parametersFramesNumFrames":
                 // TODO: Handle the "parameters_frames_numframes" property here: Object
                 break;
-            case "parameters_gateduration":
+            case "parametersGateDuration":
                 instance.setParameters_gateduration(parser.getIntValue());
                 break;
-            case "parameters_mt11":
+            case "parametersMt11":
                 instance.setParameters_mt11(parser.getDoubleValue());
                 break;
-            case "parameters_mt12":
+            case "parametersMt12":
                 instance.setParameters_mt12(parser.getDoubleValue());
                 break;
-            case "parameters_mt13":
+            case "parametersMt13":
                 instance.setParameters_mt13(parser.getDoubleValue());
                 break;
-            case "parameters_mt14":
+            case "parametersMt14":
                 instance.setParameters_mt14(parser.getDoubleValue());
                 break;
-            case "parameters_mt21":
+            case "parametersMt21":
                 instance.setParameters_mt21(parser.getDoubleValue());
                 break;
-            case "parameters_mt22":
+            case "parametersMt22":
                 instance.setParameters_mt22(parser.getDoubleValue());
                 break;
-            case "parameters_mt23":
+            case "parametersMt23":
                 instance.setParameters_mt23(parser.getDoubleValue());
                 break;
-            case "parameters_mt24":
+            case "parametersMt24":
                 instance.setParameters_mt24(parser.getDoubleValue());
                 break;
-            case "parameters_mt31":
+            case "parametersMt31":
                 instance.setParameters_mt31(parser.getDoubleValue());
                 break;
-            case "parameters_mt32":
+            case "parametersMt32":
                 instance.setParameters_mt32(parser.getDoubleValue());
                 break;
-            case "parameters_mt33":
+            case "parametersMt33":
                 instance.setParameters_mt33(parser.getDoubleValue());
                 break;
-            case "parameters_mt34":
+            case "parametersMt34":
                 instance.setParameters_mt34(parser.getDoubleValue());
                 break;
-            case "parameters_numacceptedbeats":
+            case "parametersNumAcceptedBeats":
                 instance.setParameters_numacceptedbeats(parser.getIntValue());
                 break;
-            case "parameters_numangles":
+            case "parametersNumAngles":
                 instance.setParameters_numangles(parser.getDoubleValue());
                 break;
-            case "parameters_numgates":
+            case "parametersNumGates":
                 instance.setParameters_numgates(parser.getIntValue());
                 break;
-            case "parameters_numplanes":
+            case "parametersNmPlanes":
                 instance.setParameters_numplanes(parser.getIntValue());
                 break;
-            case "parameters_numrelements":
+            case "parametersNumRelements":
                 instance.setParameters_numrelements(parser.getDoubleValue());
                 break;
-            case "parameters_offset_x":
+            case "parametersOffsetX":
                 instance.setParameters_offset_x(parser.getDoubleValue());
                 break;
-            case "parameters_offset_y":
+            case "parametersOffsetY":
                 instance.setParameters_offset_y(parser.getDoubleValue());
                 break;
-            case "parameters_offset_z":
+            case "parametersOffsetZ":
                 instance.setParameters_offset_z(parser.getDoubleValue());
                 break;
-            case "parameters_orientation":
+            case "parametersOrientation":
                 instance.setParameters_orientation(parser.getIntValue());
                 break;
-            case "parameters_originalfilename":
+            case "parametersOriginalFileName":
                 instance.setParameters_originalfilename(parser.getText());
                 break;
-            case "parameters_pixelsize_x":
+            case "parametersPixelSizeX":
                 instance.setParameters_pixelsize_x(parser.getDoubleValue());
                 break;
-            case "parameters_pixelsize_y":
+            case "parametersPixelSizeY":
                 instance.setParameters_pixelsize_y(parser.getDoubleValue());
                 break;
-            case "parameters_pixelsize_z":
+            case "parametersPixelSizeZ":
                 instance.setParameters_pixelsize_z(parser.getDoubleValue());
                 break;
-            case "parameters_planeseparation":
+            case "parametersPlaneSeparation":
                 instance.setParameters_planeseparation(parser.getDoubleValue());
                 break;
-            case "parameters_processingcode":
+            case "parametersProcessingCode":
                 instance.setParameters_processingcode(parser.getIntValue());
                 break;
-            case "parameters_recontype":
+            case "parametersReconType":
                 instance.setParameters_recontype(parser.getIntValue());
                 break;
             case "parameters_reconviews":
                 instance.setParameters_reconviews(parser.getIntValue());
                 break;
-            case "parameters_reconzoom":
+            case "parametersReconZoom":
                 instance.setParameters_reconzoom(parser.getDoubleValue());
                 break;
-            case "parameters_resolution_x":
+            case "parametersResolutionX":
                 instance.setParameters_resolution_x(parser.getDoubleValue());
                 break;
-            case "parameters_resolution_y":
+            case "parametersResolutionY":
                 instance.setParameters_resolution_y(parser.getDoubleValue());
                 break;
-            case "parameters_resolution_z":
+            case "parametersResolutionZ":
                 instance.setParameters_resolution_z(parser.getDoubleValue());
                 break;
-            case "parameters_rfilter_code":
+            case "parametersRfilterCode":
                 instance.setParameters_rfilter_code(parser.getIntValue());
                 break;
             case "parameters_rfilter_cutoff":
                 instance.setParameters_rfilter_cutoff(parser.getDoubleValue());
                 break;
-            case "parameters_rfilter_order":
+            case "parametersRfilterRrder":
                 instance.setParameters_rfilter_order(parser.getIntValue());
                 break;
-            case "parameters_rfilter_resolution":
+            case "parametersRfilterResolution":
                 instance.setParameters_rfilter_resolution(parser.getDoubleValue());
                 break;
-            case "parameters_rwaveoffset":
+            case "parametersRwaveOffset":
                 instance.setParameters_rwaveoffset(parser.getIntValue());
                 break;
-            case "parameters_scattertype":
+            case "parametersScatterType":
                 instance.setParameters_scattertype(parser.getIntValue());
                 break;
-            case "parameters_systemtype":
+            case "parametersSystemType":
                 instance.setParameters_systemtype(parser.getIntValue());
                 break;
-            case "parameters_transaxialfov":
+            case "parametersTransAxialFov":
                 instance.setParameters_transaxialfov(parser.getDoubleValue());
                 break;
-            case "parameters_zfilter_code":
+            case "parametersZfilterCode":
                 instance.setParameters_zfilter_code(parser.getIntValue());
                 break;
-            case "parameters_zfilter_cutoff":
+            case "parametersZfilterCutoff":
                 instance.setParameters_zfilter_cutoff(parser.getDoubleValue());
                 break;
-            case "parameters_zfilter_order":
+            case "parametersZfilterOrder":
                 instance.setParameters_zfilter_order(parser.getIntValue());
                 break;
-            case "parameters_zfilter_resolution":
+            case "parametersZfilterResolution":
                 instance.setParameters_zfilter_resolution(parser.getDoubleValue());
                 break;
-            case "parameters_zrotationangle":
+            case "parametersZrotationangle":
                 instance.setParameters_zrotationangle(parser.getDoubleValue());
                 break;
             default:
