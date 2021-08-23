@@ -35,6 +35,7 @@ public class XnatQcmanualassessordataSerializer<T extends XnatQcmanualassessorda
         writeNonBlankField(generator, "resolvable", instance.getResolvable());
         writeNonBlankField(generator, "retrain", instance.getRetrain());
         // TODO: Write out the "scans_scan" property here: java.util.List
+        writeNonNullField(generator, "scans", instance.getScans_scan());
         writeNonBlankField(generator, "stereotacticmarker", instance.getStereotacticmarker());
         super.serializeImpl(instance, generator, provider);
     }

@@ -27,6 +27,7 @@ public class XnatFielddefinitiongroupSerializer<T extends XnatFielddefinitiongro
         writeNonBlankField(generator, "dataType", instance.getDataType());
         writeNonBlankField(generator, "description", instance.getDescription());
         // TODO: Write out the "fields_field" property here: java.util.List
+        writeNonNullField(generator, "fields", instance.getFields_field());
         writeNonBlankField(generator, "id", instance.getId());
         writeNonNullBoolean(generator, "projectSpecific", instance.getProjectSpecific());
         writeNonNullBoolean(generator, "shareable", instance.getShareable());

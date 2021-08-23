@@ -25,13 +25,16 @@ public class XnatRegionresourceSerializer<T extends XnatRegionresource> extends 
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "baseimage" property here: org.nrg.xdat.model.XnatAbstractresourceI
-        writeNonBlankField(generator, "creator_firstname", instance.getCreator_firstname());
-        writeNonBlankField(generator, "creator_lastname", instance.getCreator_lastname());
+    	writeNonNullField(generator, "baseImage", instance.getBaseimage());
+        writeNonBlankField(generator, "creatorFirstName", instance.getCreator_firstname());
+        writeNonBlankField(generator, "creatorLastName", instance.getCreator_lastname());
         // TODO: Write out the "file" property here: org.nrg.xdat.model.XnatAbstractresourceI
+        writeNonNullField(generator, "file", instance.getFile());
         writeNonBlankField(generator, "hemisphere", instance.getHemisphere());
         writeNonBlankField(generator, "name", instance.getName());
         writeNonBlankField(generator, "sessionId", instance.getSessionId());
         // TODO: Write out the "subregionlabels_label" property here: java.util.List
+        writeNonNullField(generator, "subregionLabels", instance.getSubregionlabels_label());
         writeNonNullNumber(generator, "xnatRegionresourceId", instance.getXnatRegionresourceId());
     }
 }

@@ -1,9 +1,15 @@
+
 package org.nrg.xnat.web.converters.jackson.deserializers;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.model.XnatDicomcodedvalueI;
 import org.nrg.xdat.om.XnatAlgorithm;
+import org.nrg.xdat.om.XnatDicomcodedvalue;
+import org.nrg.xdat.om.XnatQcassessmentdataScan;
+import org.nrg.xft.ItemI;
 
 import java.io.IOException;
 
@@ -26,12 +32,22 @@ public class XnatAlgorithmDeserializer<T extends XnatAlgorithm> extends Abstract
         switch (field) {
             case "family":
                 // TODO: Handle the "family" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
+            	try {
+            		instance.setFamily((ItemI)parser.readValueAs(XnatDicomcodedvalue.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field family in xnat Dicomcoded value but failed", e);
+            	}
                 break;
             case "name":
                 instance.setName(parser.getText());
                 break;
             case "namecode":
                 // TODO: Handle the "namecode" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
+            	try {
+            		instance.setNamecode((ItemI)parser.readValueAs(XnatDicomcodedvalueI.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field family in xnat Dicomcoded value but failed", e);
+            	}
                 break;
             case "parameters":
                 instance.setParameters(parser.getText());

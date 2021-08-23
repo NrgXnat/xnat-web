@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.om.XnatQcassessmentdata;
+import org.nrg.xdat.om.XnatQcassessmentdataScan;
+import org.nrg.xdat.om.XnatRegionresourceLabel;
+import org.nrg.xft.ItemI;
 
 import java.io.IOException;
 
@@ -25,8 +28,12 @@ public class XnatQcassessmentdataDeserializer<T extends XnatQcassessmentdata> ex
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "scans_scan":
-                // TODO: Handle the "scans_scan" property here: java.util.List
+            case "scans":
+            	try {
+            		instance.setScans_scan(parser.readValueAs(XnatQcassessmentdataScan.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field base image in xnat Qcassessment data but failed", e);
+            	}
                 break;
             case "type":
                 instance.setType(parser.getText());

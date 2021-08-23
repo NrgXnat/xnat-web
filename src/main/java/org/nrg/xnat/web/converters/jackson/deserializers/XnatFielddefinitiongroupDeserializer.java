@@ -3,9 +3,14 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.model.XnatFielddefinitiongroupFieldI;
+import org.nrg.xdat.om.XnatExperimentdataField;
 import org.nrg.xdat.om.XnatFielddefinitiongroup;
+import org.nrg.xdat.om.XnatFielddefinitiongroupField;
 
 import java.io.IOException;
+import java.util.Map;
 
 @XnatDeserializer
 @Slf4j
@@ -30,8 +35,19 @@ public class XnatFielddefinitiongroupDeserializer<T extends XnatFielddefinitiong
             case "description":
                 instance.setDescription(parser.getText());
                 break;
-            case "fields_field":
+            case "fields":
                 // TODO: Handle the "fields_field" property here: java.util.List
+            	final Map<String, String> fields = parser.readValueAs(MAP_STRING_STRING);
+                fields.forEach((key, value) -> {
+                    final XnatFielddefinitiongroupField definitiongroupField = new XnatFielddefinitiongroupField();
+                    definitiongroupField.setName(key);
+                   // definitiongroupField.setField(value);
+                    try {
+                        instance.setFields_field(definitiongroupField);
+                    } catch (Exception e) {
+                        log.error("Tried to set a field on an experiment with name {} and field {} but failed", key, value, e);
+                    }
+                });
                 break;
             case "id":
                 instance.setId(parser.getText());

@@ -3,7 +3,13 @@ package org.nrg.xnat.web.converters.jackson.deserializers;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import lombok.extern.slf4j.Slf4j;
+
+import org.nrg.xdat.model.XnatRegionresourceLabelI;
+import org.nrg.xdat.om.XnatAbstractdemographicdata;
+import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatRegionresource;
+import org.nrg.xdat.om.XnatRegionresourceLabel;
+import org.nrg.xft.ItemI;
 
 import java.io.IOException;
 
@@ -24,17 +30,27 @@ public class XnatRegionresourceDeserializer<T extends XnatRegionresource> extend
     protected void handleField(final T instance, final String field, final JsonParser parser, final DeserializationContext context) throws IOException {
         // TODO: Implement datatype-specific deserialization
         switch (field) {
-            case "baseimage":
+            case "baseImage":
                 // TODO: Handle the "baseimage" property here: org.nrg.xdat.model.XnatAbstractresourceI
+            	try {
+            		instance.setBaseimage((ItemI)parser.readValueAs(XnatAbstractresource.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field base image in XnatRegionresource but failed", e);
+            	}
                 break;
-            case "creator_firstname":
+            case "creatorFirstName":
                 instance.setCreator_firstname(parser.getText());
                 break;
-            case "creator_lastname":
+            case "creatorLastName":
                 instance.setCreator_lastname(parser.getText());
                 break;
             case "file":
                 // TODO: Handle the "file" property here: org.nrg.xdat.model.XnatAbstractresourceI
+            	try {
+            		instance.setFile((ItemI)parser.readValueAs(XnatAbstractresource.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field base image in XnatRegionresource but failed", e);
+            	}
                 break;
             case "hemisphere":
                 instance.setHemisphere(parser.getText());
@@ -45,8 +61,13 @@ public class XnatRegionresourceDeserializer<T extends XnatRegionresource> extend
             case "sessionId":
                 instance.setSessionId(parser.getText());
                 break;
-            case "subregionlabels_label":
+            case "subregionLabels":
                 // TODO: Handle the "subregionlabels_label" property here: java.util.List
+            	try {
+            		instance.setSubregionlabels_label((ItemI)parser.readValueAs(XnatRegionresourceLabel.class));
+            	} catch (Exception e) {
+            		log.error("Tried to set a field base image in XnatRegionresource but failed", e);
+            	}
                 break;
             case "xnatRegionresourceId":
                 instance.setXnatRegionresourceId(parser.getIntValue());

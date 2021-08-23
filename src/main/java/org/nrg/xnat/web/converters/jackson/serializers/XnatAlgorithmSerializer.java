@@ -25,8 +25,10 @@ public class XnatAlgorithmSerializer<T extends XnatAlgorithm> extends AbstractBa
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "family" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
+    	writeNonNullField(generator, "family", instance.getFamily());
         writeNonBlankField(generator, "name", instance.getName());
         // TODO: Write out the "namecode" property here: org.nrg.xdat.model.XnatDicomcodedvalueI
+        writeNonNullField(generator, "nameCode", instance.getNamecode());
         writeNonBlankField(generator, "parameters", instance.getParameters());
         writeNonBlankField(generator, "source", instance.getSource());
         writeNonBlankField(generator, "version", instance.getVersion());

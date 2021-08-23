@@ -25,6 +25,7 @@ public class XnatQcassessmentdataSerializer<T extends XnatQcassessmentdata> exte
     protected void serializeImpl(final T instance, final JsonGenerator generator, final SerializerProvider provider) throws IOException {
         // TODO: Implement datatype-specific serialization
         // TODO: Write out the "scans_scan" property here: java.util.List
+    	writeNonNullField(generator, "scans", instance.getScans_scan());
         writeNonBlankField(generator, "type", instance.getType());
         super.serializeImpl(instance, generator, provider);
     }
