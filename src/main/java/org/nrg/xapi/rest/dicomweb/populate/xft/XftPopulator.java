@@ -10,6 +10,7 @@ import org.nrg.xdat.model.CatDcmentryI;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -25,14 +26,16 @@ import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.utils.CatalogUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Component
+
+/**
+ * Populator that populates the Hibernate instance-level tables that replace the scan catalog.
+ */
 public class XftPopulator implements PopulatorI {
     private UserI user;
     private UserManagementServiceI userManagementService;
@@ -41,7 +44,6 @@ public class XftPopulator implements PopulatorI {
     private DicomInstanceDAO dicomInstanceDAO;
     private DicomObjectFactory dicomObjectFactory;
 
-    @Autowired
     public XftPopulator(final UserManagementServiceI userManagementService, final CatalogService catalogService, DicomInstanceDAO dicomInstanceDAO, DicomObjectFactory dicomObjectFactory) {
 
         this.catalogService = catalogService;

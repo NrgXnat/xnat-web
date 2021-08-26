@@ -40,5 +40,6 @@ public interface DicomImageObject extends DicomObject {
     String getImageOrientationPatient();
     String getPixelSpacing();
     String getFrameOfReferenceUid();
+    String getModality();
 
 }
