@@ -23,7 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AutomationScriptTriggerUtils {
 
-	
+	protected static final         String  SITE_SCOPE      = Scope.encode(Scope.Site, "");
 	public void intialize(String entityId, String projectId, UserI user ) throws InitializationException, NotFoundException, DataFormatException {
 	        final boolean hasEntityId = StringUtils.isNotBlank(entityId);
 	        final boolean hasProjectId = StringUtils.isNotBlank(projectId);

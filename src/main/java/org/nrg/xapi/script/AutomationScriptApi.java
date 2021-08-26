@@ -1,11 +1,15 @@
 package org.nrg.xapi.script;
 
+import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 import java.util.List;
 
 import org.nrg.automation.entities.Script;
+import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.framework.exceptions.NrgServiceException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -16,10 +20,13 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.dto.script.ScriptDto;
+import org.nrg.xnat.event.util.ImportEventHandlerResults;
 import org.nrg.xnat.services.script.AutomationScriptService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -63,6 +70,33 @@ public class AutomationScriptApi extends AbstractXapiProjectRestController {
     	log.debug("User {} requested automation script with ID {}", getSessionUser().getUsername());
         return _automationScriptService.findAll(getSessionUser());
     }
+	
+	@ApiOperation(value = "update the requested  automation script", notes = "Returns the  automation script with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers."),
+    	           @ApiResponse(code = 400, message = "The requested scriptId wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested automation script wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = {"/automation/scripts/{scriptId}", "/automation/scripts/{scriptId}/{versionId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = PUT)
+    public void updateScriptByScriptIdORVersionId(@ApiParam(value = "The ID of the script.") @PathVariable final String scriptId,
+    		@ApiParam(value = "The ID of the version.") @PathVariable(required = false) final String versionId,
+    		@ApiParam(value = "The request object")Script script) throws NrgServiceException {
+    	log.debug("User {} requested automation script with ID {}", getSessionUser().getUsername(), scriptId);
+         _automationScriptService.updateScript(getSessionUser(), scriptId, script);
+    }
+	
+	
+	@ApiOperation(value = "Delete the requested  automation script", notes = "Returns the  automation script with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers."),
+    	           @ApiResponse(code = 400, message = "The requested scriptId wasn't found."),
+                   @ApiResponse(code = 404, message = "The requested automation script wasn't found."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
+    @XapiRequestMapping(value = {"/automation/scripts/{scriptId}", "/automation/scripts/{scriptId}/{versionId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE)
+    public void deleteScriptByScriptIdORVersionId(@ApiParam(value = "The ID of the script.") @PathVariable final String scriptId,
+    		@ApiParam(value = "The ID of the version.") @PathVariable(required = false) final String versionId) throws NrgServiceException  {
+    	log.debug("User {} requested automation script with ID {}", getSessionUser().getUsername(), scriptId);
+         _automationScriptService.deleteScript(getSessionUser(), scriptId);
+    }
+	
 
 	private  final AutomationScriptService _automationScriptService;
 }
