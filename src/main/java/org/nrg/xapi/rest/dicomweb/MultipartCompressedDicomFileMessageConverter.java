@@ -96,10 +96,12 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
                 outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
-//                outputMessage.getBody().write(("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
-//                dcmOut.write(outputMessage.getBody());
-                outputMessage.getBody().write(("Content-Length: " + dcmOut.getPixelDataLength() + "\r\n\r\n").getBytes());
-                dcmOut.writePixelData( outputMessage.getBody());
+////                outputMessage.getBody().write(("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
+////                dcmOut.write(outputMessage.getBody());
+//                outputMessage.getBody().write(("Content-Length: " + dcmOut.getPixelDataLength() + "\r\n\r\n").getBytes());
+//                dcmOut.writePixelData( outputMessage.getBody());
+                outputMessage.getBody().write(("Content-Length: " + dcmOut.getPixelDataLength( frameNumber) + "\r\n\r\n").getBytes());
+                dcmOut.writePixelData( frameNumber, outputMessage.getBody());
 
                 outputMessage.getBody().write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
 
