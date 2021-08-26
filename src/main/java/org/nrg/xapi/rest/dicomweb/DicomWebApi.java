@@ -642,25 +642,12 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "populate/{project}", produces = {"application/text"}, method = RequestMethod.PUT, restrictTo = Read)
     @ResponseBody
-    public ResponseEntity<String> doPopulate(@PathVariable("project") String project) throws NrgServiceException, NoContentException {
+    public ResponseEntity<String> doPopulate(@PathVariable("project") String project) throws Exception {
 
-        UserI user = null;
-        try {
-            user = getUser();
+        UserI user = getUser();
+        _populator.populate( project);
 
-            _populator.populate( project);
-
-            return new ResponseEntity<>("Success", HttpStatus.OK );
-
-        } catch (IllegalAccessException e) {
-            String msg = MessageFormat.format("Insufficient permission for user {0} to populate project: project={1}", user, project);
-            _log.warn(msg, e);
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            String msg = MessageFormat.format("An error occurred when user {0} tried to populate project: project={1}", user, project);
-            _log.error(msg, e);
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return new ResponseEntity<>("Success populating project: " + project, HttpStatus.OK );
     }
 
 }

@@ -234,4 +234,8 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
 
     @Override
     public String getFrameOfReferenceUid() { return attributes.getString( 0x00200052); }
+
+    @Override
+    public String getModality() { return attributes.getString( 0x00080060); }
+
 }
