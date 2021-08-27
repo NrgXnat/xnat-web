@@ -12,10 +12,12 @@ import org.nrg.xnat.dto.script.ScriptDto;
 public interface AutomationScriptService {
 
 	Script findByScriptId(UserI user, String scriptId, String version) throws NotFoundException, DataFormatException;
+	
+	List<String> findScriptVersionByScriptId(UserI user, String scriptId);
 
 	List<ScriptDto> findAll(UserI user);
 	
 	void updateScript(UserI user, String scriptId, Script script) throws NrgServiceException;
 	
-	void deleteScript(UserI user, String scriptId) throws NrgServiceException;
+	void deleteScript(UserI user, String scriptId) throws NrgServiceException, DataFormatException;
 }

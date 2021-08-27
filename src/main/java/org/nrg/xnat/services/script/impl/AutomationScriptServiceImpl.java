@@ -69,12 +69,20 @@ public class AutomationScriptServiceImpl extends AutomationScriptTriggerUtils im
 	}
 	
 	@Override
-	public void deleteScript(UserI user, String scriptId) throws NrgServiceException {
+	public void deleteScript(UserI user, String scriptId) throws NrgServiceException, DataFormatException {
 		if (log.isDebugEnabled()) {
             log.debug("Preparing to delete script: " + scriptId + " and its associated triggers.");
         }
+		if(StringUtils.isBlank(scriptId)) {
+			throw new DataFormatException("The requested script ID" + scriptId + " wasn't found ");
+		}
         _runnerService.deleteScript(scriptId);
         recordAutomationEvent(scriptId, SITE_SCOPE, "Delete", Script.class, user);
+	}
+	
+	@Override
+	public List<String> findScriptVersionByScriptId(UserI user, String scriptId) {
+		return _scriptService.getVersions(scriptId);
 	}
 	
 	private void putScript(UserI user, String scriptId, Script script) throws NrgServiceException {
@@ -109,5 +117,6 @@ public class AutomationScriptServiceImpl extends AutomationScriptTriggerUtils im
 	
 	private final ScriptService _scriptService;
 	private final ScriptRunnerService _runnerService;
+	
 
 }
