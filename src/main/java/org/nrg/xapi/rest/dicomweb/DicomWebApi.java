@@ -1,7 +1,7 @@
 /*
- * web: org.nrg.xapi.rest.dicom.AnonymizeApi
+ * web: org.nrg.xapi.rest.dicom.DICOMwebAPI
  * XNAT http://www.xnat.org
- * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
+ * Copyright (c) 2005-2021, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
  *
  * Released under the Simplified BSD.
@@ -14,7 +14,6 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.nrg.framework.annotations.XapiRestController;
-import org.nrg.framework.exceptions.NrgServiceException;
 import org.nrg.xapi.exceptions.NoContentException;
 import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
@@ -37,7 +36,6 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
