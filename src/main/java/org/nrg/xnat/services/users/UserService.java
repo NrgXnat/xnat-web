@@ -25,4 +25,6 @@ public interface UserService {
 
 	 void deleteUserFavorite(UserI user, String projectId, String dataType ) throws DataFormatException;
 	 
+	 void deleteByGroupIdAndProject(UserI sessionUser, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException;
+	 
 }

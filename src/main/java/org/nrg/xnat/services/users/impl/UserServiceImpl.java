@@ -2,30 +2,45 @@ package org.nrg.xnat.services.users.impl;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.security.UserGroupI;
+import org.nrg.xdat.security.UserGroupServiceI;
+import org.nrg.xdat.security.helpers.Groups;
+import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.db.FavEntries;
-import org.nrg.xft.exception.DBPoolException;
+import org.nrg.xft.event.EventMetaI;
+import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserService;
+import org.nrg.xnat.utils.WorkflowUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Service
+@Slf4j
 public class UserServiceImpl implements UserService{
 
 	@Autowired
-	public UserServiceImpl(final NamedParameterJdbcTemplate template) {
+	public UserServiceImpl(final NamedParameterJdbcTemplate template, final UserGroupServiceI serivce) {
 		_template = template;
+		_service =  serivce;
 	}
 	
 	@Override
@@ -78,7 +93,6 @@ public class UserServiceImpl implements UserService{
 	}
 
 	
-
 	@Override
 	public  Optional<FavEntries> findUserFavorite(UserI user, String projectId, String dataType) throws NotFoundException, DataFormatException {
 		ValidateProjectId(projectId);
@@ -125,6 +139,68 @@ public class UserServiceImpl implements UserService{
 		return FindAllUserFavorites(user, dataType);
 	}
 	
+	@Override
+	public void deleteByGroupIdAndProject(UserI user, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException {
+		if (StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+		}
+		if (StringUtils.isBlank(groupId)) {
+			throw new DataFormatException("The requested group ID" + projectId + " wasn't found ");
+		}
+		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		
+		UserGroupI group = findGroupByNameAndDisplayName(groupId, displayName, project);
+		if (PROTECTED_DISPLAY_NAMES.contains(group.getDisplayname())) {
+			throw new NotFoundException("Display name wasn't found");
+		}
+		
+		try {
+			if (!UserHelper.getUserHelperService(user).canDelete(project)) {
+				throw new InsufficientPrivilegesException("Specified user account has insufficient delete privileges for project in this group.");
+			}
+			final PersistentWorkflowI workflow = WorkflowUtils.getOrCreateWorkflowData(null, user, XnatProjectdata.SCHEMA_ELEMENT_NAME, project.getId(), project.getId(), EventUtils.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, EventUtils.TYPE.WEB_SERVICE, "Remove Group"));
+			final EventMetaI ci = workflow.buildEvent();
+			_service.deleteGroup(group, user, ci);
+			WorkflowUtils.complete(workflow, ci);
+		} catch (Exception e) {
+			log.error("project group wasn't not deleted" +  e.getLocalizedMessage());
+		}
+	}
+	
+	private UserGroupI findGroupByNameAndDisplayName(String groupName, String displayName, XnatProjectdata project) {
+		if (StringUtils.isAllBlank(groupName, displayName)) {
+            return null;
+        }
+        if (StringUtils.isNotBlank(groupName)) {
+            if (NumberUtils.isCreatable(groupName)) {
+                final UserGroupI group = Groups.getGroupByPK(groupName);
+                if (group != null) {
+                    return group;
+                }
+            }
+            final UserGroupI byName = Groups.getGroup(groupName);
+            if (byName != null) {
+                return byName;
+            }
+            final UserGroupI byProjectAndGroupName = Groups.getGroup(project.getId() + "_" + groupName);
+            if (byProjectAndGroupName != null) {
+                return byProjectAndGroupName;
+            }
+            final UserGroupI byTagAndName = Groups.getGroupByTagAndName(project.getId(), groupName);
+            if (byTagAndName != null) {
+                return byTagAndName;
+            }
+        }
+        if (StringUtils.isNotBlank(displayName)) {
+            final UserGroupI byTagAndName = Groups.getGroupByTagAndName(project.getId(), displayName);
+            if (byTagAndName != null) {
+                return byTagAndName;
+            }
+            return Groups.getGroup(project.getId() + "_" + displayName);
+        }
+        return null;
+	}
+
 	private static class UserRowMapper implements RowMapper<XdatUsergroup> {
 		UserRowMapper(final UserI user) {
 			_user = user;
@@ -147,7 +223,7 @@ public class UserServiceImpl implements UserService{
 
 		@Override
 		public XdatUsergroup mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
-			final String userGroupId = resultSet.getString("xdat_usergroup_id");
+			final Integer userGroupId = resultSet.getInt("xdat_usergroup_id");
 			XdatUsergroup xnatSubjectdata = XdatUsergroup.getXdatUsergroupsByXdatUsergroupId(userGroupId, _user, false);
 			return xnatSubjectdata;
 		}
@@ -203,6 +279,10 @@ public class UserServiceImpl implements UserService{
 	
 	private static final String BY_DATATYPE_USERID_WHERE_USER_FAVORITE_QUERY = "SELECT datatype,id FROM xdat_search.xs_fav_entries WHERE dataType= :dataType AND xdat_user_id = :userId";
 	
+	private static final List<String> PROTECTED_DISPLAY_NAMES = Arrays.asList("Owners", "Members", "Collaborators");
+	
 	private final NamedParameterJdbcTemplate _template;
+	private final UserGroupServiceI _service;
+	
 
 }

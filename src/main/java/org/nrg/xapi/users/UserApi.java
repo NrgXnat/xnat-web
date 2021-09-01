@@ -19,6 +19,7 @@ import org.nrg.xnat.services.users.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import io.swagger.annotations.Api;
@@ -125,6 +126,19 @@ public class UserApi extends AbstractXapiProjectRestController {
 			@ApiParam(value = "The vlaue of dataType.") @PathVariable final String dataType) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested user fav with project ID {}", getSessionUser().getUsername(), dataType);
 		 _userService.deleteUserFavorite(getSessionUser(), projectId, dataType);
+	}
+	
+	@ApiOperation(value = "delete the requested  users", notes = "Returns the  users with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
+					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
+					@ApiResponse(code = 404, message = "The requested project wasn't found."),
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/groups/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE)
+	public void deleteUserGroupByGroupIdAndProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+															 @ApiParam(value = "The ID of the group.") @PathVariable final String groupId,
+															 @ApiParam(value = "The displayName of the group.") @RequestParam final String displayName) throws DataFormatException, NotFoundException   {
+		log.debug("User {} requested user group with project ID {} and with group ID {}", getSessionUser().getUsername(), projectId, groupId);
+		 _userService.deleteByGroupIdAndProject(getSessionUser(), groupId, projectId, displayName);
 	}
 	
 	private final UserService _userService;
