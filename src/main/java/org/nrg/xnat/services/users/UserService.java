@@ -1,9 +1,11 @@
 package org.nrg.xnat.services.users;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xft.db.FavEntries;
@@ -27,4 +29,5 @@ public interface UserService {
 	 
 	 void deleteByGroupIdAndProject(UserI sessionUser, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException;
 	 
+	 void updateByGroupIdAndProject(UserI user, XdatUsergroup group, String groupId, String projectId, Map<String, Object> groupProperties) throws InitializationException, DataFormatException;
 }

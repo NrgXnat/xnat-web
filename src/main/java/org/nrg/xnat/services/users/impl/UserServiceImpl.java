@@ -1,27 +1,37 @@
 package org.nrg.xnat.services.users.impl;
 
+import static org.nrg.xdat.om.base.auto.AutoXdatUsergroup.SCHEMA_ELEMENT_NAME;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.security.ElementSecurity;
+import org.nrg.xdat.security.PermissionCriteria;
+import org.nrg.xdat.security.PermissionCriteriaI;
 import org.nrg.xdat.security.UserGroupI;
 import org.nrg.xdat.security.UserGroupServiceI;
 import org.nrg.xdat.security.helpers.Groups;
+import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.db.FavEntries;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserService;
 import org.nrg.xnat.utils.WorkflowUtils;
@@ -57,9 +67,8 @@ public class UserServiceImpl implements UserService{
 	
 	@Override
 	public List<XdatUsergroup> findUserGroupByProject(UserI user, String projectId) throws DataFormatException, NotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
-		}
+		ValidateProjectId(projectId);
+		
 		List<XdatUsergroup> userGroups = _template.query(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId), new UserGroupRowMapper(user));
 		if(Objects.isNull(userGroups) || userGroups.isEmpty()) {
     		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, projectId) ;
@@ -69,12 +78,8 @@ public class UserServiceImpl implements UserService{
 	
 	@Override
 	public Optional<XdatUsergroup> findUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) throws DataFormatException, NotFoundException {
-		if(StringUtils.isBlank(projectId)) {
-    		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
-		}
-		if(StringUtils.isBlank(groupId)) {
-    		throw new DataFormatException("The requested group ID" + projectId + " wasn't found ");
-		}
+		validateGroupIdAndProjectId(groupId, projectId);
+		
 		XdatUsergroup userGroup = _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
 		if(Objects.isNull(userGroup)) {
     		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, groupId) ;
@@ -141,12 +146,8 @@ public class UserServiceImpl implements UserService{
 	
 	@Override
 	public void deleteByGroupIdAndProject(UserI user, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException {
-		if (StringUtils.isBlank(projectId)) {
-			throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
-		}
-		if (StringUtils.isBlank(groupId)) {
-			throw new DataFormatException("The requested group ID" + projectId + " wasn't found ");
-		}
+		validateGroupIdAndProjectId(groupId, projectId);
+		
 		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		
 		UserGroupI group = findGroupByNameAndDisplayName(groupId, displayName, project);
@@ -167,6 +168,133 @@ public class UserServiceImpl implements UserService{
 		}
 	}
 	
+	@Override
+	public void updateByGroupIdAndProject(UserI user, XdatUsergroup group, String groupId, String projectId, Map<String, Object> groupProperties) throws InitializationException, DataFormatException {
+		
+		validateGroupIdAndProjectId(groupId, projectId);
+		
+		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		
+		UserGroupI userGroup = findGroupByNameAndDisplayName(groupId, group.getDisplayname(), project);
+		
+		try {
+            final UserGroupI working = _service.createGroup(groupProperties);
+
+            //tag must be for this project
+            if (!StringUtils.equals(project.getId(), working.getTag())) {
+                working.setTag(project.getId());
+            }
+
+           validateDisplayName(working);
+
+            //set ID to the standard value
+            if (StringUtils.isEmpty(working.getId())) {
+                working.setId(project.getId() + "_" + StringUtils.removeAll(working.getDisplayname(), "\\s?"));
+            }
+
+            final List<PermissionCriteriaI> newPermissions = getNewPermissions(working, groupProperties);
+
+            final PersistentWorkflowI wrk = PersistentWorkflowUtils.buildOpenWorkflow(user, SCHEMA_ELEMENT_NAME, working.getTag(), working.getId(), EventUtils.newEventInstance(EventUtils.CATEGORY.PROJECT_ACCESS, EventUtils.TYPE.WEB_SERVICE, (userGroup == null) ? "Added user group" : "Modified user group."));
+            assert wrk != null;
+
+            //need to pre-create the group if it doesn't already exist
+            if (userGroup == null) {
+                _service.save(working, user, wrk.buildEvent());
+            }
+
+            Permissions.setPermissionsForGroup(working, newPermissions, wrk.buildEvent(), user);
+            Groups.save(working, user, wrk.buildEvent());
+            WorkflowUtils.complete(wrk, wrk.buildEvent());
+            Groups.reloadGroupsForUser(user);
+
+        } catch (Exception e) {
+            log.error("", e);
+            throw new InitializationException(e.getLocalizedMessage());
+        }
+	}
+	
+	
+	private void validateDisplayName(UserGroupI working) throws DataFormatException {
+		 //display name is required
+        if (StringUtils.isEmpty(working.getDisplayname())) {
+        	throw new DataFormatException("The requested displayName" + working.getDisplayname() + " wasn't found ");
+        }
+        //display name cannot contain underscore
+        if (working.getDisplayname().contains("_")) {
+        	throw new DataFormatException("The requested displayName" + working.getDisplayname() + "  cannot contain underscores ");
+        }
+		
+	}
+
+	private void validateGroupIdAndProjectId(String groupId, String projectId) throws DataFormatException {
+		if (StringUtils.isBlank(projectId)) {
+			throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
+		}
+		if (StringUtils.isBlank(groupId)) {
+			throw new DataFormatException("The requested group ID" + projectId + " wasn't found ");
+		}
+	}
+
+	private List<PermissionCriteriaI> getNewPermissions(UserGroupI working, Map<String, Object> groupProperties) throws InitializationException {
+		final List<PermissionCriteriaI> newPermissions = new ArrayList<>();
+		try {
+		 final List<ElementSecurity> elements = ElementSecurity.GetSecureElements();
+
+         for (final ElementSecurity element : elements) {
+             final List<String> permissionItems = element.getPrimarySecurityFields();
+             for (final String securityField : permissionItems) {
+                 final PermissionCriteria criteria = new PermissionCriteria(element.getElementName());
+                 criteria.setField(securityField);
+                 criteria.setFieldValue(working.getTag());
+
+                 final String elementId = element.getElementName() + "_" + securityField + "_" + working.getTag();
+                 if (groupProperties.get(elementId + "_R") != null) {
+                     criteria.setRead(true);
+                 } else {
+                     criteria.setRead(false);
+                 }
+                 if (groupProperties.get(elementId + "_E") != null && !StringUtils.equals(element.getElementName(), XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+                     criteria.setRead(true);
+                     criteria.setEdit(true);
+                     criteria.setCreate(true);
+                     criteria.setActivate(true);
+                 } else {
+                     criteria.setCreate(false);
+                     criteria.setEdit(false);
+                     criteria.setActivate(false);
+                 }
+                 if (groupProperties.get(elementId + "_D") != null && !StringUtils.equals(element.getElementName(), XnatProjectdata.SCHEMA_ELEMENT_NAME)) {
+                     criteria.setRead(true);
+                     criteria.setDelete(true);
+                 } else {
+                     criteria.setDelete(false);
+                 }
+                 criteria.setComparisonType("equals");
+
+                 final boolean wasSet = StringUtils.equals((String) groupProperties.get(elementId + "_wasSet"), "1");
+
+                 if (wasSet || criteria.getCreate() || criteria.getRead() || criteria.getEdit() || criteria.getDelete() || criteria.getActivate()) {
+                     newPermissions.add(criteria);
+                     //inherit project permissions to shared project permissions
+                     if (StringUtils.equals(criteria.getField(), element.getElementName() + "/project") && (wasSet || criteria.getRead())) {
+                         final PermissionCriteria share = new PermissionCriteria(element.getElementName());
+                         share.setField(element.getElementName() + "/sharing/share/project");
+                         share.setFieldValue(working.getTag());
+                         share.setRead(criteria.getRead());
+                         share.setComparisonType("equals");
+                         newPermissions.add(share);
+                     }
+                 }
+             }
+         }
+		} catch (Exception e) {
+            log.error("", e);
+            throw new InitializationException(e.getLocalizedMessage());
+        }
+		return newPermissions;
+		
+	}
+
 	private UserGroupI findGroupByNameAndDisplayName(String groupName, String displayName, XnatProjectdata project) {
 		if (StringUtils.isAllBlank(groupName, displayName)) {
             return null;
@@ -283,6 +411,7 @@ public class UserServiceImpl implements UserService{
 	
 	private final NamedParameterJdbcTemplate _template;
 	private final UserGroupServiceI _service;
+	
 	
 
 }

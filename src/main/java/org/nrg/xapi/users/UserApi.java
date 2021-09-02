@@ -4,10 +4,13 @@ import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -19,6 +22,7 @@ import org.nrg.xnat.services.users.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -66,7 +70,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "Gets the requested  users", notes = "Returns the  users with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "Gets the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
 					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested uers wasn't found."),
@@ -128,7 +132,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 		 _userService.deleteUserFavorite(getSessionUser(), projectId, dataType);
 	}
 	
-	@ApiOperation(value = "delete the requested  users", notes = "Returns the  users with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "delete the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
 					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested project wasn't found."),
@@ -139,6 +143,24 @@ public class UserApi extends AbstractXapiProjectRestController {
 															 @ApiParam(value = "The displayName of the group.") @RequestParam final String displayName) throws DataFormatException, NotFoundException   {
 		log.debug("User {} requested user group with project ID {} and with group ID {}", getSessionUser().getUsername(), projectId, groupId);
 		 _userService.deleteByGroupIdAndProject(getSessionUser(), groupId, projectId, displayName);
+	}
+	
+	
+	@ApiOperation(value = "update the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
+					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
+					@ApiResponse(code = 404, message = "The requested project wasn't found."),
+					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
+	@XapiRequestMapping(value = "/projects/{projectId}/groups/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE, method = PUT)
+	public void updateUserGroupByGroupIdAndProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+															 @ApiParam(value = "The ID of the group.") @PathVariable final String groupId,
+															 @ApiParam(value = "The XdatUserGroup request.") @RequestBody final XdatUsergroup group) throws DataFormatException, NotFoundException, InitializationException   {
+		log.debug("User {} requested user group with project ID {} and with group ID {}", getSessionUser().getUsername(), projectId, groupId);
+		
+		//TODO - Need to add this map data from request 
+		Map<String, Object> groupProperties = new HashMap<>();
+		
+		 _userService.updateByGroupIdAndProject(getSessionUser(), group, groupId, projectId, groupProperties);
 	}
 	
 	private final UserService _userService;
