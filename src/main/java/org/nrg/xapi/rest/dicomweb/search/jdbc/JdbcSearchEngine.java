@@ -95,7 +95,7 @@ public class JdbcSearchEngine implements SearchEngineI {
 
 
     @Override
-    public List<QIDOResponse> searchForStudies( String sessionID, QueryParameters queryParameters, UserI user) {
+    public List<QIDOResponse> searchForStudies( String projectID, String sessionID, QueryParameters queryParameters, UserI user) {
         final DicomWebStudyViewSelect statement = new DicomWebStudyViewSelect();
 
         for (String paramName : queryParameters.keySet()) {
@@ -139,22 +139,22 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<QIDOResponse> searchForSeries( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+    public List<QIDOResponse> searchForSeries( String projectID, String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+    public List<? extends QIDOResponse> searchForStudySeries( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForInstances(String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+    public List<? extends QIDOResponse> searchForInstances( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public DicomObject retrieveInstance(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
+    public DicomObject retrieveInstance( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
         return null;
     }
 
@@ -164,17 +164,17 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomFrames retrieveFrames(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
+    public DicomFrames retrieveFrames(String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public List<DicomObject> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveSeries( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
         return null;
     }
 
     @Override
-    public List<DicomObject> retrieveStudy(String sessionID, String studyInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveStudy( String projectID, String sessionID, String studyInstanceUID, UserI user) throws SearchException {
         return null;
     }
 }

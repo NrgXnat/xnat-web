@@ -1,3 +1,3 @@
 #!/bin/bash
 
-scp ../../../build/libs/xnat-web-dcmWeb-0.9-SNAPSHOT.war deploy-vagrant-local.sh vagrant@10.1.9.182:
+scp ../../../build/libs/xnat-web-dcmWeb-0.10-SNAPSHOT.war deploy-vagrant-local.sh vagrant@10.1.9.182:

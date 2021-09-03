@@ -26,10 +26,13 @@ public class QueryParamToCriteriaService {
         this._dateTimeService = dateTimeService;
     }
 
-    public CriteriaCollection mapStudy( String sessionID, BaseQueryParameters params) {
+    public CriteriaCollection mapStudy( String projectID, String sessionID, BaseQueryParameters params) {
         CriteriaCollection cc = mapStudy( params);
         if( ! (sessionID == null || sessionID.isEmpty())) {
             cc.addClause( "xnat:imagesessiondata/id", "=", sessionID);
+        }
+        if( ! (projectID == null || projectID.isEmpty())) {
+            cc.addClause( "xnat:experimentdata/project", "=", projectID);
         }
         return cc;
     }
@@ -113,8 +116,8 @@ public class QueryParamToCriteriaService {
         return cc;
     }
 
-    public CriteriaCollection mapSeries( String sessionID, String studyInstanceUID, BaseQueryParameters params) {
-        CriteriaCollection cc = mapSeries( sessionID, params);
+    public CriteriaCollection mapSeries( String projectID, String sessionID, String studyInstanceUID, BaseQueryParameters params) {
+        CriteriaCollection cc = mapSeries( projectID, sessionID, params);
 
         cc.addClause("xnat:imagesessiondata/uid", studyInstanceUID);
         return cc;
@@ -125,8 +128,11 @@ public class QueryParamToCriteriaService {
         will use them.
         This should return an imagesession with the unique series.
      */
-    public CriteriaCollection mapInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, BaseQueryParameters params) {
+    public CriteriaCollection mapInstances( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, BaseQueryParameters params) {
         CriteriaCollection cc = new CriteriaCollection("AND");
+        if( ! (projectID == null || projectID.isEmpty())) {
+            cc.addClause( "xnat:experimentData/project", "=", projectID);
+        }
         if( ! (sessionID == null || sessionID.isEmpty())) {
             cc.addClause( "xnat:experimentData/id", "=", sessionID);
         }
@@ -135,8 +141,11 @@ public class QueryParamToCriteriaService {
         return cc;
     }
 
-    public CriteriaCollection mapSeries( String sessionID, BaseQueryParameters params) {
+    public CriteriaCollection mapSeries( String projectID, String sessionID, BaseQueryParameters params) {
         CriteriaCollection cc = mapSeries( params);
+        if( ! (projectID == null || projectID.isEmpty())) {
+            cc.addClause( "xnat:experimentData/project", "=", projectID);
+        }
         if( ! (sessionID == null || sessionID.isEmpty())) {
             cc.addClause( "xnat:experimentData/id", "=", sessionID);
         }

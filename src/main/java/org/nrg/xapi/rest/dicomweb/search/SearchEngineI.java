@@ -16,21 +16,21 @@ public interface SearchEngineI {
 
     DicomObject[] getStudyAsArray(String studyInstanceUID) throws IOException;
 
-    List<? extends QIDOResponse> searchForStudies( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForStudies( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    List<? extends QIDOResponse> searchForSeries( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForSeries( String projectID, String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForStudySeries( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    List<? extends QIDOResponse> searchForInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
+    List<? extends QIDOResponse> searchForInstances( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException;
 
-    DicomObject retrieveInstance(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException;
+    DicomObject retrieveInstance( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException;
 
     DicomFrame retrieveFrame(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, int frameNumber, UserI user) throws SearchException;
 
-    DicomFrames retrieveFrames(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException;
+    DicomFrames retrieveFrames(String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException;
 
-    List<DicomObject> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
+    List<DicomObject> retrieveSeries( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException;
 
-    List<DicomObject> retrieveStudy(String sessionID, String studyInstanceUID, UserI user) throws SearchException;
+    List<DicomObject> retrieveStudy( String projectID, String sessionID, String studyInstanceUID, UserI user) throws SearchException;
 }

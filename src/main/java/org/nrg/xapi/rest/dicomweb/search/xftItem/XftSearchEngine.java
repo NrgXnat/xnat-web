@@ -81,8 +81,8 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudies( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapStudy( sessionID, queryParameters);
+    public List<? extends QIDOResponse> searchForStudies( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapStudy( projectID, sessionID, queryParameters);
 
         ItemCollection ic;
         try {
@@ -156,8 +156,8 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForSeries( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapSeries( sessionID, studyInstanceUID, queryParameters);
+    public List<? extends QIDOResponse> searchForSeries( String projectID, String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapSeries( projectID, sessionID, studyInstanceUID, queryParameters);
 
         ItemCollection ic;
         try {
@@ -198,11 +198,11 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForStudySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+    public List<? extends QIDOResponse> searchForStudySeries( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
         List<? extends QIDOResponse> responses = null;
 
         if( queryParameters.hasStudyLevel()) {
-            List<? extends QIDOResponse> studyResponses = searchForStudySeriesByStudyParams( sessionID, queryParameters, user);
+            List<? extends QIDOResponse> studyResponses = searchForStudySeriesByStudyParams( projectID, sessionID, queryParameters, user);
 
             if( queryParameters.hasSeriesLevel()) {
                 Iterator<? extends QIDOResponse> it = studyResponses.iterator();
@@ -210,7 +210,7 @@ public class XftSearchEngine implements SearchEngineI {
                     QIDOResponseStudySeries responseStudySeries = (QIDOResponseStudySeries) it.next();
                     String studyInstanceUID = responseStudySeries.getStudyInstanceUID();
 
-                    responses = searchForStudySeriesByStudyUID( sessionID, studyInstanceUID, queryParameters, user);
+                    responses = searchForStudySeriesByStudyUID( projectID, sessionID, studyInstanceUID, queryParameters, user);
                 }
             }
             else {
@@ -218,7 +218,7 @@ public class XftSearchEngine implements SearchEngineI {
             }
         }
         else if( queryParameters.hasSeriesLevel()) {
-            responses = searchForStudySeriesBySeries( sessionID, queryParameters, user);
+            responses = searchForStudySeriesBySeries( projectID, sessionID, queryParameters, user);
         }
         else {
             responses = new ArrayList<>();
@@ -229,8 +229,8 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<? extends QIDOResponse> searchForInstances( String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapInstances( sessionID, studyInstanceUID, seriesInstanceUID, queryParameters);
+    public List<? extends QIDOResponse> searchForInstances( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapInstances( projectID, sessionID, studyInstanceUID, seriesInstanceUID, queryParameters);
 
         ItemCollection ic;
         try {
@@ -281,9 +281,9 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomObject retrieveInstance(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
+    public DicomObject retrieveInstance( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
         try {
-            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
+            XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
             DicomObject instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
             return instance;
@@ -307,9 +307,9 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public DicomFrames retrieveFrames( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
+    public DicomFrames retrieveFrames( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
         try {
-            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
+            XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
             DicomImageObject instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
             if( instance != null) {
@@ -325,9 +325,9 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObject> retrieveSeries(String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveSeries( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, UserI user) throws SearchException {
         try {
-            XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
+            XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
             List<DicomObject> instances = getInstances( scan);
             return instances;
@@ -338,10 +338,10 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomObject> retrieveStudy(String sessionID, String studyInstanceUID, UserI user) throws SearchException {
+    public List<DicomObject> retrieveStudy( String projectID, String sessionID, String studyInstanceUID, UserI user) throws SearchException {
 
         List<DicomObject> instances = new ArrayList<>();
-        XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
+        XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
         for( XnatImagescandataI scan: session.getScans_scan()) {
 //            instances.addAll( getInstances( session.getArchiveRootPath(), scan));
             instances.addAll( getInstances( scan));
@@ -356,16 +356,16 @@ public class XftSearchEngine implements SearchEngineI {
         return searchForStudySeriesByStudy( cc, user);
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesBySeries( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapSeries( sessionID, queryParameters);
+    public List<? extends QIDOResponse> searchForStudySeriesBySeries( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapSeries( projectID, sessionID, queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
 
-    public List<? extends QIDOResponse> searchForStudySeriesByStudyUID( String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
+    public List<? extends QIDOResponse> searchForStudySeriesByStudyUID( String projectID, String sessionID, String studyInstanceUID, QueryParameters queryParameters, UserI user) throws SearchException {
         CriteriaCollection cc ;
-        if( studyInstanceUID != null) cc = _queryParamService.mapSeries( sessionID, studyInstanceUID, queryParameters);
-        else  cc = _queryParamService.mapSeries( sessionID, queryParameters);
+        if( studyInstanceUID != null) cc = _queryParamService.mapSeries( projectID, sessionID, studyInstanceUID, queryParameters);
+        else  cc = _queryParamService.mapSeries( projectID, sessionID, queryParameters);
 
         return searchForStudySeriesByStudy( cc, user);
     }
@@ -422,8 +422,8 @@ public class XftSearchEngine implements SearchEngineI {
         return responses;
     }
 
-    private List<? extends QIDOResponse> searchForStudySeriesByStudyParams( String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
-        CriteriaCollection cc = _queryParamService.mapStudy( sessionID, queryParameters);
+    private List<? extends QIDOResponse> searchForStudySeriesByStudyParams( String projectID, String sessionID, QueryParameters queryParameters, UserI user) throws SearchException {
+        CriteriaCollection cc = _queryParamService.mapStudy( projectID, sessionID, queryParameters);
         ItemCollection ic;
         try {
             ic = ItemSearch.GetItems( "xnat:imageSessionData", cc, user, false);
@@ -651,6 +651,27 @@ public class XftSearchEngine implements SearchEngineI {
     private XnatImagesessiondata getSession( String sessionID, String studyInstanceUID, UserI user) throws SearchException {
         try {
             CriteriaCollection cc = new CriteriaCollection("AND");
+            if( sessionID != null) {
+                cc.addClause("xnat:imageSessionData/id", "=", sessionID);
+            }
+            cc.addClause("xnat:imageSessionData/uid", "=", studyInstanceUID);
+
+            ItemCollection ic = ItemSearch.GetItems("xnat:imageSessionData", cc, user, false);
+
+            XnatImagesessiondata session = new XnatImagesessiondata(ic.getFirst());
+            return session;
+        }
+        catch (Exception e) {
+            throw new SearchException( SearchException.Type.UNEXPECTED, "Error getting session data for studyInstanceUID: " + studyInstanceUID, e);
+        }
+    }
+
+    private XnatImagesessiondata getSession( String projectID, String sessionID, String studyInstanceUID, UserI user) throws SearchException {
+        try {
+            CriteriaCollection cc = new CriteriaCollection("AND");
+            if( projectID != null) {
+                cc.addClause("xnat:experimentdata", "=", projectID);
+            }
             if( sessionID != null) {
                 cc.addClause("xnat:imageSessionData/id", "=", sessionID);
             }
