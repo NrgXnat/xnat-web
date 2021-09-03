@@ -35,11 +35,11 @@ import java.util.Locale;
 
 @Configuration
 @EnableSwagger2
-@ComponentScan(value = {"org.nrg.xapi.archive", "org.nrg.xapi.catalog","org.nrg.xapi.config","org.nrg.xapi.dump","org.nrg.xapi.experiments",  
-						"org.nrg.xapi.files", "org.nrg.xapi.features", "org.nrg.xapi.importer", "org.nrg.xapi.prearchive", "org.nrg.xapi.extensions", 
-						"org.nrg.xapi.projects", "org.nrg.xapi.protocol", "org.nrg.xapi.resources", "org.nrg.xapi.rest", "org.nrg.xapi.runners", 
-						"org.nrg.xapi.search","org.nrg.xapi.subjects","org.nrg.xapi.token", "org.nrg.xapi.users", "org.nrg.xnat.eventservice.rest", 
-						"org.nrg.xapi.script","org.nrg.xapi.script.trigger","org.nrg.xnat.snapshot.rest", "org.nrg.xapi.workflow"},
+@ComponentScan(value = {"org.nrg.xapi.rest.config","org.nrg.xapi.rest.dump","org.nrg.xapi.rest.experiments",  
+						"org.nrg.xapi.extensions","org.nrg.xapi.rest.projects", "org.nrg.xapi.rest.protocol", "org.nrg.xapi.resources", 
+						"org.nrg.xapi.rest", "org.nrg.xapi.rest.automation", "org.nrg.xapi.rest.search","org.nrg.xapi.rest.subjects", 
+						"org.nrg.xapi.rest.users", "org.nrg.xnat.eventservice.rest","org.nrg.xnat.snapshot.rest", 
+						"org.nrg.xapi.rest.workflow"},
                includeFilters = @Filter(ControllerAdvice.class))
 @Import(SpawnerConfig.class)
 @Slf4j
