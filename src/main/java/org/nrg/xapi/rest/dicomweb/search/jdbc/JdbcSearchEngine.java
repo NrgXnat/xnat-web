@@ -1,10 +1,7 @@
 package org.nrg.xapi.rest.dicomweb.search.jdbc;
 
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.xapi.model.dicomweb.DicomFrame;
-import org.nrg.xapi.model.dicomweb.DicomObject;
-import org.nrg.xapi.model.dicomweb.DicomObjectFactory;
-import org.nrg.xapi.model.dicomweb.QIDOResponse;
+import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xapi.rest.dicomweb.QueryParameters;
 import org.nrg.xapi.rest.dicomweb.search.SearchEngineI;
 import org.nrg.xapi.rest.dicomweb.search.SearchException;
@@ -167,7 +164,7 @@ public class JdbcSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomFrame> retrieveFrames(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
+    public DicomFrames retrieveFrames(String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
         return null;
     }
 

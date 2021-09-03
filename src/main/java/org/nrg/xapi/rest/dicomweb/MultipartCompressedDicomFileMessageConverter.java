@@ -1,6 +1,7 @@
 package org.nrg.xapi.rest.dicomweb;
 
 import org.nrg.xapi.model.dicomweb.DicomImageObject;
+import org.nrg.xapi.model.dicomweb.DicomImageObjects;
 import org.nrg.xapi.model.dicomweb.TransCoder;
 import org.nrg.xapi.model.dicomweb.TransCoderException;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
@@ -23,7 +24,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMessageConverter< List<DicomImageObject>> {
+public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMessageConverter<DicomImageObjects> {
 
     @Autowired
     HttpServletRequest request;
@@ -46,20 +47,20 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
 
     // for reading from the input message.
     @Override
-    protected List<DicomImageObject> readInternal(Class<? extends List<DicomImageObject>> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
+    protected DicomImageObjects readInternal(Class<? extends DicomImageObjects> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         return null;
     }
 
     @Override
-    protected void writeInternal(List<DicomImageObject> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
+    protected void writeInternal(DicomImageObjects dicomImageObjects, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
 
         try {
-            if( dicomParts.isEmpty()) {
+            if( dicomImageObjects.isEmpty()) {
                 String msg = "Error. Attempting to write response with no body.";
                 _log.error(msg);
                 throw new HttpMessageNotWritableException(msg);
             }
-            DicomImageObject dobj = dicomParts.get(0);
+            DicomImageObject dobj = dicomImageObjects.get(0);
 
             String inputTsuid = dobj.getTransferSyntaxUID();
             final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
@@ -89,9 +90,9 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
-            for (DicomImageObject dicomPart : dicomParts) {
+            for (DicomImageObject dicomImageObject : dicomImageObjects) {
 
-                DicomImageObject dcmOut = transCoder.transcode(dicomPart, tsuid);
+                DicomImageObject dcmOut = transCoder.transcode(dicomImageObject, tsuid);
 
                 outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
@@ -127,7 +128,7 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
 
     @Override
     protected boolean supports(Class<?> clazz) {
-        return List.class.isAssignableFrom(clazz);
+        return DicomImageObjects.class.isAssignableFrom(clazz);
     }
 
     @Override

@@ -307,17 +307,16 @@ public class XftSearchEngine implements SearchEngineI {
     }
 
     @Override
-    public List<DicomFrame> retrieveFrames( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
+    public DicomFrames retrieveFrames( String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, List<Integer> frameNumbers, UserI user) throws SearchException {
         try {
-            List<DicomFrame> frames = new ArrayList<>();
             XnatImagesessiondata session = getSession( sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
             DicomImageObject instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
             if( instance != null) {
-                return frameNumbers.stream().map( fn -> new DicomFrame( instance, fn)).collect(Collectors.toList());
+                return frameNumbers.stream().map( fn -> new DicomFrame( instance, fn)).collect(Collectors.toCollection(DicomFrames::new));
             }
             else {
-                return null;
+                return new DicomFrames();
             }
         }
         catch( Exception e) {
