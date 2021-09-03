@@ -87,13 +87,13 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(mappingJackson2HttpMessageConverter());
         converters.add(dicomObjectMessageConverter());
         converters.add(dicom2XmlMessageConverter());
-        converters.add(dicom2OctetStreamMessageConverter());
         converters.add(marshallingHttpMessageConverter());
         converters.add(resourceHttpMessageConverter());
         converters.add(xftBeanHttpMessageConverter());
         converters.add(xftObjectHttpMessageConverter());
         converters.add(multipartDicomFileMessageConverter());
         converters.add(multipartCompressedDicomFileMessageConverter( ));
+        converters.add(multipartDicomFrameMessageConverter( ));
         converters.add( dicomFrameMessageConverter( ));
         converters.add(zipFileHttpMessageConverter());
     }
@@ -166,13 +166,13 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public HttpMessageConverter<?> dicomFrameMessageConverter() {
-        return new DicomFrameMessageConverter( );
+    public HttpMessageConverter<?> multipartDicomFrameMessageConverter() {
+        return new MultiparDicomFrameMessageConverter( );
     }
 
     @Bean
-    public HttpMessageConverter<?> dicom2OctetStreamMessageConverter() {
-        return new Dicom2OctetStreamMessageConverter();
+    public HttpMessageConverter<?> dicomFrameMessageConverter() {
+        return new DicomFrameMessageConverter( );
     }
 
     @Bean

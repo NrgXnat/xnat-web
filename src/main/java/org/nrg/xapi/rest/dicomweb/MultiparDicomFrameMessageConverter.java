@@ -1,8 +1,6 @@
 package org.nrg.xapi.rest.dicomweb;
 
-import org.nrg.xapi.model.dicomweb.DicomImageObject;
-import org.nrg.xapi.model.dicomweb.TransCoder;
-import org.nrg.xapi.model.dicomweb.TransCoderException;
+import org.nrg.xapi.model.dicomweb.*;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +12,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.converter.AbstractHttpMessageConverter;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.http.converter.HttpMessageNotWritableException;
-import org.springframework.web.servlet.HandlerMapping;
 
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
@@ -23,7 +20,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConverter< List<DicomImageObject>> {
+public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConverter<DicomFrames> {
 
     @Autowired
     HttpServletRequest request;
@@ -46,20 +43,20 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
 
     // for reading from the input message.
     @Override
-    protected List<DicomImageObject> readInternal(Class<? extends List<DicomImageObject>> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
+    protected DicomFrames readInternal(Class<? extends DicomFrames> arg0, HttpInputMessage arg1) throws IOException, HttpMessageNotReadableException {
         return null;
     }
 
     @Override
-    protected void writeInternal(List<DicomImageObject> dicomParts, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
+    protected void writeInternal(DicomFrames dicomFrames, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
 
         try {
-            if( dicomParts.isEmpty()) {
+            if( dicomFrames.isEmpty()) {
                 String msg = "Error. Attempting to write response with no body.";
                 _log.error(msg);
                 throw new HttpMessageNotWritableException(msg);
             }
-            DicomImageObject dobj = dicomParts.get(0);
+            DicomImageObject dobj = dicomFrames.get(0).getDicomObject();
 
             String inputTsuid = dobj.getTransferSyntaxUID();
             final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
@@ -74,6 +71,8 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 return new HttpMessageNotWritableException(msg);
             });
 
+            DicomImageObject dicomImageObject = transCoder.transcode(dicomFrames.get(0).getDicomObject(), tsuid);
+
             HttpHeaders outputHeaders = outputMessage.getHeaders();
             Map<String, String> contentTypeArgs = new HashMap<>(1);
             String boundary = getBoundary();
@@ -82,27 +81,23 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
             MediaType mediaType = new MediaType("multipart", "related", contentTypeArgs);
             outputHeaders.setContentType( mediaType);
 
-            int frameNumber = getFrameNumber(request);
             String contentLocation = getContentLocation(request);
 
             // write preamble, just CRLF if preamble is empty.
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
-            for (DicomImageObject dicomPart : dicomParts) {
-
-                DicomImageObject dcmOut = transCoder.transcode(dicomPart, tsuid);
+            for (DicomFrame dicomFrame : dicomFrames) {
 
                 outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
                 outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
-//                outputMessage.getBody().write(("Content-Length: " + dcmOut.getLength() + "\r\n\r\n").getBytes());
-//                dcmOut.write(outputMessage.getBody());
-                outputMessage.getBody().write(("Content-Length: " + dcmOut.getPixelDataLength() + "\r\n\r\n").getBytes());
-                dcmOut.writePixelData( outputMessage.getBody());
+//                outputMessage.getBody().write(("Content-Length: " + dicomFrame.getPixelDataLength() + "\r\n\r\n").getBytes());
+//                dicomFrame.writePixelData( outputMessage.getBody());
+                outputMessage.getBody().write(("Content-Length: " + dicomImageObject.getPixelDataLength( dicomFrame.getFrameNumber()) + "\r\n\r\n").getBytes());
+                dicomImageObject.writePixelData( dicomFrame.getFrameNumber(), outputMessage.getBody());
 
                 outputMessage.getBody().write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
-
             }
 
         } catch (IOException | TransCoderException e) {
@@ -117,15 +112,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
         return host + request.getRequestURI();
     }
 
-    private int getFrameNumber(HttpServletRequest request) {
-        final Map<String, String> pathVariables = (Map<String, String>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-        String s = pathVariables.get("frameNumber");
-        return (s != null) ? Integer.parseInt(s) : 1;
-    }
-
     @Override
     protected boolean supports(Class<?> clazz) {
-        return List.class.isAssignableFrom(clazz);
+        return DicomFrames.class.isAssignableFrom(clazz);
     }
 
     @Override
