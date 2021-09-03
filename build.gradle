@@ -30,7 +30,7 @@ plugins {
 }
 
 group "org.nrg.xnat"
-version "dcmWeb-0.9-SNAPSHOT"
+version "dcmWeb-0.10-SNAPSHOT"
 description "XNAT is an open-source imaging informatics software platform dedicated to helping you perform imaging-based research. XNAT’s core functions manage importing, archiving, processing and securely distributing imaging and related study data. But its extended uses continue to evolve."
 
 repositories {
@@ -194,12 +194,11 @@ dependencies {
     implementation "dcm4che:dcm4che-iod"
     implementation "dcm4che:dcm4che-net"
     implementation "net.imagej:ij"
-    implementation "org.dcm4che:dcm4che-core:5.23.2"
-    implementation "org.dcm4che:dcm4che-image:5.23.2"
-    implementation "org.dcm4che:dcm4che-imageio:5.23.2"
-    implementation "org.dcm4che:dcm4che-json:5.23.2"
-    implementation "org.dcm4che:dcm4che-imageio-opencv:5.23.2"
-//    implementation "org.weasis.opencv:weasis-opencv-core:3.6.0"
+    implementation "org.dcm4che:dcm4che-core"
+    implementation "org.dcm4che:dcm4che-image"
+    implementation "org.dcm4che:dcm4che-imageio"
+    implementation "org.dcm4che:dcm4che-json"
+    implementation "org.dcm4che:dcm4che-imageio-opencv"
 
     implementation "org.springframework:spring-aop"
     implementation "org.springframework:spring-context-support"
@@ -315,8 +314,6 @@ dependencies {
     runtimeOnly "axis:axis-schema"
     runtimeOnly "cglib:cglib"
     runtimeOnly "org.hsqldb:hsqldb"
-    runtimeOnly "org.codehaus.groovy.modules.http-builder:http-builder"
-    runtimeOnly "net.imagej:ij"
     runtimeOnly "com.sun.media:jai_imageio"
     runtimeOnly "net.bull.javamelody:javamelody-core"
     runtimeOnly "org.javassist:javassist"
