@@ -7,13 +7,13 @@ import javax.servlet.http.HttpServletRequest;
 import org.nrg.action.ActionException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.TriageDto;
 import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.extensions.util.TriageUtil;
 
 public interface TriageService {
 
-	List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
+	List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
 	
 	void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
 	

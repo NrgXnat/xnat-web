@@ -1,4 +1,4 @@
-package org.nrg.xnat.extensions.util;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 
@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class TriageUtil implements Serializable {
+public class TriageDto implements Serializable {
 	private static final long serialVersionUID = 4942375999863374160L;
 	private String resource;
 	private String uri;

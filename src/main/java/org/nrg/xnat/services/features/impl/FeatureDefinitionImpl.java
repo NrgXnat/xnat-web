@@ -6,6 +6,9 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xapi.model.FeatureDefinitionDto;
+import org.nrg.xapi.model.FeatureDefinitionUserGroupDto;
+import org.nrg.xapi.model.FeatureUserGroupDto;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.UserGroupI;
 import org.nrg.xdat.security.helpers.FeatureDefinitionI;
@@ -16,9 +19,6 @@ import org.nrg.xdat.security.services.RoleRepositoryServiceI.RoleDefinitionI;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.features.util.FeatureDefinitionUserGroupUtil;
-import org.nrg.xnat.features.util.FeatureDefinitionUtil;
-import org.nrg.xnat.features.util.FeatureUserGroupUtil;
 import org.nrg.xnat.services.features.FeatureDefinitionService;
 import org.springframework.stereotype.Service;
 
@@ -55,14 +55,14 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 		Collection<String> siteWideEnabled=Features.getEnabledFeatures();
     	Collection<String> siteWideBanned=Features.getBannedFeatures();
     	
-		List<FeatureDefinitionUserGroupUtil> groups = new ArrayList<>();
+		List<FeatureDefinitionUserGroupDto> groups = new ArrayList<>();
 		XFTTable t= XFTTable.Execute("SELECT DISTINCT displayname FROM xdat_usergroup WHERE tag IS NOT NULL;", null, null);
         List<Object> groupTypes=t.convertColumnToArrayList("displayname");
         
-        FeatureDefinitionUserGroupUtil userGroup = getFeatureUserGroup(groupTypes);
+        FeatureDefinitionUserGroupDto userGroup = getFeatureUserGroup(groupTypes);
         groups.add(userGroup);
         
-        FeatureDefinitionUserGroupUtil userGroupWithRole = getFeatureUserGroupWithRole(groupTypes);
+        FeatureDefinitionUserGroupDto userGroupWithRole = getFeatureUserGroupWithRole(groupTypes);
         groups.add(userGroupWithRole);
         
         userGroup.setId(Features.SITE_WIDE);
@@ -71,12 +71,12 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 		return (T) groups;
 	}
 
-	private FeatureDefinitionUserGroupUtil getFeatureUserGroupWithRole(List<Object> groupTypes) {
-		FeatureDefinitionUserGroupUtil userGroup = new FeatureDefinitionUserGroupUtil();
+	private FeatureDefinitionUserGroupDto getFeatureUserGroupWithRole(List<Object> groupTypes) {
+		FeatureDefinitionUserGroupDto userGroup = new FeatureDefinitionUserGroupDto();
 		 for(RoleDefinitionI role : Roles.getRoles()){
-	        	List<FeatureUserGroupUtil> group = new ArrayList<>();
+	        	List<FeatureUserGroupDto> group = new ArrayList<>();
 	        	String key="role:"+role.getKey();
-	        	group.add(FeatureUserGroupUtil.builder()
+	        	group.add(FeatureUserGroupDto.builder()
 	        			.id(key)
 	        			.display("Role: " + role.getName())
 	        			.isRole(true)
@@ -87,11 +87,11 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 		return userGroup;
 	}
 
-	private FeatureDefinitionUserGroupUtil getFeatureUserGroup(List<Object> groupTypes) {
-		 FeatureDefinitionUserGroupUtil userGroup = new FeatureDefinitionUserGroupUtil();
+	private FeatureDefinitionUserGroupDto getFeatureUserGroup(List<Object> groupTypes) {
+		 FeatureDefinitionUserGroupDto userGroup = new FeatureDefinitionUserGroupDto();
 		for(Object gType:groupTypes){
-        	List<FeatureUserGroupUtil> group = new ArrayList<>();
-        	group.add(FeatureUserGroupUtil.builder()
+        	List<FeatureUserGroupDto> group = new ArrayList<>();
+        	group.add(FeatureUserGroupDto.builder()
         			.id(gType.toString())
         			.display(gType.toString())
         			.features(Features.getEnabledFeaturesForGroupType((String)gType))
@@ -105,13 +105,13 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 	private T getFeatureUserGroups(UserI user, String[] tags) {
 		Collection<String> siteWideEnabled=Features.getEnabledFeatures();
     	Collection<String> siteWideBanned=Features.getBannedFeatures();
-    	List<FeatureDefinitionUserGroupUtil> groups = new ArrayList<>();
+    	List<FeatureDefinitionUserGroupDto> groups = new ArrayList<>();
     	for(String tag:tags){
     		XnatProjectdata proj=XnatProjectdata.getProjectByIDorAlias(tag, user, false);
-    		List<FeatureUserGroupUtil> group = new ArrayList<>();
+    		List<FeatureUserGroupDto> group = new ArrayList<>();
     		for(List gID:proj.getGroupIDs()){
     			UserGroupI ug=Groups.getGroup((String)gID.get(0));
-    			group.add(FeatureUserGroupUtil.builder()
+    			group.add(FeatureUserGroupDto.builder()
     					.id(ug.getId())
     					.display(gID.get(1))
     					.features(Features.getFeaturesForGroup(ug))
@@ -119,7 +119,7 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
     					.inherited_banned(Features.getBannedFeaturesForGroupType((String)gID.get(1)))
     					.inherited_features(Features.getEnabledFeaturesForGroupType((String)gID.get(1))).build());
     		}
-    		groups.add(FeatureDefinitionUserGroupUtil.builder()
+    		groups.add(FeatureDefinitionUserGroupDto.builder()
     				.id(proj.getId())
     				.banned(siteWideBanned)
     				.onByDefault(siteWideEnabled)
@@ -130,9 +130,9 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 
 	@SuppressWarnings("unchecked")
 	private T getFeatureDefinitions() {
-		List<FeatureDefinitionUtil> response = new ArrayList<>();
+		List<FeatureDefinitionDto> response = new ArrayList<>();
 		for(FeatureDefinitionI feature: Features.getAllFeatures()){
-			response.add(FeatureDefinitionUtil.builder()
+			response.add(FeatureDefinitionDto.builder()
 					.key(feature.getKey())
 					.name(feature.getName())
 					.enabled(feature.isOnByDefault())

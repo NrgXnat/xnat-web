@@ -4,20 +4,19 @@ import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.model.users.User;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
-import org.nrg.xnat.extensions.util.XdatUserUtil;
 import org.nrg.xnat.services.extensions.UserSettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -63,7 +62,7 @@ public class UserSettingsApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested user details wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "{userId}",produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public XdatUserUtil getUserByUserId(@ApiParam("The ID of the user") @PathVariable final String userId) throws InitializationException, InsufficientPrivilegesException, UserNotFoundException, UserInitException {
+    public User getUserByUserId(@ApiParam("The ID of the user") @PathVariable final String userId) throws InitializationException, InsufficientPrivilegesException, UserNotFoundException, UserInitException {
 		log.debug("User {} requested IpWhitelist", getSessionUser().getUsername());
 		return _userSettingsService.findUserByUserId(getSessionUser(), userId);
 	}

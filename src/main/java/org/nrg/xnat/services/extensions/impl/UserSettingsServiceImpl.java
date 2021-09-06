@@ -17,6 +17,7 @@ import org.nrg.mail.services.EmailRequestLogService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
+import org.nrg.xapi.model.users.User;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.entities.XdatUserAuth;
 import org.nrg.xdat.security.helpers.Roles;
@@ -26,7 +27,6 @@ import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.extensions.util.UserAction;
 import org.nrg.xnat.extensions.util.UserProperty;
-import org.nrg.xnat.extensions.util.XdatUserUtil;
 import org.nrg.xnat.services.extensions.UserSettingsService;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +47,7 @@ public class UserSettingsServiceImpl implements UserSettingsService {
 	}
 	
 	@Override
-	public XdatUserUtil findUserByUserId(UserI user, String userId) throws InitializationException, InsufficientPrivilegesException, UserNotFoundException, UserInitException {
+	public User findUserByUserId(UserI user, String userId) throws InitializationException, InsufficientPrivilegesException, UserNotFoundException, UserInitException {
 		if(StringUtils.isBlank(userId)) {
 			
 		}
@@ -108,14 +108,13 @@ public class UserSettingsServiceImpl implements UserSettingsService {
 	}
 
 	
-	private XdatUserUtil getXdatUser(UserI xdatUser) {
-		return XdatUserUtil.builder()
-				.login(xdatUser.getLogin())
-				.email(xdatUser.getEmail())
-				.firstname(xdatUser.getFirstname())
-				.lastname(xdatUser.getLastname())
-				.enabled(xdatUser.isEnabled())
-				.verified(xdatUser.isVerified())
+	private User getXdatUser(UserI xdatUser) {
+		return User.builder()
+				._email(xdatUser.getEmail())
+				._firstName(xdatUser.getFirstname())
+				._lastName(xdatUser.getLastname())
+				._isEnabled(xdatUser.isEnabled())
+				._isVerified(xdatUser.isVerified())
 				.build();
 	}
 

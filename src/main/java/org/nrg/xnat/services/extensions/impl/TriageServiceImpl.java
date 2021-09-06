@@ -25,6 +25,8 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xapi.model.TriageDto;
+import org.nrg.xapi.model.TriageFileDto;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
@@ -36,8 +38,6 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.zip.ZipUtils;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
-import org.nrg.xnat.extensions.util.TriageFileUtil;
-import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.helpers.uri.archive.ResourceURII;
@@ -62,14 +62,14 @@ import lombok.extern.slf4j.Slf4j;
 public class TriageServiceImpl implements TriageService{
 
 	@Override
-	public List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
+	public List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
 		String projectPath=TriageUtils.getTriageProjectPath(projectId);
 		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 		return returnXnameList(proj,projectPath+File.separator+"resources", request);
 	}
 	
-	private List<TriageUtil> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
-		List<TriageUtil> response = new ArrayList<>();
+	private List<TriageDto> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
+		List<TriageDto> response = new ArrayList<>();
 		File[] fileArray = new File(projectPath).listFiles();
 		 if(fileArray!=null){
 			 for (File f : fileArray) {
@@ -610,8 +610,8 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 		return username;
 	}
 
-	private TriageUtil getTriageUtil(String fn, File f, HttpServletRequest request) {
-		return TriageUtil.builder()
+	private TriageDto getTriageUtil(String fn, File f, HttpServletRequest request) {
+		return TriageDto.builder()
 				 .resource(fn)
 				 .uri(constructResourceURI(fn, request))
 				 .target(getPropertyFromManifest(f, TARGET))
@@ -673,7 +673,7 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 	}
 	
 	private void returnFileList(XnatProjectdata xproj, String projectPath, String xName, HttpServletRequest request) {
-		List<TriageFileUtil> response = new  ArrayList<>();
+		List<TriageFileDto> response = new  ArrayList<>();
 		File dir = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
 		//need to ignore .json files.
 		if (dir.exists() && dir.isDirectory()) {
@@ -690,8 +690,8 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 		}
 	}
 	
-	private TriageFileUtil getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
-		return TriageFileUtil.builder()
+	private TriageFileDto getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
+		return TriageFileDto.builder()
 				 .name(fileRelativeName)
 				 .uri(constructURI(fileRelativeName, request))
 				 .target(getPropertyFromManifest(f, TARGET))

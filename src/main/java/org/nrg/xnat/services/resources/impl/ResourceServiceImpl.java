@@ -47,6 +47,8 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xapi.model.TriageDto;
+import org.nrg.xapi.model.TriageFileDto;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
@@ -87,8 +89,6 @@ import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.dto.resource.FileSet;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
-import org.nrg.xnat.extensions.util.TriageFileUtil;
-import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA;
 import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
@@ -1098,7 +1098,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
+	public List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
 		String projectPath = TriageUtils.getTriageProjectPath(projectId);
 		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 		return returnXnameList(proj, projectPath + File.separator + "resources", request);
@@ -1111,8 +1111,8 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 	 * @param request
 	 * @return
 	 */
-	private List<TriageUtil> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
-		List<TriageUtil> response = new ArrayList<>();
+	private List<TriageDto> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
+		List<TriageDto> response = new ArrayList<>();
 		File[] fileArray = new File(projectPath).listFiles();
 		if (fileArray != null) {
 			for (File f : fileArray) {
@@ -2850,8 +2850,8 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 			return username;
 		}
 
-		private TriageUtil getTriageUtil(String fn, File f, HttpServletRequest request) {
-			return TriageUtil.builder()
+		private TriageDto getTriageUtil(String fn, File f, HttpServletRequest request) {
+			return TriageDto.builder()
 					 .resource(fn)
 					 .uri(constructResourceURI(fn, request))
 					 .target(getPropertyFromManifest(f, TARGET))
@@ -2913,7 +2913,7 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 		}
 		
 		private void returnFileList(XnatProjectdata xproj, String projectPath, String xName, HttpServletRequest request) {
-			List<TriageFileUtil> response = new  ArrayList<>();
+			List<TriageFileDto> response = new  ArrayList<>();
 			File dir = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
 			//need to ignore .json files.
 			if (dir.exists() && dir.isDirectory()) {
@@ -2930,8 +2930,8 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 			}
 		}
 		
-		private TriageFileUtil getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
-			return TriageFileUtil.builder()
+		private TriageFileDto getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
+			return TriageFileDto.builder()
 					 .name(fileRelativeName)
 					 .uri(constructURI(fileRelativeName, request))
 					 .target(getPropertyFromManifest(f, TARGET))

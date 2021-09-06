@@ -13,6 +13,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.TriageDto;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
@@ -21,7 +22,6 @@ import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.dto.resource.DIRResourceDto;
-import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
@@ -111,7 +111,7 @@ public interface ResourceService {
 	 
 	 
 	 /** Start Triage Service Methods*/
-	 List<TriageUtil> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
+	 List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
 		
 	void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
 

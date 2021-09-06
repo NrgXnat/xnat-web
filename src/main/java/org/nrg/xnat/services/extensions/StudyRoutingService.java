@@ -6,14 +6,14 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.StudyRoutingDto;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.extensions.util.StudyRoutingUtil;
 
 public interface StudyRoutingService {
 	
-	List<StudyRoutingUtil> findAll(UserI user) throws InitializationException, NotFoundException;
+	List<StudyRoutingDto> findAll(UserI user) throws InitializationException, NotFoundException;
 	
-	StudyRoutingUtil findByStudyInstanceUid(UserI user, String studyInstanceUid) throws NotFoundException, InitializationException;
+	StudyRoutingDto findByStudyInstanceUid(UserI user, String studyInstanceUid) throws NotFoundException, InitializationException;
 	
 	void updateStudyRouting(UserI user, String studyInstanceUid, String projectId) throws InitializationException, DataFormatException;
 	

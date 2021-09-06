@@ -21,6 +21,7 @@ import org.nrg.xapi.exceptions.NoContentException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xapi.model.TriageDto;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatAbstractresource;
@@ -34,7 +35,6 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
-import org.nrg.xnat.extensions.util.TriageUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.resources.ResourceService;
@@ -1038,7 +1038,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 404, message = "The requested Triage resource wasn't found."),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	    @XapiRequestMapping(value = "{/services/triage/projects/projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	    public List<TriageUtil> getAll(@ApiParam("The ID of the project ") @PathVariable final String projectId,
+	    public List<TriageDto> getAll(@ApiParam("The ID of the project ") @PathVariable final String projectId,
 	    		@ApiParam("The value of Http Servlet request") HttpServletRequest request) throws NotFoundException, DataFormatException, InsufficientPrivilegesException, InitializationException {
 			log.debug("User {} requested Triage resource", getSessionUser().getUsername());
 			return _resourceService.findTriageByProjectId(getSessionUser(),projectId, request);

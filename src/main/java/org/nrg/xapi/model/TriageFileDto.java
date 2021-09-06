@@ -1,11 +1,11 @@
-package org.nrg.xnat.extensions.util;
+package org.nrg.xapi.model;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class TriageFileUtil {
+public class TriageFileDto {
 	private String name;
 	private String uri;
 	private String target;

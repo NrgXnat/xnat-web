@@ -1,4 +1,4 @@
-package org.nrg.xnat.features.util;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -8,7 +8,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class FeatureUserGroupUtil implements Serializable{
+public class FeatureUserGroupDto implements Serializable{
 	private static final long serialVersionUID = -9066669529617137398L;
 	private String id;
 	private Object display;

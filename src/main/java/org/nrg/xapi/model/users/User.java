@@ -12,6 +12,8 @@ package org.nrg.xapi.model.users;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
+import lombok.Builder;
+
 import org.nrg.xdat.entities.UserAuthI;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -26,6 +28,7 @@ import java.util.Date;
  * calls with all data intact.
  */
 @ApiModel(description = "Contains the properties that define a user on the system.")
+@Builder
 public class User {
     public static final RowMapper<User> USER_ROW_MAPPER = (resultSet, index) -> {
         final Timestamp lastModified        = resultSet.getTimestamp("last_modified");

@@ -1,4 +1,4 @@
-package org.nrg.xnat.extensions.util;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 
@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class StudyRoutingUtil implements Serializable {
+public class StudyRoutingDto implements Serializable {
 	private static final long serialVersionUID = -2489157896180259236L;
 	private String studyInstanceUid;
 	private String project;

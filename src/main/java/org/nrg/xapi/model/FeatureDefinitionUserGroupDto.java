@@ -1,4 +1,4 @@
-package org.nrg.xnat.features.util;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -13,10 +13,10 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class FeatureDefinitionUserGroupUtil implements Serializable{
+public class FeatureDefinitionUserGroupDto implements Serializable{
 	private static final long serialVersionUID = 4885945211510671990L;
 	private String id;
 	private Collection<String> banned;
 	private Collection<String> onByDefault;
-	private List<FeatureUserGroupUtil>groups;
+	private List<FeatureUserGroupDto>groups;
 }

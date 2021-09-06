@@ -10,11 +10,11 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.StudyRoutingDto;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.extensions.util.StudyRoutingUtil;
 import org.nrg.xnat.services.extensions.StudyRoutingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -49,7 +49,7 @@ public class StudyRoutingApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested Study Routing wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<StudyRoutingUtil> getAllStudyRouting() throws InitializationException, NotFoundException {
+    public List<StudyRoutingDto> getAllStudyRouting() throws InitializationException, NotFoundException {
 		log.debug("User {} requested IpWhitelist", getSessionUser().getUsername());
 		return _studyRoutingService.findAll(getSessionUser());
 	}
@@ -60,7 +60,7 @@ public class StudyRoutingApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested Study Routing wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "{studyInstanceUid}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public StudyRoutingUtil getByStudyInstaceId(@ApiParam("The ID of the project to be updated") @PathVariable final String studyInstanceUid) throws NotFoundException, InitializationException {
+    public StudyRoutingDto getByStudyInstaceId(@ApiParam("The ID of the project to be updated") @PathVariable final String studyInstanceUid) throws NotFoundException, InitializationException {
 		log.debug("User {} requested IpWhitelist", getSessionUser().getUsername());
 		return _studyRoutingService.findByStudyInstanceUid(getSessionUser(), studyInstanceUid);
 	}

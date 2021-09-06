@@ -10,13 +10,13 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.StudyRoutingDto;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.security.SecurityManager;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.extensions.util.StudyRoutingUtil;
 import org.nrg.xnat.services.extensions.StudyRoutingService;
 import org.springframework.stereotype.Service;
 
@@ -27,13 +27,13 @@ import lombok.extern.slf4j.Slf4j;
 public class StudyRoutingServiceImpl implements StudyRoutingService {
 
 	@Override
-	public List<StudyRoutingUtil> findAll(UserI user) throws InitializationException {
+	public List<StudyRoutingDto> findAll(UserI user) throws InitializationException {
 			return getAllStudyRouting(user, getRoutingService());
 	}
 	
 	@Override
-	public StudyRoutingUtil findByStudyInstanceUid(UserI user, String studyInstanceUid) throws NotFoundException, InitializationException {
-		StudyRoutingUtil responce = getAllStudyRoutingByInstanceUid(user, studyInstanceUid, getRoutingService());
+	public StudyRoutingDto findByStudyInstanceUid(UserI user, String studyInstanceUid) throws NotFoundException, InitializationException {
+		StudyRoutingDto responce = getAllStudyRoutingByInstanceUid(user, studyInstanceUid, getRoutingService());
 		if(Objects.isNull(responce)) {
 			throw new NotFoundException("Study Routing wasn't found");
 		}
@@ -101,8 +101,8 @@ public class StudyRoutingServiceImpl implements StudyRoutingService {
 		}
 	}
 
-	private List<StudyRoutingUtil> getAllStudyRouting(UserI user, org.nrg.xdat.services.StudyRoutingService routingService) throws InitializationException {
-		List<StudyRoutingUtil> response = new ArrayList<>();
+	private List<StudyRoutingDto> getAllStudyRouting(UserI user, org.nrg.xdat.services.StudyRoutingService routingService) throws InitializationException {
+		List<StudyRoutingDto> response = new ArrayList<>();
 		Map<String, Map<String, String>> routings = routingService.findAllRoutings();
 		if (routings != null && routings.size() > 0) {
 			if (log.isDebugEnabled()) {
@@ -128,7 +128,7 @@ public class StudyRoutingServiceImpl implements StudyRoutingService {
 	}
 
 
-	private StudyRoutingUtil getAllStudyRoutingByInstanceUid(UserI user, String studyInstanceUid, org.nrg.xdat.services.StudyRoutingService routingService) throws NotFoundException, InitializationException {
+	private StudyRoutingDto getAllStudyRoutingByInstanceUid(UserI user, String studyInstanceUid, org.nrg.xdat.services.StudyRoutingService routingService) throws NotFoundException, InitializationException {
 		  final Map<String, String> routing = routingService.findStudyRouting(studyInstanceUid);
           if (routing == null || routing.size() == 0) {
               log.info("Request made for routing for study instance UID {}, but nothing was found for that value.", studyInstanceUid);
@@ -150,9 +150,9 @@ public class StudyRoutingServiceImpl implements StudyRoutingService {
 		}
 	}
 	
-	private List<StudyRoutingUtil> getStudyRouting(String studyInstanceUid, Map<String, String> routing) {
-		List<StudyRoutingUtil> response = new ArrayList<>();
-		 response.add(StudyRoutingUtil.builder()
+	private List<StudyRoutingDto> getStudyRouting(String studyInstanceUid, Map<String, String> routing) {
+		List<StudyRoutingDto> response = new ArrayList<>();
+		 response.add(StudyRoutingDto.builder()
     			 .studyInstanceUid(studyInstanceUid)
     			 .project(getRoutingAttribute(routing, org.nrg.xdat.services.StudyRoutingService.PROJECT))
     			 .subject(getRoutingAttribute(routing, org.nrg.xdat.services.StudyRoutingService.SUBJECT))
@@ -164,8 +164,8 @@ public class StudyRoutingServiceImpl implements StudyRoutingService {
 		return response;
 	}
 	
-	private StudyRoutingUtil getStudyRoutingByInstanceId(String studyInstanceUid, Map<String, String> routing) {
-		return  StudyRoutingUtil.builder()
+	private StudyRoutingDto getStudyRoutingByInstanceId(String studyInstanceUid, Map<String, String> routing) {
+		return  StudyRoutingDto.builder()
     			 .studyInstanceUid(studyInstanceUid)
     			 .project(getRoutingAttribute(routing, org.nrg.xdat.services.StudyRoutingService.PROJECT))
     			 .subject(getRoutingAttribute(routing, org.nrg.xdat.services.StudyRoutingService.SUBJECT))
