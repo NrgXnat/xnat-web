@@ -38,10 +38,10 @@ import javax.annotation.Nonnull;
 @Getter
 @Setter
 @Accessors(prefix = "_")
-public class XNATCatalogTemplateUtil extends XnatTemplateUtil {
+public class XnatCatalogTemplateUtil extends XnatTemplateUtil {
 	public static final String RESOURCE_ID = "RESOURCE_ID";
 
-	public XNATCatalogTemplateUtil() {
+	public XnatCatalogTemplateUtil() {
 		_template = XDAT.getNamedParameterJdbcTemplate();
 	}
 

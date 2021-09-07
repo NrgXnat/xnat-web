@@ -8,7 +8,7 @@
  */
 buildscript {
     ext {
-        vXnat = "1.8.2-XAPI-SNAPSHOT"
+        vXnat = "1.8.4-R2X-SNAPSHOT"
     }
 }
 
@@ -35,11 +35,9 @@ description "XNAT is an open-source imaging informatics software platform dedica
 
 repositories {
     mavenLocal()
-    maven { url "https://www.dcm4che.org/maven2" }
-    jcenter()
-    mavenCentral()
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-release" }
     maven { url "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot" }
+    mavenCentral()
 }
 
 sourceCompatibility = 1.8
@@ -340,6 +338,14 @@ dependencies {
     javadocCoverage "com.manoelcampos:javadoc-coverage"
 }
 
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = compileJava.destinationDir
+        testOutputDir = compileTestJava.destinationDir
+    }
+}
+
 lombok {
     version = dependencyManagement.importedProperties["lombok.version"] as String
     sha256 = dependencyManagement.importedProperties["lombok.checksum"] as String
@@ -367,14 +373,14 @@ tomcatRunWar.contextPath = "/"
 }
 
 task deployToTomcat(type: Copy, dependsOn: war) {
-    from war.archivePath
+    from war.archiveFile
     into "${propertyWithDefault("tomcatHome", ".")}/webapps"
 }
 
 cargo {
     // These properties must be set in the ~/.gradle/gradle.properties file or passed on the Gradle command line in
     // the form -PdeployPort=8080 -PdeployContext=/ -PdeployHost=localhost -PdeployUser=deploy -PdeployPassword=deploy
-    containerId = "tomcat7x"
+    containerId = "tomcat8x"
     port = propertyWithDefault("deployPort", 8080) as int
 
     deployable {
@@ -424,36 +430,30 @@ logger.info "Implementation-Branch:   ${branchName}"
 logger.info "Implementation-CleanTag: ${isCleanTag}"
 logger.info "Implementation-Dirty:    ${isDirty}"
 
+ext.gitManifest = manifest {
+    attributes "Application-Name": "XNAT",
+            "Build-Date": buildDate,
+            "Build-Number": buildNumber,
+            "Implementation-Version": project.version,
+            "Implementation-Sha": gitHash,
+            "Implementation-Sha-Full": gitHashFull,
+            "Implementation-Commit": commitDistance,
+            "Implementation-LastTag": lastTag,
+            "Implementation-Branch": branchName,
+            "Implementation-CleanTag": isCleanTag,
+            "Implementation-Dirty": isDirty
+}
+
 jar {
     manifest {
-        attributes "Application-Name": "XNAT",
-                "Build-Date": buildDate,
-                "Build-Number": buildNumber,
-                "Implementation-Version": project.version,
-                "Implementation-Sha": gitHash,
-                "Implementation-Sha-Full": gitHashFull,
-                "Implementation-Commit": commitDistance,
-                "Implementation-LastTag": lastTag,
-                "Implementation-Branch": branchName,
-                "Implementation-CleanTag": isCleanTag,
-                "Implementation-Dirty": isDirty
+        from gitManifest
     }
 }
 
 war {
     duplicatesStrategy = DuplicatesStrategy.WARN
     manifest {
-        attributes "Application-Name": "XNAT",
-                "Build-Date": buildDate,
-                "Build-Number": buildNumber,
-                "Implementation-Version": version,
-                "Implementation-Sha": gitHash,
-                "Implementation-Sha-Full": gitHashFull,
-                "Implementation-Commit": commitDistance,
-                "Implementation-LastTag": lastTag,
-                "Implementation-Branch": branchName,
-                "Implementation-CleanTag": isCleanTag,
-                "Implementation-Dirty": isDirty
+        from gitManifest
     }
 }
 
@@ -468,8 +468,9 @@ jacoco {
 jacocoTestReport {
     dependsOn test
     reports {
-        xml.enabled = false
-        csv.enabled = false
+        xml.required = false
+        csv.required = false
+        html.required = true
     }
 }
 
@@ -483,11 +484,17 @@ task javadocCoverageReport(type: Javadoc, dependsOn: javadoc) {
 
 task sourceJar(type: Jar, dependsOn: classes) {
     classifier "sources"
+    manifest {
+        from gitManifest
+    }
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar) {
     classifier "javadoc"
+    manifest {
+        from gitManifest
+    }
     from javadoc.destinationDir
 }
 
@@ -503,26 +510,7 @@ publishing {
 
             pom.withXml {
                 def root = asNode()
-                root.appendNode("name", "XNAT Server")
-                root.appendNode("description", project.description)
-                root.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
-                root.appendNode("inceptionYear", "2019")
-
-                def scm = root.appendNode("scm")
-                scm.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
-                scm.appendNode("connection", "scm:https://bitbucket.org/xnatdev/xnat-web.git")
-                scm.appendNode("developerConnection", "scm:git://bitbucket.org/xnatdev/xnat-web.git")
-
-                def license = root.appendNode("licenses").appendNode("license")
-                license.appendNode("name", "Simplified BSD 2-Clause License")
-                license.appendNode("url", "https://xnat.org/about/license.php")
-                license.appendNode("distribution", "repo")
-
-                def developers = root.appendNode("developers")
-                def rherrick = developers.appendNode("developer")
-                rherrick.appendNode("id", "rherrick")
-                rherrick.appendNode("name", "Rick Herrick")
-                rherrick.appendNode("email", "jrherrick@wustl.edu")
+                populatePom(root)
             }
         }
         mavenWar(MavenPublication) {
@@ -533,26 +521,7 @@ publishing {
 
             pom.withXml {
                 def root = asNode()
-                root.appendNode("name", "XNAT Server")
-                root.appendNode("description", project.description)
-                root.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
-                root.appendNode("inceptionYear", "2019")
-
-                def scm = root.appendNode("scm")
-                scm.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
-                scm.appendNode("connection", "scm:https://bitbucket.org/xnatdev/xnat-web.git")
-                scm.appendNode("developerConnection", "scm:git://bitbucket.org/xnatdev/xnat-web.git")
-
-                def license = root.appendNode("licenses").appendNode("license")
-                license.appendNode("name", "Simplified BSD 2-Clause License")
-                license.appendNode("url", "https://xnat.org/about/license.php")
-                license.appendNode("distribution", "repo")
-
-                def developers = root.appendNode("developers")
-                def rherrick = developers.appendNode("developer")
-                rherrick.appendNode("id", "rherrick")
-                rherrick.appendNode("name", "Rick Herrick")
-                rherrick.appendNode("email", "jrherrick@wustl.edu")
+                populatePom(root)
             }
         }
     }
@@ -569,10 +538,43 @@ def propertyWithDefault(String name, Object value) {
     hasProperty(name) ? property(name) : value
 }
 
-idea {
-    module {
-        inheritOutputDirs = false
-        outputDir = compileJava.destinationDir
-        testOutputDir = compileTestJava.destinationDir
-    }
+def populatePom(def root) {
+    root.appendNode("name", "XNAT Server")
+    root.appendNode("description", project.description)
+    root.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
+    root.appendNode("inceptionYear", "2019")
+
+    def scm = root.appendNode("scm")
+    scm.appendNode("url", "https://bitbucket.org/xnatdev/xnat-web")
+    scm.appendNode("connection", "scm:https://bitbucket.org/xnatdev/xnat-web.git")
+    scm.appendNode("developerConnection", "scm:git://bitbucket.org/xnatdev/xnat-web.git")
+
+    def license = root.appendNode("licenses").appendNode("license")
+    license.appendNode("name", "Simplified BSD 2-Clause License")
+    license.appendNode("url", "https://xnat.org/about/license.php")
+    license.appendNode("distribution", "repo")
+
+    def developers = root.appendNode("developers")
+    [["akaushal", "Atul Kaushal", "atul.hkaushal@gmail.com"],
+     ["cmoore", "Charlie Moore", "moore.c@wustl.edu"],
+     ["dmaffitt", "Dave Maffitt", "david.maffitt@wustl.edu"],
+     ["jcleveland", "Justin Cleveland", "clevelandj@wustl.edu"],
+     ["jflavin", "John Flavin", "flavinj@gmail.com"],
+     ["jgurney", "Jenny Gurney", "gkgurney@wustl.edu"],
+     ["jransford", "James Ransford", "ransfordj@radiologics.com"],
+     ["kalpert", "Kate Alpert", "kate@radiologics.com"],
+     ["mflorida", "Mark Florida", "markflorida@wustl.edu"],
+     ["mhodge", "Mike Hodge", "hodgem@wustl.edu"],
+     ["mkelsey", "Matt Kelsey", "kelseym@mir.wustl.edu"],
+     ["mmcKay", "Mike McKay", "mfmckay@wustl.edu"],
+     ["mramaratnam", "Mohana Ramaratnam", "mohana@radiologics.com"],
+     ["rherrick", "Rick Herrick", "jrherrick@wustl.edu"],
+     ["smoore", "Steve Moore", "moores@mir.wustl.edu"],
+     ["tolsen", "Tim Olsen", "tim@radiologics.com"],
+     ["whorton", "Will Horton", "hortonw@wustl.edu"]].forEach({ info ->
+        def developer = developers.appendNode("developer")
+        developer.appendNode("id", info[0])
+        developer.appendNode("name", info[1])
+        developer.appendNode("email", info[2])
+    })
 }

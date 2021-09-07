@@ -1,7 +1,7 @@
 /*
  * web: org.nrg.xapi.configuration.RestApiConfig
  * XNAT http://www.xnat.org
- * Copyright (c) 2005-2017, Washington University School of Medicine and Howard Hughes Medical Institute
+ * Copyright (c) 2005-2021, Washington University School of Medicine and Howard Hughes Medical Institute
  * All Rights Reserved
  *
  * Released under the Simplified BSD.
@@ -11,8 +11,6 @@ package org.nrg.xapi.configuration;
 
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.annotations.XapiRestController;
-import org.nrg.xapi.model.users.UserFactory;
-import org.nrg.xdat.services.XdatUserAuthService;
 import org.nrg.xnat.services.XnatAppInfo;
 import org.nrg.xnat.spawner.configuration.SpawnerConfig;
 import org.springframework.context.MessageSource;
@@ -35,24 +33,13 @@ import java.util.Locale;
 
 @Configuration
 @EnableSwagger2
-@ComponentScan(value = {"org.nrg.xapi.rest.config","org.nrg.xapi.rest.dump","org.nrg.xapi.rest.experiments",  
-						"org.nrg.xapi.extensions","org.nrg.xapi.rest.projects", "org.nrg.xapi.rest.protocol", "org.nrg.xapi.resources", 
-						"org.nrg.xapi.rest", "org.nrg.xapi.rest.automation", "org.nrg.xapi.rest.search","org.nrg.xapi.rest.subjects", 
-						"org.nrg.xapi.rest.users", "org.nrg.xnat.eventservice.rest","org.nrg.xnat.snapshot.rest", 
-						"org.nrg.xapi.rest.workflow"},
-               includeFilters = @Filter(ControllerAdvice.class))
+@ComponentScan(value = {"org.nrg.xapi.model.users", "org.nrg.xapi.rest", "org.nrg.xnat.eventservice.rest", "org.nrg.xnat.snapshot.rest"}, includeFilters = @Filter(ControllerAdvice.class))
 @Import(SpawnerConfig.class)
 @Slf4j
 public class RestApiConfig {
     @Bean
-    public UserFactory userFactory(final XdatUserAuthService service) {
-        return new UserFactory(service);
-    }
-
-    @Bean
     public Docket api(final XnatAppInfo info, final MessageSource messageSource) {
         log.debug("Initializing the Swagger Docket object");
-        // TODO: When updating to Swagger 2.5.0 or later, remove the pathMapping("/xapi") call at the end.
         return new Docket(DocumentationType.SWAGGER_2).select()
                                                       .apis(RequestHandlerSelectors.withClassAnnotation(XapiRestController.class))
                                                       .paths(PathSelectors.any())

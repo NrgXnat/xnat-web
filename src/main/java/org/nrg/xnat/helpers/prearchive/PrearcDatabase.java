@@ -9,6 +9,9 @@
 
 package org.nrg.xnat.helpers.prearchive;
 
+import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
+import static org.nrg.xnat.helpers.prearchive.SessionException.Error.*;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +26,7 @@ import org.nrg.dicomtools.filters.SeriesImportFilter;
 import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.framework.exceptions.NrgServiceError;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
+import org.nrg.framework.generics.GenericUtils;
 import org.nrg.framework.status.StatusListenerI;
 import org.nrg.framework.utilities.Reflection;
 import org.nrg.xdat.XDAT;
@@ -47,29 +51,35 @@ import org.nrg.xnat.status.ListenerUtils;
 import org.restlet.data.Status;
 import org.xml.sax.SAXException;
 
-import javax.annotation.Nonnull;
 import java.io.File;
 import java.io.IOException;
+import java.io.SyncFailedException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.util.Date;
 import java.util.*;
-
-import static org.nrg.xft.utils.predicates.ProjectAccessPredicate.UNASSIGNED;
-import static org.nrg.xnat.helpers.prearchive.SessionException.Error.*;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
 
 @Slf4j
 public final class PrearcDatabase {
     public static Connection conn;
     final static String table = "prearchive";
     final static String tableWithSchema = PoolDBUtils.search_schema_name + "." + PrearcDatabase.table;
-    private final static String tableSql = PrearcDatabase.createTableSql();
-    private static final String QUERY_PREARC_TABLE_COLUMNS = "SELECT column_name FROM information_schema.columns WHERE table_schema = '" + PoolDBUtils.search_schema_name + "' AND table_name = '" + PrearcDatabase.table + "'";
+    final static String uniquenessConstraint = "prearchive_study";
     public static boolean ready = false;
+
+    private static final String tableSql = PrearcDatabase.createTableSql();
+
+    private static final String QUERY_PREARC_TABLE_EXISTS          = "SELECT * FROM information_schema.tables WHERE table_schema = LOWER('" + PoolDBUtils.search_schema_name + "') and table_name = LOWER('" + PrearcDatabase.table + "')";
+    private static final String QUERY_PREARC_TABLE_COLUMNS         = "SELECT column_name FROM information_schema.columns WHERE table_schema = '" + PoolDBUtils.search_schema_name + "' AND table_name = '" + PrearcDatabase.table + "'";
+    private static final String QUERY_PREARC_TABLE_UNIQUE_COLUMNS  = "SELECT count(*) FROM information_schema.constraint_column_usage WHERE table_schema = '" + PoolDBUtils.search_schema_name + "' AND table_name ='" + table + "' AND constraint_name='" + uniquenessConstraint + "'";
+    private static final String QUERY_DROP_PREARC_TABLE_CONSTRAINT = "ALTER TABLE " + PrearcDatabase.tableWithSchema + " DROP CONSTRAINT " + uniquenessConstraint;
+    private static final String QUERY_DEPRECATE_PREARC_TABLE       = "ALTER TABLE " + PrearcDatabase.tableWithSchema + " RENAME TO " + PrearcDatabase.table + "_deprecated";
+    private static final String QUERY_MIGRATE_PREARC_TABLE         = "INSERT INTO " + PrearcDatabase.tableWithSchema + " (%1$s) SELECT %1$s FROM " + PrearcDatabase.tableWithSchema + "_deprecated";
+    private static final String QUERY_DROP_DEPRECATED_PREARC_TABLE = "DROP TABLE " + PrearcDatabase.tableWithSchema + "_deprecated";
 
     // an object that synchronizes the cache with some permanent store
     private static SessionDataDelegate sessionDelegate;
@@ -206,9 +216,7 @@ public final class PrearcDatabase {
         try {
             new SessionOp<Void>() {
                 public Void op() throws Exception {
-                    String query = "SELECT * FROM information_schema.tables WHERE table_schema = LOWER('xdat_search') and table_name = LOWER('" + PrearcDatabase.table + "');";
-                    String exists = (String) PoolDBUtils.ReturnStatisticQuery(query, "relname", null, null);
-                    if (exists == null) {
+                    if (PoolDBUtils.ReturnStatisticQuery(QUERY_PREARC_TABLE_EXISTS, "relname", null, null) == null) {
                         PoolDBUtils.ExecuteNonSelectQuery(tableSql, null, null);
                     }
                     return null;
@@ -231,51 +239,40 @@ public final class PrearcDatabase {
                     // First find out what's in the existing table. We're assuming it exists, because we should have
                     // checked for existing prior to trying to correct the table.
                     final List<String> existing = new ArrayList<>();
-                    final String query = "SELECT column_name FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = 'xdat_search' AND table_name = 'prearchive';";
-                    final ResultSet results = this.pdb.executeQuery(null, query, null);
+                    final ResultSet results = this.pdb.executeQuery(null, QUERY_PREARC_TABLE_COLUMNS, null);
                     while (results.next()) {
                         existing.add(results.getString("column_name").toLowerCase());
                     }
 
                     // Now find out what's SUPPOSED to be in the table.
-                    final List<String> required = new ArrayList<>(DatabaseSession.values().length);
-                    for (final DatabaseSession d : DatabaseSession.values()) {
-                        required.add(d.getColumnName().toLowerCase());
-                    }
+                    final List<String> required = Arrays.stream(DatabaseSession.values()).map(DatabaseSession::getColumnName).map(String::toLowerCase).collect(Collectors.toList());
 
                     // Now check the ordinals. This is where undeclared column queries go to die, e.g. insert into table
                     // values (1, 2, 3) when the columns have actually moved. Start by checking table size. If that's
                     // off, we don't even need to check the ordering of the columns, since the column mismatch will
                     // cause ordering errors anyways.
-                    boolean ordered;
-                    if (required.size() == existing.size()) {
-                        ordered = true;
-                        for (int index = 0; index < required.size(); index++) {
-                            if (!required.get(index).equals(existing.get(index))) {
-                                ordered = false;
-                                break;
-                            }
-                        }
-                    } else {
-                        ordered = false;
-                    }
+                    final boolean ordered = CollectionUtils.isEqualCollection(required, existing);
 
                     // Now find out what the existing and required columns have in common. If the in-common columns list
                     // is the same size as the required, that means we have all of the required columns.
-                    Collection inCommon = CollectionUtils.intersection(required, existing);
-                    boolean allRequiredExist = inCommon.size() == required.size();
+                    final Collection<String> inCommon = GenericUtils.convertToTypedList(CollectionUtils.intersection(required, existing), String.class);
+                    final boolean allRequiredExist = inCommon.size() == required.size();
 
-                    // If we have all required columns and the ordering is good, we're done, the table matches.
-                    if (allRequiredExist && ordered) {
+                    // Determine if uniqueness constraint exists
+                    final long count = (Long) PoolDBUtils.ReturnStatisticQuery(QUERY_PREARC_TABLE_UNIQUE_COLUMNS, "count", null, null);
+
+                    // If we have all required columns and the ordering is good and the uniqueness constraint exists,
+                    // we're done, the table matches.
+                    if (allRequiredExist && ordered && count > 0) {
                         return null;
                     }
 
                     // Build the ALTER query required to sync to the required definition. First rename prearc table to
                     // a holding table.
-                    final StringBuilder buffer = new StringBuilder();
-                    buffer.append("ALTER TABLE ").append(PrearcDatabase.tableWithSchema).append(" RENAME TO ");
-                    buffer.append(PrearcDatabase.table).append("_deprecated");
-                    PoolDBUtils.ExecuteNonSelectQuery(buffer.toString(), null, null);
+                    if (count > 0) {
+                        PoolDBUtils.ExecuteNonSelectQuery(QUERY_DROP_PREARC_TABLE_CONSTRAINT, null, null);
+                    }
+                    PoolDBUtils.ExecuteNonSelectQuery(QUERY_DEPRECATE_PREARC_TABLE, null, null);
 
                     // Now create the standard prearchive table.
                     createTable();
@@ -286,30 +283,17 @@ public final class PrearcDatabase {
                     // later INSERT queries. So we remove required columns that aren't in-common because we can't
                     // migrate those.
                     if (!allRequiredExist) {
-                        List<String> removals = new ArrayList<>();
-                        for (String column : required) {
-                            if (!inCommon.contains(column)) {
-                                removals.add(column);
-                            }
-                        }
-                        if (removals.size() > 0) {
-                            required.removeAll(removals);
-                        }
+                        required.removeAll(required.stream().filter(column -> !inCommon.contains(column)).collect(Collectors.toList()));
                     }
 
-                    String columns = StringUtils.join(required.toArray(), ", ");
+                    final String columns = String.join(", ", required);
 
                     // Clear the query and create an insert that will select all of the in-common columns from the
                     // holding table and put them into the new prearchive table.
-                    buffer.setLength(0);
-                    buffer.append("INSERT INTO ").append(PrearcDatabase.tableWithSchema).append(" (").append(columns).append(")");
-                    buffer.append("SELECT ").append(columns).append(" FROM ").append(PrearcDatabase.tableWithSchema).append("_deprecated");
-                    PoolDBUtils.ExecuteNonSelectQuery(buffer.toString(), null, null);
+                    PoolDBUtils.ExecuteNonSelectQuery(String.format(QUERY_MIGRATE_PREARC_TABLE, columns), null, null);
 
                     // OK, data's migrated! Great! Nuke the old table.
-                    buffer.setLength(0);
-                    buffer.append("DROP TABLE ").append(PrearcDatabase.tableWithSchema).append("_deprecated");
-                    PoolDBUtils.ExecuteNonSelectQuery(buffer.toString(), null, null);
+                    PoolDBUtils.ExecuteNonSelectQuery(QUERY_DROP_DEPRECATED_PREARC_TABLE, null, null);
 
                     // Leave.
                     return null;
@@ -1024,52 +1008,32 @@ public final class PrearcDatabase {
         }
     }
 
-    public static void buildSession(final File sessionDir, final String session, final String timestamp, final String project, final String visit, final String protocol, final String timezone, final String source) throws Exception {
+    public static void buildSession(final File sessionDir, final String session, final String timestamp,
+                                    final String project, final String visit, final String protocol,
+                                    final String timezone, final String source) throws Exception {
         final SessionData sd = PrearcDatabase.getSession(session, timestamp, project);
+        buildSession(sd, sessionDir, session, timestamp, project, visit, protocol, timezone, source);
+    }
+
+    public static void buildSession(final SessionData sd) throws Exception {
+        buildSession(sd, new File(sd.getUrl()), sd.getName(), sd.getTimestamp(), sd.getProject(), sd.getVisit(),
+                sd.getProtocol(), sd.getTimeZone(), sd.getSource());
+    }
+
+    public static void buildSession(final SessionData sd, File sessionDir) throws Exception {
+        buildSession(sd, sessionDir, sd.getName(), sd.getTimestamp(), sd.getProject(), sd.getVisit(),
+                sd.getProtocol(), sd.getTimeZone(), sd.getSource());
+    }
+
+    public static void buildSession(final SessionData sd, final File sessionDir, final String session, final String timestamp,
+                                    final String project, final String visit, final String protocol,
+                                    final String timezone, final String source) throws Exception {
 
         try {
             new LockAndSync<Void>(session, timestamp, project, sd.getStatus()) {
                 Void extSync() throws SyncFailedException {
-                    final Map<String, String> params = new LinkedHashMap<>();
-                    if (!Strings.isNullOrEmpty(project) && !UNASSIGNED.equals(project)) {
-                        params.put("project", project);
-                        params.put("separatePetMr", PrearcUtils.getSeparatePetMr(project));
-                    } else {
-                        params.put("separatePetMr", PrearcUtils.getSeparatePetMr());
-                    }
-                    params.put("label", session);
-                    final String subject = sd.getSubject();
-                    if (!Strings.isNullOrEmpty(subject)) {
-                        params.put("subject_ID", sd.getSubject());
-                    }
-                    if (!Strings.isNullOrEmpty(visit)) {
-                        params.put("visit", visit);
-                    }
-                    if (!Strings.isNullOrEmpty(protocol)) {
-                        params.put("protocol", protocol);
-                    }
-                    if (!Strings.isNullOrEmpty(timezone)) {
-                        params.put("TIMEZONE", timezone);
-                    }
-                    if (!Strings.isNullOrEmpty(source)) {
-                        params.put("SOURCE", source);
-                    }
-
-                    PrearcUtils.cleanLockDirs(sd.getSessionDataTriple());
-
-                    try {
-                        final File sessionXmlFile = new File(sessionDir.getPath() + ".xml");
-                        log.info("Attempting to build prearchive session in folder '{}' into the session XML file '{}'", sessionDir.getPath(), sessionXmlFile.getPath());
-
-                        final Boolean success = new XNATSessionBuilder(sessionDir, sessionXmlFile, true, params).call();
-                        if (BooleanUtils.isNotTrue(success)) {
-                            throw new SyncFailedException("Error building session");
-                        }
-                    } catch (SyncFailedException e) {
-                        throw e;
-                    } catch (Throwable t) {
-                        throw new SyncFailedException("Error building session", t);
-                    }
+                    PrearcUtils.buildSession(sd, sessionDir, session, timestamp, project,
+                            visit, protocol, timezone, source);
                     return null;
                 }
 
@@ -1980,7 +1944,7 @@ public final class PrearcDatabase {
             /**
              * Return the found session
              * (non-Javadoc)
-             * @see org.nrg.xnat.helpers.prearchive.PrearcDatabase.PredicatedOp#trueOp()
+             * @see PredicatedOp#trueOp()
              */
             Either<SessionData, SessionData> trueOp() throws SQLException, SessionException, Exception {
                 return new Either<SessionData, SessionData>() {
@@ -1996,29 +1960,57 @@ public final class PrearcDatabase {
 
                 SessionData resultSession = new SessionOp<SessionData>() {
                     public SessionData op() throws SQLException, SessionException, Exception {
-                        int dups = PrearcDatabase.countOf(sessionData.getFolderName(), sessionData.getTimestamp(), sessionData.getProject());
-                        int suffix = 1;
+                        sessionData.setAutoArchive((Object) autoArchive);
+                        boolean duplicated;
+                        int suffix = 0;
                         String suffixString = "";
-                        while (dups == 1) {
-                            suffixString = "_" + suffix;
-                            dups = PrearcDatabase.countOf(sessionData.getFolderName() + suffixString, sessionData.getTimestamp(), sessionData.getProject());
-                            if (dups > 1) {
-                                throw new SessionException(DatabaseError, "Database is in a bad state, " + dups + "sessions (name : " + sessionData.getFolderName() + " timestamp: " + sessionData.getTimestamp() + " project : " + sessionData.getProject());
+                        do {
+                            if (suffix > 0) {
+                                appendSuffix(suffixString);
                             }
-                            suffix++;
-                        }
+                            if (sessionData.getProject() == null) {
+                                // We have to manually check for duplicates since nulls are considered distinct in postgres
+                                int dups;
+                                do {
+                                    if (suffix > 0) {
+                                        appendSuffix(suffixString);
+                                    }
+                                    dups = PrearcDatabase.countOf(sessionData.getFolderName(), sessionData.getTimestamp(), sessionData.getProject());
+                                    suffix++;
+                                    suffixString = "_" + suffix;
+                                    if (suffix > 3) {
+                                        // this shouldn't happen, throw the exception
+                                        throw new SessionException(AlreadyExists, "Trying to add an existing session: " +
+                                                sessionData);
+                                    }
+                                } while (dups > 0);
+                            }
 
+                            PreparedStatement statement = this.pdb.getPreparedStatement(null, PrearcDatabase.insertSql());
+                            for (int i = 0; i < DatabaseSession.values().length; i++) {
+                                DatabaseSession.values()[i].setInsertStatement(statement, sessionData);
+                            }
+                            try {
+                                statement.executeUpdate();
+                                duplicated = false;
+                            } catch (SQLIntegrityConstraintViolationException e) {
+                                // If there's an integrity constraint violation, we're trying to insert a dupe
+                                duplicated = true;
+                                suffix++;
+                                suffixString = "_" + suffix;
+                                if (suffix > 3) {
+                                    // this shouldn't happen, throw the exception
+                                    throw e;
+                                }
+                            }
+                        } while (duplicated);
+                        return PrearcDatabase.getSession(sessionData.getFolderName(), sessionData.getTimestamp(), sessionData.getProject());
+                    }
+
+                    private void appendSuffix(String suffixString) {
                         sessionData.setFolderName(sessionData.getFolderName() + suffixString);
                         sessionData.setName(sessionData.getName() + suffixString);
-                        sessionData.setUrl((new File(tsFile, sessionData.getFolderName()).getAbsolutePath()));
-                        sessionData.setAutoArchive((Object) autoArchive);
-
-                        PreparedStatement statement = this.pdb.getPreparedStatement(null, PrearcDatabase.insertSql());
-                        for (int i = 0; i < DatabaseSession.values().length; i++) {
-                            DatabaseSession.values()[i].setInsertStatement(statement, sessionData);
-                        }
-                        statement.executeUpdate();
-                        return PrearcDatabase.getSession(sessionData.getFolderName(), sessionData.getTimestamp(), sessionData.getProject());
+                        sessionData.setUrl(new File(tsFile, sessionData.getFolderName()).getAbsolutePath());
                     }
                 }.run();
                 result.setLeft(resultSession);
@@ -2154,6 +2146,10 @@ public final class PrearcDatabase {
             values.add(d.getColumnName() + " " + d.getColumnDefinition());
         }
         s.append(StringUtils.join(values.toArray(), ','));
+        s.append(", CONSTRAINT ").append(uniquenessConstraint).append(" UNIQUE (").append(String.join(",", Arrays.asList(
+                DatabaseSession.TIMESTAMP.getColumnName(),
+                DatabaseSession.PROJECT.getColumnName(),
+                DatabaseSession.FOLDER_NAME.getColumnName()))).append(")");
         s.append(")");
         return s.toString();
     }

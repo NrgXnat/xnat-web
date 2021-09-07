@@ -95,7 +95,7 @@ import org.nrg.xnat.helpers.resource.direct.ResourceModifierA.UpdateMeta;
 import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.helpers.uri.UriParserUtils;
 import org.nrg.xnat.helpers.uri.archive.ResourceURII;
-import org.nrg.xnat.model.util.XNATCatalogTemplateUtil;
+import org.nrg.xnat.model.util.XnatCatalogTemplateUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.model.util.XnatTemplateUtil;
 import org.nrg.xnat.presentation.ChangeSummaryBuilderA;
@@ -135,7 +135,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements ResourceService{
+public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements ResourceService{
 	
 	@Autowired
 	public ResourceServiceImpl(final NamedParameterJdbcTemplate template) {
@@ -2159,16 +2159,14 @@ public class ResourceServiceImpl extends XNATCatalogTemplateUtil implements Reso
 			}
 			final CatCatalogBean cat = catalogData.catBean;
 			final String parentPath = catalogData.catPath;
-			XNATCatalogTemplateUtil tmp = new XNATCatalogTemplateUtil();
+				XnatCatalogTemplateUtil tmp = new XnatCatalogTemplateUtil();
 			String baseURI = tmp.getBaseURI();
 			final CatalogUtils.CatEntryFilterI entryFilter = buildFilter(contents, formats);
 	        List<Object[]> objects= CatalogUtils.getEntryDetails(cat, parentPath, baseURI + "/resources/" + resource.getXnatAbstractresourceId() + "/files", resource, false, entryFilter, proj, "URI");
 	        results = getListObjectData(objects, results);
 			}
 		
-		
 		return results;
-		
 	}
 	
 	/**
