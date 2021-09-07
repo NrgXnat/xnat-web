@@ -29,4 +29,7 @@ public interface ScanService {
 	 void deleteById(UserI user, String assessedId, Integer scanId, String filepath, boolean removeFiles,XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException;
 	
 	 List<Map<String, String>> findAllScanners(UserI user, String scanTable, String projectId) throws InsufficientPrivilegesException;
+
+	 //Scan Quality Label Service
+	 String findAllScanQualityLable(UserI user, String projectId) throws InitializationException;  
 }

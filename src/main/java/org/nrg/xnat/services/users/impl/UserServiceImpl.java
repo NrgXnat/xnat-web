@@ -17,6 +17,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.ElementSecurity;
@@ -26,12 +27,18 @@ import org.nrg.xdat.security.UserGroupI;
 import org.nrg.xdat.security.UserGroupServiceI;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.UserHelper;
+import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.security.user.exceptions.UserInitException;
+import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xft.XFTTable;
 import org.nrg.xft.db.FavEntries;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
+import org.nrg.xft.exception.DBPoolException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.users.UserService;
 import org.nrg.xnat.utils.WorkflowUtils;
@@ -39,6 +46,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.security.core.session.SessionInformation;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.stereotype.Service;
 
 import lombok.extern.slf4j.Slf4j;
@@ -211,6 +221,134 @@ public class UserServiceImpl implements UserService{
             log.error("", e);
             throw new InitializationException(e.getLocalizedMessage());
         }
+	}
+	
+	
+	@Override
+	public Integer findSessionCount(UserI user, String username) throws DataFormatException, InsufficientPrivilegesException {
+		UserI validUser = validateUser(user, username);
+		if (log.isDebugEnabled()) {
+			log.debug("Entering the session count represent() method");
+		}
+		return getSessionCount(validUser);
+	}
+
+	@Override
+	public void findUserCacheResourceByXname(String xName) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void findUserCacheResourceFilesByXname(String xName) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void findUserCacheResourceFilesByXnameAndFileName(String xName, String fileName) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void findUserFavoritesByDataType(UserI user, String dataType) {
+		XFTTable table = null;
+		if (dataType != null) {
+			try {
+				table = FavEntries.GetFavoriteEntries(dataType, user);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} catch (DBPoolException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public void findUserFavoritesByDataTypeAndProjectId(UserI user, String dataType, String projectId) {
+		findUserFavoritesByDataType(user, dataType);
+	}
+
+	@Override
+	public void delete(UserI user, String dataType, String projectId) throws NotFoundException {
+		if (projectId == null || dataType == null || user == null) {
+			throw new NotFoundException("");
+		} else {
+			try {
+				FavEntries favEntry = FavEntries.GetFavoriteEntries(dataType, projectId, user);
+				favEntry.delete();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+
+	@Override
+	public void update(UserI user, String dataType, String projectId) throws NotFoundException {
+		if (projectId == null || dataType == null) {
+			throw new NotFoundException("");
+		} else {
+			try {
+				FavEntries favEntry = new FavEntries();
+				favEntry.setId(projectId);
+				favEntry.setDataType(dataType);
+				favEntry.setUser(user);
+				favEntry.save();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	
+	private int getSessionCount(UserI user) {
+		SessionRegistry sessionRegistry = XDAT.getContextService().getBean("sessionRegistry", SessionRegistryImpl.class);
+		int sessionCount = 0;
+		if (sessionRegistry != null) {
+			List<SessionInformation> l = sessionRegistry.getAllSessions(user, false);
+			if (l != null) {
+				sessionCount = l.size();
+			}
+		}
+		return sessionCount;
+	}
+
+	private UserI validateUser(UserI user, String username) throws DataFormatException, InsufficientPrivilegesException {
+		if (!StringUtils.isBlank(username)) {
+            // But if it's just you, no harm no foul.
+            if (username.equals(user.getLogin())) {
+            	return user;
+            } else if (!Roles.isSiteAdmin(user)) {
+                // If it's NOT you and you're not an admin, you are banished.
+            	throw new InsufficientPrivilegesException("Only site admins can request the session count for another user.");
+            } else {
+                // If you are an admin and this isn't you, then let's get that account.
+            	return getXdatValidUser(username);
+            }
+		}else {
+            return user;
+        }
+	}
+
+	private UserI getXdatValidUser(String username) throws DataFormatException {
+		UserI xdatUser=null;
+		try {
+			xdatUser = Users.getUser(username);
+		} catch (UserNotFoundException | UserInitException e) {
+			log.error("",e);
+		}
+		
+		if (xdatUser == null) {
+			throw new DataFormatException("The user identified by " + username + " can not be found in the system.");
+		} 
+		return xdatUser;
 	}
 	
 	
@@ -411,7 +549,5 @@ public class UserServiceImpl implements UserService{
 	
 	private final NamedParameterJdbcTemplate _template;
 	private final UserGroupServiceI _service;
-	
-	
 
 }

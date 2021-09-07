@@ -24,9 +24,8 @@ import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.model.util.XnatEventUtil;
-import org.nrg.xnat.services.experiments.AssessorService;
+import org.nrg.xnat.services.experiments.ImageAssessorService;
 import org.nrg.xnat.services.experiments.ExperimentService;
-import org.nrg.xnat.services.extensions.ScanQualityLabelService;
 import org.nrg.xnat.services.scans.ScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -49,12 +48,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ExperimentApi extends AbstractXapiProjectRestController {
 
 	@Autowired
-	public ExperimentApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ExperimentService experimentService, final AssessorService assessorService,
-			final ScanQualityLabelService scanQualityLabelService,  final ScanService scanService) {
+	public ExperimentApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ExperimentService experimentService, final ImageAssessorService assessorService,
+			  final ScanService scanService) {
 		super(userManagementService, roleHolder);
 		_experimentService = experimentService;
 		_assessorService = assessorService;
-		_scanQualityLabelService = scanQualityLabelService;
 		_scanService = scanService;
 	}
 
@@ -422,7 +420,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    @XapiRequestMapping(value = {"/services/scan-quality-labels", "/services/scan-quality-labels/{projectId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
 	    public String getAllScanQualityLable(@ApiParam("The ID of the project to be updated") @PathVariable(required = false) final String projectId) throws InitializationException  {
 			log.debug("User {} requested Scan Quality Lable", getSessionUser().getUsername());
-			return _scanQualityLabelService.findAllScanQualityLable(getSessionUser(), projectId);
+			return _scanService.findAllScanQualityLable(getSessionUser(), projectId);
 		}
 	
 		
@@ -614,8 +612,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    }
 
 	private final ExperimentService _experimentService;
-	private final AssessorService _assessorService;
-	private final ScanQualityLabelService _scanQualityLabelService;
+	private final ImageAssessorService _assessorService;
 	private final ScanService _scanService;
 
 }

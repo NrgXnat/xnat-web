@@ -24,7 +24,7 @@ import org.nrg.xnat.dto.file.ResourceFileDto;
 import org.nrg.xnat.dto.resource.DIRResourceDto;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
-import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
+import org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
@@ -67,10 +67,11 @@ public interface ResourceService {
 	 /** End Resource Service Methods*/
 	 
 	 
-	 /** Start DIR Resource Service Methods*/
-	 List<DIRResourceDto>  findAllDIRResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
+	 /** Start DIR Resource Service Methods
+	 * @throws InvalidFileCharacters */
+	 List<DIRResourceDto>  findAllDIRResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters;
 
-	 StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException, org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
+	 StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException;
 
      String getContentDisposition();
      /** End DIR Resource Service Methods*/

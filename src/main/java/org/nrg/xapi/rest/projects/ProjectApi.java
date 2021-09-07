@@ -26,8 +26,6 @@ import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.par.PARService;
-import org.nrg.xnat.services.projects.ProjectAccessibilityService;
-import org.nrg.xnat.services.projects.ProjectArchiveService;
 import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.turbine.utils.ProjectAccessRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,12 +44,10 @@ import java.util.List;
 public class ProjectApi extends AbstractXapiProjectRestController {
 	
     @Autowired
-    public ProjectApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ProjectService projectService, final PARService parService, final ProjectArchiveService projectArchiveService, final ProjectAccessibilityService projectAccessibilityService) {
+    public ProjectApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ProjectService projectService, final PARService parService) {
         super(userManagementService, roleHolder);
         _projectService = projectService;
         _parService = parService;
-        _projectArchiveService= projectArchiveService;
-        _projectAccessibilityService= projectAccessibilityService;
     }
 
 	/**
@@ -320,7 +316,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"/projects/{projectId}/archive_spec","/config/{projectId}/archive_spec"}, produces = MediaType.APPLICATION_XML_VALUE, method = GET)
     public ArcProject getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException  {
         log.debug("Controller Api- get project by ID {}", projectId);
-        return _projectArchiveService.findByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(ArcProject.SCHEMA_ELEMENT_NAME, projectId));
+        return _projectService.findArcProjectByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(ArcProject.SCHEMA_ELEMENT_NAME, projectId));
     }
     
   
@@ -342,7 +338,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 public String getByProjectIdAndAccessLevel(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 			 @ApiParam(value = "The access level of the project.") @PathVariable final String accessLevel) throws NotFoundException, DataFormatException  {
 		 log.debug("User {} requested project with ID {} and access level {}", getSessionUser().getUsername(), projectId, accessLevel);
-		 return _projectAccessibilityService.findByProjectIdAndAccessLevel(getSessionUser(), projectId, accessLevel).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
+		 return _projectService.findByProjectIdAndAccessLevel(getSessionUser(), projectId, accessLevel).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
 	}
 	 
 	 /**
@@ -375,11 +371,9 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 									@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws Exception {
 	        
 	        log.debug("updating project accessibility with project ID {}", projectId);
-	        return _projectAccessibilityService.update(getSessionUser(),access, projectId,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
+	        return _projectService.update(getSessionUser(),access, projectId,XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
     
     private final ProjectService _projectService;
     private final PARService _parService;
-    private final ProjectArchiveService _projectArchiveService;
-    private final ProjectAccessibilityService _projectAccessibilityService;
 }

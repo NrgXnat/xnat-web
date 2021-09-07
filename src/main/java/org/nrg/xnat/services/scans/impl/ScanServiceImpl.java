@@ -10,6 +10,8 @@ import java.util.Objects;
 import java.util.Optional;
 
 import org.apache.commons.lang.StringUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
@@ -30,6 +32,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.SecureResourceUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.scans.ScanService;
+import org.nrg.xnat.turbine.utils.ScanQualityUtils;
 import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -156,6 +159,21 @@ public class ScanServiceImpl implements ScanService {
 		}
 		return getScannersData(user, scanTable, projectId, proj);
 		
+	}
+	
+	@Override
+	public String findAllScanQualityLable(UserI user, String projectId) throws InitializationException {
+		if (log.isDebugEnabled()) {
+			log.debug("Entering the scan quality label represent() method");
+		}
+		try {
+			List<String> labels = ScanQualityUtils.getQualityLabels(projectId, user);
+			JSONObject json = new JSONObject();
+			json.put(StringUtils.isBlank(projectId) ? SITE_KEY : projectId, labels);
+			return json.toString();
+		} catch (JSONException e) {
+			throw new InitializationException(e);
+		}
 	}
 	
 	private List<Map<String, String>> getScannersData(UserI user, String scanTable, String projectId, XnatProjectdata proj) {
@@ -325,5 +343,7 @@ public class ScanServiceImpl implements ScanService {
    private static final String SCANNER_KEY= "scanner";
    
    private final NamedParameterJdbcTemplate _template;
+   
+   private static final String SITE_KEY = "site";
 
 }

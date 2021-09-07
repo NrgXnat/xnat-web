@@ -38,7 +38,7 @@ import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.resources.ResourceService;
-import org.nrg.xnat.services.resources.impl.DIRResourceServiceImpl.InvalidFileCharacters;
+import org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -522,7 +522,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	    		@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 	    		@ApiParam(value = "The value  of the filepath.") @RequestParam(required = false) final String filepath,
 	    		@ApiParam(value = "The value of the recursive.") @RequestParam(required = false) final boolean recursive,
-	    		@ApiParam(value = "The value of the isXarReference.") @RequestParam(required = false) final boolean isXarReference) throws NotFoundException, DataFormatException, NotAuthenticatedException, InvalidFileCharacters, org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters {
+	    		@ApiParam(value = "The value of the isXarReference.") @RequestParam(required = false) final boolean isXarReference) throws NotFoundException, DataFormatException, NotAuthenticatedException, InvalidFileCharacters {
 			
 		 log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
 	    	 return _resourceService.findAllDIRResources(getSessionUser(), projectId, experimentId, filepath, recursive, isXarReference);

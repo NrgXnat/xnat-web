@@ -6,6 +6,7 @@ import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
+import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xft.db.FavEntries;
@@ -30,4 +31,26 @@ public interface UserService {
 	 void deleteByGroupIdAndProject(UserI sessionUser, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException;
 	 
 	 void updateByGroupIdAndProject(UserI user, XdatUsergroup group, String groupId, String projectId, Map<String, Object> groupProperties) throws InitializationException, DataFormatException;
+
+	 //Session Count Service
+	 Integer findSessionCount(UserI user, String userName) throws DataFormatException, InsufficientPrivilegesException;
+
+	 //User Cache service
+	 void findUserCacheResourceByXname(String xName);
+
+	 void findUserCacheResourceFilesByXname(String xName);
+
+	 void findUserCacheResourceFilesByXnameAndFileName(String xName, String fileName);
+	 
+	 //User Favorite Service 
+	 void findUserFavoritesByDataType(UserI user, String dataType);
+		
+	 void findUserFavoritesByDataTypeAndProjectId(UserI user, String dataType, String projectId);
+	
+	 void delete(UserI user, String dataType, String projectId) throws NotFoundException;
+	
+	 void update(UserI user, String dataType, String projectId) throws NotFoundException;
+	
+	 
+
 }

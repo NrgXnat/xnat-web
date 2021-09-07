@@ -8,7 +8,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
 
-public interface AssessorService {
+public interface ImageAssessorService {
 
 	  List<XnatImageassessordata> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
 	

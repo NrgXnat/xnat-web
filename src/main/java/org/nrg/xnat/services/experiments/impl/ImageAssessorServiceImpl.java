@@ -11,7 +11,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.services.experiments.AssessorService;
+import org.nrg.xnat.services.experiments.ImageAssessorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -19,10 +19,10 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
-public class AssessorServiceImpl implements AssessorService {
+public class ImageAssessorServiceImpl implements ImageAssessorService {
 	
 	@Autowired
-	public AssessorServiceImpl(final NamedParameterJdbcTemplate template) {
+	public ImageAssessorServiceImpl(final NamedParameterJdbcTemplate template) {
 		_template = template;
 	}
 
