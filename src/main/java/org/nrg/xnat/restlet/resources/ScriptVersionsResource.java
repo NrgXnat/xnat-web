@@ -17,7 +17,6 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
 import org.restlet.Context;
 import org.restlet.data.MediaType;
 import org.restlet.data.Request;
@@ -56,7 +55,7 @@ public class ScriptVersionsResource extends AutomationResource {
         if (!Roles.isSiteAdmin(user)) {
             // You can't put or post or delete a script and you can't retrieve a specific script OTHER THAN the split
             // PET/MR script.
-            if ((StringUtils.isNotBlank(_scriptId) && !_scriptId.equals(PrearcDatabase.SPLIT_PETMR_SESSION_ID))) {
+            if ((StringUtils.isNotBlank(_scriptId) && !_scriptId.equals(ScriptService.SPLIT_PETMR_SESSION_ID))) {
                 _log.warn(getRequestContext("User " + user.getLogin() + " attempted to access forbidden script trigger template resources"));
                 response.setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");
                 throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");
@@ -134,7 +133,6 @@ public class ScriptVersionsResource extends AutomationResource {
             table.insertRowItems(script.getScriptId(),
                     script.getLanguage(),
                     script.getDescription());
-//                    script.getScriptVersion());
         }
 
         return representTable(table, mediaType, params);

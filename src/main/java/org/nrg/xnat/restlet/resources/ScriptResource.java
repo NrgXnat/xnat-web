@@ -58,7 +58,7 @@ public class ScriptResource extends AutomationResource {
         if (!Roles.isSiteAdmin(user)) {
             // You can't put or post or delete a script and you can't retrieve a specific script OTHER THAN the split
             // PET/MR script.
-            if (!request.getMethod().equals(Method.GET) || (StringUtils.isNotBlank(_scriptId) && !_scriptId.equals(PrearcDatabase.SPLIT_PETMR_SESSION_ID))) {
+            if (!request.getMethod().equals(Method.GET) || (StringUtils.isNotBlank(_scriptId) && !_scriptId.equals(ScriptService.SPLIT_PETMR_SESSION_ID))) {
                 _log.warn(getRequestContext("User " + user.getLogin() + " attempted to access forbidden script trigger template resources"));
                 response.setStatus(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");
                 throw new ResourceException(Status.CLIENT_ERROR_FORBIDDEN, "Only site admins can view or update script resources.");
@@ -112,8 +112,8 @@ public class ScriptResource extends AutomationResource {
                     // Here's a special case: if they're trying to get the split PET/MR script and it doesn't exist, give
                     // them the default implementation.
                     // TODO This should be expanded into a default script repository function.
-                    if (script == null && _scriptId.equalsIgnoreCase(PrearcDatabase.SPLIT_PETMR_SESSION_ID)) {
-                        script = PrearcDatabase.DEFAULT_SPLIT_PETMR_SESSION_SCRIPT;
+                    if (script == null && _scriptId.equalsIgnoreCase(ScriptService.SPLIT_PETMR_SESSION_ID)) {
+                        script = ScriptService.DEFAULT_SPLIT_PETMR_SESSION_SCRIPT;
                     }
 
                     // have to check if it's null, or else it will return a StringRepresentation containing the word null instead of a 404
@@ -211,27 +211,7 @@ public class ScriptResource extends AutomationResource {
         }
 
         final Properties properties = decodeProperties(entity, mediaType);
-
-        if (properties.containsKey("scriptId")) {
-            properties.remove("scriptId");
-        }
-//        int previousMaxVersion = 0;
-//        try{
-//            int version = Integer.parseInt(_scriptService.getByScriptId(_scriptId).getScriptVersion());
-//            if(version>0){
-//                previousMaxVersion=version;
-//            }
-//        }
-//        catch(Exception e){
-//            _log.error("",e);
-//        }
-//        if (properties.containsKey("scriptVersion") && !properties.getProperty("scriptVersion").isEmpty()) {
-//            //properties.setProperty("scriptVersion", ""+(Integer.parseInt(properties.getProperty("scriptVersion"))+1));
-//            properties.setProperty("scriptVersion", ""+(Integer.parseInt(properties.getProperty("scriptVersion"))));
-//        }
-//        else{
-            //properties.setProperty("scriptVersion", ""+(previousMaxVersion+1));
-//        }
+        properties.remove("scriptId");
 
         try {
             _runnerService.setScript(_scriptId, properties);

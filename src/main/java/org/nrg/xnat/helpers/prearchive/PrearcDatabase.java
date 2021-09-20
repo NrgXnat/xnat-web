@@ -86,21 +86,6 @@ public final class PrearcDatabase {
 
     private static String prearcPath;
 
-    public static final String SPLIT_PETMR_SESSION_ID = "SplitPetMrSessions";
-
-    public static final String DEFAULT_SPLIT_PETMR_SESSION_FILTER = "{\n" +
-            "    \"mode\": \"modalityMap\",\n" +
-            "    \"exclude\": \"/^yes$/i.test('#BurnedInAnnotation#')\",\n" +
-            "    \"PT\": \"'#Modality#' == 'PT' || ('#Modality#' == 'MR' && /^.*MRAC.*$/.test('#SeriesDescription#'))\",\n" +
-            "    \"MR\": \"'#Modality#' != 'PT' && !('#Modality#' == 'MR' && /^.*MRAC.*$/.test('#SeriesDescription#'))\",\n" +
-            "    \"default\": \"MR\"\n" +
-            "}\n";
-
-    public static final Script DEFAULT_SPLIT_PETMR_SESSION_SCRIPT = new Script(SPLIT_PETMR_SESSION_ID,
-            "Split PET/MR script",
-            "Default implementation of the split PET/MR session script.",
-            "groovy", "", DEFAULT_SPLIT_PETMR_SESSION_FILTER);
-
     /**
      * The default initializer uses the file system as this cache's permanent store.
      *
@@ -698,10 +683,10 @@ public final class PrearcDatabase {
 
     public static SeriesImportFilter getSplitPetMrSessionsFilter() throws IOException {
         final ScriptService service = XDAT.getContextService().getBean(ScriptService.class);
-        final Script script = service.getByScriptId(SPLIT_PETMR_SESSION_ID);
+        final Script script = service.getByScriptId(ScriptService.SPLIT_PETMR_SESSION_ID);
         final String content;
         if (script == null) {
-            content = DEFAULT_SPLIT_PETMR_SESSION_FILTER;
+            content = ScriptService.DEFAULT_SPLIT_PETMR_SESSION_FILTER;
         } else {
             content = script.getContent();
         }
@@ -733,8 +718,8 @@ public final class PrearcDatabase {
 
     private static Map<String, List<String>> separateScans(final XnatPetmrsessiondataBean petmrSession) throws IOException {
         final Map<String, List<String>> scansByModality = new HashMap<>();
-        scansByModality.put("MR", new ArrayList<String>());
-        scansByModality.put("PT", new ArrayList<String>());
+        scansByModality.put("MR", new ArrayList<>());
+        scansByModality.put("PT", new ArrayList<>());
 
         final SeriesImportFilter splitPetMrSessionFilter = getSplitPetMrSessionsFilter();
 
