@@ -14,10 +14,10 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
+import org.nrg.xdat.security.services.RoleServiceI;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
-import org.nrg.xnat.services.extensions.UserRolesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,9 +40,9 @@ import lombok.extern.slf4j.Slf4j;
 public class UserRolesApi extends AbstractXapiProjectRestController {
 	
 	@Autowired
-    public UserRolesApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final UserRolesService userRolesService) {
+    public UserRolesApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final RoleServiceI roleService) {
         super(userManagementService, roleHolder);
-        _userRolesService = userRolesService;
+        _roleService = roleService;
     }
 	
 	@ApiOperation(value = "Gets the user roles", notes = "Returns the  user roles", response = String.class, responseContainer = "list")
@@ -53,7 +53,7 @@ public class UserRolesApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/{userId}/roles", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public Set<String> getAllStudyRouting(@ApiParam("The ID the user ") @PathVariable final String userId) throws UserNotFoundException, DataFormatException, NotFoundException, InsufficientPrivilegesException, UserInitException  {
 		log.debug("User {} requested user roles", getSessionUser().getUsername());
-		return _userRolesService.findAll(getSessionUser(), userId);
+		return _roleService.findAll(getSessionUser(), userId);
 	}
 	
 	@ApiOperation(value = "create user roles", notes = " creating the user roles", response = void.class, responseContainer = "single")
@@ -66,8 +66,8 @@ public class UserRolesApi extends AbstractXapiProjectRestController {
     public void createRoles(@ApiParam("The ID the user ") @PathVariable final String userId,
     		@ApiParam("The value of role user ") @RequestParam final List<String> roles) throws UserNotFoundException, InitializationException, InsufficientPrivilegesException, UserInitException{
 		log.debug("User {} requested user roles", getSessionUser().getUsername());
-		_userRolesService.createRoles(getSessionUser(),userId, roles);
+		_roleService.createRoles(getSessionUser(),userId, roles);
 	}
 	
-	private final UserRolesService _userRolesService;
+	private final RoleServiceI _roleService;
 }

@@ -128,6 +128,7 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
 		return (T) groups;
 	}
 
+	//Replace with FeatureDefination
 	@SuppressWarnings("unchecked")
 	private T getFeatureDefinitions() {
 		List<FeatureDefinitionDto> response = new ArrayList<>();

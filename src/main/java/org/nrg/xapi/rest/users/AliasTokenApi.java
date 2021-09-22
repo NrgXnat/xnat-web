@@ -13,7 +13,7 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.services.token.TokenService;
+import org.nrg.xdat.services.AliasTokenService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,11 +33,12 @@ import lombok.extern.slf4j.Slf4j;
 public class AliasTokenApi<T>  extends AbstractXapiProjectRestController {
 
 	@Autowired
-    public AliasTokenApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final TokenService<T> tokenService) {
+    public AliasTokenApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder,final AliasTokenService service) {
         super(userManagementService, roleHolder);
-        _tokenService = tokenService;
+        _service= service;
     }
 	
+	@SuppressWarnings("unchecked")
 	@ApiOperation(value = "Gets the requested  Alias Token", notes = "Returns the  Alias Token with the specified PROJECT ID", response = List.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested Alias Token."),
 			@ApiResponse(code = 400, message = "The requested Alias Token wasn't found."),
@@ -52,8 +53,7 @@ public class AliasTokenApi<T>  extends AbstractXapiProjectRestController {
 							@ApiParam(value = "The secret value.") @PathVariable(required = false) final String secret,
 							@ApiParam(value = "The user name value.") @PathVariable(required = false) final String username) throws DataFormatException, NotFoundException, NotAuthenticatedException, InsufficientPrivilegesException{
 		log.debug("User {} requested configs", getSessionUser().getUsername());
-		return (T) _tokenService.findAll(getSessionUser(), operation, token, secret, username);
+		return (T) _service.findAliasTokenByOperationOrUserNameOrTokenOrSecret(getSessionUser(), operation, token, secret, username);
 	}
-	
-	private  final TokenService<T> _tokenService;
+	private final AliasTokenService _service;
 }
