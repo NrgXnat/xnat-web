@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Map;
 
+@XnatDeserializer
 @Component
 @Slf4j
 public class XnatSubjectdataDeserializer<T extends XnatSubjectdata> extends AbstractBaseElementDeserializer<T> {

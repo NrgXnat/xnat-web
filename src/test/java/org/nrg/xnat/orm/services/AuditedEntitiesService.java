@@ -1,6 +1,6 @@
-package org.nrg.xnat.test.services;
+package org.nrg.xnat.orm.services;
 
-import org.nrg.xnat.test.entities.AuditedEntity;
+import org.nrg.xnat.orm.entities.AuditedEntity;
 
 public interface AuditedEntitiesService {
     AuditedEntity create(final AuditedEntity entity);

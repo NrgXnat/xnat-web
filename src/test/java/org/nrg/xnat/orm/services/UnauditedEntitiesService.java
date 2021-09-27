@@ -1,6 +1,6 @@
-package org.nrg.xnat.test.services;
+package org.nrg.xnat.orm.services;
 
-import org.nrg.xnat.test.entities.UnauditedEntity;
+import org.nrg.xnat.orm.entities.UnauditedEntity;
 
 public interface UnauditedEntitiesService {
     UnauditedEntity create(final UnauditedEntity entity);

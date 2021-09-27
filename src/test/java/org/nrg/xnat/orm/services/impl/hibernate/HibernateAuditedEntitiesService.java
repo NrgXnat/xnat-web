@@ -1,8 +1,8 @@
-package org.nrg.xnat.test.services.impl.hibernate;
+package org.nrg.xnat.orm.services.impl.hibernate;
 
-import org.nrg.xnat.test.entities.AuditedEntity;
-import org.nrg.xnat.test.repositories.AuditedEntityRepository;
-import org.nrg.xnat.test.services.AuditedEntitiesService;
+import org.nrg.xnat.orm.entities.AuditedEntity;
+import org.nrg.xnat.orm.repositories.AuditedEntityRepository;
+import org.nrg.xnat.orm.services.AuditedEntitiesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

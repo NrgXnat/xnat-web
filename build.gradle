@@ -326,7 +326,7 @@ dependencies {
             "ch.qos.logback:logback-core"
 
     testImplementation "org.nrg:test"
-    testImplementation "com.github.sbrannen:spring-test-junit5:1.5.0"
+    testImplementation "com.github.sbrannen:spring-test-junit5"
     testImplementation "org.junit.jupiter:junit-jupiter-api"
     testImplementation "org.springframework:spring-test"
     testImplementation "org.assertj:assertj-core"
@@ -336,6 +336,7 @@ dependencies {
     testImplementation "org.mockito:mockito-core"
     testImplementation "org.powermock:powermock-api-mockito2"
     testImplementation "org.powermock:powermock-module-junit4"
+    testImplementation "io.zonky.test:embedded-postgres"
 
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
     testImplementation "org.junit.vintage:junit-vintage-engine"

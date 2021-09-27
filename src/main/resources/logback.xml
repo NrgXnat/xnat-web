@@ -16,6 +16,12 @@
         <appender name="logstash" class="ch.qos.logback.core.helpers.NOPAppender"/>
     -->
 
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <append>true</append>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+    </appender>
     <appender name="xdat" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>true</append>
         <file>${xnat.home}/logs/xdat.log</file>
@@ -327,6 +333,7 @@
         </rollingPolicy>
     </appender>
     <root level="ERROR">
+        <appender-ref ref="console"/>
         <appender-ref ref="app"/>
     </root>
     <logger name="org.nrg.xft.search" additivity="false" level="ERROR">
@@ -541,6 +548,10 @@
     </logger>
     <logger name="org.nrg.xnat.helpers.prearchive" additivity="false" level="WARN">
         <appender-ref ref="prearchive"/>
+    </logger>
+    <logger name="org.nrg.xft.db.DatabaseUpdater" additivity="false" level="INFO">
+        <appender-ref ref="console"/>
+        <appender-ref ref="sql"/>
     </logger>
     <logger name="org.nrg.xft.db.PoolDBUtils" additivity="false" level="ERROR">
         <appender-ref ref="sql"/>

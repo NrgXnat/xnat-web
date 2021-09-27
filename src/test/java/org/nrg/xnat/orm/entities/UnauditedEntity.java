@@ -1,4 +1,4 @@
-package org.nrg.xnat.test.entities;
+package org.nrg.xnat.orm.entities;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

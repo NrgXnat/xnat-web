@@ -3,6 +3,7 @@ package org.nrg.xnat.web.converters;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.base.BaseElement;
@@ -26,17 +27,18 @@ public class XnatModule extends SimpleModule {
     @SuppressWarnings({"UnstableApiUsage"})
     public XnatModule() throws IOException {
         super("XnatJacksonModule", new Version(1, 8, 2, "SNAPSHOT", "org.nrg.xnat", "web"));
-        final ClassPath classPath = ClassPath.from(this.getClass().getClassLoader());
-        classPath.getTopLevelClasses(AbstractBaseElementSerializer.class.getPackage().getName())
-                 .stream()
-                 .map(ClassPath.ClassInfo::load)
-                 .filter(clazz -> clazz.isAnnotationPresent(XnatSerializer.class))
-                 .forEach(this::createSerializerClass);
-        classPath.getTopLevelClasses(AbstractBaseElementDeserializer.class.getPackage().getName())
-                 .stream()
-                 .map(ClassPath.ClassInfo::load)
-                 .filter(clazz -> clazz.isAnnotationPresent(XnatDeserializer.class))
-                 .forEach(this::createDeserializerClass);
+        final ClassPath                         classPath           = ClassPath.from(this.getClass().getClassLoader());
+        final ImmutableSet<ClassPath.ClassInfo> serializerClasses   = classPath.getTopLevelClasses(AbstractBaseElementSerializer.class.getPackage().getName());
+        final ImmutableSet<ClassPath.ClassInfo> deserializerClasses = classPath.getTopLevelClasses(AbstractBaseElementDeserializer.class.getPackage().getName());
+        log.info("Found {} serializer and {} deserializer classes", serializerClasses.size(), deserializerClasses.size());
+        serializerClasses.stream()
+                         .map(ClassPath.ClassInfo::load)
+                         .filter(clazz -> clazz.isAnnotationPresent(XnatSerializer.class))
+                         .forEach(this::createSerializerClass);
+        deserializerClasses.stream()
+                           .map(ClassPath.ClassInfo::load)
+                           .filter(clazz -> clazz.isAnnotationPresent(XnatDeserializer.class))
+                           .forEach(this::createDeserializerClass);
     }
 
     @SuppressWarnings("unchecked")

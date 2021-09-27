@@ -1,8 +1,8 @@
-package org.nrg.xnat.test.repositories;
+package org.nrg.xnat.orm.repositories;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.nrg.xnat.test.entities.AuditedEntity;
+import org.nrg.xnat.orm.entities.AuditedEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 

@@ -1,0 +1,17 @@
+{
+    "id": "XNAT_S00001",
+    "project": "PROJECT_1",
+    "label": "PROJECT_1_01",
+    "demographics": {
+        "id": 2,
+        "dob": "1950-09-19",
+        "gender": "female",
+        "handedness": "unknown",
+        "education": "16",
+        "weight": "110.0",
+        "height": "68.0",
+        "xsiType": "xnat:demographicData"
+    },
+    "xsiType": "xnat:subjectData"
+}
+

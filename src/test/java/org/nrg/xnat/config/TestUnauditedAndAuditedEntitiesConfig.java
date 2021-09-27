@@ -11,12 +11,12 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
 @EnableTransactionManagement
-@ComponentScan({"org.nrg.xnat.test.repositories", "org.nrg.xnat.test.services.impl.hibernate"})
+@ComponentScan({"org.nrg.xnat.orm.repositories", "org.nrg.xnat.orm.services.impl.hibernate"})
 @Import(OrmTestConfiguration.class)
 @Slf4j
 public class TestUnauditedAndAuditedEntitiesConfig {
     @Bean
     public HibernateEntityPackageList testEntityPackages() {
-        return new HibernateEntityPackageList("org.nrg.xnat.test.entities");
+        return new HibernateEntityPackageList("org.nrg.xnat.orm.entities");
     }
 }

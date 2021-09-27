@@ -1,4 +1,4 @@
-package org.nrg.xnat.test;
+package org.nrg.xnat.orm;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
@@ -6,10 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.nrg.xnat.config.TestUnauditedAndAuditedEntitiesConfig;
-import org.nrg.xnat.test.entities.AuditedEntity;
-import org.nrg.xnat.test.entities.UnauditedEntity;
-import org.nrg.xnat.test.services.AuditedEntitiesService;
-import org.nrg.xnat.test.services.UnauditedEntitiesService;
+import org.nrg.xnat.orm.entities.AuditedEntity;
+import org.nrg.xnat.orm.entities.UnauditedEntity;
+import org.nrg.xnat.orm.services.AuditedEntitiesService;
+import org.nrg.xnat.orm.services.UnauditedEntitiesService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
