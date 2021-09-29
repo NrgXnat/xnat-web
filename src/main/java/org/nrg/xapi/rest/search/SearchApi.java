@@ -22,9 +22,9 @@ import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
-import org.nrg.xnat.dto.search.DisplayVersionDto;
-import org.nrg.xnat.dto.search.SearchElementDto;
-import org.nrg.xnat.dto.search.XnatSearchElementDto;
+import org.nrg.xapi.model.DisplayVersion;
+import org.nrg.xapi.model.SearchElement;
+import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -83,8 +83,8 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested search elements wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/elements", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<SearchElementDto> getAllSearchElements(@RequestParam(required = false) final String secured,@RequestParam(required = false) final String readable,
-    												   @RequestParam(required = false) final String used) throws NotFoundException {
+    public List<SearchElement> getAllSearchElements(@RequestParam(required = false) final String secured, @RequestParam(required = false) final String readable,
+                                                    @RequestParam(required = false) final String used) throws NotFoundException {
     	log.debug("User {} requested search elements ", getSessionUser().getUsername());
     	return _searchService.findAllSearchElements(getSessionUser(),secured,readable,used);
     }
@@ -94,7 +94,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested search elements wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/elements/{elementName}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatSearchElementDto> getAllSearchElementByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException  {
+    public List<XnatSearchElement> getAllSearchElementByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException  {
     	log.debug("User {} requested search elements with ELEMENT NAME {} ", getSessionUser().getUsername(), elementName);
     	return _searchService.findAllSearchElementsByElementName(getSessionUser(), elementName);
     }
@@ -104,7 +104,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested SearchElementVersion wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/elements/{elementName}/versions", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public DisplayVersionDto getSearchElementVersionByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException, DisplayFieldNotFoundException {
+    public DisplayVersion getSearchElementVersionByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException, DisplayFieldNotFoundException {
     	log.debug("User {} requested search elements with ELEMENT NAME {} with versions ", getSessionUser().getUsername(), elementName);
     	return _searchService.findSearchElementVersionByElementName(getSessionUser(), elementName).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, elementName));
     }

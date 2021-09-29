@@ -23,9 +23,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.display.DisplayField;
-import org.nrg.xdat.display.DisplayFieldReferenceI;
 import org.nrg.xdat.display.DisplayManager;
-import org.nrg.xdat.display.DisplayVersion;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
 import org.nrg.xdat.om.XdatCriteria;
@@ -67,11 +65,11 @@ import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
-import org.nrg.xnat.dto.search.SearchElementDto;
-import org.nrg.xnat.dto.search.DisplayFieldReferenceIDto;
-import org.nrg.xnat.dto.search.DisplayVersionDto;
-import org.nrg.xnat.dto.search.VersionDto;
-import org.nrg.xnat.dto.search.XnatSearchElementDto;
+import org.nrg.xapi.model.SearchElement;
+import org.nrg.xapi.model.DisplayFieldReferenceI;
+import org.nrg.xapi.model.DisplayVersion;
+import org.nrg.xapi.model.Version;
+import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,9 +101,9 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public List<SearchElementDto> findAllSearchElements(UserI user, String secured, String readable, String used) throws NotFoundException {
+	public List<SearchElement> findAllSearchElements(UserI user, String secured, String readable, String used) throws NotFoundException {
 		Map<String, ElementSecurity> elementSecurities = null;
-		List<SearchElementDto> elementDtos = new ArrayList<>();
+		List<SearchElement> elementDtos = new ArrayList<>();
 		try {
 			elementSecurities = new HashMap<>(ElementSecurity.GetElementSecurities());
 		} catch (Exception e) {
@@ -134,9 +132,9 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public List<XnatSearchElementDto> findAllSearchElementsByElementName(UserI user, String elementName) {
+	public List<XnatSearchElement> findAllSearchElementsByElementName(UserI user, String elementName) {
 		ArrayList<String> elementNames = XftStringUtils.CommaDelimitedStringToArrayList(elementName);
-		List<XnatSearchElementDto> elementDtos = new ArrayList<XnatSearchElementDto>();
+		List<XnatSearchElement> elementDtos = new ArrayList<XnatSearchElement>();
 		for (String en : elementNames) {
 			SchemaElement se = null;
 			try {
@@ -176,17 +174,17 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException {
+	public Optional<DisplayVersion> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException {
 		SchemaElement se = null;
 		try {
 			se = SchemaElement.GetElement(elementName);
 		} catch (XFTInitException | ElementNotFoundException e) {
 		}
 		ElementDisplay ed = se.getDisplay();
-		DisplayVersionDto displayVersionDto = getDisplayVersions(ed.getVersions());
-		if (Objects.isNull(displayVersionDto))
+		DisplayVersion displayVersion = getDisplayVersions(ed.getVersions());
+		if (Objects.isNull(displayVersion))
 			throw new NotFoundException(ElementSecurity.SCHEMA_ELEMENT_NAME);
-		return Optional.of(displayVersionDto);
+		return Optional.of(displayVersion);
 	}
 
 	@Override
@@ -415,10 +413,10 @@ public class SearchServiceImpl implements SearchService {
 
 	}
 
-	private List<SearchElementDto> getXnatSearchElement(Map<String, ElementSecurity> elementSecurities, Map<String, Long> counts) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
-		List<SearchElementDto> elementDtos = new ArrayList<SearchElementDto>();
+	private List<SearchElement> getXnatSearchElement(Map<String, ElementSecurity> elementSecurities, Map<String, Long> counts) throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
+		List<SearchElement> elementDtos = new ArrayList<SearchElement>();
 		for (ElementSecurity es : elementSecurities.values()) {
-			elementDtos.add(SearchElementDto.builder()
+			elementDtos.add(SearchElement.builder()
 					.singular(Objects.nonNull(es.getSingularDescription()) ? es.getSingularDescription() : es.getElementName())
 					.plural(Objects.nonNull(es.getPluralDescription()) ? es.getPluralDescription() : es.getElementName())
 					.secured(Objects.nonNull(es.isSecure()) ? true : false).elementName(es.getElementName())
@@ -462,20 +460,20 @@ public class SearchServiceImpl implements SearchService {
 		return elementSecurities;
 	}
 
-	private List<XnatSearchElementDto> getVersionElementData(Hashtable<String, DisplayVersion> versions,
-			List<XnatSearchElementDto> elementDtos) throws DisplayFieldNotFoundException {
-		DisplayVersionDto displayVersionDto = getDisplayVersions(versions);
-		elementDtos.add(XnatSearchElementDto.builder().displayVersion(displayVersionDto).build());
+	private List<XnatSearchElement> getVersionElementData(Hashtable<String, org.nrg.xdat.display.DisplayVersion> versions,
+														  List<XnatSearchElement> elementDtos) throws DisplayFieldNotFoundException {
+		DisplayVersion displayVersion = getDisplayVersions(versions);
+		elementDtos.add(XnatSearchElement.builder().displayVersion(displayVersion).build());
 		return elementDtos;
 	}
 
-	private DisplayVersionDto getDisplayVersions(Hashtable<String, DisplayVersion> versions)
+	private DisplayVersion getDisplayVersions(Hashtable<String, org.nrg.xdat.display.DisplayVersion> versions)
 			throws DisplayFieldNotFoundException {
-		List<VersionDto> versionDtos = new ArrayList<>();
-		for (Entry<String, DisplayVersion> entry : versions.entrySet()) {
-			List<DisplayFieldReferenceIDto> fields = new ArrayList<>();
-			for (DisplayFieldReferenceI field : entry.getValue().getAllFields()) {	
-			fields.add(DisplayFieldReferenceIDto.builder().id(field.getId())
+		List<Version> versionDtos = new ArrayList<>();
+		for (Entry<String, org.nrg.xdat.display.DisplayVersion> entry : versions.entrySet()) {
+			List<DisplayFieldReferenceI> fields = new ArrayList<>();
+			for (org.nrg.xdat.display.DisplayFieldReferenceI field : entry.getValue().getAllFields()) {
+			fields.add(DisplayFieldReferenceI.builder().id(field.getId())
 						.elementName(Objects.isNull(field.getElementName()) || !field.getElementName().equals("") ? field.getElementName(): null)
 						.value(Objects.isNull(field.getValue()) || !field.getValue().equals("") ? field.getValue() : null)
 						.visible(field.isVisible() ? true : false)
@@ -483,29 +481,29 @@ public class SearchServiceImpl implements SearchService {
 						.header(Objects.isNull(field.getHeader()) || !field.getHeader().equals("") ? field.getHeader(): null)
 						.build());
 			}
-			versionDtos.add(VersionDto.builder().name(entry.getKey())
+			versionDtos.add(Version.builder().name(entry.getKey())
 					.lightColor(Objects.isNull(entry.getValue().getLightColor()) || !entry.getValue().getLightColor().equals("") ? entry.getValue().getLightColor() : null)
 					.darkColor(Objects.isNull(entry.getValue().getDarkColor()) || !entry.getValue().getDarkColor().equals("") ? entry.getValue().getDarkColor() : null)
 					.defaultSortOrder(Objects.isNull(entry.getValue().getDefaultSortOrder()) || !entry.getValue().getDefaultSortOrder().equals("") ? entry.getValue().getDefaultSortOrder() : null)
 					.orderBy(Objects.isNull(entry.getValue().getDefaultOrderBy()) || !entry.getValue().getDefaultOrderBy().equals("") ? entry.getValue().getDefaultOrderBy() : null)
 					.fields(Objects.nonNull(fields) || !fields.isEmpty() ? fields : new ArrayList<>()).build());
 		}
-		return DisplayVersionDto.builder().versions(versionDtos).build();
+		return DisplayVersion.builder().versions(versionDtos).build();
 
 	}
 
-	private List<XnatSearchElementDto> getXnatSearchDataElements(SchemaElement se, UserI user,
-			List<XnatSearchElementDto> elementDtos, List<List> custom_fields, DisplayField pi)
+	private List<XnatSearchElement> getXnatSearchDataElements(SchemaElement se, UserI user,
+															  List<XnatSearchElement> elementDtos, List<List> custom_fields, DisplayField pi)
 			throws XFTInitException, ElementNotFoundException, FieldNotFoundException {
 		if (GenericWrapperElement.GetFieldForXMLPath(se.getFullXMLName() + "/project") != null) {
 			List<Object> av = Permissions.getAllowedValues(user, se.getFullXMLName(), se.getFullXMLName() + "/project", "read");
 			for (Object o : av) {
-				XnatSearchElementDto elementDto = new XnatSearchElementDto();
+				XnatSearchElement elementDto = new XnatSearchElement();
 				elementDto = getElementDto(pi.getId() + "=" + o, o.toString(), "Label within the " + o + " project.", "string", false, "Label within the " + o + " project.", se.getFullXMLName(), 2);
 				elementDtos.add(elementDto);
 				for (List cf : custom_fields) {
 					if (cf.get(0).equals(o)) {
-						XnatSearchElementDto element = new XnatSearchElementDto();
+						XnatSearchElement element = new XnatSearchElement();
 						elementDto = getElementDto( se.getSQLName().toUpperCase() + "_FIELD_MAP=" + cf.get(1).toString().toLowerCase(), cf.get(1).toString(), "Custom Field: " + cf.get(1), cf.get(2).toString(), false, "Custom Field: " + cf.get(1), se.getFullXMLName(), 1);
 						elementDtos.add(element);
 					}
@@ -515,10 +513,10 @@ public class SearchServiceImpl implements SearchService {
 		return elementDtos;
 	}
 
-	private List<XnatSearchElementDto> getXnatSearchElements(Iterator iter, List<XnatSearchElementDto> elementDtos,
-			SchemaElement se) {
+	private List<XnatSearchElement> getXnatSearchElements(Iterator iter, List<XnatSearchElement> elementDtos,
+														  SchemaElement se) {
 		while (iter.hasNext()) {
-			XnatSearchElementDto elementDto = new XnatSearchElementDto();
+			XnatSearchElement elementDto = new XnatSearchElement();
 			DisplayField df = (DisplayField) iter.next();
 			if (df.isSearchable()) {
 				String desciption = (df.getDescription() == null)? (df.getHeader() == null) ? df.getId() : df.getHeader() : df.getDescription();
@@ -530,9 +528,9 @@ public class SearchServiceImpl implements SearchService {
 		return elementDtos;
 	}
 
-	private XnatSearchElementDto getElementDto(String fieldId, String header, String summary, String dataType,
-			boolean requiredValues, String desciption, String elementName, int src) {
-		return XnatSearchElementDto.builder().fieldId(Objects.nonNull(fieldId) ? fieldId : "")
+	private XnatSearchElement getElementDto(String fieldId, String header, String summary, String dataType,
+											boolean requiredValues, String desciption, String elementName, int src) {
+		return XnatSearchElement.builder().fieldId(Objects.nonNull(fieldId) ? fieldId : "")
 				.header(Objects.nonNull(header) ? header : "").summary(Objects.nonNull(summary) ? summary : "")
 				.type(Objects.nonNull(dataType) ? dataType : "").requiresValue(requiredValues)
 				.description(Objects.nonNull(desciption) ? desciption : "")

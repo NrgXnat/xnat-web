@@ -84,8 +84,8 @@ import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXWriter;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.zip.ZipUtils;
-import org.nrg.xnat.dto.file.ResourceFileDto;
-import org.nrg.xnat.dto.resource.DIRResourceDto;
+import org.nrg.xapi.model.ResourceFile;
+import org.nrg.xapi.model.DIRResource;
 import org.nrg.xnat.dto.resource.FileSet;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
@@ -585,9 +585,9 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of DIR resources
 	 */
 	@Override
-	public List<DIRResourceDto> findAllDIRResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters {
+	public List<DIRResource> findAllDIRResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters {
 		
-		List<DIRResourceDto> response = new ArrayList<>();
+		List<DIRResource> response = new ArrayList<>();
 		
 		XnatProjectdata proj = getXnatProject(projectId, user);
 		
@@ -686,7 +686,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByProjectId(UserI user, String projectId,String[] contents,String[] formats) throws DataFormatException, NotFoundException {
+	public List<ResourceFile> findByProjectId(UserI user, String projectId, String[] contents, String[] formats) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
@@ -701,7 +701,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findBySubjectId(UserI user, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findBySubjectId(UserI user, String subjectId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
@@ -726,7 +726,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " +projectId+ "wasn't found");
 		}
@@ -754,7 +754,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public  List<ResourceFileDto>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents,String[] formats ) throws DataFormatException, NotFoundException {
+	public  List<ResourceFile>  findByProjectIdAndResourceId(UserI user, String projectId, Integer resourceId, String[] contents, String[] formats ) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
@@ -773,7 +773,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId,String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findBySubjectIdAndResourceId(UserI user, String subjectId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(subjectId)) {
 			throw new DataFormatException("The requested subject ID " + subjectId + "wasn't found");
 		}
@@ -802,7 +802,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByExperimentIdAndAssessorId(UserI user, String experimentId, String assessorId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
@@ -830,7 +830,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByExperimentIdAndAssessorIdAndResourceId(UserI user, String experimentId, String assessorId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
@@ -858,7 +858,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		List<XnatResourcecatalog> resourceCatalog= new ArrayList<>();
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
@@ -894,7 +894,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user,String projectId, String subjectId, String experimentId, String assessedId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessedId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(projectId)) {
 			throw new DataFormatException("The requested project ID " + projectId + "wasn't found");
 		}
@@ -928,7 +928,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByExperimentId(UserI user, String experimentId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByExperimentId(UserI user, String experimentId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(Objects.isNull(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
@@ -953,7 +953,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public List<ResourceFileDto> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents,String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
+	public List<ResourceFile> findByExperimentIdAndResourceId(UserI user, String experimentId, Integer resourceId, String[] contents, String[] formats) throws DataFormatException, NotFoundException, ElementNotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experiment ID " + experimentId + "wasn't found");
 		}
@@ -1564,13 +1564,13 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param expt
 	 * @return
 	 */
-	private List<DIRResourceDto> getDIRResourceResult(List<FileSet> dest, File session_dir, XnatExperimentdata expt) {
-		List<DIRResourceDto> response = new ArrayList<>();
+	private List<DIRResource> getDIRResourceResult(List<FileSet> dest, File session_dir, XnatExperimentdata expt) {
+		List<DIRResource> response = new ArrayList<>();
 		for(final FileSet fs:dest){
 			final File parent=fs.getParent();
 			for(final File f:fs.getMatches()){
 				final String rel=(session_dir.toURI().relativize(f.toURI())).getPath();
-				response.add(DIRResourceDto.builder()
+				response.add(DIRResource.builder()
 						.DIR(f.isDirectory())
 						.size(f.length())
 						.name(parent.toURI().relativize(f.toURI()).getPath())
@@ -2148,8 +2148,8 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param formats
 	 * @return
 	 */
-	private List<ResourceFileDto> getResourceFileData(List<XnatResourcecatalog> resources, String projectId, UserI user,String[] contents, String[] formats) {
-		List<ResourceFileDto>  results = new ArrayList<ResourceFileDto>();
+	private List<ResourceFile> getResourceFileData(List<XnatResourcecatalog> resources, String projectId, UserI user, String[] contents, String[] formats) {
+		List<ResourceFile>  results = new ArrayList<ResourceFile>();
 			for(XnatResourcecatalog resource : resources) {
 			CatalogData catalogData = null;
 			try {
@@ -2175,9 +2175,9 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param results
 	 * @return
 	 */
-	private List<ResourceFileDto> getListObjectData(List<Object[]> objects, List<ResourceFileDto> results) {
+	private List<ResourceFile> getListObjectData(List<Object[]> objects, List<ResourceFile> results) {
 		objects.forEach(object ->{
-        	results.add(ResourceFileDto.builder()
+        	results.add(ResourceFile.builder()
         		.name(object[0].toString())
         		.size(Integer.parseInt(object[1].toString()))
         		.uri(object[2].toString())

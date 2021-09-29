@@ -14,18 +14,18 @@ import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.dto.search.DisplayVersionDto;
-import org.nrg.xnat.dto.search.SearchElementDto;
-import org.nrg.xnat.dto.search.XnatSearchElementDto;
+import org.nrg.xapi.model.DisplayVersion;
+import org.nrg.xapi.model.SearchElement;
+import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface SearchService {
 
 	 List<XdatSearch> findAllSearch(UserI user) throws NotFoundException;
 
-	 List<SearchElementDto> findAllSearchElements(UserI user,String secured, String readable, String used) throws NotFoundException ;
+	 List<SearchElement> findAllSearchElements(UserI user, String secured, String readable, String used) throws NotFoundException ;
 	
-	 List<XnatSearchElementDto> findAllSearchElementsByElementName(UserI user, String elementName) ;
+	 List<XnatSearchElement> findAllSearchElementsByElementName(UserI user, String elementName) ;
 
 	 List<XdatStoredSearch> findAllSavedSearch(UserI user,String username, String allBundles, String includeTag) throws NotFoundException;
 
@@ -35,7 +35,7 @@ public interface SearchService {
 	
 	 XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs, XnatEventUtil event) throws InitializationException;
 	 
-	 Optional<DisplayVersionDto> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
+	 Optional<DisplayVersion> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
 
 	 void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
 	

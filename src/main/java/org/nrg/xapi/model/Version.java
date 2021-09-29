@@ -1,4 +1,4 @@
-package org.nrg.xnat.dto.search;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 import java.util.List;
@@ -8,18 +8,19 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.nrg.xapi.model.DisplayFieldReferenceI;
 
 @Data
 @Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class VersionDto implements Serializable {
+public class Version implements Serializable {
 	private static final long serialVersionUID = -2361324617208025730L;
 	private String name;
 	private String orderBy;
 	private String lightColor;
 	private String darkColor;
 	private String defaultSortOrder;
-	private List<DisplayFieldReferenceIDto> fields;
+	private List<DisplayFieldReferenceI> fields;
 }

@@ -1,4 +1,4 @@
-package org.nrg.xnat.dto.search;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 
@@ -7,13 +7,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
+import org.nrg.xapi.model.DisplayVersion;
 
 @Data
 @Builder
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class XnatSearchElementDto implements Serializable {
+public class XnatSearchElement implements Serializable {
 
 	private static final long serialVersionUID = -7765541182699651606L;
 	private String summary;
@@ -24,6 +25,6 @@ public class XnatSearchElementDto implements Serializable {
 	private String type;
 	private String description;
 	private Integer src;
-	private DisplayVersionDto displayVersion;
+	private DisplayVersion displayVersion;
 
 }

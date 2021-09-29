@@ -25,10 +25,10 @@ import org.nrg.xdat.security.services.PermissionsServiceI;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.predicates.ProjectAccessPredicate;
-import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
-import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
-import org.nrg.xnat.dto.prearchive.PrearcSessionScanResFileDto;
-import org.nrg.xnat.dto.prearchive.PrearchiveDto;
+import org.nrg.xapi.model.PrearcSessionResource;
+import org.nrg.xapi.model.PrearcSessionScan;
+import org.nrg.xapi.model.PrearcSessionScanResFile;
+import org.nrg.xapi.model.Prearchive;
 import org.nrg.xnat.helpers.file.StoredFile;
 import org.nrg.xnat.helpers.merge.MergeUtils;
 import org.nrg.xnat.helpers.prearchive.*;
@@ -94,10 +94,10 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     }
 
     @Override
-    public List<PrearchiveDto> findAllPrearchives(UserI user, String projectId, String tag) throws SQLException, SessionException, Exception {
+    public List<Prearchive> findAllPrearchives(UserI user, String projectId, String tag) throws SQLException, SessionException, Exception {
         boolean dataAccess = Groups.hasAllDataAccess(user);
         if (StringUtils.isNotBlank(tag)) {
-            List<PrearchiveDto>           prearchiveDtos = new ArrayList<>();
+            List<Prearchive>           prearchiveDtos = new ArrayList<>();
             Collection<SessionDataTriple> result         = Lists.transform(new ArrayList<>(PrearcDatabase.getSessionByUID(tag)), Functions.SESSION_DATA_TO_SESSION_DATA_TRIPLE);
             if (Objects.isNull(result)) {
                 throw new NotFoundException("Session Data Triple result wasn't found");
@@ -105,7 +105,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
                 for (final SessionDataTriple s : result) {
                     String query = DatabaseSession.findSessionSql(s.getFolderName(), s.getTimestamp(), s.getProject());
                     if (StringUtils.isNotBlank(query)) {
-                        PrearchiveDto prearchiveDto = _template.queryForObject(query, new MapSqlParameterSource(), new PrearchiveRowMapper());
+                        Prearchive prearchiveDto = _template.queryForObject(query, new MapSqlParameterSource(), new PrearchiveRowMapper());
                         prearchiveDtos.add(prearchiveDto);
                     }
                 }
@@ -125,7 +125,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 
 
     @Override
-    public PrearchiveDto createPrarchiveRebuild(UserI user, List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
+    public Prearchive createPrarchiveRebuild(UserI user, List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
         final List<SessionDataTriple> triples = getSessionDataTriples(user, src);
         if (triples == null) {
             return null;
@@ -148,7 +148,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
             }
         }
 
-        PrearchiveDto result = getPrearchiveResult(triples);
+        Prearchive result = getPrearchiveResult(triples);
         if (Objects.isNull(result)) {
             throw new NotFoundException("Prearchive rebuild wasn't found");
         }
@@ -157,7 +157,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 
 
     @Override
-    public PrearchiveDto deletePrarchive(UserI user, List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException {
+    public Prearchive deletePrarchive(UserI user, List<String> src, boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException {
         final List<SessionDataTriple> triples = getSessionDataTriples(user, src);
         if (triples == null) {
             return null;
@@ -174,7 +174,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
                 throw new InitializationException(e.getMessage());
             }
         }
-        PrearchiveDto result = getPrearchiveResult(triples);
+        Prearchive result = getPrearchiveResult(triples);
         if (Objects.isNull(result)) {
             throw new NotFoundException("Prearchive delete wasn't found");
         }
@@ -182,7 +182,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     }
 
     @Override
-    public PrearchiveDto movePrarchive(UserI user, List<String> src, String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, ResourceAlreadyExistsException, DataFormatException {
+    public Prearchive movePrarchive(UserI user, List<String> src, String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, ResourceAlreadyExistsException, DataFormatException {
 
         final List<SessionDataTriple> triples = getSessionDataTriples(user, src);
         if (triples == null) {
@@ -206,7 +206,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
                 throw new InitializationException(e.getMessage());
             }
         }
-        PrearchiveDto result = getPrearchiveResult(triples);
+        Prearchive result = getPrearchiveResult(triples);
         if (Objects.isNull(result)) {
             throw new NotFoundException("Prearchive move wasn't found");
         }
@@ -214,7 +214,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     }
 
     @Override
-    public List<PrearcSessionScanResFileDto> findAllPrearcSessionResourceByScanIdAndResourceId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId, String resourceId, String filepath, boolean prettyPrint, HttpServletRequest request) throws ActionException, NotFoundException, DataFormatException {
+    public List<PrearcSessionScanResFile> findAllPrearcSessionResourceByScanIdAndResourceId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId, String resourceId, String filepath, boolean prettyPrint, HttpServletRequest request) throws ActionException, NotFoundException, DataFormatException {
         final PrearcInfoUtil info;
         info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
         String                   project = info.session.getProject();
@@ -280,8 +280,8 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         return response;
     }
 
-    private List<PrearcSessionScanResFileDto> getPrearchiveSessionScanRes(CatCatalogI catalog, String rootPath, String project, boolean prettyPrint, HttpServletRequest request) {
-        List<PrearcSessionScanResFileDto> sessionScanResources = new ArrayList<>();
+    private List<PrearcSessionScanResFile> getPrearchiveSessionScanRes(CatCatalogI catalog, String rootPath, String project, boolean prettyPrint, HttpServletRequest request) {
+        List<PrearcSessionScanResFile> sessionScanResources = new ArrayList<>();
         for (final CatEntryI entry : CatalogUtils.getEntriesByFilter(catalog, null)) {
             File f = CatalogUtils.getFile(entry, rootPath, project);
 			if (f == null) {
@@ -292,16 +292,16 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         return sessionScanResources;
     }
 
-    private List<PrearcSessionScanResFileDto> getSessionScanResources(File f, CatEntryI entry, HttpServletRequest request, List<PrearcSessionScanResFileDto> sessionScanResources, boolean prettyPrint) {
-        sessionScanResources.add(PrearcSessionScanResFileDto.builder()
+    private List<PrearcSessionScanResFile> getSessionScanResources(File f, CatEntryI entry, HttpServletRequest request, List<PrearcSessionScanResFile> sessionScanResources, boolean prettyPrint) {
+        sessionScanResources.add(PrearcSessionScanResFile.builder()
                                                             .name(f.getName())
                                                             .uri(constructURI(entry.getUri(), request))
                                                             .size((prettyPrint) ? Long.valueOf(CatalogUtils.formatSize(f.length())) : f.length()).build());
         return sessionScanResources;
     }
 
-    private List<PrearcSessionScanResFileDto> getPrearchiveSessionScanResWithFilepath(CatCatalogI catalog, String filepath, String rootPath, String project, String resourceId, HttpServletRequest request, boolean prettyPrint) throws DataFormatException {
-        List<PrearcSessionScanResFileDto> sessionScanResources = new ArrayList<>();
+    private List<PrearcSessionScanResFile> getPrearchiveSessionScanResWithFilepath(CatCatalogI catalog, String filepath, String rootPath, String project, String resourceId, HttpServletRequest request, boolean prettyPrint) throws DataFormatException {
+        List<PrearcSessionScanResFile> sessionScanResources = new ArrayList<>();
         final CatEntryI                   entry                = CatalogUtils.getEntryByURI(catalog, filepath);
         File                              f                    = CatalogUtils.getFile(entry, rootPath, project);
 		if (f == null) {
@@ -329,8 +329,8 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     }
 
     @Override
-    public List<PrearcSessionResourceDto> findAllPrearcSessionResourceByScanId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException {
-        List<PrearcSessionResourceDto> sessionResources = new ArrayList<>();
+    public List<PrearcSessionResource> findAllPrearcSessionResourceByScanId(UserI user, String projectId, String timestamp, String sessionLabel, Integer scanId) throws ActionException, NotFoundException {
+        List<PrearcSessionResource> sessionResources = new ArrayList<>();
         final PrearcInfoUtil           info;
         info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
         String                   project        = info.session.getProject();
@@ -347,46 +347,46 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 
 
     @Override
-    public List<PrearcSessionScanDto> findAllPrearcSessionScans(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
-        List<PrearcSessionScanDto> prearcSessionScanDtos = new ArrayList<>();
+    public List<PrearcSessionScan> findAllPrearcSessionScans(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
+        List<PrearcSessionScan> prearcSessionScans = new ArrayList<>();
         final PrearcInfoUtil       info;
         info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
         for (XnatImagescandataI scan : info.session.getScans_scan()) {
-            prearcSessionScanDtos.add(PrearcSessionScanDto.builder()
+            prearcSessionScans.add(PrearcSessionScan.builder()
                                                           .ID(scan.getId())
                                                           .xsiType(scan.getXSIType())
-                                                          .series_description(scan.getSeriesDescription()).build());
+                                                          .seriesDescription(scan.getSeriesDescription()).build());
         }
-        return prearcSessionScanDtos;
+        return prearcSessionScans;
     }
 
 
     @Override
-    public List<PrearcSessionResourceDto> findAllPrearcSessionResource(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
-        List<PrearcSessionResourceDto> prearcSessionResourceDtos = new ArrayList<>();
+    public List<PrearcSessionResource> findAllPrearcSessionResource(UserI user, String projectId, String timestamp, String sessionLabel) throws ActionException {
+        List<PrearcSessionResource> prearcSessionResources = new ArrayList<>();
         final PrearcInfoUtil           info;
         info = PrearcInfoUtil.retrieveSessionBean(user, projectId, timestamp, sessionLabel);
         String project        = info.session.getProject();
         String prearchivePath = info.session.getPrearchivepath();
         for (final XnatImagescandataI scan : info.session.getScans_scan()) {
-            prearcSessionResourceDtos = getPrearcSessionResource(project, prearchivePath, scan, prearcSessionResourceDtos);
+            prearcSessionResources = getPrearcSessionResource(project, prearchivePath, scan, prearcSessionResources);
         }
-        return prearcSessionResourceDtos;
+        return prearcSessionResources;
     }
 
 
-    private List<PrearcSessionResourceDto> getSessionResourcesByScanId(String prearchivePath, String project, XnatAbstractresourceI res, List<PrearcSessionResourceDto> sessionResources) throws ServerException {
+    private List<PrearcSessionResource> getSessionResourcesByScanId(String prearchivePath, String project, XnatAbstractresourceI res, List<PrearcSessionResource> sessionResources) throws ServerException {
         final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(prearchivePath, (XnatResourcecatalogI) res, false, project);
         CatalogUtils.Stats             stats       = CatalogUtils.getFileStats(catalogData.catBean, catalogData.catPath, catalogData.project);
-        sessionResources.add(PrearcSessionResourceDto.builder()
+        sessionResources.add(PrearcSessionResource.builder()
                                                      .label(res.getLabel())
-                                                     .file_count(Long.valueOf(stats.count))
-                                                     .file_size(stats.size).build());
+                                                     .fileCount(Long.valueOf(stats.count))
+                                                     .fileSize(stats.size).build());
         return sessionResources;
     }
 
 
-    private List<PrearcSessionResourceDto> getPrearcSessionResource(String project, String prearchivePath, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
+    private List<PrearcSessionResource> getPrearcSessionResource(String project, String prearchivePath, XnatImagescandataI scan, List<PrearcSessionResource> sessionResources) {
         for (final XnatAbstractresourceI res : scan.getFile()) {
             if (res instanceof XnatResourcecatalogI) {
                 return getPrearcSessionXnatResourceCatalogI(project, prearchivePath, res, scan, sessionResources);
@@ -397,7 +397,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         return sessionResources;
     }
 
-    private List<PrearcSessionResourceDto> getPrearcSessionXnatResourceI(String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
+    private List<PrearcSessionResource> getPrearcSessionXnatResourceI(String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan, List<PrearcSessionResource> sessionResources) {
         File f = new File(prearchivePath, ((XnatResourceI) res).getUri());
         if (f.exists()) {
             return getSessionResources(CATEGORY_NAME, scan.getId(), res.getLabel(), ONE_FILE_COUNT, f.length(), sessionResources);
@@ -406,7 +406,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         }
     }
 
-    private List<PrearcSessionResourceDto> getPrearcSessionXnatResourceCatalogI(String project, String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan, List<PrearcSessionResourceDto> sessionResources) {
+    private List<PrearcSessionResource> getPrearcSessionXnatResourceCatalogI(String project, String prearchivePath, XnatAbstractresourceI res, XnatImagescandataI scan, List<PrearcSessionResource> sessionResources) {
         try {
             final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreateAndClean(prearchivePath, (XnatResourcecatalogI) res, false, project
                                                                                                      );
@@ -418,13 +418,13 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         return sessionResources;
     }
 
-    private List<PrearcSessionResourceDto> getSessionResources(String catagory, String catId, String label, Long fileCount, Long fileSize, List<PrearcSessionResourceDto> sessionResources) {
-        sessionResources.add(PrearcSessionResourceDto.builder()
+    private List<PrearcSessionResource> getSessionResources(String catagory, String catId, String label, Long fileCount, Long fileSize, List<PrearcSessionResource> sessionResources) {
+        sessionResources.add(PrearcSessionResource.builder()
                                                      .category(catagory)
-                                                     .cat_id(catId)
+                                                     .catId(catId)
                                                      .label(label)
-                                                     .file_count(fileCount)
-                                                     .file_size(fileSize).build());
+                                                     .fileCount(fileCount)
+                                                     .fileSize(fileSize).build());
         return sessionResources;
     }
 
@@ -482,7 +482,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     }
 
 
-    private PrearchiveDto getPrearchiveResult(List<SessionDataTriple> triples) {
+    private Prearchive getPrearchiveResult(List<SessionDataTriple> triples) {
         for (final SessionDataTriple s : triples) {
             String query = DatabaseSession.findSessionSql(s.getFolderName(), s.getTimestamp(), s.getProject());
             if (StringUtils.isNotBlank(query)) {
@@ -501,11 +501,11 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     };
 
 
-    private static class PrearchiveRowMapper implements RowMapper<PrearchiveDto> {
+    private static class PrearchiveRowMapper implements RowMapper<Prearchive> {
         @Override
-        public PrearchiveDto mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+        public Prearchive mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
             ResultSetMetaData rsmd = resultSet.getMetaData();
-            return PrearchiveDto.getPrearchiveData(resultSet, rsmd);
+            return Prearchive.getPrearchiveData(resultSet, rsmd);
         }
     }
 

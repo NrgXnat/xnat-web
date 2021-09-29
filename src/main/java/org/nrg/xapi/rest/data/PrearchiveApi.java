@@ -24,10 +24,10 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.dto.prearchive.PrearcSessionResourceDto;
-import org.nrg.xnat.dto.prearchive.PrearcSessionScanDto;
-import org.nrg.xnat.dto.prearchive.PrearcSessionScanResFileDto;
-import org.nrg.xnat.dto.prearchive.PrearchiveDto;
+import org.nrg.xapi.model.PrearcSessionResource;
+import org.nrg.xapi.model.PrearcSessionScan;
+import org.nrg.xapi.model.PrearcSessionScanResFile;
+import org.nrg.xapi.model.Prearchive;
 import org.nrg.xnat.helpers.prearchive.SessionException;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.services.prearchive.PrearchiveService;
@@ -63,8 +63,8 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 404, message = "The requested Prearchive wasn't found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = {"/prearchive","/prearchive/projects/{projectId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<PrearchiveDto> getAllPrearchives(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-													@ApiParam(value = "The value of the tag.") @RequestParam(name = "tag", required = false) final String tag) throws SQLException, SessionException, Exception {
+	public List<Prearchive> getAllPrearchives(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+                                              @ApiParam(value = "The value of the tag.") @RequestParam(name = "tag", required = false) final String tag) throws SQLException, SessionException, Exception {
 		log.debug("User {} requested Prearchive", getSessionUser().getUsername());
 		return _prearchiveService.findAllPrearchives(getSessionUser(), projectId, tag);
 	}
@@ -76,9 +76,9 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<PrearcSessionResourceDto> getAllPrearcSessionResources(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
-													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
-													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
+	public List<PrearcSessionResource> getAllPrearcSessionResources(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+																	@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+																	@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
 		log.debug("User {} requested Prearchive session resource", getSessionUser().getUsername());
 		return _prearchiveService.findAllPrearcSessionResource(getSessionUser(), projectId, sessionTimestamp, sessionLabel);
 	}
@@ -89,9 +89,9 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    			@ApiResponse(code = 404, message = "The requested Prearchive session scans wasn't found."),
    			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
    	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-   	public List<PrearcSessionScanDto> getAllPrearcSessionScans(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
+   	public List<PrearcSessionScan> getAllPrearcSessionScans(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+															@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+															@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException {
    		log.debug("User {} requested Prearchive session resource", getSessionUser().getUsername());
    		return _prearchiveService.findAllPrearcSessionScans(getSessionUser(), projectId, sessionTimestamp, sessionLabel);
    	}
@@ -102,10 +102,10 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
    			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
    	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans/{scanId}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-   	public List<PrearcSessionResourceDto> getAllPrearcSessionResourcesByScanId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
-   													@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException {
+   	public List<PrearcSessionResource> getAllPrearcSessionResourcesByScanId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+																			@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
+																			@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+																			@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException {
    		log.debug("User {} requested Prearchive session resource with scan ID", getSessionUser().getUsername(), scanId);
    		return _prearchiveService.findAllPrearcSessionResourceByScanId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId);
    	}
@@ -116,14 +116,14 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    			@ApiResponse(code = 404, message = "The requested Prearchive session resource wasn't found."),
    			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
    	@XapiRequestMapping(value = {"/prearchive/projects/{projectId}/{sessionTimestamp}/{sessionLabel}/scans/{scanId}/resources/{resourceId}/files"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-   	public List<PrearcSessionScanResFileDto> getAllPrearcSessionResourcesByScanIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
-   													@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
-   													@ApiParam(value = "The ID of the resource.") @PathVariable  final String resourceId,
-   													@ApiParam(value = "The valur of the filepath.") @RequestParam(required = false)  final String filepath,
-   													@ApiParam(value = "The valur of the prettyPrint.") @RequestParam(defaultValue = "false")  final boolean prettyPrint,
-   													@ApiParam(value = "The valur of the filepath.")   final HttpServletRequest request,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
-   													@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException, DataFormatException {
+   	public List<PrearcSessionScanResFile> getAllPrearcSessionResourcesByScanIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId,
+																							@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId,
+																							@ApiParam(value = "The ID of the resource.") @PathVariable  final String resourceId,
+																							@ApiParam(value = "The valur of the filepath.") @RequestParam(required = false)  final String filepath,
+																							@ApiParam(value = "The valur of the prettyPrint.") @RequestParam(defaultValue = "false")  final boolean prettyPrint,
+																							@ApiParam(value = "The valur of the filepath.")   final HttpServletRequest request,
+																							@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionTimestamp,
+																							@ApiParam(value = "The value of the timestamp.") @PathVariable  final String sessionLabel) throws ActionException, NotFoundException, DataFormatException {
    		log.debug("User {} requested Prearchive session resource with scan ID", getSessionUser().getUsername(), scanId);
    		return _prearchiveService.findAllPrearcSessionResourceByScanIdAndResourceId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId, resourceId, filepath, prettyPrint, request);
    	}
@@ -137,8 +137,8 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/services/prearchive/rebuild",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
 						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
-	public PrearchiveDto createPrearchiveRebuild(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
-												@ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
+	public Prearchive createPrearchiveRebuild(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+                                              @ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
 		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
 		return _prearchiveService.createPrarchiveRebuild(getSessionUser(), src, overrideLock);
 	}
@@ -152,8 +152,8 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/services/prearchive/delete",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
 						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
-	public PrearchiveDto deletePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
-												@ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
+	public Prearchive deletePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+                                       @ApiParam("The value to overrideLock") @RequestParam(name = "overrideLock") boolean overrideLock) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException{
 		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
 		return _prearchiveService.deletePrarchive(getSessionUser(), src, overrideLock);
 	}
@@ -167,8 +167,8 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    			@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
    	@XapiRequestMapping(value = "/services/prearchive/move",   consumes = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE },
    						produces = { MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE }, method = POST)
-   	public PrearchiveDto movePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
-   												@ApiParam("The value to overrideLock") @RequestParam(name = "newProject") String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException, ResourceAlreadyExistsException{
+   	public Prearchive movePrearchive(@ApiParam("The value to src")  @RequestParam(name = "src") List<String> src,
+                                     @ApiParam("The value to overrideLock") @RequestParam(name = "newProject") String newProject) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException, ResourceAlreadyExistsException{
    		log.debug("User {} requested to create prearchive rebuild  with src {}", getSessionUser().getUsername(), src);
    		return _prearchiveService.movePrarchive(getSessionUser(), src, newProject);
    	}

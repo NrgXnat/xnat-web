@@ -1,4 +1,4 @@
-package org.nrg.xnat.dto.prearchive;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 
@@ -7,14 +7,14 @@ import lombok.Data;
 
 @Data
 @Builder
-public class PrearcSessionResourceDto implements Serializable {
+public class PrearcSessionResource implements Serializable {
 	
 	private static final long serialVersionUID = 54715293586709399L;
-	
+
 	private String category;
-	private String cat_id;
+	private String catId;
 	private String label;
-	private Long file_count;
-	private Long file_size;
+	private Long fileCount;
+	private Long fileSize;
 
 }

@@ -1,4 +1,4 @@
-package org.nrg.xnat.dto.search;
+package org.nrg.xapi.model;
 
 import java.io.Serializable;
 import java.util.List;
@@ -14,8 +14,8 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class DisplayVersionDto implements Serializable {
+public class DisplayVersion implements Serializable {
 	private static final long serialVersionUID = -8652407066308164382L;
 	private String elementName;
-	private List<VersionDto> versions;
+	private List<Version> versions;
 }

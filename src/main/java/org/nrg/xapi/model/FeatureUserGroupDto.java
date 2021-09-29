@@ -3,11 +3,15 @@ package org.nrg.xapi.model;
 import java.io.Serializable;
 import java.util.Collection;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class FeatureUserGroupDto implements Serializable{
 	private static final long serialVersionUID = -9066669529617137398L;
 	private String id;

@@ -1,4 +1,4 @@
-package org.nrg.xnat.dto.search;
+package org.nrg.xapi.model;
 
 
 
@@ -15,7 +15,7 @@ import lombok.ToString;
 @ToString
 @NoArgsConstructor
 @AllArgsConstructor
-public class DisplayFieldReferenceIDto implements Serializable {
+public class DisplayFieldReferenceI implements Serializable {
 	private static final long serialVersionUID = -8091603376405476724L;
 	private String id;
 	private String elementName;
