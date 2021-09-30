@@ -5,11 +5,13 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DIRResource {
+public class DIRResource implements Serializable {
 
 	private static final long serialVersionUID = -8756439953379130216L;
 	private Long size;
