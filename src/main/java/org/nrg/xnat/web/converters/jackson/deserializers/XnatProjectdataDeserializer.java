@@ -108,13 +108,13 @@ public class XnatProjectdataDeserializer<T extends XnatProjectdata> extends Abst
 
             case "autoArchive":
                 final String autoArchive = parser.getText();
-                final PrearchiveCode prearchiveCode = PrearchiveCode.normalize(autoArchive);
-                if (prearchiveCode == null) {
-                    log.error("The value specified for the prearchive code \"{}\" is invalid", autoArchive);
-                } else {
-                    final ArcProject arcProject = getArcProject(instance);
-                    arcProject.setPrearchiveCode(prearchiveCode.getCode());
-                }
+//                final PrearchiveCode prearchiveCode = PrearchiveCode.normalize(autoArchive);
+//                if (prearchiveCode == null) {
+//                    log.error("The value specified for the prearchive code \"{}\" is invalid", autoArchive);
+//                } else {
+//                    final ArcProject arcProject = getArcProject(instance);
+//                    arcProject.setPrearchiveCode(prearchiveCode.getCode());
+//                }
                 break;
 
             case "quarantine":

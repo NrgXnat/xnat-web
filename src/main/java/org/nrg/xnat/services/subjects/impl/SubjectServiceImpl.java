@@ -87,7 +87,7 @@ public class SubjectServiceImpl implements SubjectService {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
     	if(StringUtils.isBlank(subjectId))
     		throw new DataFormatException("The requested subject ID" + subjectId + " wasn't found ");
-    	XnatSubjectdata subject = _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
+    	XnatSubjectdata subject = _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB + BY_LABEL_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
     	if(Objects.isNull(subject))
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
     	return Optional.of(subject);
@@ -540,6 +540,8 @@ public class SubjectServiceImpl implements SubjectService {
     private static final String BY_ID_WHERE_PRO = " WHERE xnat_subjectData.project = :projectId";
 
     private static final String BY_ID_WHERE_SUB = "  and  xnat_subjectData.id = :subjectId";
+    
+    private static final String BY_LABEL_WHERE_SUB = "  OR  xnat_subjectData.label = :subjectId";
 
     private static final String SUBJECT_QUERY = " SELECT xnat_subjectData.id AS id, xnat_subjectData.project AS project, xnat_subjectData.label AS label,\n"
                                                 + " table1.insert_date AS insertDate, table2.login AS insertUser\n" + "FROM xnat_subjectData\n"
