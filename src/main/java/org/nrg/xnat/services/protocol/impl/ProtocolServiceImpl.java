@@ -6,6 +6,7 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
@@ -14,6 +15,7 @@ import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
@@ -25,12 +27,18 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.protocol.ProtocolService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
 public class ProtocolServiceImpl implements ProtocolService {
+
+	@Autowired
+	public ProtocolServiceImpl(final ContextService contextService) {
+		_contextService = contextService;
+	}
 
 	@Override
 	public XnatDatatypeprotocol findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType,  XnatEventUtil event ) throws NotFoundException {
@@ -66,9 +74,15 @@ public class ProtocolServiceImpl implements ProtocolService {
 	            final boolean             isProjectSpecific = XnatDatatypeprotocol.isProjectSpecific(protocol);
 	            
 	            if (isProjectSpecific) {
-	                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+
+//	                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+
+
+
 	            } else {
-	                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
+//	                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
+					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
 	            }
 	            try {
 	                SaveItemHelper.authorizedDelete(protocol.getItem().getCurrentDBVersion(), user, workflow.buildEvent());
@@ -142,18 +156,22 @@ public class ProtocolServiceImpl implements ProtocolService {
              switch (changed) {
                  case ProjectSpecific:
                      // If the added groups were all project specific, we just need to update that project.
-                     XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+//                     XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+					 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+
                      break;
 
                  case SiteWide:
-                     XDAT.triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
+//                     XDAT.triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
+					 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
                      break;
 
                  case Unchanged:
                 	 log.info("Something happened with the protocol {} but it doesn't seem to have changed.", StringUtils.defaultIfBlank(protocol.getDescription(), protocol.getName()));
                      break;
              }
-             XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+//             XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+			 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
              PersistentWorkflowUtils.complete(workflow, workflow.buildEvent());
              MaterializedView.deleteByUser(user);
              return protocol;
@@ -192,9 +210,11 @@ public class ProtocolServiceImpl implements ProtocolService {
         try {
             SaveItemHelper.authorizedSave(protocol, user, false, false, workflow.buildEvent());
             if (XnatDatatypeprotocol.isProjectSpecific(protocol)) {
-                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+//                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
             } else {
-                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
+//                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
+				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
             }
             PersistentWorkflowUtils.complete(workflow, workflow.buildEvent());
             return protocol;
@@ -233,5 +253,6 @@ public class ProtocolServiceImpl implements ProtocolService {
         ProjectSpecific,
         SiteWide
     }
+	private final ContextService _contextService;
 
 }

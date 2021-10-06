@@ -6,6 +6,8 @@ import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.nrg.action.ActionException;
+import org.nrg.config.exceptions.ConfigServiceException;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -21,6 +23,7 @@ import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
@@ -45,6 +48,7 @@ import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.WorkflowUtils;
+import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -61,9 +65,10 @@ import java.util.Optional;
 public class ProjectServiceImpl implements ProjectService {
 	
 	@Autowired
-	public ProjectServiceImpl(final NamedParameterJdbcTemplate template, final SiteConfigPreferences preferences) {
+	public ProjectServiceImpl(final NamedParameterJdbcTemplate template, final SiteConfigPreferences preferences, ContextService contextService) {
 		_template = template;
 		_preferences = preferences;
+		_contextService = contextService;
 	}
 	
     @Override
@@ -199,7 +204,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public String update(UserI user, String access, String projectId, XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent  {
+	public String update(UserI user, String access, String projectId, XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent, ConfigServiceException {
 		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		if (StringUtils.isBlank(access) || project == null) 
 			throw new NotFoundException( "An error occurred trying to retrieve the accessibility setting for the project '{}'", project.getId());
@@ -252,8 +257,26 @@ public class ProjectServiceImpl implements ProjectService {
 		
 	}
 
-	private void verifyProjectAccessibility(UserI user) throws InsufficientPrivilegesException {
-		final boolean nonPrivateAllowed = XDAT.getBoolSiteConfigurationProperty("securityAllowNonPrivateProjects", true);
+	private String getSiteConfigurationProperty(final String property, final String defaultValue) throws
+			ConfigServiceException {
+		try {
+			final SiteConfigPreferences preferences = _contextService.getInstance().getBean(SiteConfigPreferences.class);
+			final String value = preferences.getValue(property);
+			return StringUtils.defaultIfBlank(value, defaultValue);
+		} catch (NoSuchBeanDefinitionException e) {
+			log.warn("Couldn't find the site config preferences bean, returning default value {}", defaultValue, e);
+			return defaultValue;
+		}
+	}
+
+
+
+	private void verifyProjectAccessibility(UserI user) throws InsufficientPrivilegesException, ConfigServiceException {
+//		final boolean nonPrivateAllowed = XDAT.getBoolSiteConfigurationProperty("securityAllowNonPrivateProjects", true);
+
+		final boolean nonPrivateAllowed = BooleanUtils.toBoolean(getSiteConfigurationProperty("securityAllowNonPrivateProjects", Boolean.toString(true)));
+
+
 		if (!nonPrivateAllowed) {
 			log.debug("Unable to change project accessibility because securityAllowNonPrivateProjects is set to" + String.valueOf(nonPrivateAllowed));
 			log.debug("Non-private projects are not allowed. Update siteConfig preference if you wish to allow non-private projects.");
@@ -314,7 +337,9 @@ public class ProjectServiceImpl implements ProjectService {
                
 				Permissions.setDefaultAccessibility(workingProject.getId(), accessibility, false, user, workflow.buildEvent());
             }
-            XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
+//            XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
+			_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
+
         }
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -335,8 +360,9 @@ public class ProjectServiceImpl implements ProjectService {
 	         } else if (filepath.startsWith("prearchive_code/")) {
 	             final String prearchiveCode = StringUtils.removeStart(filepath, "prearchive_code/");
 	             if (StringUtils.isNotBlank(prearchiveCode)) {
-	                 if (XDAT.getBoolSiteConfigurationProperty("project.allow-auto-archive", true) || StringUtils.equals(prearchiveCode, "0")) { 
-	                	 arcProject.setPrearchiveCode(translateArcProjectCode(prearchiveCode));
+//	                 if (XDAT.getBoolSiteConfigurationProperty("project.allow-auto-archive", true) || StringUtils.equals(prearchiveCode, "0")) {
+						 if (BooleanUtils.toBoolean(getSiteConfigurationProperty("securityAllowNonPrivateProjects", Boolean.toString(true))) || StringUtils.equals(prearchiveCode, "0")) {
+							 arcProject.setPrearchiveCode(translateArcProjectCode(prearchiveCode));
 	                 }else {
 	                	 throw new InsufficientPrivilegesException("");
 	                 }
@@ -459,5 +485,6 @@ public class ProjectServiceImpl implements ProjectService {
     
     private final NamedParameterJdbcTemplate _template;
     private final SiteConfigPreferences _preferences;
+	private final ContextService _contextService;
 	
 }

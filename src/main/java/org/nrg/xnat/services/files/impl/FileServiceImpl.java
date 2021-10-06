@@ -9,17 +9,18 @@ import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.jms.Destination;
 
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
-import org.nrg.xdat.XDAT;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xdat.om.WrkWorkflowdata;
@@ -31,6 +32,7 @@ import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventMetaI;
@@ -62,6 +64,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -70,9 +73,11 @@ import lombok.extern.slf4j.Slf4j;
 public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileService {
 	
 	@Autowired
-	public FileServiceImpl(final NamedParameterJdbcTemplate template, ResourceService resourceService) {
+	public FileServiceImpl(final NamedParameterJdbcTemplate template, ResourceService resourceService, final ContextService contextService, final JmsTemplate jmsTemplate) {
 		_template = template;
 		_resourceService = resourceService;
+		_contextService = contextService;
+		_jmsTemplate = jmsTemplate;
 	}
 	
 	@Override
@@ -426,8 +431,10 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
                     historyMap, !removeFiles);
 
             if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
-                        XftItemEventI.DELETE);
+//                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+//                        XftItemEventI.DELETE);
+				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+						XftItemEventI.DELETE);
             }
         } finally {
             WorkflowUtils.complete(work, work.buildEvent());
@@ -607,11 +614,12 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
                   } 
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-					final UserProjectCache cache = XDAT.getContextService().getBeanSafely(UserProjectCache.class);
+					final UserProjectCache cache = _contextService.getBeanSafely(UserProjectCache.class);
 					if (cache != null) {
 						cache.clearProjectCacheEntry(projectId);
 					}
-					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+//					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(proj, XftItemEventI.UPDATE);
 				}
 			} else {
 				if (workflow == null) {
@@ -627,7 +635,11 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 				} else {
 					request = new MoveStoredFileRequest(resourceModifier, resourceIdentifier, writers, user, workflow.getWorkflowId(), delete, notifyList, type, filePath, buildResourceInfo(updateMeta, xnatResourceInfo, user), extract);
 				}
-				XDAT.sendJmsRequest(request);
+//				XDAT.sendJmsRequest(request);
+				final String simpleName = request.getClass().getSimpleName();
+				final String queue = simpleName.substring(0, 1).toLowerCase() + simpleName.substring(1);
+				final Destination destination =_contextService.getBean(queue, Destination.class);
+				_jmsTemplate.convertAndSend(destination, request);
 			}
 		return workflow;
 	}
@@ -1036,7 +1048,9 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 	private boolean delete = false;
 	private boolean async = false ;
 	private String[] notifyList = {};
-	
+
+	private final ContextService _contextService;
+	private final JmsTemplate _jmsTemplate;
 	
 
 }

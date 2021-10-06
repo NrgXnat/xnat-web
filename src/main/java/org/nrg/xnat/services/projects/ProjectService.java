@@ -1,6 +1,7 @@
 package org.nrg.xnat.services.projects;
 
 import org.nrg.action.ActionException;
+import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -38,7 +39,7 @@ public interface ProjectService {
  	
 	 Optional<String> findByProjectIdAndAccessLevel(UserI user, String projectId, String accessLevel) throws NotFoundException, DataFormatException;
 	
-	 String update(UserI user, String access, String projectId,XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent;
+	 String update(UserI user, String access, String projectId,XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent, ConfigServiceException;
 
 	//Project Archive service
 	 Optional<ArcProject> findArcProjectByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;

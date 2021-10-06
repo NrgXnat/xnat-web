@@ -41,6 +41,7 @@ import org.apache.oro.io.GlobFilenameFilter;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
@@ -66,6 +67,7 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Features;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xdat.services.cache.UserDataCache;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
@@ -138,8 +140,9 @@ import lombok.extern.slf4j.Slf4j;
 public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements ResourceService{
 	
 	@Autowired
-	public ResourceServiceImpl(final NamedParameterJdbcTemplate template) {
+	public ResourceServiceImpl(final NamedParameterJdbcTemplate template, final ContextService contextService) {
 		_template = template;
+		_contextService = contextService;
 	}
 
 	/**
@@ -570,7 +573,8 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
                     //getResponse().setStatus(Status.SUCCESS_MULTI_STATUS, "Deleted resources as requested, but the following resources failed somehow: " + StringUtils.join(failed, ", "));
                 }
             }
-            XDAT.triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
+//            XDAT.triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
+			_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
         } catch (ClientException e) {
         	log.error( e.getMessage());
         } catch (Exception e) {
@@ -1084,7 +1088,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 */
 	@Override
 	public void createCatalogRefresh(UserI user,List<String> resources, boolean append, boolean checksum, boolean delete, boolean populateStats, List<String> options) throws ClientException, ServerException {
-		_catalogService = XDAT.getContextService().getBean(CatalogService.class);
+		_catalogService = _contextService.getBean(CatalogService.class);
 		
 		loadValues(resources, append , checksum, delete , populateStats, options);
 		
@@ -1755,7 +1759,8 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @return
 	 */
 	private UserDataCache getUserDataCache() {
-		_userDataCache = XDAT.getContextService().getBean(UserDataCache.class);
+		_userDataCache = _contextService.getBean(UserDataCache.class);
+
 		return _userDataCache;
 	}
 
@@ -1854,8 +1859,10 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
                     historyMap, !removeFiles);
 
             if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
-                        XftItemEventI.DELETE);
+//                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+//                        XftItemEventI.DELETE);
+				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+						XftItemEventI.DELETE);
             }
         } finally {
             WorkflowUtils.complete(work, work.buildEvent());
@@ -1991,11 +1998,12 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
                   } 
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-					final UserProjectCache cache = XDAT.getContextService().getBeanSafely(UserProjectCache.class);
+					final UserProjectCache cache = _contextService.getBeanSafely(UserProjectCache.class);
 					if (cache != null) {
 						cache.clearProjectCacheEntry(projectId);
 					}
-					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+//					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(proj, XftItemEventI.UPDATE);
 				}
 			} else {
 				if (workflow == null) {
@@ -3215,5 +3223,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	private String[] notifyList = {};
 	
 	private final NamedParameterJdbcTemplate _template;
+	private final ContextService _contextService;
+
 
 }
