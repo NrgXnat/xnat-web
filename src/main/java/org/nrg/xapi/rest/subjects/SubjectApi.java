@@ -16,6 +16,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -42,14 +43,14 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         _subjectService = subjectService;
     }
 
-    @ApiOperation(value = "Gets the requested  subject", notes = "Returns the  subject with the specified ID", response = XnatSubjectdata.class, responseContainer = "single")
+    @ApiOperation(value = "Gets the requested  subject", notes = "Returns the  subject with the specified ID", response = XnatSubjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested subject."),
     			   @ApiResponse(code = 400, message = "The requested subjectId wasn't found."),
     	           @ApiResponse(code = 403, message = "The user has insufficient privileges to access the requested subject."),
                    @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public XnatSubjectdata getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws InsufficientPrivilegesException,NotFoundException, DataFormatException {
+    public XnatSubjectdataI getBySubjectId(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws InsufficientPrivilegesException,NotFoundException, DataFormatException {
     	log.debug("User {} requested subject with ID {}", getSessionUser().getUsername(), subjectId);
         return _subjectService.findById(getSessionUser(), subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId));
     }
@@ -60,36 +61,36 @@ public class SubjectApi extends AbstractXapiProjectRestController {
     	 		   @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatSubjectdata> getAllSubjects() throws NotFoundException {
+    public List<XnatSubjectdataI> getAllSubjects() throws NotFoundException {
     	log.debug("User {} requested subject", getSessionUser().getUsername());
         return _subjectService.findAll(getSessionUser());
     }
 
 
-    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdataI.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
     	           @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}/subjects", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatSubjectdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
+    public List<XnatSubjectdataI> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
         return _subjectService.findAllByProjectId(getSessionUser(), projectId);
     }
 
-    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdataI.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
     	           @ApiResponse(code = 400, message = "The requested either projectId or subjectId wasn't found."),
     	           @ApiResponse(code = 404, message = "The requested subject wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public XnatSubjectdata getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+    public XnatSubjectdataI getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
                                                           @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested project with ID {} and subject with ID {}", getSessionUser().getUsername(), projectId, subjectId);
        return  _subjectService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
 
-    @ApiOperation(value = "Create a new subject", notes = "Creates the submitted subject.", response = XnatSubjectdata.class)
+    @ApiOperation(value = "Create a new subject", notes = "Creates the submitted subject.", response = XnatSubjectdataI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created subject."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to create subjects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
@@ -98,8 +99,8 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = POST)
-    public XnatSubjectdata createSubject(@ApiParam("The project in which the subject should be created") @PathVariable final String projectId,
-                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdata subject, 
+    public XnatSubjectdataI createSubject(@ApiParam("The project in which the subject should be created") @PathVariable final String projectId,
+                                         @ApiParam("The subject to be created.") @RequestBody final XnatSubjectdataI subject,
                                          @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
                                          @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
              							 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
@@ -118,10 +119,10 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         if (!subjectHasProject) {
             subject.setProject(projectId);
         }
-         return _subjectService.create(getSessionUser(), subject, XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
+         return _subjectService.create(getSessionUser(), (XnatSubjectdata) subject, XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
-    @ApiOperation(value = "Update an existing subject", notes = "Updates the submitted subject.", response = XnatSubjectdata.class)
+    @ApiOperation(value = "Update an existing subject", notes = "Updates the submitted subject.", response = XnatSubjectdataI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated subject."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit subjects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
@@ -130,9 +131,9 @@ public class SubjectApi extends AbstractXapiProjectRestController {
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         method = PUT)
-    public XnatSubjectdata updateSubject(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
+    public XnatSubjectdataI updateSubject(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
                                          @ApiParam("The ID of the subject to be updated") @PathVariable final String subjectId,
-                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdata subject, 
+                                         @ApiParam("The subject to be updated.") @RequestBody final XnatSubjectdataI subject,
                                          @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
                                          @ApiParam("The primary value.")@RequestParam (name = "primary", defaultValue = "false")boolean primary,
                                          @ApiParam("The gender value.")@RequestParam (name = "gender", required = false)String gender,
@@ -149,7 +150,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
             throw new DataFormatException("You specified the subject ID " + subjectId + " in your request but the subject to be updated has the ID " + subject.getId() + ". These values must be the same.");
         }
         log.debug("Controller Api- Update subject {} (ID {}) in project {}", subject.getLabel(), subjectId, subject.getProject());
-        return _subjectService.update(getSessionUser(), subject, label, primary, gender,XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
+        return _subjectService.update(getSessionUser(), (XnatSubjectdata) subject, label, primary, gender,XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
     @ApiOperation(value = "Delete an existing subject", notes = "Deletes the specified subject.")

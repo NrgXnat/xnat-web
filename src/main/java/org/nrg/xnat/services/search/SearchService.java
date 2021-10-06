@@ -33,8 +33,8 @@ public interface SearchService {
 	 Optional<XdatStoredSearchI>  findSavedSearchBySearchId(UserI user, String searchId, String dv,String project) throws InsufficientPrivilegesException;
 
 	 void deleteSavedSearchBySearchId(UserI user, String searchId,  XnatEventUtil event) throws SQLException;
-	
-	 XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs, XnatEventUtil event) throws InitializationException;
+
+	XdatStoredSearchI updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId,  Boolean saveAs, XnatEventUtil event) throws InitializationException;
 	 
 	 Optional<DisplayVersion> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
 

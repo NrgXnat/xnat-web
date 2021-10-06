@@ -100,12 +100,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public XnatProjectdataI create(final UserI user, final XnatProjectdata proj, boolean  allowDataDeletion, String accessibility, String xsiType, XnatEventUtil event ) throws ActionException, UserNotFoundException, UserInitException, DataFormatException, XftItemException, InsufficientPrivilegesException, ResourceAlreadyExistsException {
+    public XnatProjectdataI create(final UserI user, final XnatProjectdataI proj, boolean  allowDataDeletion, String accessibility, String xsiType, XnatEventUtil event ) throws ActionException, UserNotFoundException, UserInitException, DataFormatException, XftItemException, InsufficientPrivilegesException, ResourceAlreadyExistsException {
 		log.debug("User {} is creating the project {}", user.getUsername(), proj.getId());
 		XFTItem item;
 
 		// step 1: get XFTItem from project request
-		item = getProjectXftItem(user, proj, xsiType);
+		item =  getProjectXftItem(user, (XnatProjectdata) proj, xsiType);
 
 		// step 2: Set user into XFTItem
 		item.setUser(user);

@@ -54,7 +54,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
         _searchService = searchService;
     }
     
-    @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatStoredSearch.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatStoredSearchI.class, responseContainer = "list")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested XdatStoredSearch."),
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
@@ -131,7 +131,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                         consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
                         produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
                         method = PUT)
-    public XdatStoredSearch updateStoredSearch(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
+    public XdatStoredSearchI updateStoredSearch(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
     									  @ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
     									  @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch,
     									  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,

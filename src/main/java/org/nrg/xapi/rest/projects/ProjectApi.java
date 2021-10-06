@@ -59,7 +59,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested project wasn't found."),
@@ -76,7 +76,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * @return
 	 * @throws NotFoundException
 	 */
-    @ApiOperation(value = "Get list of projects", notes = "The projects function returns a list of all projects configured in the XNAT system.", response = XnatProjectdata.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of projects", notes = "The projects function returns a list of all projects configured in the XNAT system.", response = XnatProjectdataI.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects",produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
@@ -106,7 +106,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * @throws ActionException
 	 * @throws UserInitException
 	 */
-    @ApiOperation(value = "Create a new project", notes = "Creates the submitted project.", response = XnatProjectdata.class)
+    @ApiOperation(value = "Create a new project", notes = "Creates the submitted project.", response = XnatProjectdataI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created project."),
     			   @ApiResponse(code = 400, message = "The requested project wasn't found."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to create projects"),
@@ -115,7 +115,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects",consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
-    public XnatProjectdataI createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdata project,
+    public XnatProjectdataI createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdataI project,
     									 @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDeletion", defaultValue = "false") boolean allowDataDeletion, 
     									 @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
     									 @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
@@ -149,7 +149,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * @throws InitializationException
 	 * @throws Exception
 	 */
-	@ApiOperation(value = "Update an existing project", notes = "Updates the submitted project.", response = XnatProjectdata.class)
+	@ApiOperation(value = "Update an existing project", notes = "Updates the submitted project.", response = XnatProjectdataI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated project."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit projects in the specified project"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),
@@ -354,7 +354,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	  * @return
 	  * @throws Exception
 	  */
-	 @ApiOperation(value = "Update an existing project accessibility ", notes = "Updates the submitted project accessibility.", response = XnatProjectdata.class)
+	 @ApiOperation(value = "Update an existing project accessibility ", notes = "Updates the submitted project accessibility.", response = XnatProjectdataI.class)
 	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated project accessibility."),
 		 			@ApiResponse(code = 403, message = "The user doesn't have permission to edit projects in the specified project"),
 		 			@ApiResponse(code = 404, message = "The specified project doesn't exist"),

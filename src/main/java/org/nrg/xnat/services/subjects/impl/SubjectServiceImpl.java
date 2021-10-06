@@ -12,6 +12,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatProjectparticipantI;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatProjectparticipant;
@@ -37,6 +38,7 @@ import org.nrg.xnat.services.projects.ProjectService;
 import org.nrg.xnat.services.subjects.SubjectService;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -45,6 +47,7 @@ import static org.nrg.xft.event.XftItemEventI.CREATE;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -60,8 +63,8 @@ public class SubjectServiceImpl implements SubjectService {
     }
 
     @Override
-    public List<XnatSubjectdata> findAll(final UserI user) throws NotFoundException {
-    	List<XnatSubjectdata> subjects = _template.query(SUBJECT_QUERY , new MapSqlParameterSource(), new SubjectRowMapper(user));
+    public List<XnatSubjectdataI> findAll(final UserI user) throws NotFoundException {
+    	List<XnatSubjectdataI> subjects = Collections.singletonList((XnatSubjectdata) _template.query(SUBJECT_QUERY, new MapSqlParameterSource(), new SubjectRowMapper(user)));
     	if(Objects.isNull(subjects) || subjects.isEmpty()) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME) ;
     	}
@@ -87,17 +90,17 @@ public class SubjectServiceImpl implements SubjectService {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
     	if(StringUtils.isBlank(subjectId))
     		throw new DataFormatException("The requested subject ID" + subjectId + " wasn't found ");
-    	XnatSubjectdata subject = _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB + BY_LABEL_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
+		XnatSubjectdata subject = _template.queryForObject(SUBJECT_QUERY + BY_ID_WHERE_PRO + BY_ID_WHERE_SUB + BY_LABEL_WHERE_SUB, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId), new SubjectRowMapper(user));
     	if(Objects.isNull(subject))
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
     	return Optional.of(subject);
     }
 
     @Override
-    public List<XnatSubjectdata> findAllByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
+    public List<XnatSubjectdataI> findAllByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
     	if(StringUtils.isBlank(projectId))
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
-    	List<XnatSubjectdata> subjects = _template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new SubjectRowMapper(user));
+    	List<XnatSubjectdataI> subjects = Collections.singletonList((XnatSubjectdata)_template.query(SUBJECT_QUERY + BY_ID_WHERE_PRO, new MapSqlParameterSource("projectId", projectId), new SubjectRowMapper(user)));
     	if(Objects.isNull(subjects) || subjects.isEmpty())
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, projectId) ;
     	return subjects;
@@ -113,7 +116,7 @@ public class SubjectServiceImpl implements SubjectService {
         log.debug("User {} is deleting the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         if(Objects.nonNull(subject)) {
         	SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
-        	secureResoureUtil.deleteItem(_projectService.findById(user, subject.getProject()).get(), subject, removeFiles, user, event);
+        	secureResoureUtil.deleteItem((XnatProjectdata) _projectService.findById(user, subject.getProject()).get(), subject, removeFiles, user, event);
 		} else {
 			throw new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
 		}
@@ -417,6 +420,7 @@ public class SubjectServiceImpl implements SubjectService {
 		
 		if (SaveItemHelper.authorizedSave(sub, user, false, isQueryVariableTrue("allowDataDeletion"), c)) {
              XDAT.triggerXftItemEvent(sub, CREATE);
+
              WorkflowUtils.complete(wrk, c);
 				Users.clearCache(user);
              MaterializedView.deleteByUser(user);
@@ -549,7 +553,6 @@ public class SubjectServiceImpl implements SubjectService {
                                                 + "LEFT JOIN xdat_user table2 ON table1.insert_user_xdat_user_id=table2.xdat_user_id";
 
     private final NamedParameterJdbcTemplate _template;
-    
     private final ProjectService _projectService;
 
 }

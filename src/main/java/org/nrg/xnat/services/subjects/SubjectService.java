@@ -6,6 +6,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.exception.XftItemException;
 import org.nrg.xft.security.UserI;
@@ -16,11 +17,11 @@ import java.util.Optional;
 
 public interface SubjectService {
 	
-     List<XnatSubjectdata> findAll(UserI user) throws NotFoundException;
+     List<XnatSubjectdataI> findAll(UserI user) throws NotFoundException;
 
      Optional<XnatSubjectdata> findById(UserI user, String subjectId) throws DataFormatException, NotFoundException;
 
-     List<XnatSubjectdata> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
+     List<XnatSubjectdataI> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
      Optional<XnatSubjectdata> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
 

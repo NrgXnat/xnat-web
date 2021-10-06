@@ -263,7 +263,7 @@ public class SearchServiceImpl implements SearchService {
 		}
 	}
 	@Override
-	public XdatStoredSearch updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId, Boolean saveAs, XnatEventUtil event) throws InitializationException {
+	public XdatStoredSearchI updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId, Boolean saveAs, XnatEventUtil event) throws InitializationException {
 		boolean isNew = false;
 
 		if (xdatStoredSearch.getId() == null || !xdatStoredSearch.getId().equals(searchId)) {
@@ -319,7 +319,7 @@ public class SearchServiceImpl implements SearchService {
 			log.error("", e);
 			throw new InitializationException("Something went worng");
 		}
-		return XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+		return (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
 	}
 	
 	@Override

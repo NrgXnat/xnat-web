@@ -11,6 +11,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.model.XnatDatatypeprotocolI;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -43,7 +44,7 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
     }
 
 	
-	 @ApiOperation(value = "Gets the requested  protocol", notes = "Returns the  protocol with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	 @ApiOperation(value = "Gets the requested  protocol", notes = "Returns the  protocol with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
 	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
 	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
@@ -63,7 +64,7 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	 
 	 
 	 
-	 @ApiOperation(value = "update the requested  protocol", notes = "Returns the  protocol with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	 @ApiOperation(value = "update the requested  protocol", notes = "Returns the  protocol with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
 	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
 	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
@@ -85,7 +86,7 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	    }
 	 
 	 
-	 @ApiOperation(value = "delete the requested  protocol", notes = "delete the  protocol with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	 @ApiOperation(value = "delete the requested  protocol", notes = "delete the  protocol with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
 	    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
 	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
