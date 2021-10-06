@@ -14,6 +14,7 @@ import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dcm.Dcm2Jpg;
 import org.nrg.framework.constants.PrearchiveCode;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.*;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.*;
@@ -51,9 +52,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nullable;
+import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 import java.io.ByteArrayInputStream;
@@ -88,9 +91,12 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     public static final String DICOM_ZIP_IMPORTER      = "DICOM-zip";
 
     @Autowired
-    public PrearchiveServiceImpl(final NamedParameterJdbcTemplate template) {
+    public PrearchiveServiceImpl(final NamedParameterJdbcTemplate template, final PermissionsServiceImpl permissions, final JmsTemplate jmsTemplate, final ContextService contextService,final PermissionsServiceI permissionsServiceI) {
         _template = template;
-        _permissions = XDAT.getContextService().getBean(PermissionsServiceImpl.class);
+        _permissions = permissions;
+        _jmsTemplate=jmsTemplate;
+        _contextService = contextService;
+        _permissionsServiceI = permissionsServiceI;
     }
 
     @Override
@@ -134,7 +140,15 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         for (final SessionDataTriple triple : triples) {
             try {
                 if (PrearcDatabase.setStatus(triple.getFolderName(), triple.getTimestamp(), triple.getProject(), PrearcUtils.PrearcStatus.QUEUED_BUILDING, overrideLock)) {
-                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Rebuild, triple, _additionalValues));
+
+//                    final String simpleName = new PrearchiveOperationRequest(user, Rebuild, triple, _additionalValues).getClass().getSimpleName();
+//                    final String queue = simpleName.substring(0, 1).toLowerCase() + simpleName.substring(1);
+//                    final Destination destination =_contextService.getBean(queue, Destination.class);
+//                    _jmsTemplate.convertAndSend(destination, new PrearchiveOperationRequest(user, Rebuild, triple, _additionalValues));
+
+                    sendJMSRequest(new PrearchiveOperationRequest(user, Rebuild, triple, _additionalValues));
+
+//                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Rebuild, triple, _additionalValues));
                 } else {
                     log.warn("Tried to reset the status of the session {} to QUEUED_BUILDING, but failed. This usually means the session is locked and the override lock parameter was false. This might be OK: I checked whether the session was locked before trying to update the status but maybe a new file arrived in the intervening millisecond(s).", triple);
                 }
@@ -168,7 +182,14 @@ public class PrearchiveServiceImpl implements PrearchiveService {
                 if (PrearcDatabase.setStatus(triple.getFolderName(), triple.getTimestamp(), triple.getProject(), PrearcUtils.PrearcStatus.QUEUED_DELETING)) {
                     final SessionData session    = PrearcDatabase.getSession(triple.getFolderName(), triple.getTimestamp(), triple.getProject());
                     final File        sessionDir = PrearcUtils.getPrearcSessionDir(user, triple.getProject(), triple.getTimestamp(), triple.getFolderName(), false);
-                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Delete, session, sessionDir));
+
+//                    final String simpleName = new PrearchiveOperationRequest(user, Delete, session, sessionDir).getClass().getSimpleName();
+//                    final String queue = simpleName.substring(0, 1).toLowerCase() + simpleName.substring(1);
+//                    final Destination destination =_contextService.getBean(queue, Destination.class);
+//                    _jmsTemplate.convertAndSend(destination, new PrearchiveOperationRequest(user, Delete, session, sessionDir));
+
+                    sendJMSRequest(new PrearchiveOperationRequest(user, Delete, session, sessionDir));
+//                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Delete, session, sessionDir));
                 }
             } catch (Exception e) {
                 throw new InitializationException(e.getMessage());
@@ -197,7 +218,13 @@ public class PrearchiveServiceImpl implements PrearchiveService {
                     final Map<String, Object> parameters = new HashMap<>();
                     parameters.put(PrearchiveOperationRequest.PARAM_DESTINATION, newProject);
 
-                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters));
+//                    final String simpleName = new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters).getClass().getSimpleName();
+//                    final String queue = simpleName.substring(0, 1).toLowerCase() + simpleName.substring(1);
+//                    final Destination destination =_contextService.getBean(queue, Destination.class);
+//                    _jmsTemplate.convertAndSend(destination, new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters));
+
+                    sendJMSRequest(new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters));
+//                    XDAT.sendJmsRequest(new PrearchiveOperationRequest(user, Move, session, sessionDir, parameters));
                 }
             } catch (SessionException e) {
                 errorResponse(e, triple);
@@ -469,8 +496,9 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         return triples;
     }
 
-    protected static Pair<List<String>, List<String>> getDeniedAndMissingProjectsFromPrearcSources(final UserI user, final Collection<SessionDataTriple> triples) {
-        final ProjectAccessPredicate predicate = new ProjectAccessPredicate(XDAT.getContextService().getBean(PermissionsServiceI.class), XDAT.getNamedParameterJdbcTemplate(), user, AccessLevel.Edit);
+
+    protected Pair<List<String>, List<String>> getDeniedAndMissingProjectsFromPrearcSources(final UserI user, final Collection<SessionDataTriple> triples) {
+        final ProjectAccessPredicate predicate = new ProjectAccessPredicate(_permissionsServiceI, _template, user, AccessLevel.Edit);
         final List<String>           missing   = predicate.getMissing();
         final List<String> denied = Lists.newArrayList(Iterables.filter(Iterables.filter(Iterables.transform(triples, FUNCTION_SESSION_DATA_TRIPLE_TO_PROJECT_ID), Predicates.not(predicate)), new Predicate<String>() {
             @Override
@@ -512,7 +540,7 @@ public class PrearchiveServiceImpl implements PrearchiveService {
 
     private List<String> getResponseWithCallImport(ImporterHandlerA importer, boolean prearchive, XnatResourceInfo xnatResourceInfo, HttpServletRequest request) throws ClientException, ServerException {
         ThreadPoolExecutor importerExecutorService;
-        if (httpSessionListener && async && (importerExecutorService = XDAT.getContextService().getBeanSafely("threadPoolExecutorFactoryBean", ThreadPoolExecutor.class)) != null) {
+        if (httpSessionListener && async && (importerExecutorService = _contextService.getBeanSafely("threadPoolExecutorFactoryBean", ThreadPoolExecutor.class)) != null) {
             String task = prearchive ? "prearchival" : "archival";
             importerExecutorService.submit(importer);
         } else {
@@ -639,6 +667,15 @@ public class PrearchiveServiceImpl implements PrearchiveService {
         }
     }
 
+    private void sendJMSRequest(PrearchiveOperationRequest request){
+        final String simpleName = request.getClass().getSimpleName();
+        final String queue = simpleName.substring(0, 1).toLowerCase() + simpleName.substring(1);
+        final Destination destination =_contextService.getBean(queue, Destination.class);
+        _jmsTemplate.convertAndSend(destination, request);
+    }
+
+
+
 
     String                   handler             = null;
     String                   listenerControl     = null;
@@ -650,12 +687,16 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     private static final List<String> HANDLERS_ALLOWING_CALLS_WITHOUT_FILES = Lists.newArrayList();
     private static final List<String> HANDLERS_PREFERRING_PARTIAL_URI_WRAP  = Lists.newArrayList();
 
-    private final        NamedParameterJdbcTemplate _template;
+    private final NamedParameterJdbcTemplate _template;
+    private final JmsTemplate     _jmsTemplate;
+    private final ContextService _contextService;
+    private final PermissionsServiceI _permissionsServiceI ;
     private final        PermissionsServiceImpl     _permissions;
     private final        Map<String, Object>        _additionalValues = new HashMap<>();
     private static final String                     CATEGORY_NAME     = "scans";
     private static final Long                       ONE_FILE_COUNT    = 1L;
     private static final Long                       ZERO_FILE_COUNT   = 0L;
     private static final Long                       ZERO_FILE_SIZE    = 0L;
+
 
 }
