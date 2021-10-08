@@ -78,9 +78,9 @@ public class TriageApprovalServiceImpl implements TriageApprovalSerivce {
 	private void successStatus(UserI user, String eventId) throws Exception {
 		List<String> duplicates=new ArrayList<String>();
 		for(Entry<URIManager.DataURIA, ResourceURII> entry: moves.entrySet()){
-			boolean locked= getTriageService().isLocked(user, XnatEventUtil.getEventId(eventId), overwrite, otherParams, entry.getKey(), entry.getValue());
+			boolean locked= triageService.isLocked(user, XnatEventUtil.getEventId(eventId), overwrite, otherParams, entry.getKey(), entry.getValue());
 			if(!locked){
-				duplicates.addAll(getTriageService().move(user,XnatEventUtil.getEventId(eventId),overwrite,otherParams,entry.getKey(),entry.getValue()));
+				duplicates.addAll(triageService.move(user,XnatEventUtil.getEventId(eventId),overwrite,otherParams,entry.getKey(),entry.getValue()));
 				if(!overwrite && duplicates.size()>0){
 					success(HttpStatus.CREATED  ,"Duplicate File(s) found.");
 				}else{
@@ -133,12 +133,12 @@ public class TriageApprovalServiceImpl implements TriageApprovalSerivce {
 //		}
 	}
 	
-	private TriageService getTriageService() {
-        if (triageService == null) {
-            triageService = XDAT.getContextService().getBean(TriageService.class);
-        }
-        return triageService;
-    }
+//	private TriageService getTriageService() {
+//        if (triageService == null) {
+//            triageService = XDAT.getContextService().getBean(TriageService.class);
+//        }
+//        return triageService;
+//    }
 	
 	private boolean canEditSource(final DataURIA uriSource, UserI user) throws InvalidItemException, Exception{
 		boolean authorized=false;

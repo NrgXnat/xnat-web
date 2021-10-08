@@ -20,6 +20,7 @@ import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xdat.om.base.BaseXnatImagescandata;
 import org.nrg.xdat.om.base.BaseXnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -62,9 +63,10 @@ import java.util.Optional;
 @Service
 public class ExperimentServiceImpl implements ExperimentService {
     @Autowired
-    public ExperimentServiceImpl(final PipelineService pipelineService, final NamedParameterJdbcTemplate template) {
+    public ExperimentServiceImpl(final PipelineService pipelineService, final NamedParameterJdbcTemplate template,final DataTypeAwareEventService eventService) {
         _pipelineService = pipelineService;
         _template = template;
+        _eventService = eventService;
     }
 
     @Override
@@ -714,7 +716,7 @@ public class ExperimentServiceImpl implements ExperimentService {
             }
         }
         BaseXnatExperimentdata.SaveSharedProject(shared, experiment, user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
-        XDAT.triggerXftItemEvent(experiment, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
+        _eventService.triggerXftItemEvent(experiment, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
     }
 
     private void setSubject(final XFTItem item, XnatExperimentdata experiment, XnatProjectdata project, XnatExperimentdata existing, UserI user, String subjectId2, XnatEventUtil event) throws Exception {
@@ -789,7 +791,7 @@ public class ExperimentServiceImpl implements ExperimentService {
         shared.setProperty("sharing_share_xnat_imagescandat_xnat_imagescandata_id", scan.getXnatImagescandataId());
         shared.setLabel(scan.getId());
         BaseXnatImagescandata.SaveSharedProject(shared, scan, user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.CONFIGURED_PROJECT_SHARING, event));
-        XDAT.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
+        _eventService.triggerXftItemEvent(scan, XftItemEvent.SHARE, ImmutableMap.<String, Object>of("target", newProjectId));
     }
 
     private void changeExperimentPrimaryProject(final XnatExperimentdata experiment, final XnatProjectdata source, final XnatProjectdata destination, final String newLabel, String moveAssessors, final XnatExperimentdataShare share, final int index, UserI user, XnatEventUtil event) throws Exception {
@@ -811,7 +813,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 
         final List<String> assessorList  = StringUtils.isNotBlank(moveAssessors) ? Arrays.asList(moveAssessors.split(",")) : null;
         final EventMetaI meta = BaseXnatExperimentdata.ChangePrimaryProject(user, experiment, destination, workingLabel, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.MODIFY_PROJECT,event), assessorList);
-        XDAT.triggerXftItemEvent(experiment, XftItemEvent.MOVE, ImmutableMap.<String, Object>of("origin", source.getId(), "target", destination.getId()));
+        _eventService.triggerXftItemEvent(experiment, XftItemEvent.MOVE, ImmutableMap.<String, Object>of("origin", source.getId(), "target", destination.getId()));
 
         if (share != null) {
             SaveItemHelper.authorizedRemoveChild(experiment.getItem(), "xnat:experimentData/sharing/share", share.getItem(), user, meta);
@@ -880,7 +882,7 @@ public class ExperimentServiceImpl implements ExperimentService {
                     WorkflowUtils.fail(wrk, c);
                     throw new InsufficientPrivilegesException("You don't have permission to delete", message);
                 } else {
-                    XDAT.triggerXftItemEvent(item, DELETE, ImmutableMap.of("target", project.getId()));
+                    _eventService.triggerXftItemEvent(item, DELETE, ImmutableMap.of("target", project.getId()));
                     WorkflowUtils.complete(wrk, c);
                 }
             } catch (Exception e) {
@@ -971,5 +973,6 @@ public class ExperimentServiceImpl implements ExperimentService {
     private final PipelineService            _pipelineService;
 
 	private XnatSubjectassessordata expt;
+    private final DataTypeAwareEventService _eventService;
 }
 

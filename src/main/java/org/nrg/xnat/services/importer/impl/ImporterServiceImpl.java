@@ -6,10 +6,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.framework.constants.PrearchiveCode;
+import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.file.StoredFile;
 import org.nrg.xnat.helpers.prearchive.PrearcUtils;
@@ -23,6 +24,7 @@ import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.restlet.util.XNATRestConstants;
 import org.nrg.xnat.services.importer.ImporterService;
 import org.nrg.xnat.status.StatusList;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +50,12 @@ public class ImporterServiceImpl implements ImporterService {
     public static final String GRADUAL_DICOM_IMPORTER  = "gradual-DICOM";
     public static final String DICOM_INBOX_IMPORTER    = "inbox";
     public static final String DICOM_ZIP_IMPORTER      = "DICOM-zip";
+
+    @Autowired
+    public ImporterServiceImpl(final DataTypeAwareEventService eventService, ContextService contextService) {
+        _eventService = eventService;
+        _contextService = contextService;
+    }
 
     @Override
     public List<String> importFiles(UserI user, HttpServletRequest request, XnatResourceInfo xnatResourceInfo) throws DataFormatException, ServerException, ClientException, NotFoundException {
@@ -88,7 +96,7 @@ public class ImporterServiceImpl implements ImporterService {
 
     private List<String> getResponseWithCallImport(ImporterHandlerA importer, boolean prearchive, XnatResourceInfo xnatResourceInfo, HttpServletRequest request) throws ClientException, ServerException {
         ThreadPoolExecutor importerExecutorService;
-        if (httpSessionListener && async && (importerExecutorService = XDAT.getContextService().getBeanSafely("threadPoolExecutorFactoryBean", ThreadPoolExecutor.class)) != null) {
+        if (httpSessionListener && async && (importerExecutorService = _contextService.getBeanSafely("threadPoolExecutorFactoryBean", ThreadPoolExecutor.class)) != null) {
             String task = prearchive ? "prearchival" : "archival";
             importerExecutorService.submit(importer);
         } else {
@@ -225,4 +233,7 @@ public class ImporterServiceImpl implements ImporterService {
     List<String>             response            = null;
     private static final List<String> HANDLERS_ALLOWING_CALLS_WITHOUT_FILES = Lists.newArrayList();
     private static final List<String> HANDLERS_PREFERRING_PARTIAL_URI_WRAP  = Lists.newArrayList();
+
+    private final DataTypeAwareEventService _eventService;
+    private final ContextService _contextService;
 }

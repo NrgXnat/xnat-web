@@ -36,8 +36,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ProtocolServiceImpl implements ProtocolService {
 
 	@Autowired
-	public ProtocolServiceImpl(final ContextService contextService) {
-		_contextService = contextService;
+	public ProtocolServiceImpl(final DataTypeAwareEventService eventService) {
+		_eventService = eventService;
 	}
 
 	@Override
@@ -76,13 +76,13 @@ public class ProtocolServiceImpl implements ProtocolService {
 	            if (isProjectSpecific) {
 
 //	                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
-					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+					_eventService.triggerXftItemEvent(project, XftItemEvent.UPDATE);
 
 
 
 	            } else {
 //	                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
-					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
+					_eventService.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.DELETE);
 	            }
 	            try {
 	                SaveItemHelper.authorizedDelete(protocol.getItem().getCurrentDBVersion(), user, workflow.buildEvent());
@@ -157,13 +157,13 @@ public class ProtocolServiceImpl implements ProtocolService {
                  case ProjectSpecific:
                      // If the added groups were all project specific, we just need to update that project.
 //                     XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
-					 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+					 _eventService.triggerXftItemEvent(project, XftItemEvent.UPDATE);
 
                      break;
 
                  case SiteWide:
 //                     XDAT.triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
-					 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
+					 _eventService.triggerXftItemEvent(protocol, existingProtocol == null ? XftItemEvent.CREATE : XftItemEvent.UPDATE);
                      break;
 
                  case Unchanged:
@@ -171,7 +171,7 @@ public class ProtocolServiceImpl implements ProtocolService {
                      break;
              }
 //             XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
-			 _contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+			 _eventService.triggerXftItemEvent(project, XftItemEvent.UPDATE);
              PersistentWorkflowUtils.complete(workflow, workflow.buildEvent());
              MaterializedView.deleteByUser(user);
              return protocol;
@@ -211,10 +211,10 @@ public class ProtocolServiceImpl implements ProtocolService {
             SaveItemHelper.authorizedSave(protocol, user, false, false, workflow.buildEvent());
             if (XnatDatatypeprotocol.isProjectSpecific(protocol)) {
 //                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
-				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(project, XftItemEvent.UPDATE);
+				_eventService.triggerXftItemEvent(project, XftItemEvent.UPDATE);
             } else {
 //                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
-				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
+				_eventService.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
             }
             PersistentWorkflowUtils.complete(workflow, workflow.buildEvent());
             return protocol;
@@ -253,6 +253,6 @@ public class ProtocolServiceImpl implements ProtocolService {
         ProjectSpecific,
         SiteWide
     }
-	private final ContextService _contextService;
+	private final DataTypeAwareEventService _eventService;
 
 }

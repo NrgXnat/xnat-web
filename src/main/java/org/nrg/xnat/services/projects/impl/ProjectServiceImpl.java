@@ -65,10 +65,10 @@ import java.util.Optional;
 public class ProjectServiceImpl implements ProjectService {
 	
 	@Autowired
-	public ProjectServiceImpl(final NamedParameterJdbcTemplate template, final SiteConfigPreferences preferences, ContextService contextService) {
+	public ProjectServiceImpl(final NamedParameterJdbcTemplate template, final SiteConfigPreferences preferences,final DataTypeAwareEventService eventService) {
 		_template = template;
 		_preferences = preferences;
-		_contextService = contextService;
+		_eventService = eventService;
 	}
 	
     @Override
@@ -260,8 +260,8 @@ public class ProjectServiceImpl implements ProjectService {
 	private String getSiteConfigurationProperty(final String property, final String defaultValue) throws
 			ConfigServiceException {
 		try {
-			final SiteConfigPreferences preferences = _contextService.getInstance().getBean(SiteConfigPreferences.class);
-			final String value = preferences.getValue(property);
+//			final SiteConfigPreferences preferences = _contextService.getInstance().getBean(SiteConfigPreferences.class);
+			final String value = _preferences.getValue(property);
 			return StringUtils.defaultIfBlank(value, defaultValue);
 		} catch (NoSuchBeanDefinitionException e) {
 			log.warn("Couldn't find the site config preferences bean, returning default value {}", defaultValue, e);
@@ -338,7 +338,7 @@ public class ProjectServiceImpl implements ProjectService {
 				Permissions.setDefaultAccessibility(workingProject.getId(), accessibility, false, user, workflow.buildEvent());
             }
 //            XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
-			_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
+			_eventService.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId, XftItemEventI.UPDATE);
 
         }
 		} catch (Exception e) {
@@ -485,6 +485,6 @@ public class ProjectServiceImpl implements ProjectService {
     
     private final NamedParameterJdbcTemplate _template;
     private final SiteConfigPreferences _preferences;
-	private final ContextService _contextService;
-	
+	private final DataTypeAwareEventService _eventService;
+
 }

@@ -16,6 +16,7 @@ import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.dicom.DicomSummary;
 import org.nrg.xnat.helpers.ecat.EcatSummary;
@@ -24,7 +25,7 @@ import org.nrg.xnat.services.dump.util.DumpUtil;
 import org.nrg.xnat.services.dump.util.Env;
 import org.nrg.xnat.services.dump.util.HeaderTypeUtil;
 import org.nrg.xnat.services.dump.util.ResourceTypeUtil;
-import org.restlet.data.Status;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.google.common.collect.ImmutableMap;
@@ -39,9 +40,14 @@ public class DumpServiceImpl implements DumpService {
 	private Env env = null;
 	// image type supported.
 	private static final List<String> DIOCM_IMAGE_TYPES = new ArrayList<>();
-	 private static final String ECAT_IMAGE_TYPE = "ECAT";
+	private static final String ECAT_IMAGE_TYPE = "ECAT";
     private static final ElementDictionary TAG_DICTIONARY = ElementDictionary.getDictionary();
-	
+
+	@Autowired
+	public DumpServiceImpl(final SiteConfigPreferences preferences) {
+		_preferences = preferences;
+	}
+
 	@Override
 	public List<DicomSummary> findAllDicomSummary(UserI user, String src, String summary, String[] fieldVals) throws Exception {
 
@@ -79,8 +85,8 @@ public class DumpServiceImpl implements DumpService {
 	 * 
 	 * @param src
 	 * @param fieldVals
-	 * @param dicomImageType 
-	 * @param ecatDumpType 
+	 * @param imageType
+	 * @param dumpType
 	 * @throws DataFormatException
 	 * @throws InitializationException
 	 */
@@ -97,13 +103,13 @@ public class DumpServiceImpl implements DumpService {
 	        }
 	        env = new Env(src, fields);
 	        if(DICOM_DUMP_TYPE.equals(dumpType)) {
-		        try {
-		            final String dumpImageTypes = XDAT.getSiteConfigurationProperty("dumpImageTypes", "DICOM, secondary");
-		            Collections.addAll(imageType, dumpImageTypes.split("\\s*,\\s*"));
-		        } catch (ConfigServiceException e) {
-		        	throw new InitializationException("Error trying to get site configuration property");
-		        }
-	        }
+//		        final String dumpImageTypes = XDAT.getSiteConfigurationProperty("dumpImageTypes", "DICOM, secondary");
+
+				final String value = _preferences.getValue("dumpImageTypes");
+				final String dumpImageTypes = StringUtils.defaultIfBlank(value, "DICOM, secondary");
+
+				Collections.addAll(imageType, dumpImageTypes.split("\\s*,\\s*"));
+			}
 	        
 	        new ResourceTypeUtil(imageType, dumpType);
         	new HeaderTypeUtil(dumpType);
@@ -138,5 +144,7 @@ public class DumpServiceImpl implements DumpService {
         }
         return fieldsb.build();
     }
+
+	private final SiteConfigPreferences _preferences;
 	
 }

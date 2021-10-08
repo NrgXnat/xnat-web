@@ -11,12 +11,18 @@ import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.turbine.utils.AdminUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.extensions.SendEmailVerificationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SendEmailVerificationServiceImpl implements SendEmailVerificationService{
-	
-	 @Override
+
+	@Autowired
+	public SendEmailVerificationServiceImpl(final EmailRequestLogService emailRequestLogService) {
+		_emailRequestLogService = emailRequestLogService;
+	}
+
+	@Override
 	public void sendEmail(UserI user, String email) throws ExceededRequestsException, EmailNotFoundException, InitializationException {
 		 if(StringUtils.isNoneBlank(email)){ 
 	          try{
@@ -65,4 +71,6 @@ public class SendEmailVerificationServiceImpl implements SendEmailVerificationSe
 	}
 	
 	private final EmailRequestLogService requests = XDAT.getContextService().getBean(EmailRequestLogService.class);
+
+	private final EmailRequestLogService _emailRequestLogService;
 }

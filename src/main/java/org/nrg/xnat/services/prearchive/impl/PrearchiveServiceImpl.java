@@ -687,16 +687,18 @@ public class PrearchiveServiceImpl implements PrearchiveService {
     private static final List<String> HANDLERS_ALLOWING_CALLS_WITHOUT_FILES = Lists.newArrayList();
     private static final List<String> HANDLERS_PREFERRING_PARTIAL_URI_WRAP  = Lists.newArrayList();
 
-    private final NamedParameterJdbcTemplate _template;
-    private final JmsTemplate     _jmsTemplate;
-    private final ContextService _contextService;
-    private final PermissionsServiceI _permissionsServiceI ;
+
     private final        PermissionsServiceImpl     _permissions;
     private final        Map<String, Object>        _additionalValues = new HashMap<>();
     private static final String                     CATEGORY_NAME     = "scans";
     private static final Long                       ONE_FILE_COUNT    = 1L;
     private static final Long                       ZERO_FILE_COUNT   = 0L;
     private static final Long                       ZERO_FILE_SIZE    = 0L;
+
+    private final NamedParameterJdbcTemplate _template;
+    private final JmsTemplate     _jmsTemplate;
+    private final ContextService _contextService;
+    private final PermissionsServiceI _permissionsServiceI ;
 
 
 }

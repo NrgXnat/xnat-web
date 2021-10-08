@@ -18,6 +18,7 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatInvestigatordataI;
 import org.nrg.xdat.om.XnatInvestigatordata;
 import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
@@ -64,8 +65,9 @@ public class DefaultInvestigatorService implements InvestigatorService {
     public static final String COL_PROJECTS                 = "projects";
 
     @Autowired
-    public DefaultInvestigatorService(final NamedParameterJdbcTemplate template) {
+    public DefaultInvestigatorService(final NamedParameterJdbcTemplate template, final DataTypeAwareEventService eventService) {
         _template = template;
+        _eventService = eventService;
     }
 
     /**
@@ -221,7 +223,8 @@ public class DefaultInvestigatorService implements InvestigatorService {
             throw new InitializationException("Failed to save the investigator with ID " + investigatorId + ". Check the logs for possible errors or exceptions.");
         }
 
-        XDAT.triggerXftItemEvent(existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
+//        XDAT.triggerXftItemEvent(existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
+        _eventService.triggerXftItemEvent(existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
         return getInvestigator(investigator.getFirstname(), investigator.getLastname());
     }
 
@@ -240,7 +243,8 @@ public class DefaultInvestigatorService implements InvestigatorService {
         try {
             final Map<String, Object> properties = getInvestigatorEventProperties(investigatorId);
             SaveItemHelper.authorizedDelete(investigator.getItem(), user, EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.REST, EventUtils.REMOVE_INVESTTGATOR));
-            XDAT.triggerXftItemEvent(XnatInvestigatordata.SCHEMA_ELEMENT_NAME, Integer.toString(investigatorId), XftItemEvent.DELETE, properties);
+//            XDAT.triggerXftItemEvent(XnatInvestigatordata.SCHEMA_ELEMENT_NAME, Integer.toString(investigatorId), XftItemEvent.DELETE, properties);
+            _eventService.triggerXftItemEvent(XnatInvestigatordata.SCHEMA_ELEMENT_NAME, Integer.toString(investigatorId), XftItemEvent.DELETE, properties);
         } catch (Exception e) {
             throw createServiceException(new Investigator(investigator), "delete", e);
         }
@@ -306,4 +310,5 @@ public class DefaultInvestigatorService implements InvestigatorService {
                                                                                                "WHERE xnat_investigatordata_xnat_investigatordata_id = :" + PARAM_INVESTIGATOR_ID;
 
     private final NamedParameterJdbcTemplate _template;
+    private final DataTypeAwareEventService _eventService;
 }
