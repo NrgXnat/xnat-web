@@ -9,6 +9,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
+import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
@@ -27,9 +28,9 @@ public interface SearchService {
 	
 	 List<XnatSearchElement> findAllSearchElementsByElementName(UserI user, String elementName) ;
 
-	 List<XdatStoredSearch> findAllSavedSearch(UserI user,String username, String allBundles, String includeTag) throws NotFoundException;
+	 List<XdatStoredSearchI> findAllSavedSearch(UserI user, String username, String allBundles, String includeTag) throws NotFoundException;
 
-	 Optional<XdatStoredSearch>  findSavedSearchBySearchId(UserI user, String searchId, String dv,String project) throws InsufficientPrivilegesException;
+	 Optional<XdatStoredSearchI>  findSavedSearchBySearchId(UserI user, String searchId, String dv,String project) throws InsufficientPrivilegesException;
 
 	 void deleteSavedSearchBySearchId(UserI user, String searchId,  XnatEventUtil event) throws SQLException;
 	
@@ -41,7 +42,7 @@ public interface SearchService {
 	
 	 XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
 	
-	 Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
+	 Optional<XdatStoredSearchI> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
 
 	 void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws JustificationAbsent, ActionNameAbsent ;
 }

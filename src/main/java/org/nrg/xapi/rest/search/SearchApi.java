@@ -15,6 +15,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
+import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -58,9 +59,9 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XdatStoredSearch> getAllSavedSearches(@ApiParam(value = "The username seach value.") @RequestParam(name= "username", required = false )  final String username,
-    												  @ApiParam(value = "The getAllBundles seach value.") @RequestParam(name= "allBundles", required = false )  final String allBundles,
-    												  @ApiParam(value = "The includeTag seach value.") @RequestParam(name= "includeTag", required = false )  final String includeTag) throws NotFoundException {
+    public List<XdatStoredSearchI> getAllSavedSearches(@ApiParam(value = "The username seach value.") @RequestParam(name= "username", required = false )  final String username,
+                                                       @ApiParam(value = "The getAllBundles seach value.") @RequestParam(name= "allBundles", required = false )  final String allBundles,
+                                                       @ApiParam(value = "The includeTag seach value.") @RequestParam(name= "includeTag", required = false )  final String includeTag) throws NotFoundException {
         log.debug("User {} requested XdatStoredSearch ", getSessionUser().getUsername());
         return _searchService.findAllSavedSearch(getSessionUser(), username, allBundles,includeTag );
     }
@@ -71,7 +72,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public XdatStoredSearch getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
+    public XdatStoredSearchI getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
     												 @ApiParam(value = "The dv seach value.") @RequestParam(name= "dv", required = false )  final String dv,
     												 @ApiParam(value = "The project seach value.") @RequestParam(name= "project", required = false )  final String project) throws NotFoundException, InsufficientPrivilegesException {
     	log.debug("User {} requested search with ID {}", getSessionUser().getUsername(), searchId);
@@ -115,7 +116,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public XdatStoredSearch  getSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
+    public XdatStoredSearchI  getSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable  final String searchId,
     		@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws DataFormatException, NotFoundException {
     	log.debug("User {} requested Saved Search with PROJECT ID {} and with SEARCH ID {} ", getSessionUser().getUsername(), projectId, searchId);
     	return _searchService.findSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, projectId));

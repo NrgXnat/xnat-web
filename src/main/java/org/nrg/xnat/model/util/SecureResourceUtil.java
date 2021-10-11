@@ -15,6 +15,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatExperimentdataShare;
 import org.nrg.xdat.om.XnatImagescandata;
@@ -330,7 +331,7 @@ public class SecureResourceUtil {
 	
     
    
-    protected XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, final UserI user) throws NotFoundException {
+    protected XnatProjectdata getProjectFromFilePath(final XnatProjectdataI project, final ArchivableItem item, final UserI user) throws NotFoundException {
         final String newProjectId = project.getId();
         final XnatProjectdata newProject   = XnatProjectdata.getXnatProjectdatasById(newProjectId, user, false);
         if (newProject == null) {

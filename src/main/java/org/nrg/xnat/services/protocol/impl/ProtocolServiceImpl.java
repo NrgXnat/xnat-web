@@ -10,6 +10,7 @@ import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XnatDatatypeprotocolI;
 import org.nrg.xdat.om.XnatAbstractprotocol;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -41,7 +42,7 @@ public class ProtocolServiceImpl implements ProtocolService {
 	}
 
 	@Override
-	public XnatDatatypeprotocol findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType,  XnatEventUtil event ) throws NotFoundException {
+	public XnatDatatypeprotocolI findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType, XnatEventUtil event ) throws NotFoundException {
 		
 		validate(projectId, protocolId, dataType);
 		
@@ -101,7 +102,7 @@ public class ProtocolServiceImpl implements ProtocolService {
 	
 	
 	@Override
-	public XnatDatatypeprotocol update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event) throws InitializationException, NotFoundException {
+	public XnatDatatypeprotocolI update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event) throws InitializationException, NotFoundException {
 		
 		validate(projectId, protocolId, dataType);
 

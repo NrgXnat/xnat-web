@@ -26,6 +26,7 @@ import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
+import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatCriteria;
 import org.nrg.xdat.om.XdatCriteriaSet;
 import org.nrg.xdat.om.XdatSearch;
@@ -188,14 +189,14 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public List<XdatStoredSearch> findAllSavedSearch(UserI user,String usernameToGetListFor, String getAllBundles, String includeTagged) throws NotFoundException {
+	public List<XdatStoredSearchI> findAllSavedSearch(UserI user, String usernameToGetListFor, String getAllBundles, String includeTagged) throws NotFoundException {
 		String query = null;
 		try {
 			query = getSavedSearchQuery(user, usernameToGetListFor, getAllBundles, includeTagged);
 		} catch (UserNotFoundException | DataFormatException | UserInitException e) {
 			e.printStackTrace();
 		}
-		List<XdatStoredSearch> savedSearches = _template.query(query, new MapSqlParameterSource(),
+		List<XdatStoredSearchI> savedSearches = _template.query(query, new MapSqlParameterSource(),
 				new XdatStoredSearchRowMapper(user));
 		if (Objects.isNull(savedSearches) || savedSearches.isEmpty())
 			throw new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME);
@@ -203,16 +204,16 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public Optional<XdatStoredSearch> findSavedSearchBySearchId(UserI user, String searchId, String dv, String project) throws InsufficientPrivilegesException {
-		XdatStoredSearch xss = null;
+	public Optional<XdatStoredSearchI> findSavedSearchBySearchId(UserI user, String searchId, String dv, String project) throws InsufficientPrivilegesException {
+		XdatStoredSearchI xss = null;
 		String sID = searchId;
 		boolean loadedFromFile = false;
 
 		xss = getXssData(xss, sID, user,dv);
 		if (xss != null)
-			verifyXss(xss, user);
+			verifyXss((XdatStoredSearch) xss, user);
 		else
-			xss = getXssDataAfterValidate(xss, sID, loadedFromFile, user,project);
+			xss = (XdatStoredSearchI) getXssDataAfterValidate((XdatStoredSearch) xss, sID, loadedFromFile, user,project);
 
 		if (xss != null) {
 			getXnatStoredSearchData();
@@ -222,9 +223,9 @@ public class SearchServiceImpl implements SearchService {
 	}
 	
 	@Override
-	public Optional<XdatStoredSearch> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId,
-			String searchId) throws DataFormatException, NotFoundException {
-		XdatStoredSearch xdatStoredSearch = new XdatStoredSearch();
+	public Optional<XdatStoredSearchI> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId,
+																			 String searchId) throws DataFormatException, NotFoundException {
+		XdatStoredSearchI xdatStoredSearch = (XdatStoredSearchI) new XdatStoredSearch();
 		XnatProjectdata xnatProjectdata = new XnatProjectdata();
 
 		if (Objects.isNull(projectId) || projectId.isEmpty())
@@ -238,9 +239,9 @@ public class SearchServiceImpl implements SearchService {
 			throw new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, projectId);
 
 		if (searchId.startsWith("@"))
-			xdatStoredSearch = xnatProjectdata.getDefaultSearch(searchId.substring(1));
+			xdatStoredSearch = (XdatStoredSearchI) xnatProjectdata.getDefaultSearch(searchId.substring(1));
 		else
-			xdatStoredSearch = XdatStoredSearch.getXdatStoredSearchsById(xdatStoredSearch, user, true);
+			xdatStoredSearch = (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(xdatStoredSearch, user, true);
 
 		if (Objects.isNull(xdatStoredSearch))
 			throw new NotFoundException("No saved search with XdatStoredSearch was found {} " + searchId);
@@ -565,15 +566,15 @@ public class SearchServiceImpl implements SearchService {
 		return query += ") AS ids LEFT JOIN xdat_stored_search xssouter ON xssouter.id = ids.id LEFT JOIN xdat_stored_search_allowed_user xssauouter ON xssouter.id = xssauouter.xdat_stored_search_id GROUP BY xssouter.id";
 	}
 
-	private static class XdatStoredSearchRowMapper implements RowMapper<XdatStoredSearch> {
+	private static class XdatStoredSearchRowMapper implements RowMapper<XdatStoredSearchI> {
 		XdatStoredSearchRowMapper(final UserI user) {
 			_user = user;
 		}
 
 		@Override
-		public XdatStoredSearch mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+		public XdatStoredSearchI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 			final String searchId = resultSet.getString("id");
-			XdatStoredSearch xdatStoredSearch = XdatSearch.getXdatStoredSearchsById(searchId, _user, false);
+			XdatStoredSearchI xdatStoredSearch = (XdatStoredSearchI) XdatSearch.getXdatStoredSearchsById(searchId, _user, false);
 			return xdatStoredSearch;
 		}
 
@@ -652,7 +653,7 @@ public class SearchServiceImpl implements SearchService {
 
 	}
 
-	private XdatStoredSearch getXssData(XdatStoredSearch xss, String sID, UserI user, String dv) {
+	private XdatStoredSearchI getXssData(XdatStoredSearchI xss, String sID, UserI user, String dv) {
 		if (xss == null && sID != null) {
 			if (sID.startsWith("@")) {
 				try {
@@ -663,13 +664,13 @@ public class SearchServiceImpl implements SearchService {
 					ds.setUser(user);
 					ds.setDisplay(dv);
 					ds.setRootElement(sID.substring(1));
-					xss = ds.convertToStoredSearch(sID);
+					xss = (XdatStoredSearchI) ds.convertToStoredSearch(sID);
 					xss.setId(sID);
 				} catch (XFTInitException | ElementNotFoundException e) {
 					log.error("", e);
 				}
 			} else {
-				xss = XdatStoredSearch.getXdatStoredSearchsById(sID, user, true);
+				xss = (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(sID, user, true);
 			}
 		}
 		return xss;

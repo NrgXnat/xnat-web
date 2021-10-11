@@ -7,6 +7,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
@@ -23,13 +24,13 @@ import java.util.Optional;
 
 public interface ProjectService {
 	
-     List<XnatProjectdata> findAll(UserI user) throws NotFoundException;
+     List<XnatProjectdataI> findAll(UserI user) throws NotFoundException;
 
-     Optional<XnatProjectdata> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
+     Optional<XnatProjectdataI> findById(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-     XnatProjectdata create(UserI user, XnatProjectdata xnatProjectdata, boolean allowDataDeletion, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
+    XnatProjectdataI create(UserI user, XnatProjectdata xnatProjectdata, boolean allowDataDeletion, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-     XnatProjectdata update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+    XnatProjectdataI update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
      void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
 

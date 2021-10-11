@@ -10,6 +10,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XnatDatatypeprotocolI;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -48,14 +49,14 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	    public XnatDatatypeprotocol getByProjectIdAndProtocolId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
-	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
-	    		@ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
-				@ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
-				@ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
-				@ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
-				@ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException, DataFormatException {
+	    public XnatDatatypeprotocolI getByProjectIdAndProtocolId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+																 @ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
+																 @ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
+																 @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
+																 @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
+																 @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,
+																 @ApiParam("The event  action value ") @RequestParam(name = "eventAction", required = false)String eventAction,
+																 @ApiParam("The event comment value ") @RequestParam(name = "eventComment", required = false)String eventComment) throws NotFoundException, DataFormatException {
 	    	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
 	    	return _protocolService.findByProjectIdAndProtocolId(getSessionUser(), projectId, protocolId, dataType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment ));
 	    }
@@ -69,7 +70,7 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 							produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method =PUT)
-	    public XnatDatatypeprotocol update(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    public XnatDatatypeprotocolI update(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 	    		@ApiParam("The protocol to be updated.") @RequestBody final XnatDatatypeprotocol protocol,
 	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
 	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,

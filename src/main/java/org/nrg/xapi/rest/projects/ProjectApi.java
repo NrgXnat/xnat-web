@@ -17,6 +17,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -64,7 +65,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public XnatProjectdata getById(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
+    public XnatProjectdataI getById(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
         return _projectService.findById(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId));
     }
@@ -79,7 +80,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured projects."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects",produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatProjectdata> getAllProjects() throws NotFoundException  {
+    public List<XnatProjectdataI> getAllProjects() throws NotFoundException  {
     	log.debug("User {} requested projects", getSessionUser().getUsername());
         return _projectService.findAll(getSessionUser());
     }
@@ -88,7 +89,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * Create new xnat project
 	 * 
 	 * @param project
-	 * @param allowDataDelete
+	 * @param allowDataDeletion
 	 * @param accessibility
 	 * @param xsiType
 	 * @param eventReason
@@ -114,7 +115,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects",consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
-    public XnatProjectdata createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdata project,
+    public XnatProjectdataI createProject(@ApiParam("The project to be created.") @RequestBody final XnatProjectdata project,
     									 @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDeletion", defaultValue = "false") boolean allowDataDeletion, 
     									 @ApiParam("The accessibility value ") @RequestParam(name = "accessibility", required = false)String accessibility,
     									 @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,
@@ -135,7 +136,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
 	 * @param project
 	 * @param filepath
 	 * @param xsiType
-	 * @param allowDataDelete
+	 * @param allowDataDeletion
 	 * @param accessibility
 	 * @param testHyphen
 	 * @param eventReason
@@ -155,7 +156,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}",  consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         						produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = PUT)
-    public XnatProjectdata updateProject(@ApiParam("The ID of the project to be updated") @PathVariable final String projectId,
+    public XnatProjectdataI updateProject(@ApiParam("The ID of the project to be updated") @PathVariable final String projectId,
                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdata project,
                                          @ApiParam("The filepath value ") @RequestParam(name = "filepath", required = false)String filepath,
                                          @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,

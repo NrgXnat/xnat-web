@@ -14,6 +14,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.base.BaseXnatProjectdata;
@@ -55,10 +56,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
 import static org.nrg.xdat.om.base.auto.AutoXnatProjectdata.SCHEMA_ELEMENT_NAME;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+
+import java.util.*;
 
 @Service
 @Slf4j
@@ -72,20 +71,28 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 	
     @Override
-    public List<XnatProjectdata> findAll(final UserI user) throws NotFoundException {
+    public List<XnatProjectdataI> findAll(final UserI user) throws NotFoundException {
     	List<XnatProjectdata> projects= XnatProjectdata.getAllXnatProjectdatas(user, false);
+
+		List<XnatProjectdataI> xnatProjectdataIs = new ArrayList<>();
+		for(XnatProjectdata project: projects) {
+			xnatProjectdataIs.add(project);
+		}
     	if(Objects.isNull(projects) || projects.isEmpty()) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
     	}
-    	return projects;
+    	return xnatProjectdataIs;
     }
 
     @Override
-    public  Optional<XnatProjectdata> findById(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
+    public  Optional<XnatProjectdataI> findById(final UserI user, final String projectId) throws DataFormatException, NotFoundException {
     	if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
     	}
-    	XnatProjectdata proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+
+		XnatProjectdataI proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+
+
     	if(Objects.isNull(proj)) {
     		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId) ;
     	}
@@ -93,7 +100,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public XnatProjectdata create(final UserI user, final XnatProjectdata proj, boolean  allowDataDeletion, String accessibility, String xsiType, XnatEventUtil event ) throws ActionException, UserNotFoundException, UserInitException, DataFormatException, XftItemException, InsufficientPrivilegesException, ResourceAlreadyExistsException {
+    public XnatProjectdataI create(final UserI user, final XnatProjectdata proj, boolean  allowDataDeletion, String accessibility, String xsiType, XnatEventUtil event ) throws ActionException, UserNotFoundException, UserInitException, DataFormatException, XftItemException, InsufficientPrivilegesException, ResourceAlreadyExistsException {
 		log.debug("User {} is creating the project {}", user.getUsername(), proj.getId());
 		XFTItem item;
 
@@ -129,7 +136,7 @@ public class ProjectServiceImpl implements ProjectService {
     
 	@SuppressWarnings("unused")
 	@Override
-    public XnatProjectdata update(final UserI user, final XnatProjectdata project, String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event ) throws Exception {
+    public XnatProjectdataI update(final UserI user, final XnatProjectdata project, String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event ) throws Exception {
 		log.debug("User {} is updating the project  Id {} ", user.getUsername(), project.getId());
 	
 		final String projectId = project.getId();
@@ -442,7 +449,7 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     
-    public void delete(final UserI user, final XnatProjectdata proj, boolean removeFiles, XnatEventUtil xnatEvent) throws DataFormatException, InitializationException {
+    public void delete(final UserI user, final XnatProjectdataI proj, boolean removeFiles, XnatEventUtil xnatEvent) throws DataFormatException, InitializationException {
 		XnatProjectdata project = null;
 		final String projectId = proj.getId();
 		String filepath = null;
