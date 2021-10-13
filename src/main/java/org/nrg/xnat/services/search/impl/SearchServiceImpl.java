@@ -21,11 +21,14 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
+import org.nrg.xdat.model.XdatStoredSearchAllowedUserI;
+import org.nrg.xdat.model.XdatStoredSearchGroupidI;
 import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatCriteria;
 import org.nrg.xdat.om.XdatCriteriaSet;
@@ -34,6 +37,7 @@ import org.nrg.xdat.om.XdatStoredSearch;
 import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
 import org.nrg.xdat.om.XdatStoredSearchGroupid;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.base.auto.AutoXdatStoredSearch;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xdat.search.DisplaySearch;
@@ -46,6 +50,7 @@ import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.UserHelper;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.XFTTool;
@@ -263,20 +268,22 @@ public class SearchServiceImpl implements SearchService {
 		}
 	}
 	@Override
-	public XdatStoredSearchI updateStoredSearch(UserI user, XdatStoredSearch xdatStoredSearch, String searchId, Boolean saveAs, XnatEventUtil event) throws InitializationException {
+	public XdatStoredSearchI updateStoredSearch(UserI user, XdatStoredSearchI xdatStoredSearch, String searchId, Boolean saveAs, XnatEventUtil event) throws InitializationException {
 		boolean isNew = false;
 
 		if (xdatStoredSearch.getId() == null || !xdatStoredSearch.getId().equals(searchId)) {
 			xdatStoredSearch.setId(searchId);
 			isNew = true;
 		} else {
-			XFTItem xss = xdatStoredSearch.getCurrentDBVersion(false);
+			XFTItem xss = ((BaseElement) xdatStoredSearch).getCurrentDBVersion(false);
 			if (xss == null) {
 				isNew = true;
 			} else if (saveAs) {
 				while (xss != null) {
 					xdatStoredSearch.setId(xdatStoredSearch.getId() + "_1");
-					xss = xdatStoredSearch.getCurrentDBVersion(false);
+					xss = ((BaseElement) xdatStoredSearch).getCurrentDBVersion(false);
+
+
 				}
 				isNew = true;
 			}
@@ -298,7 +305,7 @@ public class SearchServiceImpl implements SearchService {
 
 			isNew = getIsNew(xdatStoredSearch, isNew, user);
 
-			xdatStoredSearch = getXdatStoredSearchWithSaveAs(xdatStoredSearch, saveAs);
+			xdatStoredSearch =  getXdatStoredSearchWithSaveAs(xdatStoredSearch, saveAs);
 
 			boolean found = false;
 
@@ -313,7 +320,7 @@ public class SearchServiceImpl implements SearchService {
 			e.printStackTrace();
 		}
 		try {
-			SaveItemHelper.unauthorizedSave(xdatStoredSearch, user, false, true,
+			SaveItemHelper.unauthorizedSave((ItemI) xdatStoredSearch, user, false, true,
 					XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, (isNew) ? "Creating new stored search" : "Modified existing stored search",event));
 		} catch (Exception e) {
 			log.error("", e);
@@ -723,7 +730,7 @@ public class SearchServiceImpl implements SearchService {
 		return mine;
 	}
 
-	private boolean getIsNew(XdatStoredSearch xdatStoredSearch, boolean isNew, UserI user) throws Exception {
+	private boolean getIsNew(XdatStoredSearchI xdatStoredSearch, boolean isNew, UserI user) throws Exception {
 		final boolean isPrimary = (xdatStoredSearch.getTag() != null && (xdatStoredSearch.getId() .equals(xdatStoredSearch.getTag() + "_" + xdatStoredSearch.getRootElementName())))
 				|| (org.apache.commons.lang3.StringUtils.isNotBlank(xdatStoredSearch.getBriefDescription()) && xdatStoredSearch.getBriefDescription().equals(DisplayManager.GetInstance()
 								.getPluralDisplayNameForElement(xdatStoredSearch.getRootElementName())));
@@ -736,15 +743,15 @@ public class SearchServiceImpl implements SearchService {
 		return isNew;
 	}
 
-	private void verfiyPermission(UserI user, XdatStoredSearch xdatStoredSearch)
+	private void verfiyPermission(UserI user, XdatStoredSearchI xdatStoredSearch)
 			throws InsufficientPrivilegesException {
 		if (!Permissions.canQuery(user, xdatStoredSearch.getRootElementName())) {
 			throw new InsufficientPrivilegesException(user.getUsername());
 		}
 	}
 
-	private boolean getFoundWithSearchGroup(XdatStoredSearch xdatStoredSearch, boolean found, UserI user) {
-		for (XdatStoredSearchGroupid ag : xdatStoredSearch.getAllowedGroups_groupid()) {
+	private boolean getFoundWithSearchGroup(XdatStoredSearchI xdatStoredSearch, boolean found, UserI user) {
+		for (XdatStoredSearchGroupidI ag : xdatStoredSearch.getAllowedGroups_groupid()) {
 			if (Groups.isMember(user, ag.getGroupid())) {
 				found = true;
 			}
@@ -752,8 +759,8 @@ public class SearchServiceImpl implements SearchService {
 		return found;
 	}
 
-	private boolean getFoundWithUser(XdatStoredSearch xdatStoredSearch, boolean found, UserI user) {
-		for (XdatStoredSearchAllowedUser au : xdatStoredSearch.getAllowedUser()) {
+	private boolean getFoundWithUser(XdatStoredSearchI xdatStoredSearch, boolean found, UserI user) {
+		for (XdatStoredSearchAllowedUserI au : xdatStoredSearch.getAllowedUser()) {
 			if (au.getLogin().equals(user.getLogin())) {
 				found = true;
 			}
@@ -761,21 +768,21 @@ public class SearchServiceImpl implements SearchService {
 		return found;
 	}
 
-	private XdatStoredSearch getXdatStoredSearchWithSaveAs(XdatStoredSearch xdatStoredSearch, Boolean saveAs) {
+	private XdatStoredSearchI getXdatStoredSearchWithSaveAs(XdatStoredSearchI xdatStoredSearch, Boolean saveAs) {
 		if (saveAs) {
 			while (xdatStoredSearch.getAllowedGroups_groupid().size() > 0) {
-				xdatStoredSearch.removeAllowedGroups_groupid(0);
+				((AutoXdatStoredSearch) xdatStoredSearch).removeAllowedGroups_groupid(0);
 			}
 
 			while (xdatStoredSearch.getAllowedUser().size() > 0) {
-				xdatStoredSearch.removeAllowedUser(0);
+				((AutoXdatStoredSearch) xdatStoredSearch).removeAllowedUser(0);
 			}
 		}
 		return xdatStoredSearch;
 	}
 
-	private XdatStoredSearch getXdatStoredSearchWithNotIsNewAndNotFound(boolean isNew, boolean found,
-			XdatStoredSearch xdatStoredSearch, UserI user) throws InsufficientPrivilegesException  {
+	private XdatStoredSearchI getXdatStoredSearchWithNotIsNewAndNotFound(boolean isNew, boolean found,
+																		XdatStoredSearchI xdatStoredSearch, UserI user) throws InsufficientPrivilegesException  {
 		if (!found && !isNew) {
 			if (xdatStoredSearch.getTag() != null && !xdatStoredSearch.getTag().equals("")) {
 				try {
@@ -784,7 +791,7 @@ public class SearchServiceImpl implements SearchService {
 					} else {
 						XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
 						au.setLogin(user.getLogin());
-						xdatStoredSearch.setAllowedUser(au);
+						((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser(au);
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -796,12 +803,12 @@ public class SearchServiceImpl implements SearchService {
 		return xdatStoredSearch;
 	}
 
-	private XdatStoredSearch getXdatStoredSearchWithIsNewAndNotFound(boolean isNew, boolean found,
-			XdatStoredSearch xdatStoredSearch, UserI user) throws Exception {
+	private XdatStoredSearchI getXdatStoredSearchWithIsNewAndNotFound(boolean isNew, boolean found,
+																	 XdatStoredSearchI xdatStoredSearch, UserI user) throws Exception {
 		if (isNew && !found) {
 			XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
 			au.setLogin(user.getLogin());
-			xdatStoredSearch.setAllowedUser(au);
+			((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser(au);
 		}
 		return xdatStoredSearch;
 	}

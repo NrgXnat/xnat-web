@@ -26,6 +26,7 @@ import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.bean.CatEntryBean;
 import org.nrg.xdat.model.ArcPathinfoI;
 import org.nrg.xdat.model.ArcProjectI;
+import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.*;
 import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
@@ -213,7 +214,7 @@ public class XNATUtils {
         }
     }
 
-    public static void removeScanDir(XnatImagesessiondata session, XnatImagescandata scan) throws InvalidArchiveStructure, BaseXnatExperimentdata.UnknownPrimaryProjectException {
+    public static void removeScanDir(XnatImagesessiondata session, XnatImagescandataI scan) throws InvalidArchiveStructure, BaseXnatExperimentdata.UnknownPrimaryProjectException {
         // Above "delete" removes resources, but leaves dangling scan directory
         final Path scanDirPath = Paths.get(session.getCurrentSessionFolder(true), "SCANS", scan.getId());
         final File scanDir = scanDirPath == null ? null : scanDirPath.toFile();

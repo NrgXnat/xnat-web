@@ -133,7 +133,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                         method = PUT)
     public XdatStoredSearchI updateStoredSearch(@ApiParam("The ID of the search saved to be updated") @PathVariable final String searchId,
     									  @ApiParam("The ID of the search saved to be updated") @RequestParam(required = false) final Boolean saveAs,
-    									  @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearch xdatStoredSearch,
+    									  @ApiParam("The search saved to be updated.") @RequestBody final XdatStoredSearchI xdatStoredSearch,
     									  @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
      									  @ApiParam("The event id value ") @RequestParam(name = "eventId", required = false)String eventId,
      									  @ApiParam("The event type value ") @RequestParam(name = "eventType", required = false)String eventType,

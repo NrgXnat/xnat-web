@@ -16,6 +16,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
@@ -64,13 +65,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Gets the requested  experiment", notes = "Returns the  experiment with the specified ID", response = XnatExperimentdata.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the requested  experiment", notes = "Returns the  experiment with the specified ID", response = XnatExperimentdataI.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested experiment."),
 		            @ApiResponse(code = 400, message = "The requested experimentIds wasn't found."),
 			        @ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 			        @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public XnatExperimentdata getById(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
+	public XnatExperimentdataI getById(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with ID {} }", getSessionUser().getUsername(), experimentId);
 		return _experimentService.findById(getSessionUser(), experimentId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, experimentId));
 	}
@@ -81,12 +82,12 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @return
 	 * @throws NotFoundException
 	 */
-	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "List")
+	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdataI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
 		            @ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 	                @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatExperimentdata> getAllExperiments() throws NotFoundException {
+	public List<XnatExperimentdataI> getAllExperiments() throws NotFoundException {
 		log.debug("User {} requested experiments }", getSessionUser().getUsername());
 		return  _experimentService.findAll(getSessionUser());
 	}
@@ -100,13 +101,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "List")
+	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdataI.class, responseContainer = "List")
 	               @ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
 	               @ApiResponse(code = 400, message = "The requested experimentIds wasn't found."),
 				   @ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 	               @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatExperimentdata> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException  {
+	public List<XnatExperimentdataI> getAllByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} }", getSessionUser().getUsername(), projectId);
 		return _experimentService.findAllByProjectId(getSessionUser(), projectId);
 	}
@@ -121,13 +122,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Get single experiment", notes = "The experiments function returns a single experiment configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "Single")
+	@ApiOperation(value = "Get single experiment", notes = "The experiments function returns a single experiment configured in the XNAT system.", response = XnatExperimentdataI.class, responseContainer = "Single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
 		            @ApiResponse(code = 400, message = "The requested experimentIds wasn't found."),
                     @ApiResponse(code = 404, message = "The requested experiment wasn't found."),
 	                @ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 	@XapiRequestMapping(value = "/projects/{projectId}/experiments/{experimentId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public XnatExperimentdata getByIdAndProject(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
+	public XnatExperimentdataI getByIdAndProject(@ApiParam(value = "The ID of the experiment.") @PathVariable  final String experimentId,
 			                                    @ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} and with ID {} }", getSessionUser().getUsername(), projectId, experimentId);
 		return _experimentService.findByIdAndProjectId(getSessionUser(), experimentId, projectId).orElseThrow(() -> new NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, projectId));
@@ -143,13 +144,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdata.class, responseContainer = "List")
+	@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a list of all experiments configured in the XNAT system.", response = XnatExperimentdataI.class, responseContainer = "List")
 	               @ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured experiments."),
 	               @ApiResponse(code = 500, message = "An unexpected or unknown error occurred"),
 	               @ApiResponse(code = 400, message = "The requested experimentIds wasn't found."),
                    @ApiResponse(code = 404, message = "The requested experiment wasn't found.")})
 	@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public List<XnatExperimentdata> getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId, 
+	public List<XnatExperimentdataI> getAllByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId, 
 															      @ApiParam(value = "The ID of the subject.") @PathVariable  final String subjectId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested experiment with projectId {} and with subjectId {}}", getSessionUser().getUsername(), projectId, subjectId);
 		return _experimentService.findAllByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId);
@@ -217,7 +218,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @return
 	 * @throws DataFormatException
 	 */
-	 @ApiOperation(value = "Update an existing experiment", notes = "Updates the submitted experiment.", response = XnatSubjectassessordata.class)
+	 @ApiOperation(value = "Update an existing experiment", notes = "Updates the submitted experiment.", response = XnatSubjectassessordataI.class)
 	 @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated experiment."),
 		 			@ApiResponse(code = 403, message = "The user doesn't have permission to edit experiment in the specified project"),
 		 			@ApiResponse(code = 404, message = "The specified experiment doesn't exist"),
@@ -226,7 +227,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = PUT)
-	    public XnatExperimentdata updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
+	    public XnatExperimentdataI updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
 	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,                            
 	    										   @ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
 	    										   @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment,
@@ -285,7 +286,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                        consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 	                        method = POST)
-	    public XnatExperimentdata createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable final String projectId,
+	    public XnatExperimentdataI createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable final String projectId,
 	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,
 	    										   @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment,
 	    										   @ApiParam("The xsiType value") @RequestParam(name = "xsiType", required = false )String xsiType,
@@ -329,9 +330,9 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 						@ApiResponse(code = 404, message = "The requested assessors wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public List<XnatImageassessordata> getAllByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-				@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
-				@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
+		public List<XnatImageassessordataI> getAllByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+																						 @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+																						 @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
 			log.debug("User {} requested assessor with project ID {} , with subject ID {} and with experiment ID {} }", getSessionUser().getUsername(), projectId, subjectId, experimentId);
 			return _assessorService.findAllByProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId,experimentId );
 		}
@@ -348,13 +349,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a experiment configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of experiments", notes = "The experiments function returns a experiment configured in the XNAT system.", response = XnatImageassessordataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns the currently configured experiment."),
 						@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId or assessorId  wasn't found."),
 						@ApiResponse(code = 404, message = "The requested assessor wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors/{assessorId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public XnatImageassessordata getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
+		public XnatImageassessordataI getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
 				@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 				@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 				@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId) throws NotFoundException, DataFormatException  {
@@ -371,13 +372,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a list of all assessors configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a list of all assessors configured in the XNAT system.", response = XnatImageassessordataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured assessors."),
 						@ApiResponse(code = 400, message = "The requested experimentId wasn't found."),
 						@ApiResponse(code = 404, message = "The requested assessors wasn't found."),		
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/experiments/{experimentId}/assessors", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public List<XnatImageassessordata> getAllByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
+		public List<XnatImageassessordataI> getAllByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
 			log.debug("User {} requested assessor with experiment ID {} }", getSessionUser().getUsername(), experimentId);
 			return _assessorService.findAllByExperimentId(getSessionUser(), experimentId);
 		}
@@ -392,13 +393,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a assessor configured in the XNAT system.", response = XnatImageassessordata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of assessors", notes = "The experiments function returns a assessor configured in the XNAT system.", response = XnatImageassessordataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured assessors."),
 						@ApiResponse(code = 400, message = "The requested either assessorId or experimentId wasn't found."),
 						@ApiResponse(code = 404, message = "The requested assessor wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public XnatImageassessordata getByAssessorIdAndExperimentId(@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId,
+		public XnatImageassessordataI getByAssessorIdAndExperimentId(@ApiParam(value = "The ID of the assessor.") @PathVariable final String assessorId,
 				@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException  {
 			log.debug("User {} requested assessor with experiment ID {} and with assessor ID {}  }", getSessionUser().getUsername(), experimentId, assessorId);
 			return _assessorService.findByIdAndExperimentId(getSessionUser(), assessorId, experimentId).orElseThrow(() -> new NotFoundException(XnatImageassessordata.SCHEMA_ELEMENT_NAME, experimentId));
@@ -432,13 +433,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatImagescandata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatImagescandataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested projectId  wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scans wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/projects/{projectId}/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public  List<XnatImagescandata> getScanTypesByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws NotFoundException, DataFormatException  {
+		public  List<XnatImagescandataI> getScanTypesByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable  final String projectId) throws NotFoundException, DataFormatException  {
 			log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
 			return _scanService.findAllScanTypesByProjectId(getSessionUser(), projectId);
 		}
@@ -450,12 +451,12 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @return
 	 * @throws NotFoundException
 	 */
-		@ApiOperation(value = "Get list of scan types", notes = "The scans function returns a list of all scan types configured in the XNAT system.", response = XnatImagescandata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of scan types", notes = "The scans function returns a list of all scan types configured in the XNAT system.", response = XnatImagescandataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 404, message = "The requested scan types wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/scan_types", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public List<XnatImagescandata> getAllScanTypes() throws NotFoundException {
+		public List<XnatImagescandataI> getAllScanTypes() throws NotFoundException {
 			log.debug("User {} requested scan types", getSessionUser().getUsername());
 			return _scanService.findAllScanTypes(getSessionUser());
 		}
@@ -469,13 +470,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get scans with specified assessed ID", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+		@ApiOperation(value = "Get scans with specified assessed ID", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested assessedId  wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scans wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/experiments/{assessedId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public List<XnatImagescandata> getAllByAssessedId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId) throws NotFoundException, DataFormatException {
+		public List<XnatImagescandataI> getAllByAssessedId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId) throws NotFoundException, DataFormatException {
 			log.debug("User {} requested assessor with ID {}", getSessionUser().getUsername(), assessedId);
 			return _scanService.findAllByAssessedId(getSessionUser(), assessedId);
 		}
@@ -489,13 +490,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 		 * @throws NotFoundException
 		 * @throws DataFormatException
 		 */
-		@ApiOperation(value = "Get the scan with specified assessor ID", notes = "The scans function returns a scan configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "Single")
+		@ApiOperation(value = "Get the scan with specified assessor ID", notes = "The scans function returns a scan configured in the XNAT system.", response = XnatScscandataI.class, responseContainer = "Single")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested either assessedId or scanId wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scans wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/experiments/{assessedId}/scans/{scanId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public XnatImagescandata getByAssessedIdAndScanId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
+		public XnatImagescandataI getByAssessedIdAndScanId(@ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
 				@ApiParam(value = "The ID of the scan.") @PathVariable  final Integer scanId) throws NotFoundException, DataFormatException  {
 			log.debug("User {} requested assessor with ID {} and scan with ID {}", getSessionUser().getUsername(), assessedId, scanId);
 			return _scanService.findByAssessedIdAndScanId(getSessionUser(), assessedId, scanId).orElseThrow(() -> new NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME, assessedId));
@@ -512,13 +513,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+		@ApiOperation(value = "Get list of scans", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scans wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/scans", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public List<XnatImagescandata> getScansByProjectAndSubjectAndExperiment(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+		public List<XnatImagescandataI> getScansByProjectAndSubjectAndExperiment(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 				@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 				@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException{
 			log.debug("User {} requested project with ID {}, subject with ID {} and experiment with ID {}", getSessionUser().getUsername(), projectId, subjectId, experimentId);
@@ -537,13 +538,13 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-		@ApiOperation(value = "Get scan of specified scanId", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "Single")
+		@ApiOperation(value = "Get scan of specified scanId", notes = "The scans function returns a list of all scans configured in the XNAT system.", response = XnatScscandataI.class, responseContainer = "Single")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId or scanId wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scans wasn't found."),			
 						@ApiResponse(code = 500, message = "An unexpected or unknown error occurred") })
 		@XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/scans/{scanId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-		public XnatImagescandata getByProjectIdAndSubjectIdAndExperimentIdAndScanId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+		public XnatImagescandataI getByProjectIdAndSubjectIdAndExperimentIdAndScanId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
 				@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
 				@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 				@ApiParam(value = "The ID of the scan.") @PathVariable final Integer scanId) throws NotFoundException, DataFormatException  {
@@ -560,7 +561,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	 * @return
 	 * @throws InsufficientPrivilegesException
 	 */
-		@ApiOperation(value = "Get All scanner", notes = "The scannners function returns a list of all scanner configured in the XNAT system.", response = XnatScscandata.class, responseContainer = "List")
+		@ApiOperation(value = "Get All scanner", notes = "The scannners function returns a list of all scanner configured in the XNAT system.", response = XnatScscandataI.class, responseContainer = "List")
 		@ApiResponses({ @ApiResponse(code = 200, message = "Returns a list of all of the currently configured scans."),
 						@ApiResponse(code = 400, message = "The requested scanner  wasn't found."),
 						@ApiResponse(code = 404, message = "The requested scanner wasn't found."),			

@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XnatExperimentdataI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.XnatEventUtil;
@@ -13,13 +14,13 @@ public interface ExperimentService {
 	
 	 XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata,String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event, boolean triggerPipelines, boolean supressEmails) throws NotFoundException;
 
-	 List<XnatExperimentdata> findAll(UserI user) throws NotFoundException;
+	 List<XnatExperimentdataI> findAll(UserI user) throws NotFoundException;
 	
-	 Optional<XnatExperimentdata> findById(UserI user, String experimentId) throws DataFormatException, NotFoundException;
+	 Optional<XnatExperimentdataI> findById(UserI user, String experimentId) throws DataFormatException, NotFoundException;
 	
-	 List<XnatExperimentdata> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subject) throws DataFormatException, NotFoundException;
+	 List<XnatExperimentdataI> findAllByProjectIdAndSubjectId(UserI user, String projectId, String subject) throws DataFormatException, NotFoundException;
 
-	 List<XnatExperimentdata> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
+	 List<XnatExperimentdataI> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 	
 	 List<XnatExperimentdata> findAllByProjectIdAndLabel(UserI user, String projectId, String label);
 
@@ -27,5 +28,5 @@ public interface ExperimentService {
 
 	 void deleteById(UserI user, String experimentId, String projectId, String filepath,boolean removeFiles,XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
 	
-	 Optional<XnatExperimentdata> findByIdAndProjectId(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException;
+	 Optional<XnatExperimentdataI> findByIdAndProjectId(UserI user, String experimentId, String projectId) throws DataFormatException, NotFoundException;
 }

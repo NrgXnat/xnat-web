@@ -18,6 +18,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
@@ -25,6 +26,7 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.turbine.utils.AdminUtils;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.search.CriteriaCollection;
@@ -57,11 +59,11 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	@Override
-	public List<XnatImagescandata> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+	public List<XnatImagescandataI> findAllScanTypesByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
 		}
-		List<XnatImagescandata> scans= _template.query(SCAN_QUERY + BY_PROJECT_ID_WHERE + GROUP_BY, new MapSqlParameterSource("projectId", projectId), new ImageScanRowMapper(user));
+		List<XnatImagescandataI> scans= _template.query(SCAN_QUERY + BY_PROJECT_ID_WHERE + GROUP_BY, new MapSqlParameterSource("projectId", projectId), new ImageScanRowMapper(user));
 		if(Objects.isNull(scans) || scans.isEmpty()) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -69,8 +71,13 @@ public class ScanServiceImpl implements ScanService {
 	}
 
 	@Override
-	public List<XnatImagescandata> findAllScanTypes(UserI user) throws NotFoundException {
-		List<XnatImagescandata> scans= XnatImagescandata.getAllXnatImagescandatas(user, false);
+	public List<XnatImagescandataI> findAllScanTypes(UserI user) throws NotFoundException {
+		List<XnatImagescandata> scanss= XnatImagescandata.getAllXnatImagescandatas(user, false);
+		List<XnatImagescandataI> scans=new ArrayList<>();
+		for(XnatImagescandataI scan: scanss) {
+			scans.add(scan);
+		}
+
 		if(Objects.isNull(scans) || scans.isEmpty()) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -78,11 +85,11 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	@Override
-	public List<XnatImagescandata> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException {
+	public List<XnatImagescandataI> findAllByAssessedId(UserI user, String assessedId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(assessedId)) {
     		throw new DataFormatException("The requested assessed ID" + assessedId + " wasn't found ");
 		}
-		List<XnatImagescandata> scans= _template.query(ASSESSED_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId), new ImageScanRowMapper(user));
+		List<XnatImagescandataI> scans= _template.query(ASSESSED_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId), new ImageScanRowMapper(user));
 		if(Objects.isNull(scans) || scans.isEmpty()) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -90,14 +97,14 @@ public class ScanServiceImpl implements ScanService {
 	}
 
 	@Override
-	public Optional<XnatImagescandata> findByAssessedIdAndScanId(UserI user, String assessedId, Integer scanId) throws DataFormatException, NotFoundException {
+	public Optional<XnatImagescandataI> findByAssessedIdAndScanId(UserI user, String assessedId, Integer scanId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(assessedId)) {
     		throw new DataFormatException("The requested assessed ID" + assessedId + " wasn't found ");
 		}
 		if(Objects.isNull(scanId)) {
     		throw new DataFormatException("The requested scan ID" + scanId + " wasn't found ");
 		}
-		XnatImagescandata scan = _template.queryForObject(ASSESSED_AND_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId).addValue("scanId", scanId), new ImageScanRowMapper(user));
+		XnatImagescandataI scan = _template.queryForObject(ASSESSED_AND_SCAN_QUERY, new MapSqlParameterSource("assessedId", assessedId).addValue("scanId", scanId), new ImageScanRowMapper(user));
 		if(Objects.isNull(scan)) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -105,7 +112,7 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	@Override
-	public List<XnatImagescandata> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId,String experimentId) throws DataFormatException, NotFoundException {
+	public List<XnatImagescandataI> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId,String experimentId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
 		}
@@ -115,7 +122,7 @@ public class ScanServiceImpl implements ScanService {
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID" + experimentId + " wasn't found ");
 		}
-		List<XnatImagescandata> scans  =_template.query(PROJECT_SUBJECT_EXPERIMENT_SCAN_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId), new ImageScanRowMapper(user));
+		List<XnatImagescandataI> scans  =_template.query(PROJECT_SUBJECT_EXPERIMENT_SCAN_QUERY, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId), new ImageScanRowMapper(user));
 		if(Objects.isNull(scans) || scans.isEmpty()) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -123,7 +130,7 @@ public class ScanServiceImpl implements ScanService {
 	}
 
 	@Override
-	public Optional<XnatImagescandata> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException {
+	public Optional<XnatImagescandataI> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String experimentId, Integer scanId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID" + projectId + " wasn't found ");
 		}
@@ -136,7 +143,7 @@ public class ScanServiceImpl implements ScanService {
 		if(Objects.isNull(scanId)) {
     		throw new DataFormatException("The requested scan ID" + scanId + " wasn't found ");
 		}
-		XnatImagescandata scan  = _template.queryForObject(PROJECT_SUBJECT_EXPERIMENT_SCAN_WITH_SCAN_ID_QUERY_, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId).addValue("scanId", scanId), new ImageScanRowMapper(user));
+		XnatImagescandataI scan  = _template.queryForObject(PROJECT_SUBJECT_EXPERIMENT_SCAN_WITH_SCAN_ID_QUERY_, new MapSqlParameterSource("projectId", projectId).addValue("subjectId", subjectId).addValue("experimentId",experimentId).addValue("scanId", scanId), new ImageScanRowMapper(user));
 		if(Objects.isNull(scan)) {
     		throw new  NotFoundException(XnatImagescandata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -205,7 +212,7 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 
-	public void delete(UserI user, XnatImagescandata scan, String assessedId, Integer scanId, String filepath,boolean removeFiles, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
+	public void delete(UserI user, XnatImagescandataI scan, String assessedId, Integer scanId, String filepath, boolean removeFiles, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
 		SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 		if (assessedId != null) 
 			session = (XnatImagesessiondata) XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
@@ -224,7 +231,7 @@ public class ScanServiceImpl implements ScanService {
 	        	if (!Permissions.canDelete(user, session) || prevent_delete) 
 	        		throw new InsufficientPrivilegesException("User account doesn't have permission to modify this session.");
 	        
-	        	secureResoureUtil.delete(session, scan, removeFiles,XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
+	        	secureResoureUtil.delete(session, (ItemI) scan, removeFiles,XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
 
 	            // Above "delete" removes resources, but leaves dangling scan directory
 	            XNATUtils.removeScanDir(session, scan);
@@ -243,7 +250,7 @@ public class ScanServiceImpl implements ScanService {
 
 	protected boolean completeDocument = false;
 
-	protected void searchForScan(UserI user, XnatImagescandata scan, Integer scanId) {
+	protected void searchForScan(UserI user, XnatImagescandataI scan, Integer scanId) {
 		if (scan == null && scanId != null) {
 			if (session != null) {
 				CriteriaCollection cc = new CriteriaCollection("AND");
@@ -278,14 +285,14 @@ public class ScanServiceImpl implements ScanService {
 //		return EventUtils.TYPE.WEB_FORM;
 //	}
 
-	private static class ImageScanRowMapper implements RowMapper<XnatImagescandata> {
+	private static class ImageScanRowMapper implements RowMapper<XnatImagescandataI>  {
 
 		ImageScanRowMapper(final UserI user) {
 			_user = user;
 		}
 
 		@Override
-		public XnatImagescandata mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+		public XnatImagescandataI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 			Integer scanId = resultSet.getInt("xnat_imagescandata_id");
 			XnatImagescandata xnatImagescandata = XnatImagescandata.getXnatImagescandatasByXnatImagescandataId(scanId, _user, false);
 			return xnatImagescandata;

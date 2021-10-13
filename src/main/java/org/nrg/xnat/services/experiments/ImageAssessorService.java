@@ -5,16 +5,17 @@ import java.util.Optional;
 
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XnatImageassessordataI;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
 
 public interface ImageAssessorService {
 
-	  List<XnatImageassessordata> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
+	  List<XnatImageassessordataI> findAllByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException;
 	
-	 Optional<XnatImageassessordata> findByIdAndProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String assessorId) throws DataFormatException, NotFoundException;
+	 Optional<XnatImageassessordataI> findByIdAndProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId, String assessorId) throws DataFormatException, NotFoundException;
 
-	 List<XnatImageassessordata> findAllByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException;
+	 List<XnatImageassessordataI> findAllByExperimentId(UserI user, String experimentId) throws DataFormatException, NotFoundException;
 
-	 Optional<XnatImageassessordata> findByIdAndExperimentId(UserI user, String assessorId, String experimentId) throws DataFormatException, NotFoundException;
+	 Optional<XnatImageassessordataI> findByIdAndExperimentId(UserI user, String assessorId, String experimentId) throws DataFormatException, NotFoundException;
 }
