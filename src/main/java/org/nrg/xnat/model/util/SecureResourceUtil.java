@@ -57,9 +57,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SecureResourceUtil {
 
-	public boolean rename(final XnatProjectdata proj, final ArchivableItem existing, final String label, final UserI user) {
+	public boolean rename(final XnatProjectdataI proj, final ArchivableItem existing, final String label, final UserI user) {
         try {
-            new Rename(proj, existing, label, user, getReason(), getEventType()).call();
+            new Rename((XnatProjectdata) proj, existing, label, user, getReason(), getEventType()).call();
         } catch (Rename.ProcessingInProgress e) {
             final String message = "Specified session is being processed (" + e.getPipelineName() + ").";
             log.error(message, e);

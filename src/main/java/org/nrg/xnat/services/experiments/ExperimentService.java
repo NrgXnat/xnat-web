@@ -11,8 +11,8 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.XnatEventUtil;
 
 public interface ExperimentService {
-	
-	 XnatExperimentdata create(UserI user, XnatExperimentdata xnatExperimentdata,String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event, boolean triggerPipelines, boolean supressEmails) throws NotFoundException;
+
+	XnatExperimentdataI create(UserI user, XnatExperimentdataI xnatExperimentdata,String projectId, String subjectId, String xsiType, String  allowDataDelete, XnatEventUtil event, boolean triggerPipelines, boolean supressEmails) throws NotFoundException;
 
 	 List<XnatExperimentdataI> findAll(UserI user) throws NotFoundException;
 	
@@ -24,7 +24,7 @@ public interface ExperimentService {
 	
 	 List<XnatExperimentdata> findAllByProjectIdAndLabel(UserI user, String projectId, String label);
 
-	 XnatExperimentdata update(UserI user, XnatExperimentdata xnatExperimentdata, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event, boolean fixScanTypes, boolean pullDataFromHeaders, boolean triggerPipelines, boolean supressEmails);
+	XnatExperimentdataI update(UserI user, XnatExperimentdataI xnatExperimentdata, String experimentId, String projectId, String subjectId, String allowDataDelete, String label, String primary, String moveAssessors, boolean overwrite, String filepath, XnatEventUtil event, boolean fixScanTypes, boolean pullDataFromHeaders, boolean triggerPipelines, boolean supressEmails);
 
 	 void deleteById(UserI user, String experimentId, String projectId, String filepath,boolean removeFiles,XnatEventUtil event) throws DataFormatException, NotFoundException, org.nrg.framework.exceptions.NotFoundException ;
 	

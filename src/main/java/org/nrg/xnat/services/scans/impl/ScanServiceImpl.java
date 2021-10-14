@@ -19,6 +19,9 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.model.XnatImagesessiondataI;
+import org.nrg.xdat.model.XnatProjectdataI;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
@@ -34,6 +37,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.SecureResourceUtil;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.scans.ScanService;
+import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.turbine.utils.ScanQualityUtils;
 import org.nrg.xnat.turbine.utils.XNATUtils;
 import org.restlet.data.Status;
@@ -49,10 +53,10 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 public class ScanServiceImpl implements ScanService {
 
-	protected XnatProjectdata proj = null;
-	XnatSubjectdata sub = null;
+	protected XnatProjectdataI proj = null;
+	XnatSubjectdataI sub = null;
 	
-	protected XnatImagesessiondata session = null;
+	protected XnatImagesessiondataI session = null;
 	@Autowired
 	public ScanServiceImpl(final NamedParameterJdbcTemplate template) {
 		_template = template;
@@ -183,7 +187,7 @@ public class ScanServiceImpl implements ScanService {
 		}
 	}
 	
-	private List<Map<String, String>> getScannersData(UserI user, String scanTable, String projectId, XnatProjectdata proj) {
+	private List<Map<String, String>> getScannersData(UserI user, String scanTable, String projectId, XnatProjectdataI proj) {
 		List<Map<String, String>> response = new ArrayList<>();
 		try {
 			List<String> results = new ArrayList<>();
@@ -226,15 +230,15 @@ public class ScanServiceImpl implements ScanService {
 				throw new DataFormatException("Bad request");
 			
 	        try {
-	        	boolean prevent_delete=StringUtils.contains(XDAT.getSiteConfigurationProperty("security.prevent-data-deletion-override", "[]"), session.getItem().getStatus())?false: XDAT.getBoolSiteConfigurationProperty("security.prevent-data-deletion", false);
+	        	boolean prevent_delete=StringUtils.contains(XDAT.getSiteConfigurationProperty("security.prevent-data-deletion-override", "[]"), ((ItemI)session).getItem().getStatus())?false: XDAT.getBoolSiteConfigurationProperty("security.prevent-data-deletion", false);
 	        	
-	        	if (!Permissions.canDelete(user, session) || prevent_delete) 
+	        	if (!Permissions.canDelete(user, (ItemI) session) || prevent_delete)
 	        		throw new InsufficientPrivilegesException("User account doesn't have permission to modify this session.");
 	        
-	        	secureResoureUtil.delete(session, (ItemI) scan, removeFiles,XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
+	        	secureResoureUtil.delete((ArchivableItem) session, (ItemI) scan, removeFiles,XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(scan.getXSIType()), event), event,user);
 
 	            // Above "delete" removes resources, but leaves dangling scan directory
-	            XNATUtils.removeScanDir(session, scan);
+	            XNATUtils.removeScanDir((XnatImagesessiondata) session, scan);
 
 	        } catch (SQLException e) {
 	            log.error("There was an error running a query.", e);
@@ -294,7 +298,7 @@ public class ScanServiceImpl implements ScanService {
 		@Override
 		public XnatImagescandataI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 			Integer scanId = resultSet.getInt("xnat_imagescandata_id");
-			XnatImagescandata xnatImagescandata = XnatImagescandata.getXnatImagescandatasByXnatImagescandataId(scanId, _user, false);
+			XnatImagescandataI xnatImagescandata = XnatImagescandata.getXnatImagescandatasByXnatImagescandataId(scanId, _user, false);
 			return xnatImagescandata;
 		}
 		private final UserI _user;

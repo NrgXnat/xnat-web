@@ -230,7 +230,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	    public XnatExperimentdataI updateExperiment(@ApiParam("The project containing the subject to be updated") @PathVariable final String projectId,
 	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,                            
 	    										   @ApiParam("The ID of the experiment to be updated") @PathVariable final String experimentId,
-	    										   @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdata experiment,
+	    										   @ApiParam("The subject to be updated.") @RequestBody final XnatExperimentdataI experiment,
 	    										   @ApiParam("The data allow to be delete") @RequestParam(name = "allowDataDelete", required = false) String allowDataDelete, 
 	    										   @ApiParam("The label value.")@RequestParam (name = "label", required = false)String label,
 	    										   @ApiParam("The filepath value.")@RequestParam (name = "filepath",defaultValue = "")String filepath,
@@ -288,7 +288,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
 	                        method = POST)
 	    public XnatExperimentdataI createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable final String projectId,
 	    										   @ApiParam("The subject in which the experiment should be created") @PathVariable final String subjectId,
-	    										   @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdata experiment,
+	    										   @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdataI experiment,
 	    										   @ApiParam("The xsiType value") @RequestParam(name = "xsiType", required = false )String xsiType,
 	    										   @ApiParam("The allowDataDelete value") @RequestParam(name = "allowDataDelete", defaultValue = "false" )String allowDataDelete,
 	    										   @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
