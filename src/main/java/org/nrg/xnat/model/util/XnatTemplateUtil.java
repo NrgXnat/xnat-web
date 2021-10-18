@@ -13,7 +13,7 @@ import com.google.common.base.Predicate;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.nrg.xdat.XDAT;
-import org.nrg.xdat.model.XnatImageassessordataI;
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatAbstractresourceTag;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
@@ -23,6 +23,8 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatReconstructedimagedata;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.om.base.BaseXnatSubjectdata;
+import org.nrg.xdat.om.base.auto.AutoXnatSubjectdata;
 import org.nrg.xdat.search.CriteriaCollection;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTTable;
@@ -46,17 +48,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class XnatTemplateUtil {
 
-	protected XnatProjectdata proj = null;
+	protected XnatProjectdataI proj = null;
 
-	protected XnatSubjectdata sub = null;
+	protected XnatSubjectdataI sub = null;
 
-	protected ArrayList<XnatExperimentdata> expts = new ArrayList<>();
+	protected ArrayList<XnatExperimentdataI> expts = new ArrayList<>();
 
 	protected ArrayList<XnatImagescandata> scans = new ArrayList<>();
 
-	ArrayList<XnatReconstructedimagedata> recons = new ArrayList<>();
+	ArrayList<XnatReconstructedimagedataI> recons = new ArrayList<>();
 
-	protected ArrayList<XnatExperimentdata> assesseds = new ArrayList<>();
+	protected ArrayList<XnatExperimentdataI> assesseds = new ArrayList<>();
 
 	protected String type = null;
 
@@ -74,7 +76,7 @@ public class XnatTemplateUtil {
 
 	private final static boolean completeDocument = false;
 
-	public XnatProjectdata getXnatProjectdata(String projectId, UserI user) {
+	public XnatProjectdataI getXnatProjectdata(String projectId, UserI user) {
 		if (projectId != null) {
 			proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 		}
@@ -82,7 +84,7 @@ public class XnatTemplateUtil {
 
 	}
 
-	public XnatSubjectdata getXnatSubjectdata(String subjectId, UserI user, XnatProjectdata proj1) {
+	public XnatSubjectdataI getXnatSubjectdata(String subjectId, UserI user, XnatProjectdataI proj1) {
 		setProjSubExpScanAssessorData(proj1, null, null, null, null);
 		if (subjectId != null) {
 			if (proj != null) {
@@ -90,7 +92,7 @@ public class XnatTemplateUtil {
 			}
 			if (sub == null) {
 				sub = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
-				if (sub != null && (proj != null && !sub.hasProject(proj.getId()))) {
+				if (sub != null && (proj != null && !((BaseXnatSubjectdata)sub).hasProject(proj.getId()))) {
 					sub = null;
 				}
 			}
@@ -98,7 +100,7 @@ public class XnatTemplateUtil {
 		return sub;
 	}
 
-	public ArrayList<XnatExperimentdata> getXnatExperimentData(String experimentId, UserI user, ArrayList<XnatExperimentdata> assesseds2, String type2) {
+	public ArrayList<XnatExperimentdataI> getXnatExperimentData(String experimentId, UserI user, ArrayList<XnatExperimentdataI> assesseds2, String type2) {
 		setProjSubExpScanAssessorData(null, null, null, assesseds2, null);
 		type = type2;
 		if (experimentId != null) {
@@ -123,7 +125,7 @@ public class XnatTemplateUtil {
 					} catch (Exception ignored) {
 					}
 				} else if (assesseds.size() > 0) {
-					for (XnatExperimentdata assessed : assesseds) {
+					for (XnatExperimentdataI assessed : assesseds) {
 						for (XnatImageassessordataI iad : ((XnatImagesessiondata) assessed).getMinimalLoadAssessors()) {
 							if (iad.getId().equals(s) || (iad.getLabel() != null && iad.getLabel().equals(s))) {
 								try {
@@ -165,7 +167,7 @@ public class XnatTemplateUtil {
 		return expts;
 	}
 
-	public ArrayList<XnatExperimentdata> getXnatAssessordata(String assessId, UserI user, XnatProjectdata proj2) {
+	public ArrayList<XnatExperimentdataI> getXnatAssessordata(String assessId, UserI user, XnatProjectdataI proj2) {
 		setProjSubExpScanAssessorData(proj2, null, null, null, null);
 		if (assessId != null) {
 			for (String s : XftStringUtils.CommaDelimitedStringToArrayList(assessId)) {
@@ -188,7 +190,7 @@ public class XnatTemplateUtil {
 	}
 
 	public ArrayList<XnatImagescandata> getXnatImageScanData(String scanID, UserI user,
-			ArrayList<XnatExperimentdata> assesseds2) {
+			ArrayList<XnatExperimentdataI> assesseds2) {
 		setProjSubExpScanAssessorData(null, null, null, assesseds2, null);
 		if (scanID != null && assesseds.size() > 0) {
 
@@ -199,7 +201,7 @@ public class XnatTemplateUtil {
 													// will eliminate it.
 
 			CriteriaCollection cc = new CriteriaCollection("OR");
-			for (XnatExperimentdata assessed : assesseds) {
+			for (XnatExperimentdataI assessed : assesseds) {
 				CriteriaCollection subcc = new CriteriaCollection("AND");
 				subcc.addClause("xnat:imageScanData/image_session_ID", assessed.getId());
 				subcc = getSubccForAll(scanID, subcc);
@@ -343,28 +345,28 @@ public class XnatTemplateUtil {
 			return security;
 		}
 
-		XnatExperimentdata assessed = null;
+		XnatExperimentdataI assessed = null;
 		if (assesseds.size() == 1) {
 			assessed = assesseds.get(0);
 		}
 		if (recons.size() > 0) {
-			return assessed;
+			return (ItemI) assessed;
 		} else if (scans.size() > 0) {
-			return assessed;
+			return (ItemI) assessed;
 		} else if (expts.size() > 0) {
-			return expts.get(0);
+			return (ItemI) expts.get(0);
 		} else if (sub != null) {
-			return sub;
+			return (ItemI) sub;
 		} else if (proj != null) {
-			return proj;
+			return (ItemI) proj;
 		} else {
 			return null;
 		}
 	}
 
 	public void insertCatalogWrap(XnatResourcecatalog catResource, PersistentWorkflowI wrk, UserI user,
-			XnatProjectdata proj2, XnatSubjectdata sub2, ArrayList<XnatExperimentdata> expts2,
-			ArrayList<XnatExperimentdata> assesseds2, ArrayList<XnatImagescandata> scans2, XnatEventUtil event) throws Exception {
+			XnatProjectdataI proj2, XnatSubjectdataI sub2, ArrayList<XnatExperimentdataI> expts2,
+			ArrayList<XnatExperimentdataI> assesseds2, ArrayList<XnatImagescandata> scans2, XnatEventUtil event) throws Exception {
 
 		setProjSubExpScanAssessorData(proj2, sub2, expts2, assesseds2, scans2);
 
@@ -393,13 +395,13 @@ public class XnatTemplateUtil {
 		}
 	}
 
-	private void setProjSubExpScanAssessorData(XnatProjectdata proj2, XnatSubjectdata sub2,
-			ArrayList<XnatExperimentdata> expts2, ArrayList<XnatExperimentdata> assesseds2,
+	private void setProjSubExpScanAssessorData(XnatProjectdataI proj2, XnatSubjectdataI sub2,
+			ArrayList<XnatExperimentdataI> expts2, ArrayList<XnatExperimentdataI> assesseds2,
 			ArrayList<XnatImagescandata> scans2) {
 		expts = new ArrayList<>();
-		assesseds = new ArrayList<XnatExperimentdata>();
+		assesseds = new ArrayList<XnatExperimentdataI>();
 		scans = new ArrayList<XnatImagescandata>();
-		assesseds = new ArrayList<XnatExperimentdata>();
+		assesseds = new ArrayList<XnatExperimentdataI>();
 
 		if (Objects.nonNull(proj2))
 			proj = proj2;
@@ -414,7 +416,7 @@ public class XnatTemplateUtil {
 	}
 
 	public boolean insertCatalog(XnatResourcecatalog catResource, Integer eventId, UserI user) throws Exception {
-		final XnatExperimentdata assessed = assesseds.size() == 1 ? assesseds.get(0) : null;
+		final XnatExperimentdataI assessed = assesseds.size() == 1 ?  assesseds.get(0) : null;
 
 		if (recons.size() > 0) {
 			if (assessed == null) {
@@ -423,7 +425,7 @@ public class XnatTemplateUtil {
 				return false;
 			}
 
-			final XnatReconstructedimagedata reconstruction = recons.get(0);
+			final XnatReconstructedimagedata reconstruction = (XnatReconstructedimagedata) recons.get(0);
 			return _catalogService.insertResourceCatalog(user, UriParserUtils.getArchiveUri(assessed, reconstruction),
 					catResource, eventId) != null;
 		} else if (scans.size() > 0) {
@@ -431,11 +433,11 @@ public class XnatTemplateUtil {
 				// getResponse().setStatus(Status.CLIENT_ERROR_GONE, "Invalid session id.");
 				return false;
 			}
-			final XnatImagescandata scan = scans.get(0);
+			final XnatImagescandataI scan = scans.get(0);
 			return _catalogService.insertResourceCatalog(user, UriParserUtils.getArchiveUri(assessed, scan),
 					catResource, eventId) != null;
 		} else if (expts.size() > 0) {
-			final XnatExperimentdata experiment = expts.get(0);
+			final XnatExperimentdataI experiment = expts.get(0);
 			return _catalogService.insertResourceCatalog(user, UriParserUtils.getArchiveUri(experiment), catResource,
 					eventId) != null;
 		} else if (sub != null) {
@@ -554,11 +556,11 @@ public class XnatTemplateUtil {
 			boolean hasResourceIds, boolean isInResource) {
 		StringBuilder query = new StringBuilder();
 		if (!recons.isEmpty()) {
-			security = assesseds.get(0);
-			parent = recons.get(0);
-			final List<Integer> reconIds = Lists.transform(recons, new Function<XnatReconstructedimagedata, Integer>() {
+			security = (ItemI) assesseds.get(0);
+			parent = (ItemI) recons.get(0);
+			final List<Integer> reconIds = Lists.transform(recons, new Function<XnatReconstructedimagedataI, Integer>() {
 				@Override
-				public Integer apply(final XnatReconstructedimagedata recon) {
+				public Integer apply(final XnatReconstructedimagedataI recon) {
 					return recon.getXnatReconstructedimagedataId();
 				}
 			});
@@ -596,8 +598,8 @@ public class XnatTemplateUtil {
 				}
 			}
 		} else if (!scans.isEmpty()) {
-			security = assesseds.get(0);
-			parent = scans.get(0);
+			security = (ItemI) assesseds.get(0);
+			parent = (ItemI) scans.get(0);
 			final List<Integer> scanIds = Lists.transform(scans, new Function<XnatImagescandata, Integer>() {
 				@Override
 				public Integer apply(final XnatImagescandata scan) {
@@ -620,16 +622,16 @@ public class XnatTemplateUtil {
 						.append(")");
 			}
 		} else if (!expts.isEmpty()) {
-			security = expts.get(0);
-			parent = expts.get(0);
-			final List<String> experimentIds = Lists.transform(expts, new Function<XnatExperimentdata, String>() {
+			security = (ItemI) expts.get(0);
+			parent = (ItemI) expts.get(0);
+			final List<String> experimentIds = Lists.transform(expts, new Function<XnatExperimentdataI, String>() {
 				@Override
-				public String apply(final XnatExperimentdata experiment) {
+				public String apply(final XnatExperimentdataI experiment) {
 					return experiment.getId();
 				}
 			});
 			if (!assesseds.isEmpty()) {
-				security = assesseds.get(0);
+				security = (ItemI) assesseds.get(0);
 				if (isInResource) {
 					xmlPath = "xnat:imageAssessorData/in/file";
 					query.append(STARTER_FIELDS);
@@ -757,8 +759,8 @@ public class XnatTemplateUtil {
 				}
 			}
 		} else if (sub != null) {
-			security = sub;
-			parent = sub;
+			security = (ItemI) sub;
+			parent = (ItemI) sub;
 			xmlPath = "xnat:subjectData/resources/resource";
 			// resources
 			query.append(STARTER_FIELDS);
@@ -775,8 +777,8 @@ public class XnatTemplateUtil {
 				query.append(" AND (").append(getResourceIdsWhereClause(resourceIds)).append(")");
 			}
 		} else if (proj != null) {
-			security = proj;
-			parent = proj;
+			security = (ItemI) proj;
+			parent = (ItemI) proj;
 			xmlPath = "xnat:projectData/resources/resource";
 			// resources
 			query.append(STARTER_FIELDS);

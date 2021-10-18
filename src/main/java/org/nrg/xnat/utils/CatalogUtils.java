@@ -30,6 +30,7 @@ import org.nrg.xdat.bean.reader.XDATXMLReader;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.*;
 import org.nrg.xdat.om.base.BaseXnatExperimentdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -526,7 +527,7 @@ public class CatalogUtils {
     public static List<Object[]> getEntryDetails(final @Nonnull CatCatalogI cat, final String parentPath,
                                                  final String uriPath, final XnatResource _resource,
                                                  final boolean includeFile, final CatEntryFilterI filter,
-                                                 @Nullable final XnatProjectdata proj, final String locator) {
+                                                 @Nullable final XnatProjectdataI proj, final String locator) {
         final List<Object[]> catalogEntries = new ArrayList<>();
         for (final CatCatalogI subset : cat.getSets_entryset()) {
             catalogEntries.addAll(getEntryDetails(subset, parentPath, uriPath, _resource, includeFile, filter, proj, locator));
@@ -571,7 +572,7 @@ public class CatalogUtils {
                     String projectPath;
                     try {
                         assert proj != null;
-                        projectPath = Paths.get(proj.getRootArchivePath()).relativize(Paths.get(entryPath)).toString();
+                        projectPath = Paths.get(((BaseXnatProjectdata)proj).getRootArchivePath()).relativize(Paths.get(entryPath)).toString();
                     } catch (IllegalArgumentException e) {
                         // Not relative to project, likely a full path
                         projectPath = entryPath;

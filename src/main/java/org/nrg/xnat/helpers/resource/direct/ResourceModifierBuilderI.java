@@ -9,6 +9,7 @@
 
 package org.nrg.xnat.helpers.resource.direct;
 
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
@@ -23,27 +24,27 @@ public interface ResourceModifierBuilderI {
 
 	public abstract ResourceModifierA buildResourceModifier(final boolean overwrite, final UserI user,final EventMetaI ci) throws Exception;
 
-	public abstract void setProject(XnatProjectdata project);
+	public abstract void setProject(XnatProjectdataI project);
 
 	public abstract XnatProjectdata getProject();
 
-	public abstract void setSubject(XnatProjectdata project, XnatSubjectdata subject);
+	public abstract void setSubject(XnatProjectdataI project, XnatSubjectdataI subject);
 
 	public abstract XnatSubjectdata getSubject();
 
-	public abstract void setExpt(XnatProjectdata project, XnatExperimentdata expt);
+	public abstract void setExpt(XnatProjectdataI project, XnatExperimentdataI expt);
 
 	public abstract XnatExperimentdata getExpt();
 
-	public abstract void setAssess(XnatImagesessiondata assessed, XnatImageassessordata assess, String type);
+	public abstract void setAssess(XnatImagesessiondataI assessed, XnatImageassessordataI assess, String type);
 
 	public abstract XnatImageassessordata getAssess();
 
-	public abstract void setScan(XnatImagesessiondata assessed, XnatImagescandata scan);
+	public abstract void setScan(XnatImagesessiondataI assessed, XnatImagescandataI scan);
 
 	public abstract XnatImagescandata getScan();
 
-	public abstract void setRecon(XnatImagesessiondata assessed, XnatReconstructedimagedata recon, String type);
+	public abstract void setRecon(XnatImagesessiondataI assessed, XnatReconstructedimagedataI recon, String type);
 
 	public abstract XnatReconstructedimagedata getRecon();
 

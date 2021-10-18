@@ -54,6 +54,9 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.CatEntryI;
+import org.nrg.xdat.model.XnatExperimentdataI;
+import org.nrg.xdat.model.XnatProjectdataI;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
@@ -64,6 +67,7 @@ import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.helpers.Features;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
@@ -548,7 +552,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
         	getAbstractResourceItem(xsiType,securityId,securityItem,parentItem );
         	
             final List<String> failed = new ArrayList<>();
-            final String archivePath  = proj.getRootArchivePath();
+            final String archivePath  = ((BaseXnatProjectdata)proj).getRootArchivePath();
             final String project      = proj.getId();
             for(String rId: _resourceIds) {
             	final XnatAbstractresource resource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(rId, user, false);
@@ -1018,7 +1022,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		verifyProjIsNull();
 
 		// Step 6: get catalogData
-		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
+		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(((BaseXnatProjectdata)proj).getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
 
 		// Step 7: get  cat Enttry
 		final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
@@ -1277,7 +1281,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param user
 	 * @return
 	 */
-	private List<XnatAbstractresource> getXnatAbstractResources(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
+	private List<XnatAbstractresource> getXnatAbstractResources(XnatProjectdataI proj, XnatSubjectdataI sub, ArrayList<XnatExperimentdataI> expts, ArrayList<XnatExperimentdataI> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		 return _template.query(getSqlQuery(proj, sub , expts,assesseds,scans, user), new ResourceRowMapper(user));
 	}
 
@@ -1291,7 +1295,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param user
 	 * @return
 	 */
-	private String getSqlQuery(XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
+	private String getSqlQuery(XnatProjectdataI proj, XnatSubjectdataI sub, ArrayList<XnatExperimentdataI> expts, ArrayList<XnatExperimentdataI> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		List<String> resourceIds = null;
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
@@ -1317,7 +1321,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param user
 	 * @return
 	 */
-	private String getSqlQueryWithResourceIds(List<String> resourceIds, XnatProjectdata proj, XnatSubjectdata sub, ArrayList<XnatExperimentdata> expts, ArrayList<XnatExperimentdata> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
+	private String getSqlQueryWithResourceIds(List<String> resourceIds, XnatProjectdataI proj, XnatSubjectdataI sub, ArrayList<XnatExperimentdataI> expts, ArrayList<XnatExperimentdataI> assesseds, ArrayList<XnatImagescandata> scans, UserI user) {
 		final boolean hasResourceIds = resourceIds != null && !resourceIds.isEmpty();
 		final boolean isInResource = StringUtils.equalsIgnoreCase(type, "in");
 		StringBuilder query = new StringBuilder();
@@ -2003,7 +2007,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 						cache.clearProjectCacheEntry(projectId);
 					}
 //					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
-					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent((BaseElement) proj, XftItemEventI.UPDATE);
 				}
 			} else {
 				if (workflow == null) {

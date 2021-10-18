@@ -10,6 +10,7 @@
 package org.nrg.xnat.helpers.resource.direct;
 
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xdat.om.XnatImagescandata;
@@ -47,10 +48,10 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setRecon(XnatImagesessiondata assessed, XnatReconstructedimagedata recon, String type) {
+	public void setRecon(XnatImagesessiondataI assessed, XnatReconstructedimagedataI recon, String type) {
 		this.type = StringUtils.defaultIfBlank(type, "out");
-		this.assessed=assessed;
-		this.recon = recon;
+		this.assessed= (XnatImagesessiondata) assessed;
+		this.recon = (XnatReconstructedimagedata) recon;
 	}
 
 	@Override
@@ -59,9 +60,9 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setScan(XnatImagesessiondata assessed, XnatImagescandata scan) {
-		this.assessed=assessed;
-		this.scan = scan;
+	public void setScan(XnatImagesessiondataI assessed, XnatImagescandataI scan) {
+		this.assessed= (XnatImagesessiondata) assessed;
+		this.scan = (XnatImagescandata) scan;
 	}
 
 	@Override
@@ -70,10 +71,10 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setAssess(XnatImagesessiondata assessed, XnatImageassessordata assess, String type) {
+	public void setAssess(XnatImagesessiondataI assessed, XnatImageassessordataI assess, String type) {
 		this.type = StringUtils.defaultIfBlank(type, "out");
-		this.assessed=assessed;
-		this.assess = assess;
+		this.assessed= (XnatImagesessiondata) assessed;
+		this.assess = (XnatImageassessordata) assess;
 	}
 
 	@Override
@@ -82,9 +83,9 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setExpt(XnatProjectdata project,XnatExperimentdata expt) {
-		this.project = project;
-		this.expt = expt;
+	public void setExpt(XnatProjectdataI project,XnatExperimentdataI expt) {
+		this.project = (XnatProjectdata) project;
+		this.expt = (XnatExperimentdata) expt;
 	}
 
 	@Override
@@ -93,9 +94,9 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setSubject(XnatProjectdata project,XnatSubjectdata subject) {
-		this.project = project;
-		this.subject = subject;
+	public void setSubject(XnatProjectdataI project, XnatSubjectdataI subject) {
+		this.project = (XnatProjectdata) project;
+		this.subject = (XnatSubjectdata) subject;
 	}
 
 	@Override
@@ -104,8 +105,8 @@ public class DirectResourceModifierBuilder implements ResourceModifierBuilderI {
 	}
 
 	@Override
-	public void setProject(XnatProjectdata project) {
-		this.project = project;
+	public void setProject(XnatProjectdataI project) {
+		this.project = (XnatProjectdata) project;
 	}
 	
 	/* (non-Javadoc)

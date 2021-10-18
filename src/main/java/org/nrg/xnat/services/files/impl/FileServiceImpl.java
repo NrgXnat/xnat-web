@@ -11,9 +11,13 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.model.ResourceFile;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.CatEntryI;
+import org.nrg.xdat.model.XnatProjectdataI;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.*;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.DataTypeAwareEventService;
@@ -153,7 +157,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		if(Objects.isNull(resourceId) ) {
 			throw new DataFormatException("The requested resource ID " + resourceId + "wasn't found");
 		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		XnatSubjectdataI subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
 		if(Objects.isNull(subject)) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
@@ -162,8 +166,8 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, resourceId) ;
 		}
-		ItemI parent = subject;
-		ItemI security = subject;
+		ItemI parent = (ItemI) subject;
+		ItemI security = (ItemI) subject;
 		XnatProjectdata project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
@@ -214,7 +218,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		}
 		ItemI parent = experiment;
 		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		 XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -369,7 +373,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		verifyProjIsNull();
 
 		// Step 6: get catalogData
-		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(proj.getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
+		final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(((BaseXnatProjectdata)proj).getRootArchivePath(),(XnatResourcecatalog) resource, proj.getId());
 
 		// Step 7: get  cat Enttry
 		final Collection<CatEntryI> entries = CatalogUtils.findCatEntriesWithinPath(filePath, catalogData);
@@ -605,7 +609,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
                   }
 
 				if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
-					_eventService.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
+					_eventService.triggerXftItemEvent((BaseElement) proj, XftItemEventI.UPDATE);
 				}
 			} else {
 				if (workflow == null) {

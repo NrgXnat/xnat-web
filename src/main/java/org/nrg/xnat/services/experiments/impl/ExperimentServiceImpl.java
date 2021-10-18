@@ -14,10 +14,7 @@ import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.*;
-import org.nrg.xdat.om.base.BaseXnatExperimentdata;
-import org.nrg.xdat.om.base.BaseXnatImagescandata;
-import org.nrg.xdat.om.base.BaseXnatSubjectassessordata;
-import org.nrg.xdat.om.base.BaseXnatSubjectdata;
+import org.nrg.xdat.om.base.*;
 import org.nrg.xdat.om.base.auto.AutoXnatExperimentdata;
 import org.nrg.xdat.om.base.auto.AutoXnatSubjectassessordata;
 import org.nrg.xdat.om.base.auto.AutoXnatSubjectdata;
@@ -848,7 +845,7 @@ public class ExperimentServiceImpl implements ExperimentService {
 			throw new DataFormatException("You specified the project " + projectId + " in your request but the experiment is assigned to project " + experiment.getProject() + ". These values must be the same.");
 		}
 
-        XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(experiment.getProject(), user, false);
+        XnatProjectdataI project = XnatProjectdata.getXnatProjectdatasById(experiment.getProject(), user, false);
         if (experiment == null && experiment.getId() != null) {
             experiment = XnatExperimentdata.getXnatExperimentdatasById(experiment.getId(), user, false);
 
@@ -861,30 +858,30 @@ public class ExperimentServiceImpl implements ExperimentService {
 
     }
 
-    private void deleteItem(UserI user, final XnatProjectdata proj, final BaseElement item, String filepath, boolean removeFiles, XnatEventUtil event) throws org.nrg.framework.exceptions.NotFoundException {
+    private void deleteItem(UserI user, final XnatProjectdataI proj, final BaseElement item, String filepath, boolean removeFiles, XnatEventUtil event) throws org.nrg.framework.exceptions.NotFoundException {
     	if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
             throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
         }
 
         try {
             SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
-            final XnatProjectdata  newProject  = secureResoureUtil.getProjectFromFilePath(proj, (ArchivableItem) item,filepath, user);
+            final XnatProjectdataI  newProject  = secureResoureUtil.getProjectFromFilePath(proj, (ArchivableItem) item,filepath, user);
             final PersistentWorkflowI wrk  = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType()), event));
             final EventMetaI c   = wrk.buildEvent();
 
             try {
-                final XnatProjectdata              project     = (newProject != null) ? newProject : proj;
+                final XnatProjectdataI              project     = (newProject != null) ? newProject : proj;
                 final Class<? extends BaseElement> itemType    = item.getClass();
 
                 final String message;
                 if (XnatPvisitdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatPvisitdata) item).delete(project, user, removeFiles, c);
+                    message = ((XnatPvisitdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
                 } else if (XnatImagesessiondata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatImagesessiondata) item).delete(project, user, removeFiles, c);
+                    message = ((XnatImagesessiondata) item).delete((XnatProjectdata) project, user, removeFiles, c);
                 } else if (XnatSubjectdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatSubjectdata) item).delete(project, user, removeFiles, c);
+                    message = ((XnatSubjectdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
                 } else if (XnatExperimentdata.class.isAssignableFrom(itemType)) {
-                    message = ((XnatExperimentdata) item).delete(project, user, removeFiles, c);
+                    message = ((XnatExperimentdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
                 } else {
                     message = null;
                 }

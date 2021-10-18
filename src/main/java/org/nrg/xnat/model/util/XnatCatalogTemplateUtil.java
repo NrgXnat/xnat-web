@@ -13,8 +13,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
+import org.nrg.xdat.model.XnatExperimentdataI;
+import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.model.XnatImagesessiondataI;
+import org.nrg.xdat.model.XnatReconstructedimagedataI;
 import org.nrg.xdat.om.*;
+import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xft.ItemI;
+import org.nrg.xft.ItemWrapper;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -84,29 +92,29 @@ public class XnatCatalogTemplateUtil extends XnatTemplateUtil {
 	        }
 	        if (!recons.isEmpty()) {
 	            buffer.append("/experiments/");
-	            buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	            buffer.append(assesseds.stream().map(XnatExperimentdataI::getId).collect(Collectors.joining(",")));
 	            buffer.append("/reconstructions/");
-	            buffer.append(recons.stream().map(XnatReconstructedimagedata::getId).collect(Collectors.joining(",")));
+	            buffer.append(recons.stream().map(XnatReconstructedimagedataI::getId).collect(Collectors.joining(",")));
 	            if (StringUtils.isNotBlank(type)) {
 	                buffer.append("/").append(type);
 	            }
 	        } else if (!scans.isEmpty()) {
 	            buffer.append("/experiments/");
-	            buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	            buffer.append(assesseds.stream().map(XnatExperimentdataI::getId).collect(Collectors.joining(",")));
 	            buffer.append("/scans/");
-	            buffer.append(scans.stream().map(XnatImagescandata::getId).collect(Collectors.joining(",")));
+	            buffer.append(scans.stream().map(XnatImagescandataI::getId).collect(Collectors.joining(",")));
 	        } else if (!expts.isEmpty()) {
 	            if (!assesseds.isEmpty()) {
 	                buffer.append("/experiments/");
-	                buffer.append(assesseds.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	                buffer.append(assesseds.stream().map(XnatExperimentdataI::getId).collect(Collectors.joining(",")));
 	                buffer.append("/assessors/");
-	                buffer.append(expts.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	                buffer.append(expts.stream().map(XnatExperimentdataI::getId).collect(Collectors.joining(",")));
 	                if (type != null) {
 	                    buffer.append("/").append(type);
 	                }
 	            } else {
 	                buffer.append("/experiments/");
-	                buffer.append(expts.stream().map(XnatExperimentdata::getId).collect(Collectors.joining(",")));
+	                buffer.append(expts.stream().map(XnatExperimentdataI::getId).collect(Collectors.joining(",")));
 	            }
 	        } else if (sub == null && proj != null) {
 	            buffer.append("/projects/");
@@ -139,7 +147,7 @@ public class XnatCatalogTemplateUtil extends XnatTemplateUtil {
 	}
 
 	protected ResourceModifierA buildResourceModifier(final boolean overwrite, final EventMetaI ci, UserI user) throws Exception {
-        final XnatImagesessiondata assessed = assesseds.size() == 1 ? (XnatImagesessiondata) assesseds.get(0) : null;
+        final XnatImagesessiondataI assessed = assesseds.size() == 1 ? (XnatImagesessiondata) assesseds.get(0) : null;
 
         //this should allow dependency injection - TO
         final ResourceModifierBuilderI builder = new DirectResourceModifierBuilder();
@@ -149,11 +157,11 @@ public class XnatCatalogTemplateUtil extends XnatTemplateUtil {
         } else if (!scans.isEmpty()) {
             builder.setScan(assessed, scans.get(0));
         } else if (!expts.isEmpty()) {
-            final XnatExperimentdata expt = expts.get(0);
-            if (expt.getItem().instanceOf("xnat:imageAssessorData")) {
+            final XnatExperimentdataI expt = expts.get(0);
+            if ( ((ItemI)expt).getItem().instanceOf("xnat:imageAssessorData")) {
                 builder.setAssess(ObjectUtils.defaultIfNull(assessed, ((XnatImageassessordata) expt).getImageSessionData()), (XnatImageassessordata) expt, type);
             } else {
-                builder.setExpt(ObjectUtils.defaultIfNull(proj, expt.getProjectData()), expt);
+                builder.setExpt(ObjectUtils.defaultIfNull(proj, ((BaseXnatExperimentdata)expt).getProjectData()), expt);
             }
         } else if (sub != null) {
             builder.setSubject(proj, sub);

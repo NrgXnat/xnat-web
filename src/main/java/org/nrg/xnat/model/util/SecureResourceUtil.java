@@ -211,7 +211,7 @@ public class SecureResourceUtil {
 	        MaterializedView.deleteByUser(user);
 	    }
 		
-	    public XnatProjectdata getProjectFromFilePath(final XnatProjectdata project, final ArchivableItem item, String filepath, UserI user) throws NotFoundException {
+	    public XnatProjectdataI getProjectFromFilePath(final XnatProjectdataI project, final ArchivableItem item, String filepath, UserI user) throws NotFoundException {
 	        if (filepath != null && !filepath.equals("")) {
 	            if (filepath.startsWith("projects/")) {
 	                final String          newProjectId = filepath.substring(9);
