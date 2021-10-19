@@ -10,13 +10,17 @@ import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatDatatypeprotocolI;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatAbstractprotocol;
 import org.nrg.xdat.om.XnatDatatypeprotocol;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.DataTypeAwareEventService;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
@@ -46,8 +50,8 @@ public class ProtocolServiceImpl implements ProtocolService {
 		
 		validate(projectId, protocolId, dataType);
 		
-		XnatDatatypeprotocol xnatDatatypeprotocol = null;
-		final XnatProjectdata project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);;
+		XnatDatatypeprotocolI xnatDatatypeprotocol = null;
+		final XnatProjectdataI project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);;
 		final XnatDatatypeprotocol protocol = (XnatDatatypeprotocol) XnatAbstractprotocol.getXnatAbstractprotocolsById(protocolId, user, true);
 		try {
 			 xnatDatatypeprotocol = ObjectUtils.defaultIfNull(protocol, getXnatDatatypeprotocol(user, dataType, project, protocol,protocolId,event ));
@@ -184,8 +188,8 @@ public class ProtocolServiceImpl implements ProtocolService {
 
 
 	@Nonnull
-    private XnatDatatypeprotocol getXnatDatatypeprotocol(final UserI user, final String dataType, XnatProjectdata project, XnatDatatypeprotocol protocol2, String protocolId, XnatEventUtil event ) throws Exception {
-        final XnatDatatypeprotocol existing = (XnatDatatypeprotocol) project.getProtocolByDataType(dataType);
+    private XnatDatatypeprotocolI getXnatDatatypeprotocol(final UserI user, final String dataType, XnatProjectdataI project, XnatDatatypeprotocolI protocol2, String protocolId, XnatEventUtil event ) throws Exception {
+        final XnatDatatypeprotocolI existing = (XnatDatatypeprotocol) ((BaseXnatProjectdata)project).getProtocolByDataType(dataType);
         if (existing != null) {
             return existing;
         }
@@ -207,12 +211,12 @@ public class ProtocolServiceImpl implements ProtocolService {
             protocol.setProperty("xnat:datatypeProtocol/definitions/definition[ID=default]/project-specific", "false");
         }
 
-        final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, project.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Modified event data-type protocol.", event));
+        final PersistentWorkflowI workflow = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, ((ItemI)project).getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Modified event data-type protocol.", event));
         try {
             SaveItemHelper.authorizedSave(protocol, user, false, false, workflow.buildEvent());
             if (XnatDatatypeprotocol.isProjectSpecific(protocol)) {
 //                XDAT.triggerXftItemEvent(project, XftItemEvent.UPDATE);
-				_eventService.triggerXftItemEvent(project, XftItemEvent.UPDATE);
+				_eventService.triggerXftItemEvent((BaseElement) project, XftItemEvent.UPDATE);
             } else {
 //                XDAT.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
 				_eventService.triggerXftItemEvent(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME, protocolId, XftItemEvent.CREATE);
@@ -226,7 +230,7 @@ public class ProtocolServiceImpl implements ProtocolService {
     }
 
 	
-	  private Changed hasChanged(final XnatDatatypeprotocol protocol, final XnatDatatypeprotocol existingProtocol) {
+	  private Changed hasChanged(final XnatDatatypeprotocolI protocol, final XnatDatatypeprotocolI existingProtocol) {
 	        // Determine whether the updated protocol is project specific.
 	        final boolean projectSpecific = XnatDatatypeprotocol.isProjectSpecific(protocol);
 

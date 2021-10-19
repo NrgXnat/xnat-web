@@ -19,15 +19,15 @@ public interface SubjectService {
 	
      List<XnatSubjectdataI> findAll(UserI user) throws NotFoundException;
 
-     Optional<XnatSubjectdata> findById(UserI user, String subjectId) throws DataFormatException, NotFoundException;
+     Optional<XnatSubjectdataI> findById(UserI user, String subjectId) throws DataFormatException, NotFoundException;
 
      List<XnatSubjectdataI> findAllByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-     Optional<XnatSubjectdata> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
+     Optional<XnatSubjectdataI> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException;
 
-     XnatSubjectdata create(UserI user, XnatSubjectdata xnatSubjectdata,  XnatEventUtil event) throws XftItemException, ActionException, Exception;
+     XnatSubjectdataI create(UserI user, XnatSubjectdataI xnatSubjectdata,  XnatEventUtil event) throws XftItemException, ActionException, Exception;
     
-     XnatSubjectdata update(UserI user, XnatSubjectdata xnatSubjectdata, String label, boolean primary, String gender, XnatEventUtil event) throws XftItemException, Exception;
+     XnatSubjectdataI update(UserI user, XnatSubjectdataI xnatSubjectdata, String label, boolean primary, String gender, XnatEventUtil event) throws XftItemException, Exception;
 
      void deleteById(UserI user, String subjectId, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException;
 }

@@ -55,7 +55,7 @@ public class SubjectApi extends AbstractXapiProjectRestController {
         return _subjectService.findById(getSessionUser(), subjectId).orElseThrow(() -> new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId));
     }
 
-    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdata.class, responseContainer = "List")
+    @ApiOperation(value = "Get list of subjects", notes = "The subjects function returns a list of all subjects configured in the XNAT system.", response = XnatSubjectdataI.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of all of the currently configured subjects."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
     	 		   @ApiResponse(code = 404, message = "The requested subject wasn't found."),

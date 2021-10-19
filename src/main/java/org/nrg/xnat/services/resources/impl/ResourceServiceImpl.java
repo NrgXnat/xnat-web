@@ -53,10 +53,7 @@ import org.nrg.xapi.model.TriageFileDto;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
-import org.nrg.xdat.model.CatEntryI;
-import org.nrg.xdat.model.XnatExperimentdataI;
-import org.nrg.xdat.model.XnatProjectdataI;
-import org.nrg.xdat.model.XnatSubjectdataI;
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
@@ -75,6 +72,7 @@ import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xdat.services.cache.UserDataCache;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
+import org.nrg.xft.ItemWrapper;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -168,11 +166,11 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get a resource with specified resource ID and experiment ID
 	 */
 	@Override
-	public Optional<XnatAbstractresource> findByIdAndExperimentId(UserI user, Integer resourceId, String experimentId) throws DataFormatException, NotFoundException {
+	public Optional<XnatAbstractresourceI> findByIdAndExperimentId(UserI user, Integer resourceId, String experimentId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
-		XnatAbstractresource resource = _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE_EXPERIMENT + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
+		XnatAbstractresourceI resource = _template.queryForObject(EXPERIMENT_QUERY + BY_ID_WHERE_EXPERIMENT + AND_WHERE + BY_RESOURCE_ID_WHERE, new MapSqlParameterSource("resourceId", resourceId).addValue("experimentId", experimentId), new ResourceRowMapper(user));
 		if(Objects.isNull(resource)) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}
@@ -717,13 +715,13 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		XnatSubjectdataI subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
 		if(Objects.isNull(subject)) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-		ItemI parent = subject;
-		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		ItemI parent = (ItemI) subject;
+		ItemI security = (ItemI) subject;
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -745,13 +743,13 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-		XnatSubjectdata subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
+		XnatSubjectdataI subject = XnatSubjectdata.getXnatSubjectdatasById(subjectId, user, false);
 		if(Objects.isNull(subject)) {
     		throw new  NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-		ItemI parent = subject;
-		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, XnatProjectdata.getXnatProjectdatasById(projectId, user, false));
+		ItemI parent = (ItemI) subject;
+		ItemI security = (ItemI) subject;
+		XnatProjectdataI project = getXnatProjectData(parent, security, XnatProjectdata.getXnatProjectdatasById(projectId, user, false));
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -799,7 +797,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = subject;
 		ItemI security = subject;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -827,7 +825,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = experiment;
 		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -849,13 +847,13 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatResourcecatalog.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
-		XnatExperimentdata experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
+		XnatExperimentdataI experiment = XnatExperimentdata.getXnatExperimentdatasById(assessorId, user, false);
 		if(Objects.isNull(experiment)) {
     		throw new  NotFoundException(XnatExperimentdata.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
-		ItemI parent = experiment;
-		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		ItemI parent = (ItemI) experiment;
+		ItemI security = (ItemI) experiment;
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -881,7 +879,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}
-		for (final XnatAbstractresource temp : resources) {
+		for (final XnatAbstractresourceI temp : resources) {
 			final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
 			resourceCatalog.add(catResource);
 		}
@@ -891,7 +889,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = experiment;
 		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI  project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -925,7 +923,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = experiment;
 		ItemI security = experiment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -950,7 +948,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = expriment;
 		ItemI security = expriment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -978,7 +976,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		}
 		ItemI parent = expriment;
 		ItemI security = expriment;
-		XnatProjectdata project = getXnatProjectData(parent, security, null);
+		XnatProjectdataI project = getXnatProjectData(parent, security, null);
 		if(Objects.isNull(project)) {
 			throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
@@ -1108,7 +1106,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	@Override
 	public List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
 		String projectPath = TriageUtils.getTriageProjectPath(projectId);
-		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		XnatProjectdataI proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 		return returnXnameList(proj, projectPath + File.separator + "resources", request);
 	}
 
@@ -1119,7 +1117,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @param request
 	 * @return
 	 */
-	private List<TriageDto> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
+	private List<TriageDto> returnXnameList(XnatProjectdataI proj, String projectPath, HttpServletRequest request) {
 		List<TriageDto> response = new ArrayList<>();
 		File[] fileArray = new File(projectPath).listFiles();
 		if (fileArray != null) {
@@ -1139,8 +1137,8 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	public void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName,HttpServletRequest request, String compression) throws Exception {
 		String projectPath = TriageUtils.getTriageProjectPath(projectId);
 		MediaType mt = MediaType.parseMediaType(request.getContentType());
-		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
-		if (proj != null && proj.canRead(user)) {
+		XnatProjectdataI proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
+		if (proj != null && ((ItemWrapper)proj).canRead(user)) {
 			if (xName != null) {
 				if (isZIPRequest(mt)) {
 					returnZippedFiles(proj, projectPath, xName, user, request, compression);
@@ -2121,7 +2119,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
         }
 	}
 	
-	private XnatProjectdata getXnatProjectData(ItemI parent,ItemI security, XnatProjectdata proj) throws ElementNotFoundException {
+	private XnatProjectdataI getXnatProjectData(ItemI parent,ItemI security, XnatProjectdata proj) throws ElementNotFoundException {
 		if (proj == null) {
             //setting project as primary project, or shared project
             //this only works because the absolute paths are stored in the database for each resource, so the actual project path isn't used.
@@ -2275,8 +2273,8 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	                        if (!alreadyAdded.contains(id)) {
 	                            final XnatAbstractresource xnatAbstractresource = XnatAbstractresource.getXnatAbstractresourcesByXnatAbstractresourceId(id, user, false);
 	                            if (xnatAbstractresource != null) {
-	                                final XnatImageassessordata assessor = getAssessor((XnatResourcecatalog) xnatAbstractresource);
-	                                if ((proj == null || Permissions.canReadProject(user, proj.getId())) && (assessor == null || Permissions.canRead(user, assessor))) {
+	                                final XnatImageassessordataI assessor = getAssessor((XnatResourcecatalog) xnatAbstractresource);
+	                                if ((proj == null || Permissions.canReadProject(user, proj.getId())) && (assessor == null || Permissions.canRead(user, (ItemI) assessor))) {
 	                                	getResources().clear();
 	                                	getResources().add(xnatAbstractresource);
 	                                }
@@ -2304,7 +2302,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * @return
 	 */
 	 @Nullable
-	    private XnatImageassessordata getAssessor(final @Nonnull XnatResourcecatalog resource) {
+	    private XnatImageassessordataI getAssessor(final @Nonnull XnatResourcecatalog resource) {
 	        try {
 	            final Matcher assessorUriMatcher = PATTERN_ASSESSOR_URI.matcher(resource.getUri());
 	            if (assessorUriMatcher.find()) {
@@ -2665,14 +2663,14 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	    	 for(int i=0;i<params.length-1;i++){
 	    		 if("experiments".equals(params[i])){
 	    			 String expid=params[i+1];
-	    			 XnatExperimentdata exp=XnatExperimentdata.getXnatExperimentdatasById(expid, user, false);
+	    			 XnatExperimentdataI exp=XnatExperimentdata.getXnatExperimentdatasById(expid, user, false);
 	    			 if(exp!=null){
 	    		    	 formatted=formatted.replace(expid,exp.getLabel());
 	    			 }
 	    		 }
 	    		 if("subjects".equals(params[i])){
 	    			 String subjid=params[i+1];
-	    			 XnatSubjectdata subj=XnatSubjectdata.getXnatSubjectdatasById(subjid, user, false);
+	    			 XnatSubjectdataI subj=XnatSubjectdata.getXnatSubjectdatasById(subjid, user, false);
 	    			 if(subj!=null){
 	    		    	 formatted=formatted.replace(subjid,subj.getLabel());
 	    			 }
@@ -2922,7 +2920,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 			return manifestFile;
 		}
 		
-		private void returnFileList(XnatProjectdata xproj, String projectPath, String xName, HttpServletRequest request) {
+		private void returnFileList(XnatProjectdataI xproj, String projectPath, String xName, HttpServletRequest request) {
 			List<TriageFileDto> response = new  ArrayList<>();
 			File dir = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
 			//need to ignore .json files.
@@ -2978,7 +2976,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		    return relFileName;
 		}
 
-		private void returnZippedFiles(XnatProjectdata xproj, String projectPath, String xName,UserI user, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception {
+		private void returnZippedFiles(XnatProjectdataI xproj, String projectPath, String xName,UserI user, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception {
 			String dirPath = File.separator+"resources"+File.separator+xName+File.separator+"files";
 			String resourcePath=projectPath+File.separator+RESOURCES+File.separator+xName;
 			if(canRead(xproj, new File(resourcePath),user)){
@@ -3016,9 +3014,9 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 			return String.format(ATTACHMENT_DISPOSITION, fileName);
 		}
 		
-		boolean canRead(XnatProjectdata proj,File f, UserI user) throws InvalidItemException, Exception{
+		boolean canRead(XnatProjectdataI proj,File f, UserI user) throws InvalidItemException, Exception{
 			boolean allowed=false;
-			if (Features.checkFeature(user,proj.getSecurityTags().getHash().values(), "QuarantineReview") || StringUtils.equals(user.getUsername(),getUser(f))){
+			if (Features.checkFeature(user,((BaseXnatProjectdata)proj).getSecurityTags().getHash().values(), "QuarantineReview") || StringUtils.equals(user.getUsername(),getUser(f))){
 	            allowed= true;
 	        }else{
 	        	allowed= false;

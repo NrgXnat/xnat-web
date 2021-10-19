@@ -24,6 +24,7 @@ import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.model.TriageDto;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResource;
@@ -79,7 +80,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Gets the requested resources", notes = "Returns the  resources with the specified Experiment ID", response = XnatAbstractresource.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the requested resources", notes = "Returns the  resources with the specified Experiment ID", response = XnatAbstractresourceI.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resources."),
 		 			@ApiResponse(code = 400, message = "The requested experimentId wasn't found."),
 		 			@ApiResponse(code = 404, message = "The requested resources wasn't found."),
@@ -99,13 +100,13 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Gets the requested resource", notes = "Returns the  resource with the specified ID and experimentId", response = XnatAbstractresource.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the requested resource", notes = "Returns the  resource with the specified ID and experimentId", response = XnatAbstractresourceI.class, responseContainer = "single")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 					@ApiResponse(code = 400, message = "The requested either experimentId or resourceId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested resource wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-	public XnatAbstractresource getByIdAndExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+	public XnatAbstractresourceI getByIdAndExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
 													   @ApiParam(value = "The ID of the resource.") @PathVariable  final Integer resourceId) throws NotFoundException, DataFormatException {
 		log.debug("User {} requested resources with experiment ID {} and with ID {}", getSessionUser().getUsername(), experimentId, resourceId);
 		return _resourceService.findByIdAndExperimentId(getSessionUser(), resourceId, experimentId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId));
@@ -120,7 +121,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
 	 * @throws NotFoundException
 	 * @throws DataFormatException
 	 */
-	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified project ID, subject ID and experimentId", response = XnatAbstractresource.class, responseContainer = "List")
+	@ApiOperation(value = "Gets the requested  resource", notes = "Returns the  resource with the specified project ID, subject ID and experimentId", response = XnatAbstractresourceI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested resource."),
 					@ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId  wasn't found."),
 					@ApiResponse(code = 404, message = "The requested resource wasn't found."),

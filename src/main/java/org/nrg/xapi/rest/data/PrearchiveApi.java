@@ -21,6 +21,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
@@ -128,7 +129,7 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
    		return _prearchiveService.findAllPrearcSessionResourceByScanIdAndResourceId(getSessionUser(), projectId, sessionTimestamp, sessionLabel,scanId, resourceId, filepath, prettyPrint, request);
    	}
     
-    @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdata.class)
+    @ApiOperation(value = "Create a new prearchive rebuild", notes = "Creates the submitted rebuild.", response = XnatProjectdataI.class)
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
 			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
 			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive rebuild"),
@@ -143,7 +144,7 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 		return _prearchiveService.createPrarchiveRebuild(getSessionUser(), src, overrideLock);
 	}
     
-    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdata.class)
+    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdataI.class)
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
 			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
 			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive delete"),
@@ -158,7 +159,7 @@ public class PrearchiveApi extends AbstractXapiProjectRestController {
 		return _prearchiveService.deletePrarchive(getSessionUser(), src, overrideLock);
 	}
     
-    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdata.class)
+    @ApiOperation(value = "Create a new prearchive delete", notes = "Creates the submitted delete.", response = XnatProjectdataI.class)
    	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the newly created project."),
    			@ApiResponse(code = 400, message = "The requested prearchive rebuild wasn't found."),
    			@ApiResponse(code = 403, message = "The user doesn't have permission to create prearchive delete"),

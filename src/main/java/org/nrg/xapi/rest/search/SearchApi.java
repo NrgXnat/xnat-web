@@ -15,6 +15,7 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
+import org.nrg.xdat.model.XdatSearchI;
 import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
@@ -66,7 +67,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
         return _searchService.findAllSavedSearch(getSessionUser(), username, allBundles,includeTag );
     }
 
-    @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatSearch.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested search saved", notes = "Returns the  cdat search saved", response = XdatSearchI.class, responseContainer = "list")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested XdatStoredSearch."),
     			   @ApiResponse(code = 403, message = "The user doesn't have permission to create XdatStoredSearch"),
                    @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
@@ -79,7 +80,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     	return _searchService.findSavedSearchBySearchId(getSessionUser(), searchId,dv, project).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, searchId));
     }
     
-    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearchI.class, responseContainer = "list")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested search elements."),
                    @ApiResponse(code = 404, message = "The requested search elements wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
@@ -90,7 +91,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     	return _searchService.findAllSearchElements(getSessionUser(),secured,readable,used);
     }
     
-    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearchI.class, responseContainer = "list")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested search elements."),
                    @ApiResponse(code = 404, message = "The requested search elements wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})

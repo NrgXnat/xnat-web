@@ -15,6 +15,8 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.XdatUsergroupI;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
@@ -72,20 +74,20 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "Gets the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "Gets the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
 					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested uers wasn't found."),
 					@ApiResponse(code = 500, message = "An unexpected or unknown error occurred.") })
 	@XapiRequestMapping(value = "/projects/{projectId}/groups/{groupId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	public XdatUsergroup getUserGroupByGroupIdAndProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-																		 @ApiParam(value = "The ID of the group.") @PathVariable final String groupId) throws NotFoundException, DataFormatException  {
+	public XdatUsergroupI getUserGroupByGroupIdAndProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+															@ApiParam(value = "The ID of the group.") @PathVariable final String groupId) throws NotFoundException, DataFormatException  {
 		log.debug("User {} requested user group with project ID {} and with group ID {}", getSessionUser().getUsername(), projectId, groupId);
 		return _userService.findUserGroupByGroupIdAndProject(getSessionUser(),groupId, projectId).orElseThrow(() -> new NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, groupId));
 	}
 	
 	
-	@ApiOperation(value = "Gets the requested  user Favorite projects", notes = "Returns the  user Favorite project with the specified datatype", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "Gets the requested  user Favorite projects", notes = "Returns the  user Favorite project with the specified datatype", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested user groups."),
 					@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested user Favorite project wasn't found."),
@@ -96,7 +98,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 		return _userService.FindAllUserFavorites(getSessionUser(), dataType);
 	}
 	
-	@ApiOperation(value = "Gets the requested  user Favorite project", notes = "Returns the  user Favorite project with the specified projectId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "Gets the requested  user Favorite project", notes = "Returns the  user Favorite project with the specified projectId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested user groups."),
 					@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested user groups wasn't found."),
@@ -109,7 +111,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "update the requested  user Favorite project", notes = "Returns the  users with the specified projectId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "update the requested  user Favorite project", notes = "Returns the  users with the specified projectId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested user groups."),
 					@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested user Favorite project wasn't found."),
@@ -122,7 +124,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "delete the requested  user Favorite project", notes = "delete the  user Favorite project with the specified projectId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "delete the requested  user Favorite project", notes = "delete the  user Favorite project with the specified projectId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested user groups."),
 					@ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested user Favorite project wasn't found."),
@@ -134,7 +136,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 		 _userService.deleteUserFavorite(getSessionUser(), projectId, dataType);
 	}
 	
-	@ApiOperation(value = "delete the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "delete the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
 					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested project wasn't found."),
@@ -148,7 +150,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "update the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroup.class, responseContainer = "List")
+	@ApiOperation(value = "update the requested  project groups", notes = "Returns the  project groups with the specified projectId and GroupId", response = XdatUsergroupI.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested uers."),
 					@ApiResponse(code = 400, message = "The requested either projectId or groupId wasn't found."),
 					@ApiResponse(code = 404, message = "The requested project wasn't found."),
@@ -166,7 +168,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 	}
 	
 	
-	@ApiOperation(value = "Gets the Ip Whitelist", notes = "Returns the  IpWhitelist", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the Ip Whitelist", notes = "Returns the  IpWhitelist", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested IpWhitelist wasn't found."),

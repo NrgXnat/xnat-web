@@ -9,7 +9,9 @@ import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.services.DataTypeAwareEventService;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.file.StoredFile;
@@ -160,7 +162,7 @@ public class ImporterServiceImpl implements ImporterService {
         } else {
             // Get the prearchive code for the project specified.
             XnatProjectdata proj  = XnatProjectdata.getProjectByIDorAlias((String) params.get("project"), user, true);
-            PrearchiveCode  pCode = PrearchiveCode.code(proj.getArcSpecification().getPrearchiveCode());
+            PrearchiveCode  pCode = PrearchiveCode.code(((BaseXnatProjectdata)proj).getArcSpecification().getPrearchiveCode());
 
             // If the project is set to auto archive overwrite
             if (pCode == PrearchiveCode.AutoArchiveOverwrite) {

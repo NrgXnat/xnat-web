@@ -18,6 +18,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.XdatUsergroupI;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.ElementSecurity;
@@ -87,10 +88,10 @@ public class UserServiceImpl implements UserService{
 	}
 	
 	@Override
-	public Optional<XdatUsergroup> findUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) throws DataFormatException, NotFoundException {
+	public Optional<XdatUsergroupI> findUserGroupByGroupIdAndProject(UserI user, String groupId, String projectId) throws DataFormatException, NotFoundException {
 		validateGroupIdAndProjectId(groupId, projectId);
 		
-		XdatUsergroup userGroup = _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
+		XdatUsergroupI userGroup = (XdatUsergroupI) _template.queryForObject(USER_GROUP_QUERY + BY_ID_WHERE_USER_GROUP_PROJECT + BY_GROUP_ID_WHERE + USER_GROUP_BY, new MapSqlParameterSource("projectId", projectId).addValue("groupId", groupId), new UserGroupRowMapper(user));
 		if(Objects.isNull(userGroup)) {
     		throw new  NotFoundException(XdatUsergroup.SCHEMA_ELEMENT_NAME, groupId) ;
 		}

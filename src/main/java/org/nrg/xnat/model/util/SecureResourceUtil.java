@@ -16,6 +16,7 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.model.XnatProjectdataI;
+import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatExperimentdataShare;
 import org.nrg.xdat.om.XnatImagescandata;
@@ -26,10 +27,12 @@ import org.nrg.xdat.om.XnatPvisitdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xdat.om.base.BaseXnatImagescandata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.ItemI;
+import org.nrg.xft.ItemWrapper;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.db.ViewManager;
@@ -229,38 +232,38 @@ public class SecureResourceUtil {
 	        return null;
 	    }
 	    
-	    public void validateSubject(final XnatSubjectdata subject) throws Exception {
+	    public void validateSubject(final XnatSubjectdataI subject) throws Exception {
 	        if (StringUtils.isNotBlank(subject.getLabel()) && !XftStringUtils.isValidId(subject.getId())) 
 	        	throw new DataFormatException("Invalid character in subject label.");
 
-	        final ValidationResults results = subject.validate();
+	        final ValidationResults results = ((ItemWrapper)subject).validate();
 	        if (results != null && !results.isValid()) 
 	        	throw new ClientException(results.toFullString());
 	    }
 		
-	    public void deleteItem(final XnatProjectdata proj, final BaseElement item, boolean removeFiles, UserI user, XnatEventUtil event) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
+	    public void deleteItem(final XnatProjectdataI proj, final BaseElement item, boolean removeFiles, UserI user, XnatEventUtil event) throws InitializationException, InsufficientPrivilegesException, NotFoundException, DataFormatException {
 	    	if (!ArchivableItem.class.isAssignableFrom(item.getClass())) {
 	            throw new IllegalArgumentException("The BaseElement item must also implement the ArchivableItem interface, but the class " + item.getClass().getName() + " doesn't.");
 	        }
 
 	        try {
-	            final XnatProjectdata     newProject = getProjectFromFilePath(proj, (ArchivableItem) item, user);
+	            final XnatProjectdataI     newProject = getProjectFromFilePath(proj, (ArchivableItem) item, user);
 	            final PersistentWorkflowI wrk        = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), XnatEventUtil.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.getDeleteAction(item.getXSIType()), event));
 	            final EventMetaI   c          = wrk.buildEvent();
 
 	            try {
-	                final XnatProjectdata              project     = (newProject != null) ? newProject : proj;
+	                final XnatProjectdataI              project     = (newProject != null) ? newProject : proj;
 	                final Class<? extends BaseElement> itemType    = item.getClass();
 
 	                final String message;
 	                if (XnatPvisitdata.class.isAssignableFrom(itemType)) {
-	                    message = ((XnatPvisitdata) item).delete(project, user, removeFiles, c);
+	                    message = ((XnatPvisitdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
 	                } else if (XnatImagesessiondata.class.isAssignableFrom(itemType)) {
-	                    message = ((XnatImagesessiondata) item).delete(project, user, removeFiles, c);
+	                    message = ((XnatImagesessiondata) item).delete((XnatProjectdata) project, user, removeFiles, c);
 	                } else if (XnatSubjectdata.class.isAssignableFrom(itemType)) {
-	                    message = ((XnatSubjectdata) item).delete(project, user, removeFiles, c);
+	                    message = ((XnatSubjectdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
 	                } else if (XnatExperimentdata.class.isAssignableFrom(itemType)) {
-	                    message = ((XnatExperimentdata) item).delete(project, user, removeFiles, c);
+	                    message = ((XnatExperimentdata) item).delete((BaseXnatProjectdata) project, user, removeFiles, c);
 	                } else {
 	                    message = null;
 	                }

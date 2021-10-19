@@ -14,6 +14,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotAuthenticatedException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.model.TriageDto;
+import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
@@ -33,7 +34,7 @@ public interface ResourceService {
 	 /** Start Resource Service Methods*/
 	 List<XnatAbstractresource> findByExperimentId(final UserI user, final String experimentId) throws NotFoundException, DataFormatException;
 	
-	 Optional<XnatAbstractresource> findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId) throws DataFormatException, NotFoundException;
+	 Optional<XnatAbstractresourceI> findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId) throws DataFormatException, NotFoundException;
 
 	 List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentId(final UserI user, final String projectId, final String subjectId, final String experimentId) throws DataFormatException, NotFoundException;
 	

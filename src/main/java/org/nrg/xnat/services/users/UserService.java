@@ -8,6 +8,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XdatUsergroupI;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xft.db.FavEntries;
 import org.nrg.xft.security.UserI;
@@ -18,7 +19,7 @@ public interface UserService {
 
 	 List<XdatUsergroup> findUserGroupByProject(UserI sessionUser, String projectId) throws DataFormatException, NotFoundException;
 	
-	 Optional<XdatUsergroup> findUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId) throws DataFormatException, NotFoundException;
+	 Optional<XdatUsergroupI> findUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId) throws DataFormatException, NotFoundException;
 
 	 List<FavEntries> FindAllUserFavorites(UserI user, String dataType ) throws DataFormatException, NotFoundException;
 	 

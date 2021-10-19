@@ -14,6 +14,7 @@ import org.nrg.xapi.model.ResourceFile;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.CatEntryI;
+import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.model.XnatSubjectdataI;
 import org.nrg.xdat.om.*;
@@ -241,7 +242,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}
-		for (final XnatAbstractresource temp : resources) {
+		for (final XnatAbstractresourceI temp : resources) {
 			final XnatResourcecatalog catResource = (XnatResourcecatalog) temp;
 			resourceCatalog.add(catResource);
 		}
