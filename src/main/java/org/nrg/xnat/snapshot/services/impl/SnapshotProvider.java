@@ -92,7 +92,7 @@ public class SnapshotProvider implements AutoCloseable {
 
     private Optional<XnatResourcecatalog> getSnapshotResourceCatalog(final String sessionId, final String scanId) throws DataFormatException {
         try {
-            return Optional.ofNullable(_catalogService.getResourceCatalog(sessionId, scanId, SNAPSHOTS));
+            return Optional.ofNullable((XnatResourcecatalog) _catalogService.getResourceCatalog(sessionId, scanId, SNAPSHOTS));
         } catch (ClientException e) {
             throw new DataFormatException("An error occurred trying to get the SNAPSHOTS resource catalog for session " + sessionId + " scan " + scanId, e);
         }
@@ -100,15 +100,19 @@ public class SnapshotProvider implements AutoCloseable {
 
     private Optional<XnatResourcecatalog> createSnapshotResourceCatalog(final String sessionId, final String scanId) {
         final String parentUri = ROOT_URI + sessionId + "/scans/" + scanId + SNAPSHOTS_RESOURCE;
-        log.debug("Creating the snapshots folder for scan {} of session {} at URI {}", scanId, sessionId, parentUri);
+        final UserI  owner     = getResourceOwner(sessionId);
+        log.debug("Creating the snapshots folder for scan {} of session {} at URI {} for the resource owner {}", scanId, sessionId, parentUri, owner.getUsername());
         try {
-            final XnatResourcecatalog created = _catalogService.createAndInsertResourceCatalog(getResourceOwner(sessionId), parentUri, 1, SNAPSHOTS, "Snapshots for session " + sessionId + " scan " + scanId, GIF, SNAPSHOTS);
-            log.debug("Created the snapshots folder for scan {} of session {} at URI {}", scanId, sessionId, UriParserUtils.getArchiveUri(created));
-            return Optional.of(created);
+            final XnatResourcecatalog created = (XnatResourcecatalog) _catalogService.createAndInsertResourceCatalog(owner, parentUri, 1, SNAPSHOTS, "Snapshots for session " + sessionId + " scan " + scanId, GIF, SNAPSHOTS);
+            if (created != null) {
+                log.debug("Created the snapshots folder for scan {} of session {} at URI {}", scanId, sessionId, UriParserUtils.getArchiveUri(created));
+                return Optional.of(created);
+            }
+            log.error("Failed to create the snapshots folder for scan {} of session {} at URI {} for the resource owner {}, but no error was thrown so I don't know why.", scanId, sessionId, parentUri, owner.getUsername());
         } catch (Exception e) {
             log.error("An error occurred verifying the snapshots folder for scan {} of session {}", scanId, sessionId, e);
-            return Optional.empty();
         }
+        return Optional.empty();
     }
 
     private Optional<FileResource> getResourceFile(final XnatResourcecatalog snapshotCatalog, final String content) throws NotFoundException, InitializationException {

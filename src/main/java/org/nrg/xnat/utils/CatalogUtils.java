@@ -1447,29 +1447,30 @@ public class CatalogUtils {
      */
     @Nullable
     public static File getFileOnLocalFileSystem(String uri,
-                                                @Nullable String destPath,
-                                                @Nullable String project) {
+                                                @Nullable final String destPath,
+                                                @Nullable final String project) {
+        final String finalDestination;
         if (StringUtils.isBlank(destPath)) {
             if (FileUtils.IsUrl(uri, true)) {
                 log.error("Cannot pull remote URI {} without a destination path", uri);
                 return null;
             }
-            destPath = uri;
+            finalDestination = uri;
+        } else {
+            finalDestination = destPath;
         }
 
-        File f = getFileOnLocalFileSystemOrig(destPath);
-        if (f == null) {
-            RemoteFilesService remoteFilesService = XDAT.getContextService().getBeanSafely(RemoteFilesService.class);
+        return Optional.ofNullable(getFileOnLocalFileSystemOrig(destPath)).orElseGet(() -> {
+            final RemoteFilesService remoteFilesService = XDAT.getContextService().getBeanSafely(RemoteFilesService.class);
             if (remoteFilesService != null) {
                 try {
-                    f = remoteFilesService.pullFile(uri, destPath, project);
+                    return remoteFilesService.pullFile(uri, finalDestination, project);
                 } catch (FileNotFoundException e) {
                     log.error(e.getMessage(), e);
-                    f = null;
                 }
             }
-        }
-        return f;
+            return null;
+        });
     }
 
     /**

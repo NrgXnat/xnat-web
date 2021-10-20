@@ -9,6 +9,8 @@
 
 package org.nrg.xnat.restlet.util;
 
+import org.nrg.xft.utils.FileUtils;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 
@@ -33,6 +35,14 @@ public class XNATRestConstants {
     public static final String XML_PATH_REGEXP  = ".*:.*/.*";
     public static final String XML_PATH_REGEXP2 = ".*:.*\\..*";
 
+    /**
+     * Returns a timestamp for use with the prearchive.
+     *
+     * @return The formatted timestamp
+     *
+     * @deprecated Use {@link FileUtils#getPrearchiveTimestamp()} instead.
+     */
+    @Deprecated
     public static String getPrearchiveTimestamp() {
         return DATE_FORMAT.format(Calendar.getInstance().getTime());
     }

@@ -1,7 +1,5 @@
 package org.nrg.xnat.snapshot.generator.impl;
 
-import static org.nrg.xnat.snapshot.generator.SnapshotResourceGenerator.*;
-
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +25,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.nrg.xnat.snapshot.generator.SnapshotResourceGenerator.*;
 
 /**
  * Implementation of SnapshotResourceGenerator.
@@ -166,7 +166,7 @@ public class SnapshotResourceGeneratorImpl extends DicomImageRenderer implements
 
     private XnatResourcecatalog getDicomResourceCatalog(final String sessionId, final String scanId) {
         try {
-            final XnatResourcecatalog catalog = _catalogService.getDicomResourceCatalog(sessionId, scanId);
+            final XnatResourcecatalog catalog = (XnatResourcecatalog) _catalogService.getDicomResourceCatalog(sessionId, scanId);
             if (catalog != null) {
                 log.debug("Retrieved DICOM catalog for session {} scan {} for catalog file {}", sessionId, scanId, catalog.getUri());
                 return catalog;
