@@ -142,7 +142,8 @@ import lombok.extern.slf4j.Slf4j;
 public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements ResourceService{
 	
 	@Autowired
-	public ResourceServiceImpl(final NamedParameterJdbcTemplate template, final ContextService contextService) {
+	public ResourceServiceImpl(final DataTypeAwareEventService eventService,final NamedParameterJdbcTemplate template, final ContextService contextService) {
+		_eventService = eventService;
 		_template = template;
 		_contextService = contextService;
 	}
@@ -576,7 +577,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
                 }
             }
 //            XDAT.triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
-			_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
+			_eventService.triggerXftItemEvent(xsiType, securityId, XftItemEvent.UPDATE);
         } catch (ClientException e) {
         	log.error( e.getMessage());
         } catch (Exception e) {
@@ -1863,7 +1864,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
             if (StringUtils.equals(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getXSIType())) {
 //                XDAT.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
 //                        XftItemEventI.DELETE);
-				_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
+				_eventService.triggerXftItemEvent(XnatProjectdata.SCHEMA_ELEMENT_NAME, parent.getStringProperty("ID"),
 						XftItemEventI.DELETE);
             }
         } finally {
@@ -2005,7 +2006,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 						cache.clearProjectCacheEntry(projectId);
 					}
 //					XDAT.triggerXftItemEvent(proj, XftItemEventI.UPDATE);
-					_contextService.getBean(DataTypeAwareEventService.class).triggerXftItemEvent((BaseElement) proj, XftItemEventI.UPDATE);
+					_eventService.triggerXftItemEvent((BaseElement) proj, XftItemEventI.UPDATE);
 				}
 			} else {
 				if (workflow == null) {
@@ -3226,6 +3227,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	
 	private final NamedParameterJdbcTemplate _template;
 	private final ContextService _contextService;
+	private final DataTypeAwareEventService _eventService;
 
 
 }

@@ -19,6 +19,7 @@ import org.nrg.xapi.exceptions.*;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.PermissionsServiceImpl;
 import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.helpers.Groups;
@@ -603,8 +604,8 @@ public class PrearchiveServiceImpl implements PrearchiveService {
             // the project setting.
         } else {
             // Get the prearchive code for the project specified.
-            XnatProjectdata proj  = XnatProjectdata.getProjectByIDorAlias((String) params.get("project"), user, true);
-            PrearchiveCode  pCode = PrearchiveCode.code(proj.getArcSpecification().getPrearchiveCode());
+            XnatProjectdataI proj  = XnatProjectdata.getProjectByIDorAlias((String) params.get("project"), user, true);
+            PrearchiveCode  pCode = PrearchiveCode.code(((BaseXnatProjectdata)proj).getArcSpecification().getPrearchiveCode());
 
             // If the project is set to auto archive overwrite
             if (pCode == PrearchiveCode.AutoArchiveOverwrite) {

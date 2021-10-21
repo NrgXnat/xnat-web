@@ -72,7 +72,7 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
 							produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method =PUT)
 	    public XnatDatatypeprotocolI update(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-	    		@ApiParam("The protocol to be updated.") @RequestBody final XnatDatatypeprotocol protocol,
+	    		@ApiParam("The protocol to be updated.") @RequestBody final XnatDatatypeprotocolI protocol,
 	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
 	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
 	    		@ApiParam(value = "The gender of value.") @RequestParam(name = "gender", required = false) final String gender,

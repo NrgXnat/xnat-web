@@ -10,7 +10,6 @@ import org.nrg.framework.services.SerializerService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
-import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xnat.services.runner.RunnerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

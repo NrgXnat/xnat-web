@@ -30,7 +30,7 @@ public interface ProjectService {
 
     XnatProjectdataI create(UserI user, XnatProjectdataI xnatProjectdata, boolean allowDataDeletion, String accessibility,  String xsiType, XnatEventUtil event) throws XftItemException, ActionException, UserNotFoundException, UserInitException, DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException;
 
-    XnatProjectdataI update(UserI user, XnatProjectdata xnatProjectdata,  String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
+    XnatProjectdataI update(UserI user, XnatProjectdataI xnatProjectdata,  String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event) throws InsufficientPrivilegesException, DataFormatException, InitializationException, Exception;
 
      void deleteById(UserI user, String projectId,  boolean removeFiles, XnatEventUtil event) throws DataFormatException, InitializationException, NotFoundException;
 

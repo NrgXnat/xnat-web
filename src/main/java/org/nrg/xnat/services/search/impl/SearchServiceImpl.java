@@ -27,16 +27,14 @@ import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
+import org.nrg.xdat.model.*;
+import org.nrg.xdat.model.XdatCriteriaSetI;
+import org.nrg.xdat.model.XdatSearchI;
 import org.nrg.xdat.model.XdatStoredSearchAllowedUserI;
 import org.nrg.xdat.model.XdatStoredSearchGroupidI;
 import org.nrg.xdat.model.XdatStoredSearchI;
-import org.nrg.xdat.om.XdatCriteria;
-import org.nrg.xdat.om.XdatCriteriaSet;
-import org.nrg.xdat.om.XdatSearch;
-import org.nrg.xdat.om.XdatStoredSearch;
-import org.nrg.xdat.om.XdatStoredSearchAllowedUser;
-import org.nrg.xdat.om.XdatStoredSearchGroupid;
-import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.*;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.om.base.auto.AutoXdatStoredSearch;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.search.CriteriaCollection;
@@ -216,9 +214,9 @@ public class SearchServiceImpl implements SearchService {
 
 		xss = getXssData(xss, sID, user,dv);
 		if (xss != null)
-			verifyXss((XdatStoredSearch) xss, user);
+			verifyXss((XdatStoredSearchI) xss, user);
 		else
-			xss = (XdatStoredSearchI) getXssDataAfterValidate((XdatStoredSearch) xss, sID, loadedFromFile, user,project);
+			xss = (XdatStoredSearchI) getXssDataAfterValidate((XdatStoredSearchI) xss, sID, loadedFromFile, user,project);
 
 		if (xss != null) {
 			getXnatStoredSearchData();
@@ -231,7 +229,7 @@ public class SearchServiceImpl implements SearchService {
 	public Optional<XdatStoredSearchI> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId,
 																			 String searchId) throws DataFormatException, NotFoundException {
 		XdatStoredSearchI xdatStoredSearch = (XdatStoredSearchI) new XdatStoredSearch();
-		XnatProjectdata xnatProjectdata = new XnatProjectdata();
+		XnatProjectdataI xnatProjectdata = new XnatProjectdata();
 
 		if (Objects.isNull(projectId) || projectId.isEmpty())
 			throw new DataFormatException("The requested projectId wasn't found");
@@ -244,7 +242,7 @@ public class SearchServiceImpl implements SearchService {
 			throw new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, projectId);
 
 		if (searchId.startsWith("@"))
-			xdatStoredSearch = (XdatStoredSearchI) xnatProjectdata.getDefaultSearch(searchId.substring(1));
+			xdatStoredSearch = (XdatStoredSearchI) ((BaseXnatProjectdata)xnatProjectdata).getDefaultSearch(searchId.substring(1));
 		else
 			xdatStoredSearch = (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(xdatStoredSearch, user, true);
 
@@ -258,9 +256,9 @@ public class SearchServiceImpl implements SearchService {
 	public void deleteSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId)
 			throws JustificationAbsent, ActionNameAbsent {
 		if (searchId != null) {
-			XdatStoredSearch search = XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+			XdatStoredSearchI search = (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
 			if (search != null) {
-				XdatStoredSearchAllowedUser mine = verifyUserLogin(search, user);
+				XdatStoredSearchAllowedUserI mine = verifyUserLogin(search, user);
 				if (mine != null) {
 					deleteSavedSearch(search, user, mine);
 				}
@@ -330,12 +328,12 @@ public class SearchServiceImpl implements SearchService {
 	}
 	
 	@Override
-	public XdatStoredSearch create(UserI user, XdatStoredSearch search) {
+	public XdatStoredSearchI create(UserI user, XdatStoredSearchI search) {
 		return null;
 	}
 
 	@Override
-	public void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure,
+	public void updateSearchElement(UserI user, XdatSearchI xdatSearch, String elementName, boolean secure,
 			String singular, String plural, String code) {
 		try {
 			if (XFTTool.ValidateElementName(elementName)) {
@@ -401,11 +399,11 @@ public class SearchServiceImpl implements SearchService {
 	public void deleteSavedSearchBySearchId(UserI user, String searchId,  XnatEventUtil event) throws SQLException {
 		if (Objects.nonNull(searchId)) {
 
-			XdatStoredSearch search = XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
+			XdatStoredSearchI search = (XdatStoredSearchI) XdatStoredSearch.getXdatStoredSearchsById(searchId, user, false);
 
 			if (search != null) {
-				XdatStoredSearchAllowedUser mine = null;
-				XdatStoredSearchGroupid group = null;
+				XdatStoredSearchAllowedUserI mine = null;
+				XdatStoredSearchGroupidI group = null;
 
 				mine = getXdatStoredSearch(mine, search, user);
 
@@ -606,7 +604,7 @@ public class SearchServiceImpl implements SearchService {
 		return null;
 	}
 
-	private XdatStoredSearch getXssDataAfterValidate(XdatStoredSearch xss, String sID, boolean loadedFromFile, UserI user, String project) {
+	private XdatStoredSearchI getXssDataAfterValidate(XdatStoredSearchI xss, String sID, boolean loadedFromFile, UserI user, String project) {
 
 		// allow loading of saved searches from xml stored on hte file system
 		final File searchXml = getFileSystemSearch(sID);
@@ -623,12 +621,12 @@ public class SearchServiceImpl implements SearchService {
 			} catch (IOException | SAXException e) {
 				e.printStackTrace();
 			}
-			xss = new XdatStoredSearch(item);
+			xss = (XdatStoredSearchI) new XdatStoredSearch(item);
 
 			loadedFromFile = true;
 
 			if (project != null) {
-				final XdatCriteriaSet cs = new XdatCriteriaSet(user);
+				final XdatCriteriaSet cs =  new XdatCriteriaSet(user);
 				cs.setMethod("OR");
 				try {
 					for (final String p : org.springframework.util.StringUtils.commaDelimitedListToSet(project)) {
@@ -645,7 +643,7 @@ public class SearchServiceImpl implements SearchService {
 						cs.setCriteria(c);
 					}
 
-					xss.setSearchWhere(cs);
+					((XdatStoredSearch)xss).setSearchWhere((ItemI) cs);
 				} catch (Exception e) {
 				}
 			}
@@ -653,8 +651,8 @@ public class SearchServiceImpl implements SearchService {
 		return xss;
 	}
 
-	private void verifyXss(XdatStoredSearch xss, UserI user) throws InsufficientPrivilegesException {
-		if (!xss.hasAllowedUser(user.getLogin()) && !Permissions.canQuery(user, xss.getRootElementName())) {
+	private void verifyXss(XdatStoredSearchI xss, UserI user) throws InsufficientPrivilegesException {
+		if (!((XdatStoredSearch)xss).hasAllowedUser(user.getLogin()) && !Permissions.canQuery(user, xss.getRootElementName())) {
 			throw new InsufficientPrivilegesException(user.getUsername());
 		}
 
@@ -683,23 +681,23 @@ public class SearchServiceImpl implements SearchService {
 		return xss;
 	}
 
-	private void deleteStoredSearch(XdatStoredSearchAllowedUser mine, XdatStoredSearch search,
-			XdatStoredSearchGroupid group, UserI user, XnatEventUtil event) throws SQLException {
+	private void deleteStoredSearch(XdatStoredSearchAllowedUserI mine, XdatStoredSearchI search,
+			XdatStoredSearchGroupidI group, UserI user, XnatEventUtil event) throws SQLException {
 		try {
 		if (mine != null) {
 			if (search.getAllowedUser().size() > 1 || search.getAllowedGroups_groupid().size() > 0) {
-				SaveItemHelper.authorizedDelete(mine.getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed user from stored search",event));
+				SaveItemHelper.authorizedDelete(((ItemI)mine).getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed user from stored search",event));
 			} else {
-				SaveItemHelper.authorizedDelete(search.getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
+				SaveItemHelper.authorizedDelete(((ItemI)search).getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
 			}
 		} else if (group != null) {
 			if (search.getAllowedUser().size() > 0 || search.getAllowedGroups_groupid().size() > 1) {
-				SaveItemHelper.authorizedDelete(group.getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed group from stored search", event));
+				SaveItemHelper.authorizedDelete(((ItemI)group).getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed group from stored search", event));
 			} else {
-				SaveItemHelper.authorizedDelete(search.getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
+				SaveItemHelper.authorizedDelete(((ItemI)search).getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
 			}
 		} else if (Roles.isSiteAdmin(user)) {
-			SaveItemHelper.authorizedDelete(search.getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
+			SaveItemHelper.authorizedDelete(((ItemI)search).getItem(), user, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search", event));
 		} else {
 			throw new InsufficientPrivilegesException(user.getUsername());
 		}
@@ -708,9 +706,9 @@ public class SearchServiceImpl implements SearchService {
 		}
 	}
 
-	private XdatStoredSearchGroupid getXdatStoredSearchGroupid(XdatStoredSearchGroupid group, XdatStoredSearch search,
+	private XdatStoredSearchGroupidI getXdatStoredSearchGroupid(XdatStoredSearchGroupidI group, XdatStoredSearchI search,
 			UserI user) {
-		for (XdatStoredSearchGroupid ag : search.getAllowedGroups_groupid()) {
+		for (XdatStoredSearchGroupidI ag : search.getAllowedGroups_groupid()) {
 			if (Groups.isMember(user, ag.getGroupid())) {
 				group = ag;
 				break;
@@ -719,9 +717,9 @@ public class SearchServiceImpl implements SearchService {
 		return group;
 	}
 
-	private XdatStoredSearchAllowedUser getXdatStoredSearch(XdatStoredSearchAllowedUser mine, XdatStoredSearch search,
+	private XdatStoredSearchAllowedUserI getXdatStoredSearch(XdatStoredSearchAllowedUserI mine, XdatStoredSearchI search,
 			UserI user) {
-		for (XdatStoredSearchAllowedUser au : search.getAllowedUser()) {
+		for (XdatStoredSearchAllowedUserI au : search.getAllowedUser()) {
 			if (au.getLogin().equals(user.getLogin())) {
 				mine = au;
 				break;
@@ -789,9 +787,9 @@ public class SearchServiceImpl implements SearchService {
 					if (!Permissions.canEdit(user, "xnat:projectData/ID", xdatStoredSearch.getTag())) {
 						throw new InsufficientPrivilegesException(user.getUsername());
 					} else {
-						XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
+						XdatStoredSearchAllowedUserI au = (XdatStoredSearchAllowedUserI) new XdatStoredSearchAllowedUser(user);
 						au.setLogin(user.getLogin());
-						((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser(au);
+						((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser((ItemI) au);
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -806,9 +804,9 @@ public class SearchServiceImpl implements SearchService {
 	private XdatStoredSearchI getXdatStoredSearchWithIsNewAndNotFound(boolean isNew, boolean found,
 																	 XdatStoredSearchI xdatStoredSearch, UserI user) throws Exception {
 		if (isNew && !found) {
-			XdatStoredSearchAllowedUser au = new XdatStoredSearchAllowedUser(user);
+			XdatStoredSearchAllowedUserI au = (XdatStoredSearchAllowedUserI) new XdatStoredSearchAllowedUser(user);
 			au.setLogin(user.getLogin());
-			((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser(au);
+			((AutoXdatStoredSearch) xdatStoredSearch).setAllowedUser((ItemI) au);
 		}
 		return xdatStoredSearch;
 	}
@@ -873,16 +871,16 @@ public class SearchServiceImpl implements SearchService {
 
 	
 
-	private void deleteSavedSearch(XdatStoredSearch search, UserI user, XdatStoredSearchAllowedUser mine)
+	private void deleteSavedSearch(XdatStoredSearchI search, UserI user, XdatStoredSearchAllowedUserI mine)
 			throws JustificationAbsent, ActionNameAbsent {
-		PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, search.getItem(),
+		PersistentWorkflowI wrk = PersistentWorkflowUtils.getOrCreateWorkflowData(null, user, ((ItemI)search).getItem(),
 				EventUtils.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, EventUtils.TYPE.WEB_SERVICE,
 						"Deleted Project stored search"));
 		try {
 			if (search.getAllowedUser().size() > 1 || search.getAllowedGroups_groupid().size() > 0) {
-				SaveItemHelper.authorizedDelete(mine.getItem(), user, wrk.buildEvent());
+				SaveItemHelper.authorizedDelete(((ItemI)mine).getItem(), user, wrk.buildEvent());
 			} else {
-				SaveItemHelper.authorizedDelete(search.getItem(), user, wrk.buildEvent());
+				SaveItemHelper.authorizedDelete(((ItemI)search).getItem(), user, wrk.buildEvent());
 			}
 			PersistentWorkflowUtils.complete(wrk, wrk.buildEvent());
 		} catch (Exception e) {
@@ -894,9 +892,9 @@ public class SearchServiceImpl implements SearchService {
 		}
 	}
 
-	private XdatStoredSearchAllowedUser verifyUserLogin(XdatStoredSearch search, UserI user) {
-		XdatStoredSearchAllowedUser mine = null;
-		for (XdatStoredSearchAllowedUser au : search.getAllowedUser()) {
+	private XdatStoredSearchAllowedUserI verifyUserLogin(XdatStoredSearchI search, UserI user) {
+		XdatStoredSearchAllowedUserI mine = null;
+		for (XdatStoredSearchAllowedUserI au : search.getAllowedUser()) {
 			if (au.getLogin().equals(user.getLogin())) {
 				mine = au;
 				break;

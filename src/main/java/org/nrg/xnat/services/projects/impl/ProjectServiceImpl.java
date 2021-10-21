@@ -14,6 +14,7 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.model.ArcProjectI;
 import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -75,7 +76,7 @@ public class ProjectServiceImpl implements ProjectService {
     	List<XnatProjectdata> projects= XnatProjectdata.getAllXnatProjectdatas(user, false);
 
 		List<XnatProjectdataI> xnatProjectdataIs = new ArrayList<>();
-		for(XnatProjectdata project: projects) {
+		for(XnatProjectdataI project: projects) {
 			xnatProjectdataIs.add(project);
 		}
     	if(Objects.isNull(projects) || projects.isEmpty()) {
@@ -111,7 +112,7 @@ public class ProjectServiceImpl implements ProjectService {
 		item.setUser(user);
 
 		if (item.instanceOf("xnat:projectData")) {
-			XnatProjectdata project = new XnatProjectdata(item);
+			XnatProjectdataI project = new XnatProjectdata(item);
 			if (StringUtils.isBlank(project.getId())) {
 				throw new DataFormatException("Requires XNAT ProjectData ID");
 			}
@@ -122,7 +123,7 @@ public class ProjectServiceImpl implements ProjectService {
 
 			if (item.getCurrentDBVersion() == null) {
 				if (_preferences.getUiAllowNonAdminProjectCreation() || Roles.isSiteAdmin(user)) {
-					BaseXnatProjectdata.createProject(project, user, allowDataDeletion, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event), accessibility);
+					BaseXnatProjectdata.createProject((XnatProjectdata) project, user, allowDataDeletion, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event), accessibility);
 				} else {
 					throw new InsufficientPrivilegesException( "User account doesn't have permission to edit this project.");
 				}
@@ -136,7 +137,7 @@ public class ProjectServiceImpl implements ProjectService {
     
 	@SuppressWarnings("unused")
 	@Override
-    public XnatProjectdataI update(final UserI user, final XnatProjectdata project, String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event ) throws Exception {
+    public XnatProjectdataI update(final UserI user, final XnatProjectdataI project, String filepath, boolean allowDataDeletion, String accessibility, Boolean testHyphen,  String xsiType, XnatEventUtil event ) throws Exception {
 		log.debug("User {} is updating the project  Id {} ", user.getUsername(), project.getId());
 	
 		final String projectId = project.getId();
@@ -159,16 +160,16 @@ public class ProjectServiceImpl implements ProjectService {
 		if (project != null && !Permissions.canEditProject(user, projectId)) {
 			throw new InsufficientPrivilegesException( "User " + user.getUsername() + " doesn't have permission to edit the project " + project.getId());
 		}
-		if (project == null || Permissions.canEdit(user, project)) {
+		if (project == null || Permissions.canEdit(user, (ItemI) project)) {
 			XFTItem item = getProjectXftItem(user, project, xsiType);
 			item.setUser(user);
 
 			if (item.instanceOf("xnat:projectData")) {
-				XnatProjectdata workingProject = new XnatProjectdata(item);
+				XnatProjectdataI workingProject = new XnatProjectdata(item);
 
 				if (hasFilePath) {
 					if (StringUtils.isBlank(workingProject.getId())) {
-						item = project.getItem();
+						item =((ItemI)project).getItem();
 						workingProject = project;
 					}
 					if (!Permissions.canEdit(user, item))
@@ -192,7 +193,7 @@ public class ProjectServiceImpl implements ProjectService {
     		throw new DataFormatException("The requested project ID "+ projectId +" wasn't found");
 		}
 		
-		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		XnatProjectdataI project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		
 		if(Objects.isNull(project)) {
 			throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId);
@@ -212,12 +213,12 @@ public class ProjectServiceImpl implements ProjectService {
 
 	@Override
 	public String update(UserI user, String access, String projectId, XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent, ConfigServiceException {
-		XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		XnatProjectdataI project = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		if (StringUtils.isBlank(access) || project == null) 
 			throw new NotFoundException( "An error occurred trying to retrieve the accessibility setting for the project '{}'", project.getId());
 
 		try {
-			if (!Permissions.canDelete(user, project)) 
+			if (!Permissions.canDelete(user, (ItemI) project))
 				throw new InsufficientPrivilegesException(user.getUsername());
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -236,7 +237,7 @@ public class ProjectServiceImpl implements ProjectService {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID " + projectId+ "wasn't found ");
 		}
-		XnatProjectdata proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
+		XnatProjectdataI proj = XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 		if(Objects.isNull(proj)) {
     		throw new  NotFoundException(ArcProject.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
@@ -248,7 +249,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 	
 	
-	private void updateProjectAccessibity(String access, XnatProjectdata project, UserI user, XnatEventUtil event2) throws JustificationAbsent, ActionNameAbsent, IDAbsent  {
+	private void updateProjectAccessibity(String access, XnatProjectdataI project, UserI user, XnatEventUtil event2) throws JustificationAbsent, ActionNameAbsent, IDAbsent  {
 		final String currentAccess = getProjectAccessibility(project);
 		if (!StringUtils.equals(currentAccess, access)) {
 			final PersistentWorkflowI workflow = WorkflowUtils.buildProjectWorkflow(user, project, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ACCESS, EventUtils.MODIFY_PROJECT_ACCESS,event2));
@@ -291,16 +292,16 @@ public class ProjectServiceImpl implements ProjectService {
 		}
 	}
     
-	private String getProjectAccessibility(XnatProjectdata project)  {
+	private String getProjectAccessibility(XnatProjectdataI project)  {
 		try {
-			return project.getPublicAccessibility();
+			return ((BaseXnatProjectdata)project).getPublicAccessibility();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
 	
-    private XnatProjectdata save(XnatProjectdata workingProject, String projectId, UserI user, XFTItem item, boolean allowDataDeletion, XnatProjectdata project, String accessibility, Boolean testHyphen, XnatEventUtil event) throws DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException  {
+    private XnatProjectdataI save(XnatProjectdataI workingProject, String projectId, UserI user, XFTItem item, boolean allowDataDeletion, XnatProjectdataI project, String accessibility, Boolean testHyphen, XnatEventUtil event) throws DataFormatException, InsufficientPrivilegesException, ResourceAlreadyExistsException, XftItemException  {
     	if (StringUtils.isBlank(workingProject.getId())) {
     		workingProject.setId(projectId);
     	} else if (!StringUtils.equalsIgnoreCase(projectId, workingProject.getId())) {
@@ -322,16 +323,16 @@ public class ProjectServiceImpl implements ProjectService {
             }
         }
         // Validate project fields.  If there are conflicts, build a error message and display it to the user.
-        final Collection<String> conflicts = workingProject.validateProjectFields();
+        final Collection<String> conflicts = ((BaseXnatProjectdata)workingProject).validateProjectFields();
         if (!conflicts.isEmpty()) {
        	 throw new ResourceAlreadyExistsException("Requested new project conflicts with existing projects: {}" + StringUtils.join(conflicts, ", "), "");
         }
 
         if (project == null) {
-            BaseXnatProjectdata.createProject(workingProject, user, allowDataDeletion, true, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event), accessibility);
+            BaseXnatProjectdata.createProject((XnatProjectdata) workingProject, user, allowDataDeletion, true, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event), accessibility);
         } else {
             SaveItemHelper.authorizedSave(item, user, false, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, event));
-            if (StringUtils.isNotBlank(accessibility) && !StringUtils.equals(workingProject.getPublicAccessibility(), accessibility)) {
+            if (StringUtils.isNotBlank(accessibility) && !StringUtils.equals(((BaseXnatProjectdata)workingProject).getPublicAccessibility(), accessibility)) {
                 // If we don't allow non private projects, we shouldn't allow accessibility to change. 
                 final boolean nonPrivateAllowed = _preferences.getSecurityAllowNonPrivateProjects();
                 if(!nonPrivateAllowed) {
@@ -354,10 +355,10 @@ public class ProjectServiceImpl implements ProjectService {
         return XnatProjectdata.getXnatProjectdatasById(projectId, user, false);
 	}
 
-	private XnatProjectdata verifyFilePathAndCreateorUpdateXnatProject(String filepath, XnatProjectdata workingProject, UserI user, XnatEventUtil event) throws Exception {
+	private XnatProjectdataI verifyFilePathAndCreateorUpdateXnatProject(String filepath, XnatProjectdataI workingProject, UserI user, XnatEventUtil event) throws Exception {
 		SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 		if((filepath.startsWith("quarantine_code/")) || (filepath.startsWith("prearchive_code/")) || (filepath.startsWith("current_arc/"))){
-			final ArcProject arcProject = workingProject.getArcSpecification();
+			final ArcProjectI arcProject = ((BaseXnatProjectdata)workingProject).getArcSpecification();
 			if (filepath.startsWith("quarantine_code/")) {
 	             final String quarantineCode = StringUtils.removeStart(filepath, "quarantine_code/"); 
 	             if (StringUtils.isNotBlank(quarantineCode)) { 
@@ -380,12 +381,12 @@ public class ProjectServiceImpl implements ProjectService {
 	            	 arcProject.setCurrentArc(currentArc);
 	             }
 	         }  
-			 create(workingProject, arcProject, false, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Configured quarantine code", event),user, event);
+			 create((ArchivableItem) workingProject, (ItemI) arcProject, false, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Configured quarantine code", event),user, event);
              ArcSpecManager.Reset();
 		}else if (filepath.startsWith("scan_type_mapping/")) {
              final String scanTypeMapping = StringUtils.removeStart(filepath, "scan_type_mapping/");
-             workingProject.setUseScanTypeMapping(BooleanUtils.toBoolean(scanTypeMapping));
-             secureResoureUtil.update(workingProject, false, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Configured current arc", event), event, user);
+			((BaseXnatProjectdata)workingProject).setUseScanTypeMapping(BooleanUtils.toBoolean(scanTypeMapping));
+             secureResoureUtil.update((ArchivableItem) workingProject, false, false, XnatEventUtil.newEventInstance(EventUtils.CATEGORY.PROJECT_ADMIN, "Configured current arc", event), event, user);
              ArcSpecManager.Reset();
          } else {
         	 throw new DataFormatException("request data is missing");
@@ -426,15 +427,15 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
     
-    protected XFTItem getProjectXftItem(final UserI user, XnatProjectdata project, String xsiType) throws  XFTInitException, ElementNotFoundException {
-		XFTItem item = project.getItem();
+    protected XFTItem getProjectXftItem(final UserI user, XnatProjectdataI project, String xsiType) throws  XFTInitException, ElementNotFoundException {
+		XFTItem item = ((ItemI)project).getItem();
 
 		if (item == null && xsiType != null) {
 			item = XFTItem.NewItem(xsiType, user);
 		}
 
 		if (item == null && project != null) {
-			item = project.getItem();
+			item = ((ItemI)project).getItem();
 		}
 		return item;
 	}
@@ -450,7 +451,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     
     public void delete(final UserI user, final XnatProjectdataI proj, boolean removeFiles, XnatEventUtil xnatEvent) throws DataFormatException, InitializationException {
-		XnatProjectdata project = null;
+		XnatProjectdataI project = null;
 		final String projectId = proj.getId();
 		String filepath = null;
 		project = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
@@ -459,7 +460,7 @@ public class ProjectServiceImpl implements ProjectService {
 			throw new DataFormatException("Please check project request object");
 		}
 		try {
-			if (user.isGuest() || !Permissions.canDelete(user, project)) {
+			if (user.isGuest() || !Permissions.canDelete(user, (ItemI) project)) {
 				throw new InsufficientPrivilegesException( "User account doesn't have permission to delete this project.");
 			}
 
@@ -473,7 +474,7 @@ public class ProjectServiceImpl implements ProjectService {
 			final EventMetaI event = workflow.buildEvent();
 
 			try {
-				project.delete(removeFiles, user, event);
+				((BaseXnatProjectdata)project).delete(removeFiles, user, event);
 				PersistentWorkflowUtils.complete(workflow, event);
 				return;
 			} catch (Exception e) {

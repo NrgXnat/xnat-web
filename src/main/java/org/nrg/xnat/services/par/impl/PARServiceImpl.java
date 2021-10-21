@@ -10,8 +10,10 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xft.ItemWrapper;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.par.PARService;
@@ -106,12 +108,12 @@ public class PARServiceImpl implements PARService {
                 	log.warn("Attempt by user " + user.getLogin() + " to access PAR " + par.getRequestId());
             } 
 	}else {
-        XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectAccessRequest.getProjectId(), null, false);
+        XnatProjectdataI project = XnatProjectdata.getXnatProjectdatasById(projectAccessRequest.getProjectId(), null, false);
         if (project == null) {
         	 log.error("Found the PAR " + par.getRequestId() + " which is missing associated project " + par.getProjectId());
         	throw new NotFoundException("The project associated with the project access request appears to be gone.");
         } else {
-            if (!Roles.isSiteAdmin(user) && !project.canEdit(user) && !isParUser(user, par)) 
+            if (!Roles.isSiteAdmin(user) && !((ItemWrapper)project).canEdit(user) && !isParUser(user, par))
             	throw new InsufficientPrivilegesException("You don't have the appropriate permissions to view this PAR (must be admin or have edit permissions on the associated project).");
             if (log.isWarnEnabled()) {
                 log.warn("Attempt by user " + user.getLogin() + " to access PAR " + par.getRequestId() + " associated with project " + par.getProjectId());

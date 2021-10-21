@@ -26,7 +26,6 @@ import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagescandata;
 import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.turbine.utils.AdminUtils;
 import org.nrg.xft.ItemI;
@@ -76,7 +75,7 @@ public class ScanServiceImpl implements ScanService {
 
 	@Override
 	public List<XnatImagescandataI> findAllScanTypes(UserI user) throws NotFoundException {
-		List<XnatImagescandata> scanss= XnatImagescandata.getAllXnatImagescandatas(user, false);
+		ArrayList<XnatImagescandata> scanss= XnatImagescandata.getAllXnatImagescandatas(user, false);
 		List<XnatImagescandataI> scans=new ArrayList<>();
 		for(XnatImagescandataI scan: scanss) {
 			scans.add(scan);
@@ -219,7 +218,7 @@ public class ScanServiceImpl implements ScanService {
 	public void delete(UserI user, XnatImagescandataI scan, String assessedId, Integer scanId, String filepath, boolean removeFiles, XnatEventUtil event) throws NotFoundException, DataFormatException, InitializationException {
 		SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
 		if (assessedId != null) 
-			session = (XnatImagesessiondata) XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
+			session = (XnatImagesessiondataI) XnatExperimentdata.getXnatExperimentdatasById(assessedId, user, false);
         
 		 searchForScan(user,scan, scanId);
 		 

@@ -11,7 +11,7 @@ public interface ProtocolService {
 
 	XnatDatatypeprotocolI findByProjectIdAndProtocolId(UserI user, String projectId, String protocolId, String dataType, XnatEventUtil event ) throws NotFoundException;
 
-	XnatDatatypeprotocolI update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocol protocol, XnatEventUtil event ) throws InitializationException, NotFoundException;
+	XnatDatatypeprotocolI update(UserI user, String projectId, String protocolId, String dataType, String gender, XnatDatatypeprotocolI protocol, XnatEventUtil event ) throws InitializationException, NotFoundException;
 	
 	void delete(UserI user, String projectId, String protocolId,String dataType, XnatEventUtil event ) throws InitializationException, NotFoundException;
 }

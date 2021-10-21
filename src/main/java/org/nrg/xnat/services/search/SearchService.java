@@ -9,6 +9,7 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
+import org.nrg.xdat.model.XdatSearchI;
 import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
@@ -38,9 +39,9 @@ public interface SearchService {
 	 
 	 Optional<DisplayVersion> findSearchElementVersionByElementName(UserI user, String elementName) throws DisplayFieldNotFoundException, NotFoundException ;
 
-	 void updateSearchElement(UserI user, XdatSearch xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
+	 void updateSearchElement(UserI user, XdatSearchI xdatSearch, String elementName, boolean secure, String singular, String plural, String code );
 	
-	 XdatStoredSearch create(UserI user, XdatStoredSearch xdatStoredSearch);
+	 XdatStoredSearchI create(UserI user, XdatStoredSearchI xdatStoredSearch);
 	
 	 Optional<XdatStoredSearchI> findSavedSearchByProjectIdAndSearchId(UserI user, String projectId, String searchId) throws DataFormatException, NotFoundException ;
 

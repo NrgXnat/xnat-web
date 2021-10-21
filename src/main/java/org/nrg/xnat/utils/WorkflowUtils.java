@@ -15,6 +15,7 @@ import java.util.List;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.XFTItem;
@@ -147,7 +148,7 @@ public class WorkflowUtils extends PersistentWorkflowBuilderAbst {
 		return PersistentWorkflowUtils.buildOpenWorkflow(user, expt, event);
 	}
 	
-	public static PersistentWorkflowI buildProjectWorkflow(final UserI user, final XnatProjectdata project,  final EventDetails event) throws JustificationAbsent,ActionNameAbsent,IDAbsent{
+	public static PersistentWorkflowI buildProjectWorkflow(final UserI user, final XnatProjectdataI project, final EventDetails event) throws JustificationAbsent,ActionNameAbsent,IDAbsent{
 		return PersistentWorkflowUtils.buildOpenWorkflow(user, XnatProjectdata.SCHEMA_ELEMENT_NAME,project.getId(),project.getId(), event);
 	}
 	

@@ -161,7 +161,7 @@ public class ImporterServiceImpl implements ImporterService {
             // the project setting.
         } else {
             // Get the prearchive code for the project specified.
-            XnatProjectdata proj  = XnatProjectdata.getProjectByIDorAlias((String) params.get("project"), user, true);
+            XnatProjectdataI proj  = XnatProjectdata.getProjectByIDorAlias((String) params.get("project"), user, true);
             PrearchiveCode  pCode = PrearchiveCode.code(((BaseXnatProjectdata)proj).getArcSpecification().getPrearchiveCode());
 
             // If the project is set to auto archive overwrite
