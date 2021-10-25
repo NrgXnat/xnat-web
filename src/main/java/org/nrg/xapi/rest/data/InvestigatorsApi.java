@@ -12,10 +12,7 @@ package org.nrg.xapi.rest.data;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.*;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
@@ -54,17 +51,6 @@ public class InvestigatorsApi extends AbstractXapiRestController {
     public List<Investigator> getInvestigators() {
         return _service.getInvestigators();
     }
-
-    @ApiOperation(value = "Gets the requested investigator.", notes = "Returns the investigator with the specified ID.", response = Investigator.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested investigator."),
-                   @ApiResponse(code = 404, message = "The requested investigator wasn't found."),
-                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "{investigatorId}", produces = APPLICATION_JSON_VALUE, method = GET)
-    @ResponseBody
-    public Investigator getInvestigator(@PathVariable("investigatorId") final int investigatorId) throws NotFoundException {
-        return _service.getInvestigator(investigatorId);
-    }
-
     @ApiOperation(value = "Creates a new investigator from the submitted attributes.", notes = "Returns the newly created investigator with the submitted attributes.", response = Investigator.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the newly created investigator."),
                    @ApiResponse(code = 403, message = "Insufficient privileges to create the submitted investigator."),
@@ -72,7 +58,7 @@ public class InvestigatorsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE, method = POST)
     @ResponseBody
-    public Investigator createInvestigator(@RequestBody final Investigator investigator) throws DataFormatException, ResourceAlreadyExistsException, InitializationException {
+    public Investigator createInvestigator(@ApiParam("The ID of the project to be updated") @RequestBody final Investigator investigator) throws DataFormatException, ResourceAlreadyExistsException, InitializationException {
         if (StringUtils.isBlank(investigator.getFirstname()) || StringUtils.isBlank(investigator.getLastname())) {
             log.error("User {} tried to create investigator without a first or last name.", getSessionUser().getUsername());
             throw new DataFormatException("Can't create investigator without a first or last name.");

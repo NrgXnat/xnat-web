@@ -104,7 +104,7 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = {"/site"}, method = GET, restrictTo = Authenticated, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get a list of site wide pipelines for a given datatype (optional)")
-    public String getSitePipelines(@RequestParam(value = "xsiType", required = false) final String xsiType) throws InitializationException {
+    public String getSitePipelines(@ApiParam("Type of xsi ") @RequestParam(value = "xsiType", required = false) final String xsiType) throws InitializationException {
         final ArcProject arcProject;
         try {
             arcProject = xsiType == null ? PipelineRepositoryManager.GetInstance().createNewArcProjectForDummyProject() : PipelineRepositoryManager.GetInstance().createNewArcProjectForDummyProject(xsiType);
@@ -124,7 +124,7 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = {"/project/{projectId}"}, method = GET, restrictTo = Authenticated, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get a list of project-enabled pipelines for a given datatype (optional)")
-    public String getProjectPipelines(@PathVariable final String projectId, @RequestParam(value = "xsiType", required = false) final String xsiType) throws NotFoundException, InitializationException {
+    public String getProjectPipelines(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId, @RequestParam(value = "xsiType", required = false) final String xsiType) throws NotFoundException, InitializationException {
         final XnatProjectdata project = XnatProjectdata.getXnatProjectdatasById(projectId, getSessionUser(), false);
         if (project == null) {
             throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId);
@@ -157,7 +157,7 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = "/parameters", method = GET, restrictTo = Authenticated, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get the site-wide parameter details for the pipeline identified by its name; optionally pass the project id to get the project specific parameters")
-    public String getSitePipelineParameters(@RequestParam("pipelinename") final String pipelineName, @RequestParam(value = "project", required = false) final String projectId) throws InitializationException {
+    public String getSitePipelineParameters(@ApiParam(value = "Name of the pipeline") @RequestParam("pipelinename") final String pipelineName, @RequestParam(value = "project", required = false) final String projectId) throws InitializationException {
         final PipelineDetailsHelper pipelineDetailsHelper = new PipelineDetailsHelper(projectId);
         try {
             final Map<String, Object> pipelineDetails = pipelineDetailsHelper.getPipelineDetailsMap(pipelineName, true);
@@ -173,8 +173,8 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = {"/launch/{pipelineNameOrStep}"}, method = POST, restrictTo = Edit, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ApiOperation(value = "Resolve the parameters and launch the pipeline")
-    public PipelineLaunchReport launchPipelineWQueryParams(@RequestParam(value = "project", required = false) final String projectId,
-                                                           @PathVariable final String pipelineNameOrStep,
+    public PipelineLaunchReport launchPipelineWQueryParams(@ApiParam(value = "The ID of the project.") @RequestParam(value = "project", required = false) final String projectId,
+                                                           @ApiParam(value = "Name of the pipeline") @PathVariable final String pipelineNameOrStep,
                                                            final @RequestBody Map<String, String> allRequestParams) throws DataFormatException, NotFoundException {
         if (StringUtils.isNotBlank(projectId) && !Permissions.verifyProjectExists(_jdbcTemplate, projectId)) {
             throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME, projectId);
@@ -249,8 +249,8 @@ public class PipelineApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = {"/terminate/{pipelineNameOrStep}/project/{projectId}"}, method = POST, restrictTo = Edit,
                         produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public PipelineLaunchReport terminate(@PathVariable final String pipelineNameOrStep,
-                                          @PathVariable @Project final String projectId,
+    public PipelineLaunchReport terminate(@ApiParam(value = "Name of the pipeline") @PathVariable final String pipelineNameOrStep,
+                                          @ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
                                           final @RequestBody Map<String, String> allRequestParams) throws DataFormatException {
         log.debug("Terminating pipeline name or step {} for project {} with the following parameters: {}", pipelineNameOrStep, projectId, allRequestParams);
 
@@ -319,7 +319,7 @@ public class PipelineApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Not authorized to check AutoRun settings for the site or specified project."),
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = {"/autoRun", "/autoRun/projects/{projectId}"}, method = GET, restrictTo = Read, produces = MediaType.APPLICATION_JSON_VALUE)
-    public boolean isAutoRunEnabled(@PathVariable(required = false) @Project final String projectId) throws NotFoundException {
+    public boolean isAutoRunEnabled(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId) throws NotFoundException {
         final boolean isProjectSpecified = StringUtils.isNotBlank(projectId);
         if (isProjectSpecified) {
             if (!Permissions.verifyProjectExists(_jdbcTemplate, projectId)) {
@@ -338,7 +338,7 @@ public class PipelineApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Not authorized to modify AutoRun settings for the site or specified project."),
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = {"/autoRun", "/autoRun/projects/{projectId}"}, method = {PUT, POST}, restrictTo = Edit, consumes = MediaType.APPLICATION_JSON_VALUE)
-    public void setAutoRunEnabled(@PathVariable(required = false) @Project final String projectId, @RequestBody final boolean value) throws NotFoundException {
+    public void setAutoRunEnabled(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId, @RequestBody final boolean value) throws NotFoundException {
         final boolean isProjectSpecified = StringUtils.isNotBlank(projectId);
         if (isProjectSpecified) {
             if (!Permissions.verifyProjectExists(_jdbcTemplate, projectId)) {

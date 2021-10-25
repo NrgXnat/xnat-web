@@ -9,10 +9,7 @@
 
 package org.nrg.xapi.rest.schemas;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
@@ -62,7 +59,7 @@ public class SchemaOnlyApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "{namespace}/{schema:^[A-z0-9-_.]+\\.xsd$}", produces = APPLICATION_XML_VALUE, method = GET)
     // TODO: Eventually these should return XML Document objects that are appropriately converted. Spring doesn't have a converter for that by default.
-    public String getRequestedDataTypeSchema(@PathVariable("namespace") final String namespace, @PathVariable("schema") final String schema) throws NotFoundException {
+    public String getRequestedDataTypeSchema(@ApiParam("namespace")@PathVariable("The namespace value ") final String namespace,@ApiParam("The schema valuce") @PathVariable("schema") final String schema) throws NotFoundException {
         final String document = _schemaService.getSchemaContents(namespace, schema);
         if (StringUtils.isBlank(document)) {
             throw new NotFoundException("The requested schema \"" + getSchemaPath(namespace, schema) + "\" could not be found on this system");

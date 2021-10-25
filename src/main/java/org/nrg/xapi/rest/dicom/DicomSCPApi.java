@@ -79,7 +79,7 @@ public class DicomSCPApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "identifiers/{beanId}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET)
     @ResponseBody
-    public String getDicomObjectIdentifier(@PathVariable("beanId") String beanId) throws NotFoundException {
+    public String getDicomObjectIdentifier(@ApiParam(value = "The ID of the bean.") @PathVariable("beanId") String beanId) throws NotFoundException {
         // If they specified "default", then get the first bean in the list: they're sorted so that the default is first.
         if (StringUtils.equals("default", beanId)) {
             return _manager.getDefaultDicomObjectIdentifier().getClass().getName();
@@ -97,7 +97,7 @@ public class DicomSCPApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "identifiers/{beanId}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT, restrictTo = Admin)
     @ResponseBody
-    public void resetDicomObjectIdentifier(@PathVariable("beanId") String beanId) throws NotFoundException {
+    public void resetDicomObjectIdentifier(@ApiParam(value = "The ID of the bean.") @PathVariable("beanId") String beanId) throws NotFoundException {
         // If they specified "default", then get the first bean in the list: they're sorted so that the default is first.
         if (StringUtils.equals("default", beanId)) {
             _manager.resetDicomObjectIdentifier();

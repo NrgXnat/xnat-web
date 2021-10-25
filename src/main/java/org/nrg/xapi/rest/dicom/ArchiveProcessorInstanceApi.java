@@ -9,10 +9,7 @@
 
 package org.nrg.xapi.rest.dicom;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.dcm.scp.DicomSCPInstance;
 import org.nrg.dcm.scp.DicomSCPManager;
@@ -93,7 +90,7 @@ public class ArchiveProcessorInstanceApi extends AbstractXapiRestController {
             @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "site/id/{instanceId}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.PUT, restrictTo = Admin)
     @ResponseBody
-    public ResponseEntity<ArchiveProcessorInstance> updateSiteProcessor(@PathVariable("instanceId") final long instanceId, @RequestBody final ArchiveProcessorInstance processor) throws Exception {
+    public ResponseEntity<ArchiveProcessorInstance> updateSiteProcessor(@ApiParam(value = "The ID of the project.") @PathVariable("instanceId") final long instanceId, @RequestBody final ArchiveProcessorInstance processor) throws Exception {
         ArchiveProcessorInstance existingProcessor = _service.findSiteProcessorById(instanceId);
         if (existingProcessor == null) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);

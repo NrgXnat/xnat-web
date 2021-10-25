@@ -114,6 +114,7 @@ public class EventHandlerApi extends AbstractXapiRestController {
      *
      * @return the event handler
      */
+
     @XapiRequestMapping(value = {"/eventHandlers/{triggerId}"}, produces = {
             MediaType.APPLICATION_JSON_VALUE}, method = RequestMethod.GET)
     public ResponseEntity<ScriptTrigger> getEventHandler(@PathVariable final String triggerId) {

@@ -156,7 +156,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "/projects/{projectId}",  consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         						produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = PUT)
-    public XnatProjectdataI updateProject(@ApiParam("The ID of the project to be updated") @PathVariable final String projectId,
+    public XnatProjectdataI updateProject(@ApiParam("The ID of the project to be updated") 	 @PathVariable final String projectId,
                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdata project,
                                          @ApiParam("The filepath value ") @RequestParam(name = "filepath", required = false)String filepath,
                                          @ApiParam("The xsiType value ") @RequestParam(name = "xsiType", required = false)String xsiType,

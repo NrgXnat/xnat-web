@@ -88,7 +88,7 @@ public class AsyncOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{preference}", produces = APPLICATION_JSON_VALUE, restrictTo = Admin)
-    public String getAsyncOperationsPreference(@PathVariable final String preference) throws NotFoundException {
+    public String getAsyncOperationsPreference(@ApiParam("The preference value") @PathVariable final String preference) throws NotFoundException {
         log.info("User {} requested the value for the async operations preference {}.", getSessionUser().getUsername(), preference);
         final Properties properties = _preferences.asProperties();
         if (properties.containsKey(preference)) {
@@ -104,7 +104,7 @@ public class AsyncOperationsApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "{preference}", consumes = APPLICATION_JSON_VALUE, produces = APPLICATION_JSON_VALUE, method = POST, restrictTo = Admin)
-    public String getAsyncOperationsPreference(@PathVariable final String preference, final @RequestBody String value) throws NotFoundException {
+    public String getAsyncOperationsPreference(@ApiParam("The preference value") @PathVariable final String preference, final @RequestBody String value) throws NotFoundException {
         log.info("User {} is setting the value for the async operations preference {} to '{}'.", getSessionUser().getUsername(), preference, value);
         try {
             final String oldValue = _preferences.asProperties().getProperty(preference);
