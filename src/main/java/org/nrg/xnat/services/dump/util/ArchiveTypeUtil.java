@@ -11,6 +11,7 @@ import org.nrg.xdat.model.XnatImagesessiondataI;
 import org.nrg.xdat.model.XnatResourcecatalogI;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatImagesessiondata;
+import org.nrg.xdat.om.base.BaseXnatExperimentdata;
 import org.nrg.xft.exception.InvalidPermissionException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.prearchive.PrearcTableBuilder;
@@ -67,10 +68,10 @@ public class ArchiveTypeUtil {
             XnatImagesessiondataI retrieve(Env env, UserI user) throws Exception {
                 String project = (String) env.attrs.get("PROJECT_ID");
                 String experiment = (String) env.attrs.get("EXPT_ID");
-                XnatImagesessiondata x = (XnatImagesessiondata) XnatExperimentdata.GetExptByProjectIdentifier(project, experiment, user, false);
+                XnatImagesessiondataI x = (XnatImagesessiondataI) XnatExperimentdata.GetExptByProjectIdentifier(project, experiment, user, false);
                 if (x == null || null == x.getId()) {
-                    x = (XnatImagesessiondata) XnatExperimentdata.getXnatExperimentdatasById(experiment, user, false);
-                    if (x != null && !x.hasProject(project)) {
+                    x = (XnatImagesessiondataI) XnatExperimentdata.getXnatExperimentdatasById(experiment, user, false);
+                    if (x != null && !((BaseXnatExperimentdata)x).hasProject(project)) {
                         x = null;
                     }
                 }

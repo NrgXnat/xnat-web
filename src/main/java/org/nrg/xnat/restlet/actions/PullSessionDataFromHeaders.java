@@ -14,6 +14,7 @@ import org.apache.log4j.Logger;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatImagescandataI;
+import org.nrg.xdat.model.XnatImagesessiondataI;
 import org.nrg.xdat.om.*;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
@@ -47,8 +48,8 @@ public class PullSessionDataFromHeaders implements Callable<Boolean> {
 	private final boolean overwrite,isInPrearchive;
 	private final EventMetaI c;
 
-	public PullSessionDataFromHeaders(final XnatImagesessiondata mr, final UserI user, boolean allowDataDeletion, final boolean overwrite, final boolean isInPrearchive,EventMetaI c){
-		this.tempMR=mr;
+	public PullSessionDataFromHeaders(final XnatImagesessiondataI mr, final UserI user, boolean allowDataDeletion, final boolean overwrite, final boolean isInPrearchive, EventMetaI c){
+		this.tempMR= (XnatImagesessiondata) mr;
 		this.user=user;
 		this.allowDataDeletion=allowDataDeletion;
 		this.overwrite=overwrite;

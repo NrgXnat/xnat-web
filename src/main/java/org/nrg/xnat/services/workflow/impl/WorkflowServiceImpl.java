@@ -11,8 +11,10 @@ import org.nrg.pipeline.xmlbeans.workflow.WorkflowData;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xdat.model.WrkWorkflowdataI;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.security.helpers.Roles;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
@@ -64,7 +66,7 @@ public class WorkflowServiceImpl implements WorkflowService{
 	}
 
 	@Override
-	public void updateWorkflow(UserI user, String workflowId, WrkWorkflowdata workflowData) throws NotFoundException, InsufficientPrivilegesException, DataFormatException, ElementNotFoundException, FieldNotFoundException {
+	public void updateWorkflow(UserI user, String workflowId, WrkWorkflowdataI workflowData) throws NotFoundException, InsufficientPrivilegesException, DataFormatException, ElementNotFoundException, FieldNotFoundException {
 		 final WrkWorkflowdata workflow;
 		if (StringUtils.isNotBlank(workflowId)) {
 			 // Lookup the workflow by the ID provided by the user.
@@ -74,7 +76,7 @@ public class WorkflowServiceImpl implements WorkflowService{
             	throw new NotFoundException("Unable to find the specified workflow.");
             }
 		}else {
-			workflow = workflowData;
+			workflow = (WrkWorkflowdata) workflowData;
 		}
 		 // If the workflow exists, Make sure the user has permission to edit an existing workflow.
         if (workflow != null && !canUserEditWorkflow(user, workflow)) {
@@ -88,7 +90,7 @@ public class WorkflowServiceImpl implements WorkflowService{
 
         // Save the workflow
         try {
-        SaveItemHelper.authorizedSave(workflow, user, false, false, EventUtils.DEFAULT_EVENT(user, "Workflow Update"));
+        SaveItemHelper.authorizedSave((ItemI) workflow, user, false, false, EventUtils.DEFAULT_EVENT(user, "Workflow Update"));
         }catch (Exception e) {
         	log.error("You are not allowed to make changes to this workflow.");
 		}

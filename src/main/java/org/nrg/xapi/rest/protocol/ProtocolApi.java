@@ -12,8 +12,6 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.model.XnatDatatypeprotocolI;
 import org.nrg.xdat.model.XnatProjectdataI;
-import org.nrg.xdat.om.XnatDatatypeprotocol;
-import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.model.util.XnatEventUtil;

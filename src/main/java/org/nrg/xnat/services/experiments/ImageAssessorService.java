@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.model.XnatImageassessordataI;
-import org.nrg.xdat.om.XnatImageassessordata;
 import org.nrg.xft.security.UserI;
 
 public interface ImageAssessorService {

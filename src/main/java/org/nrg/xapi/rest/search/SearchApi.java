@@ -17,9 +17,8 @@ import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.model.XdatSearchI;
 import org.nrg.xdat.model.XdatStoredSearchI;
-import org.nrg.xdat.om.XdatSearch;
 import org.nrg.xdat.om.XdatStoredSearch;
-import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
@@ -101,7 +100,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     	return _searchService.findAllSearchElementsByElementName(getSessionUser(), elementName);
     }
     
-    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearch.class, responseContainer = "list")
+    @ApiOperation(value = "Gets the requested search element", notes = "Returns the  cdat search element", response = XdatSearchI.class, responseContainer = "list")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested SearchElementVersion."),
                    @ApiResponse(code = 404, message = "The requested SearchElementVersion wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
@@ -111,7 +110,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     	return _searchService.findSearchElementVersionByElementName(getSessionUser(), elementName).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, elementName));
     }
     
-    @ApiOperation(value = "Gets the requested saved search", notes = "Returns the  xdat saved search", response = XdatSearch.class, responseContainer = "single")
+    @ApiOperation(value = "Gets the requested saved search", notes = "Returns the  xdat saved search", response = XdatSearchI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested xdatSearch."),
     	 		   @ApiResponse(code = 400, message = "The requested projectId or searchId missing."),
                    @ApiResponse(code = 404, message = "The requested xdatSearch wasn't found."),
@@ -123,7 +122,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
     	return _searchService.findSavedSearchByProjectIdAndSearchId(getSessionUser(), projectId, searchId).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, projectId));
     }
     
-    @ApiOperation(value = "Update an existing search saved", notes = "Updates the submitted search saved.", response = XnatProjectdata.class)
+    @ApiOperation(value = "Update an existing search saved", notes = "Updates the submitted search saved.", response = XnatProjectdataI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the updated search saved."),
                    @ApiResponse(code = 403, message = "The user doesn't have permission to edit search saved in the specified search saved"),
                    @ApiResponse(code = 404, message = "The specified project doesn't exist"),

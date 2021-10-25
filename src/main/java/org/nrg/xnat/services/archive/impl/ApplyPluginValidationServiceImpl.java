@@ -3,7 +3,7 @@ package org.nrg.xnat.services.archive.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
-import org.nrg.xdat.om.XnatSubjectassessordata;
+import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.archive.ApplyPluginValidationService;
 import org.nrg.xnat.services.archive.SubjectAssessorValidationService;
@@ -27,7 +27,7 @@ public class ApplyPluginValidationServiceImpl implements ApplyPluginValidationSe
      * {@inheritDoc}
      */
     @Override
-    public void validate(XnatSubjectassessordata sad, Map<String, Object> parameters, UserI user)
+    public void validate(XnatSubjectassessordataI sad, Map<String, Object> parameters, UserI user)
             throws ServerException, ClientException {
         if (services == null || services.isEmpty()) {
             log.trace("No SubjectAssessorValidationService beans");

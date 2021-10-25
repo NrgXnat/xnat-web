@@ -1,5 +1,6 @@
 package org.nrg.xnat.services.archive;
 
+import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xdat.om.XnatSubjectassessordata;
 import org.nrg.xft.security.UserI;
 
@@ -16,5 +17,5 @@ public interface ApplyPluginLabelingService {
      * @return the label or null if not applicable to your plugin
      */
     @Nullable
-    String label(XnatSubjectassessordata sad, Map<String, Object> parameters, UserI user);
+    String label(XnatSubjectassessordataI sad, Map<String, Object> parameters, UserI user);
 }

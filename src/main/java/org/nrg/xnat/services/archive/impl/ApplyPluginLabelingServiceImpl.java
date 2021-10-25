@@ -1,7 +1,7 @@
 package org.nrg.xnat.services.archive.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.xdat.om.XnatSubjectassessordata;
+import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.archive.ApplyPluginLabelingService;
 import org.nrg.xnat.services.archive.SubjectAssessorLabelingService;
@@ -27,7 +27,7 @@ public class ApplyPluginLabelingServiceImpl implements ApplyPluginLabelingServic
      */
     @Override
     @Nullable
-    public String label(XnatSubjectassessordata sad, Map<String, Object> parameters, UserI user) {
+    public String label(XnatSubjectassessordataI sad, Map<String, Object> parameters, UserI user) {
         if (services == null || services.isEmpty()) {
             log.trace("No SubjectAssessorLabelingService beans");
             return null;

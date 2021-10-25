@@ -99,9 +99,9 @@ public class ImageAssessorServiceImpl implements ImageAssessorService {
 	        _user = user;
 	    }
 	    @Override
-	    public XnatImageassessordata mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
+	    public XnatImageassessordataI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 	        final String assessorId = resultSet.getString("id");
-	        XnatImageassessordata xnatImageassessordata = XnatImageassessordata.getXnatImageassessordatasById(assessorId, _user, false);
+	        XnatImageassessordataI xnatImageassessordata = XnatImageassessordata.getXnatImageassessordatasById(assessorId, _user, false);
 	        return xnatImageassessordata;
 	    }
 	    private final UserI _user;

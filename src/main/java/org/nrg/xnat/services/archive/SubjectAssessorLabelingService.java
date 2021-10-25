@@ -1,6 +1,6 @@
 package org.nrg.xnat.services.archive;
 
-import org.nrg.xdat.om.XnatSubjectassessordata;
+import org.nrg.xdat.model.XnatSubjectassessordataI;
 import org.nrg.xft.security.UserI;
 
 import javax.annotation.Nullable;
@@ -16,5 +16,5 @@ public interface SubjectAssessorLabelingService {
      * @return the label or null if not applicable to your plugin
      */
     @Nullable
-    String determineLabel(XnatSubjectassessordata sad, Map<String, Object> parameters, UserI user);
+    String determineLabel(XnatSubjectassessordataI sad, Map<String, Object> parameters, UserI user);
 }

@@ -13,8 +13,8 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.om.WrkWorkflowdata;
-import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.model.WrkWorkflowdataI;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -48,7 +48,7 @@ public class WorkflowApi extends AbstractXapiProjectRestController {
         _workflowService = workflowService;
     }
     
-    @ApiOperation(value = "Gets the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdatas", response = WrkWorkflowdata.class, responseContainer = "single")
+    @ApiOperation(value = "Gets the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdatas", response = WrkWorkflowdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested WrkWorkflowdatas."),
     	           @ApiResponse(code = 400, message = "The requested WrkWorkflowdata wasn't found."),
                    @ApiResponse(code = 404, message = "The requested WrkWorkflowdata wasn't found."),
@@ -59,18 +59,18 @@ public class WorkflowApi extends AbstractXapiProjectRestController {
         return _workflowService.findAllWrkWorkflowdata(getSessionUser());
     }
     
-    @ApiOperation(value = "Gets the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdata with the specified  ID", response = WrkWorkflowdata.class, responseContainer = "single")
+    @ApiOperation(value = "Gets the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdata with the specified  ID", response = WrkWorkflowdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested WrkWorkflowdatas."),
     	           @ApiResponse(code = 400, message = "The requested workflow Id wasn't found."),
                    @ApiResponse(code = 404, message = "The requested WrkWorkflowdata wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/workflows/{workflowId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public WrkWorkflowdata getWrkWorkflowdataById(@ApiParam(value = "The ID of the workflow Id.") @PathVariable final String workflowId) throws NotFoundException, DataFormatException {
+    public WrkWorkflowdataI getWrkWorkflowdataById(@ApiParam(value = "The ID of the workflow Id.") @PathVariable final String workflowId) throws NotFoundException, DataFormatException {
     	log.debug("User {} requested WrkWorkflowdata", getSessionUser().getUsername());
         return _workflowService.findWrkWorkflowdata(getSessionUser(), workflowId);
     }
     
-    @ApiOperation(value = "Update the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdata with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+    @ApiOperation(value = "Update the requested  WrkWorkflowdata", notes = "Returns the  WrkWorkflowdata with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested WrkWorkflowdata."),
     	           @ApiResponse(code = 400, message = "The requested workflowId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested WrkWorkflowdata wasn't found."),
@@ -78,7 +78,7 @@ public class WorkflowApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"/workflows/{workflowId}"}, produces = MediaType.APPLICATION_JSON_VALUE, method = PUT)
     public void updateScriptTriggers(
     		@ApiParam(value = "The ID of the entity.") @PathVariable(required = false) final String workflowId,
-    		@ApiParam(value = "The request body") @RequestBody WrkWorkflowdata workflowData) throws NotFoundException, InsufficientPrivilegesException, DataFormatException, ElementNotFoundException, FieldNotFoundException  {
+    		@ApiParam(value = "The request body") @RequestBody WrkWorkflowdataI workflowData) throws NotFoundException, InsufficientPrivilegesException, DataFormatException, ElementNotFoundException, FieldNotFoundException  {
     	log.debug("User {} requested automation handlers with ID {}", getSessionUser().getUsername(), workflowId);
     	_workflowService.updateWorkflow(getSessionUser(), workflowId, workflowData);
     }

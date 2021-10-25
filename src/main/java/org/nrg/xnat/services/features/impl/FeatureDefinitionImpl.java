@@ -9,7 +9,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.model.FeatureDefinitionDto;
 import org.nrg.xapi.model.FeatureDefinitionUserGroupDto;
 import org.nrg.xapi.model.FeatureUserGroupDto;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.UserGroupI;
 import org.nrg.xdat.security.helpers.FeatureDefinitionI;
 import org.nrg.xdat.security.helpers.Features;
@@ -107,9 +109,9 @@ public class FeatureDefinitionImpl<T> implements FeatureDefinitionService<T>{
     	Collection<String> siteWideBanned=Features.getBannedFeatures();
     	List<FeatureDefinitionUserGroupDto> groups = new ArrayList<>();
     	for(String tag:tags){
-    		XnatProjectdata proj=XnatProjectdata.getProjectByIDorAlias(tag, user, false);
+    		XnatProjectdataI proj=XnatProjectdata.getProjectByIDorAlias(tag, user, false);
     		List<FeatureUserGroupDto> group = new ArrayList<>();
-    		for(List gID:proj.getGroupIDs()){
+    		for(List gID:((BaseXnatProjectdata)proj).getGroupIDs()){
     			UserGroupI ug=Groups.getGroup((String)gID.get(0));
     			group.add(FeatureUserGroupDto.builder()
     					.id(ug.getId())

@@ -15,10 +15,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xapi.exceptions.*;
 import org.nrg.xapi.model.xft.Investigator;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.model.XnatInvestigatordataI;
 import org.nrg.xdat.om.XnatInvestigatordata;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.services.DataTypeAwareEventService;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.XftItemEvent;
@@ -172,7 +174,7 @@ public class DefaultInvestigatorService implements InvestigatorService {
      */
     @Override
     public Investigator updateInvestigator(final int investigatorId, final Investigator investigator, final UserI user) throws NotFoundException, InitializationException, XftItemException {
-        final XnatInvestigatordata existing = XnatInvestigatordata.getXnatInvestigatordatasByXnatInvestigatordataId(investigatorId, user, false);
+        final XnatInvestigatordataI existing = XnatInvestigatordata.getXnatInvestigatordatasByXnatInvestigatordataId(investigatorId, user, false);
         if (existing == null) {
             throw createNotFoundException(investigatorId);
         }
@@ -214,7 +216,7 @@ public class DefaultInvestigatorService implements InvestigatorService {
 
         final boolean saved;
         try {
-            saved = SaveItemHelper.authorizedSave(existing, user, false, false, EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.REST, EventUtils.MODIFY_INVESTTGATOR, EventUtils.MODIFY_INVESTTGATOR, EventUtils.MODIFY_INVESTTGATOR));
+            saved = SaveItemHelper.authorizedSave((ItemI) existing, user, false, false, EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.REST, EventUtils.MODIFY_INVESTTGATOR, EventUtils.MODIFY_INVESTTGATOR, EventUtils.MODIFY_INVESTTGATOR));
         } catch (Exception e) {
             throw createServiceException(investigator, "save", e);
         }
@@ -224,7 +226,7 @@ public class DefaultInvestigatorService implements InvestigatorService {
         }
 
 //        XDAT.triggerXftItemEvent(existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
-        _eventService.triggerXftItemEvent(existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
+        _eventService.triggerXftItemEvent((BaseElement) existing, XftItemEventI.UPDATE, getInvestigatorEventProperties(investigatorId));
         return getInvestigator(investigator.getFirstname(), investigator.getLastname());
     }
 

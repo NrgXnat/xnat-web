@@ -12,7 +12,8 @@ import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.om.XnatProjectdata;
+//import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.event.util.ImportEventHandlerResults;
@@ -44,7 +45,7 @@ public class AutoHandlerScriptTriggerApi<T> extends AbstractXapiProjectRestContr
         _scriptTriggerService = scriptTriggerService;
     }
 	
-	@ApiOperation(value = "Gets the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Gets the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested handlers wasn't found."),
@@ -61,7 +62,7 @@ public class AutoHandlerScriptTriggerApi<T> extends AbstractXapiProjectRestContr
         return _scriptTriggerService.findScriptTrigger(getSessionUser(), entityId, projectId,triggerId,eventId,id);
     }
 	
-	@ApiOperation(value = "Update the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Update the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested handlers wasn't found."),
@@ -79,7 +80,7 @@ public class AutoHandlerScriptTriggerApi<T> extends AbstractXapiProjectRestContr
          _scriptTriggerService.update(getSessionUser(), projectId, triggerId,eventId,id, results);
     }
 	
-	@ApiOperation(value = "Delete the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdata.class, responseContainer = "single")
+	@ApiOperation(value = "Delete the requested  handlers", notes = "Returns the  handlers with the specified ID", response = XnatProjectdataI.class, responseContainer = "single")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested handlers."),
     	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested handlers wasn't found."),
