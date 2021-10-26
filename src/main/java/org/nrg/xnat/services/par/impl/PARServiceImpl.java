@@ -51,7 +51,7 @@ public class PARServiceImpl implements PARService {
 		}
 		ProjectAccessRequest par = ProjectAccessRequest.RequestPARById(parId, user);
 		if(Objects.isNull(par)) {
-    		throw new  NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
+    		throw new NotFoundException(XnatProjectdata.SCHEMA_ELEMENT_NAME) ;
 		}
 		return Optional.of(par);
 	}

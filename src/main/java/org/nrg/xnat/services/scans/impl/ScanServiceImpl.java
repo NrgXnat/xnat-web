@@ -172,10 +172,8 @@ public class ScanServiceImpl implements ScanService {
 	}
 	
 	@Override
-	public String findAllScanQualityLable(UserI user, String projectId) throws InitializationException {
-		if (log.isDebugEnabled()) {
-			log.debug("Entering the scan quality label represent() method");
-		}
+	public String findAllScanQualityLabel(UserI user, String projectId) throws InitializationException {
+		log.debug("Entering the scan quality label represent() method");
 		try {
 			List<String> labels = ScanQualityUtils.getQualityLabels(projectId, user);
 			JSONObject json = new JSONObject();

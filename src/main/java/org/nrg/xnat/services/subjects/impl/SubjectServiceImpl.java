@@ -113,16 +113,19 @@ public class SubjectServiceImpl implements SubjectService {
     }
     
     @Override
-    public void deleteById(final UserI user, final String subjectId, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException {
-        
+    public void deleteById(final UserI user, final String subjectId, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException {
     	delete(user, findById(user, subjectId).isPresent()? (XnatSubjectdata) findById(user, subjectId).get() :null, removeFiles, event);
     }
 
-    public void delete(final UserI user, final XnatSubjectdataI subject, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException, org.nrg.framework.exceptions.NotFoundException {
+    public void delete(final UserI user, final XnatSubjectdataI subject, boolean removeFiles, XnatEventUtil event) throws ClientException, DataFormatException, NotFoundException, InitializationException, InsufficientPrivilegesException {
         log.debug("User {} is deleting the subject {} in the project {}", user.getUsername(), subject.getLabel(), subject.getProject());
         if(Objects.nonNull(subject)) {
         	SecureResourceUtil secureResoureUtil = new SecureResourceUtil();
-        	secureResoureUtil.deleteItem((XnatProjectdata) _projectService.findById(user, subject.getProject()).get(), (BaseElement) subject, removeFiles, user, event);
+			try {
+				secureResoureUtil.deleteItem(_projectService.findById(user, subject.getProject()).get(), (BaseElement) subject, removeFiles, user, event);
+			} catch (org.nrg.framework.exceptions.NotFoundException e) {
+				throw new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME, subject.getId());
+			}
 		} else {
 			throw new NotFoundException(XnatSubjectdata.SCHEMA_ELEMENT_NAME);
 		}
