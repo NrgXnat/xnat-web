@@ -61,7 +61,7 @@ public class UserApi extends AbstractXapiProjectRestController {
 		
 	}
 	
-	
+
 	@ApiOperation(value = "Gets the requested  users", notes = "Returns the  users with the specified projectId", response = XdatUsergroup.class, responseContainer = "List")
 	@ApiResponses({ @ApiResponse(code = 200, message = "Returns the requested user groups."),
 					@ApiResponse(code = 400, message = "The requested projectId wasn't found."),

@@ -10,10 +10,7 @@
 package org.nrg.xapi.rest.settings;
 
 import com.google.common.collect.ImmutableMap;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -85,7 +82,7 @@ public class LoggingApi extends AbstractXapiRestController {
                    @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "configs/{resourceId}", produces = APPLICATION_XML_VALUE, method = GET, restrictTo = Admin)
-    public String getLoggingConfiguration(@PathVariable final String resourceId) throws NotFoundException, IOException {
+    public String getLoggingConfiguration(@ApiParam("The resource id value ") @PathVariable final String resourceId) throws NotFoundException, IOException {
         final String configuration = _logging.getConfigurationResource(resourceId);
         if (StringUtils.isBlank(configuration)) {
             throw new NotFoundException("Couldn't find a logging configuration matching resource ID \"" + resourceId + "\"");
@@ -118,7 +115,7 @@ public class LoggingApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "The user is not authorized to access one or more of the specified resources."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "download/{logFileSpec}", produces = MEDIA_TYPE, method = GET, restrictTo = Admin)
-    public ResponseEntity<StreamingResponseBody> downloadLogFiles(@PathVariable final String logFileSpec) throws IOException {
+    public ResponseEntity<StreamingResponseBody> downloadLogFiles(@ApiParam(value = "The logFileSpec value.") @PathVariable final String logFileSpec) throws IOException {
         return downloadLogFiles(ImmutableMap.of("logFileSpec", logFileSpec));
     }
 

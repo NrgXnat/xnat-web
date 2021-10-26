@@ -10,10 +10,7 @@
 package org.nrg.xapi.rest.settings;
 
 import com.google.common.collect.Maps;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.nrg.framework.annotations.XapiRestController;
@@ -101,7 +98,7 @@ public class PreferencesApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "ini/{toolId}", produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-    public ResponseEntity<String> getPreferenceSettingsIni(@PathVariable final String toolId) throws NotFoundException {
+    public ResponseEntity<String> getPreferenceSettingsIni(@ApiParam("The tool id value ") @PathVariable final String toolId) throws NotFoundException {
         if (!_preferences.containsKey(toolId)) {
             throw new NotFoundException("There is no tool with ID " + toolId + " in this system.");
         }
@@ -127,7 +124,7 @@ public class PreferencesApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "props/{toolId}", produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-    public ResponseEntity<Properties> getToolPreferences(@PathVariable final String toolId) throws NotFoundException {
+    public ResponseEntity<Properties> getToolPreferences(@ApiParam("The tool id value ") @PathVariable final String toolId) throws NotFoundException {
         if (!_preferences.containsKey(toolId)) {
             throw new NotFoundException("There is no tool with ID " + toolId + " in this system.");
         }
@@ -143,7 +140,7 @@ public class PreferencesApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "props/{toolId}/{preference}", produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.GET, restrictTo = Admin)
-    public ResponseEntity<String> getToolPreference(@PathVariable final String toolId, @PathVariable final String preference) throws NotFoundException {
+    public ResponseEntity<String> getToolPreference(@ApiParam("The tool id value ") @PathVariable final String toolId, @ApiParam("The preference value ") @PathVariable final String preference) throws NotFoundException {
         if (!_preferences.containsKey(toolId)) {
             throw new NotFoundException("There is no tool with ID " + toolId + " in this system.");
         }
@@ -163,7 +160,7 @@ public class PreferencesApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "Tool ID not found in the system."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "props/{toolId}/{preference}", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.PUT, restrictTo = Admin)
-    public ResponseEntity<Void> setToolPreference(@PathVariable final String toolId, @PathVariable final String preference, final @RequestBody String value) throws NotFoundException {
+    public ResponseEntity<Void> setToolPreference(@ApiParam("The tool id value ") @PathVariable final String toolId, @PathVariable final String preference, final @RequestBody String value) throws NotFoundException {
         if (!_preferences.containsKey(toolId)) {
             throw new NotFoundException("There is no tool with ID " + toolId + " in this system.");
         }

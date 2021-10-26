@@ -155,7 +155,7 @@ public class SiteConfigApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "values/{preferences}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Authorizer)
     @AuthDelegate(SiteConfigPreferenceXapiAuthorization.class)
-    public Map<String, Object> getSpecifiedSiteConfigProperties(@PathVariable final List<String> preferences) {
+    public Map<String, Object> getSpecifiedSiteConfigProperties(@ApiParam("The preferences value ") @PathVariable final List<String> preferences) {
         log.debug("User {} requested the site configuration preferences {}", getSessionUser().getUsername(), StringUtils.join(preferences, ", "));
         return _preferences.keySet().stream().filter(preferences::contains).collect(Collectors.toMap(Function.identity(), _preferences::get));
     }

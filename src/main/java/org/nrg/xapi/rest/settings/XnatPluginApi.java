@@ -9,10 +9,7 @@
 
 package org.nrg.xapi.rest.settings;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
@@ -66,7 +63,7 @@ public class XnatPluginApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "{plugin}", produces = {MediaType.APPLICATION_JSON_VALUE}, method = {RequestMethod.GET})
-    public XnatPluginBean getRequestedPlugin(@PathVariable("plugin") final String plugin) throws NotFoundException {
+    public XnatPluginBean getRequestedPlugin(@ApiParam("The plugin value ") @PathVariable("plugin") final String plugin) throws NotFoundException {
         if (!getPlugins().containsKey(plugin)) {
             throw new NotFoundException("No plugin with ID " + plugin + " could be found on this system");
         }

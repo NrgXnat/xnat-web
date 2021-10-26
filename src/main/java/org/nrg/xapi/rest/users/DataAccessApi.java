@@ -48,7 +48,7 @@ import static org.springframework.web.bind.annotation.RequestMethod.*;
 @XapiRestController
 @RequestMapping(value = "/access")
 @Slf4j
-public class DataAccessApi extends AbstractXapiRestController {
+public class        DataAccessApi extends AbstractXapiRestController {
     public static final String BROWSEABLE                = "browseable";
     public static final String BROWSEABLE_CREATEABLE     = "browseableCreateable";
     public static final String BROWSEABLE_CREATABLE      = "browseableCreatable";
