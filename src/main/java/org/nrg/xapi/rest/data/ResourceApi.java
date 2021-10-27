@@ -14,9 +14,9 @@ import org.nrg.xapi.model.TriageDto;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.model.XnatAbstractresourceI;
+import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.model.XnatResourcecatalogI;
 import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -274,7 +274,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                                @ApiParam("The format value ") @RequestParam(name = "format", required = false) String format,
                                                @ApiParam("The content value ") @RequestParam(name = "content", required = false) String content,
                                                @ApiParam("The tags value ") @RequestParam(name = "tags", required = false) String[] tags,
-                                               @RequestBody final XnatResource xnatResource) throws DataFormatException, NotFoundException, ResourceAlreadyExistsException {
+                                               @RequestBody final XnatResourceI xnatResource) throws DataFormatException, NotFoundException, ResourceAlreadyExistsException {
         log.debug("Creating  resource with project ID {}", projectId);
 
         if (StringUtils.isNotBlank(label) && !StringUtils.equals(xnatResource.getLabel(), label)) {
@@ -626,9 +626,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested  Triage resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/services/triage/projects/{projectId}/resources",
-                                 "/services/triage/{projectId}/resources/{xName}",
-                                 "/services/triage/{projectId}/resources/{xName}/files",
-                                 "/services/triage/{projectId}/resources/{xName}/files/{file}"},
+                                 "/services/triage/projects/{projectId}/resources/{xName}",
+                                 "/services/triage/projects/{projectId}/resources/{xName}/files",
+                                 "/services/triage/projects/{projectId}/resources/{xName}/files/{file}"},
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
     public void createTriage(@ApiParam("The ID of the project ") @PathVariable final String projectId,

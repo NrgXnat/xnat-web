@@ -446,7 +446,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * create new resource catalog
 	 */
 	@Override
-	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResource xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
+	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResourceI xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
@@ -468,7 +468,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		XFTItem item;
 		XnatTemplateUtil xnatTemplateUtil = new XnatTemplateUtil();
 		try {
-			item = xnatResource.getItem();
+			item = ((BaseElement) xnatResource).getItem();
 			if (item == null)
 				throw new DataFormatException("Need POST Contents");
 

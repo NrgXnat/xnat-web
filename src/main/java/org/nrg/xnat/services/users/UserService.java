@@ -8,16 +8,16 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xdat.model.XdatUsergroupI;
-import org.nrg.xdat.om.XdatUsergroup;
+import org.nrg.xdat.om.XdatUsergroupI;
 import org.nrg.xft.db.FavEntries;
 import org.nrg.xft.security.UserI;
 
+// TODO: Major issue here: there are TWO XdatUsergroupI interfaces, org.nrg.xdat.model.XdatUsergroupI and org.nrg.xdat.om.XdatUsergroupI. XdatUsergroup actually implements the latter.
 public interface UserService {
 
-	 List<XdatUsergroup> findByProject(UserI user, String projectId) throws DataFormatException, NotFoundException;
+	 List<XdatUsergroupI> findByProject(UserI user, String projectId) throws DataFormatException, NotFoundException;
 
-	 List<XdatUsergroup> findUserGroupByProject(UserI sessionUser, String projectId) throws DataFormatException, NotFoundException;
+	 List<XdatUsergroupI> findUserGroupByProject(UserI sessionUser, String projectId) throws DataFormatException, NotFoundException;
 	
 	 Optional<XdatUsergroupI> findUserGroupByGroupIdAndProject(UserI sessionUser, String groupId, String projectId) throws DataFormatException, NotFoundException;
 
@@ -31,7 +31,7 @@ public interface UserService {
 	 
 	 void deleteByGroupIdAndProject(UserI sessionUser, String groupId, String projectId, String displayName) throws DataFormatException, NotFoundException;
 	 
-	 void updateByGroupIdAndProject(UserI user, XdatUsergroup group, String groupId, String projectId, Map<String, Object> groupProperties) throws InitializationException, DataFormatException;
+	 void updateByGroupIdAndProject(UserI user, XdatUsergroupI group, String groupId, String projectId, Map<String, Object> groupProperties) throws InitializationException, DataFormatException;
 
 	 //Session Count Service
 	 Integer findSessionCount(UserI user, String userName) throws DataFormatException, InsufficientPrivilegesException;

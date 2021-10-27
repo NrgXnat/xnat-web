@@ -12,6 +12,7 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.AuthDelegate;
 import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.model.ArcProjectI;
 import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -99,7 +100,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = PUT, restrictTo = AccessLevel.Edit)
     public XnatProjectdataI updateProject(@ApiParam("The ID of the project to be updated") @PathVariable @Project final String projectId,
-                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdata project,
+                                          @ApiParam("The project to be updated.") @RequestBody final XnatProjectdataI project,
                                           @ApiParam("The filepath value ") @RequestParam(required = false) String filepath,
                                           @ApiParam("The xsiType value ") @RequestParam(required = false) String xsiType,
                                           @ApiParam("The data allow to be delete") @RequestParam(defaultValue = "false") boolean allowDataDeletion,
@@ -109,9 +110,9 @@ public class ProjectApi extends AbstractXapiProjectRestController {
                                           @ApiParam("The event id value ") @RequestParam(required = false) String eventId,
                                           @ApiParam("The event type value ") @RequestParam(required = false) String eventType,
                                           @ApiParam("The event  action value ") @RequestParam(required = false) String eventAction,
-                                          @ApiParam("The event comment value ") @RequestParam(required = false) String eventComment) throws InsufficientPrivilegesException, InitializationException, Exception {
+                                          @ApiParam("The event comment value ") @RequestParam(required = false) String eventComment) throws Exception {
         if (!StringUtils.equals(projectId, project.getId())) {
-            throw new DataFormatException("You specified the project " + projectId + " in your request but the project ID is " + project.getProject() + ". These values must be the same.");
+            throw new DataFormatException("You specified the project " + projectId + " in your request but the project ID is " + project.getId() + ". These values must be the same.");
         }
         log.debug("User {} requested to update project with ID {}", getSessionUser().getUsername(), project.getId());
         return _projectService.update(getSessionUser(), project, filepath, allowDataDeletion, accessibility, testHyphen, xsiType, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment));
@@ -192,13 +193,13 @@ public class ProjectApi extends AbstractXapiProjectRestController {
         return _parService.update(getSessionUser(), projectAccessRequest, parId, accept, decline, XnatEventUtil.getXnatEventUtil(eventType, eventReason, eventId, eventAction, eventComment));
     }
 
-    @ApiOperation(value = "Gets the requested arc project", notes = "Returns the arc project for the project with the specified ID", response = ArcProject.class)
+    @ApiOperation(value = "Gets the requested arc project", notes = "Returns the arc project for the project with the specified ID", response = ArcProjectI.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
                    @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested arc project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/projects/{projectId}/archive_spec", "/config/{projectId}/archive_spec"}, produces = MediaType.APPLICATION_XML_VALUE, method = GET, restrictTo = AccessLevel.Read)
-    public ArcProject getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId) throws NotFoundException, DataFormatException {
+    public ArcProjectI getProjectById(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId) throws NotFoundException, DataFormatException {
         log.debug("Controller Api- get project by ID {}", projectId);
         return _projectService.findArcProjectByProjectId(getSessionUser(), projectId).orElseThrow(() -> new NotFoundException(ArcProject.SCHEMA_ELEMENT_NAME, projectId));
     }
