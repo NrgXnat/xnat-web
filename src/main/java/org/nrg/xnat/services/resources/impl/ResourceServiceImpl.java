@@ -349,13 +349,13 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 */
 	@Override
 	public List<XnatAbstractresource> findByExperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
-		List<XnatAbstractresource> resources = new ArrayList<>();
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
 		if(StringUtils.isBlank(assessorId)) {
     		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
 		}
+		final List<XnatAbstractresource> resources;
 		if(Objects.nonNull(type) && !type.isEmpty()) {
 			resources  = getXnatAbstractResourceData(user, null, null, experimentId, assessorId, null, type);
 		}else {
@@ -373,7 +373,6 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 */
 	@Override
 	public Optional<XnatAbstractresource> findByExperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException  {
-		XnatAbstractresource resource = null;
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
@@ -383,6 +382,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resourceId)) {
     		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
 		}
+		final XnatAbstractresource resource;
 		if(Objects.nonNull(type) && !type.isEmpty())
 			resource = getXnatResource(user, experimentId, assessedId, type, resourceId);
 		else 
@@ -398,20 +398,19 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessorId, String scanId) throws DataFormatException, NotFoundException {
-		List<XnatAbstractresource> resources = new ArrayList<>();
 		if(StringUtils.isBlank(projectId)) {
-    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid project ID when calling this method");
 		}
 		if(StringUtils.isBlank(subjectId)) {
-    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid subject ID when calling this method");
 		}
 		if(StringUtils.isBlank(assessorId)) {
-    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid assessor ID when calling this method");
 		}
 		if(Objects.isNull(scanId)) {
-    		throw new DataFormatException("The requested scan ID "+ scanId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid scan ID when calling this method");
 		}
-		resources = getXnatAbstractResourceData(user, projectId, subjectId, null, assessorId, scanId, null);
+		final List<XnatAbstractresource> resources = getXnatAbstractResourceData(user, projectId, subjectId, null, assessorId, scanId, null);
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, scanId) ;
 		}
@@ -423,20 +422,19 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 */
 	@Override
 	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
-		List<XnatAbstractresource> resources = new ArrayList<>();
 		if(StringUtils.isBlank(projectId)) {
-    		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid project ID when calling this method");
 		}
 		if(StringUtils.isBlank(subjectId)) {
-    		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid subject ID when calling this method");
 		}
 		if(StringUtils.isBlank(experimentId)) {
-    		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid experiment ID when calling this method");
 		}
 		if(StringUtils.isBlank(assessorId)) {
-    		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
+    		throw new DataFormatException("You must specify a valid assessor ID when calling this method");
 		}
-		resources = getXnatAbstractResourceData(user, projectId, subjectId, experimentId, assessorId, null, type);
+		final List<XnatAbstractresource> resources = getXnatAbstractResourceData(user, projectId, subjectId, experimentId, assessorId, null, type);
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
@@ -1135,7 +1133,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName,HttpServletRequest request, String compression) throws Exception {
+	public void findTriageFilesByProjectIdAndXname(UserI user, String projectId, String xName,HttpServletRequest request, String compression) throws Exception {
 		String projectPath = TriageUtils.getTriageProjectPath(projectId);
 		MediaType mt = MediaType.parseMediaType(request.getContentType());
 		XnatProjectdataI proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
@@ -1173,7 +1171,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public void create(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String event_reason, String extract, HttpServletRequest request) {
+	public void create(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String extract, HttpServletRequest request) {
 		try {
 			String projectPath = TriageUtils.getTriageUploadsPath();
 			if (projectId == null) {
@@ -1184,10 +1182,10 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 				if (xname == null && file == null) {
 					// fail(Status.CLIENT_ERROR_BAD_REQUEST,"Invalid Operation.");
 				} else if (xname != null && file == null) {
-					uploadTriageFile(projectPath, xname, null, inbody, target, overwrite, format, content, event_reason,
+					uploadTriageFile(projectPath, xname, null, inbody, target, overwrite, format, content, eventReason,
 							extract, request, user);
 				} else if (xname != null && file != null) {
-					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, event_reason, extract, request, user);
+					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, eventReason, extract, request, user);
 				}
 				openworkflow(true, "Upload Quarantine Files", eventReason, eventComment, user, projectId);
 
@@ -1206,7 +1204,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * 
 	 */
 	@Override
-	public void updte(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String event_reason, String extract, HttpServletRequest request) {
+	public void update(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId, String target, boolean inbody, String overwrite, String format, String content, String extract, HttpServletRequest request) {
 		try {
 			String projectPath = TriageUtils.getTriageUploadsPath();
 			if (projectId == null) {
@@ -1221,7 +1219,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 					// uploadTriageFile(projectPath,xname, null,
 					// inbody,target,overwrite,format,content,event_reason,extract, request,user);
 				} else if (xname != null && file != null) {
-					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, event_reason, extract, request, user);
+					uploadTriageFile(projectPath, getxName(projectId, request), file, inbody, target, overwrite, format, content, eventReason, extract, request, user);
 				}
 				openworkflow(true, "Upload Quarantine Files", "Upload Quarantine Files", "Upload Quarantine Files",
 						user, projectId);

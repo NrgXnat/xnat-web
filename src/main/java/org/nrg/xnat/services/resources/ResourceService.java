@@ -29,6 +29,7 @@ import org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileChara
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+@SuppressWarnings("DuplicateThrows")
 public interface ResourceService {
 	
 	 /** Start Resource Service Methods*/
@@ -65,7 +66,7 @@ public interface ResourceService {
 	 void delete(UserI user, String projectId, String subjectId, String experimentId,String assessorId,String scanId,String type, String resourceId,XnatEventUtil event);
 
 	 List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessedId, String scanId) throws DataFormatException, NotFoundException;
-	 /** End Resource Service Methods*/
+	 /* End Resource Service Methods*/
 	 
 	 
 	 /** Start DIR Resource Service Methods
@@ -115,14 +116,14 @@ public interface ResourceService {
 	 /** Start Triage Service Methods*/
 	 List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
 		
-	void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
+	void findTriageFilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
 
 	void findTriageByProjectIdAndXname(UserI user, String projectId, String xName,String file, HttpServletRequest request, String compression) throws InvalidItemException, NotFoundException, InsufficientPrivilegesException, ActionException, Exception;
 
 	void deleteTriage(UserI user, String projectId, String xname, String file, String eventReason, String eventComment, String eventId);
 
-	void create(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request);
+	void create(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String extract,HttpServletRequest request);
 
-	void updte(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String event_reason,String extract,HttpServletRequest request); 
+	void update(UserI user, String projectId, String xname, String file,String eventReason, String eventComment, String eventId,String target,boolean inbody, String overwrite,String format,String content,String extract,HttpServletRequest request);
 	 /** End Triage Service Methods*/
 }
