@@ -21,6 +21,7 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
+import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.helpers.merge.AnonUtils;
@@ -106,7 +107,7 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "Insufficient permissions to access the project-specific anonymization script."),
                    @ApiResponse(code = 404, message = "The specified project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{projectId}", produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.GET, restrictTo = Read)
+    @XapiRequestMapping(value = "projects/{projectId}", produces = MediaType.TEXT_PLAIN_VALUE, method = RequestMethod.GET, restrictTo = AccessLevel.Read)
     @ResponseBody
     public ResponseEntity<String> getProjectAnonScript(@PathVariable("projectId") @Project final String projectId) throws NrgServiceException, NoContentException {
         final String script = _anonUtils.getProjectScript(projectId);
@@ -140,7 +141,7 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the status of the project-specific anonymization script."),
                    @ApiResponse(code = 403, message = "Insufficient permissions to access the project-specific anonymization script settings."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "projects/{projectId}/enabled", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Read)
+    @XapiRequestMapping(value = "projects/{projectId}/enabled", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = AccessLevel.Read)
     public ResponseEntity<Boolean> isProjectAnonScriptEnabled(@ApiParam(value = "The ID of the project.") @PathVariable("projectId") @Project final String projectId) {
         return new ResponseEntity<>(_anonUtils.isProjectScriptEnabled(projectId), HttpStatus.OK);
     }

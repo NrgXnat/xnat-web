@@ -1,34 +1,28 @@
 package org.nrg.xnat.services.resources;
 
-import java.util.List;
-import java.util.Optional;
-
-import javax.servlet.http.HttpServletRequest;
-
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
-import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotAuthenticatedException;
-import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.exceptions.*;
+import org.nrg.xapi.model.DIRResource;
+import org.nrg.xapi.model.ResourceFile;
 import org.nrg.xapi.model.TriageDto;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatResource;
 import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xapi.model.ResourceFile;
-import org.nrg.xapi.model.DIRResource;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.resources.impl.ResourceServiceImpl.InvalidFileCharacters;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Optional;
 
 @SuppressWarnings("DuplicateThrows")
 public interface ResourceService {

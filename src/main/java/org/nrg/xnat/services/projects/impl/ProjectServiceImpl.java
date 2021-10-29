@@ -1,19 +1,12 @@
 package org.nrg.xnat.services.projects.impl;
 
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.nrg.action.ActionException;
 import org.nrg.config.exceptions.ConfigServiceException;
-import org.nrg.framework.services.ContextService;
-import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
-import org.nrg.xdat.XDAT;
+import org.nrg.xapi.exceptions.*;
 import org.nrg.xdat.model.ArcProjectI;
 import org.nrg.xdat.model.XnatProjectdataI;
 import org.nrg.xdat.om.ArcProject;
@@ -56,9 +49,9 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 
-import static org.nrg.xdat.om.base.auto.AutoXnatProjectdata.SCHEMA_ELEMENT_NAME;
-
 import java.util.*;
+
+import static org.nrg.xdat.om.base.auto.AutoXnatProjectdata.SCHEMA_ELEMENT_NAME;
 
 @Service
 @Slf4j
@@ -233,7 +226,7 @@ public class ProjectServiceImpl implements ProjectService {
 	}
 
 	@Override
-	public Optional<ArcProject> findArcProjectByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException {
+	public Optional<ArcProjectI> findArcProjectByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID " + projectId+ "wasn't found ");
 		}

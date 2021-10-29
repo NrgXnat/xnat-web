@@ -178,7 +178,7 @@ public class ProjectApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/pars/{parId}",
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = PUT, restrictTo = AccessLevel.Authorizer)
+                        method = PUT, restrictTo = AccessLevel.Edit)
     @AuthDelegate(ProjectAccessRequestXapiAuthorization.class)
     public ProjectAccessRequest updateProjectAccessRequest(@ApiParam("The ID of the project to be updated") @PathVariable final int parId,
                                                            @ApiParam("The ID of the project to be updated") @RequestParam final String accept,

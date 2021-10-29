@@ -79,6 +79,15 @@ public class UsersApi extends AbstractXapiRestController {
         _siteConfig = siteConfig;
     }
 
+
+
+    /**
+     * Get the list of all User in XNAT system
+     *
+     * @return
+     * @throws NotFoundException
+     */
+
     @ApiOperation(value = "Get list of users.",
                   notes = "The primary users function returns a list of all users of the XNAT system. This includes just the username and nothing else. You can retrieve a particular user by adding the username to the REST API URL or a list of users with abbreviated user profiles by calling /xapi/users/profiles.",
                   responseContainer = "List",

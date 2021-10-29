@@ -6,7 +6,6 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.framework.services.ContextService;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;

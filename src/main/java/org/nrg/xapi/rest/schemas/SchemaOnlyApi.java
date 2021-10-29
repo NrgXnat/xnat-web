@@ -59,7 +59,7 @@ public class SchemaOnlyApi extends AbstractXapiRestController {
                    @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "{namespace}/{schema:^[A-z0-9-_.]+\\.xsd$}", produces = APPLICATION_XML_VALUE, method = GET)
     // TODO: Eventually these should return XML Document objects that are appropriately converted. Spring doesn't have a converter for that by default.
-    public String getRequestedDataTypeSchema(@ApiParam("namespace")@PathVariable("The namespace value ") final String namespace,@ApiParam("The schema valuce") @PathVariable("schema") final String schema) throws NotFoundException {
+    public String getRequestedDataTypeSchema(@ApiParam("The namespace value ")@PathVariable("namespace") final String namespace,@ApiParam("The schema valuce") @PathVariable("schema") final String schema) throws NotFoundException {
         final String document = _schemaService.getSchemaContents(namespace, schema);
         if (StringUtils.isBlank(document)) {
             throw new NotFoundException("The requested schema \"" + getSchemaPath(namespace, schema) + "\" could not be found on this system");

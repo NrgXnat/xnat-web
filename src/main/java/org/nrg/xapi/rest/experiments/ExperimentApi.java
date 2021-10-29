@@ -170,7 +170,7 @@ public class ExperimentApi extends AbstractXapiProjectRestController {
                         method = POST, restrictTo = AccessLevel.Edit)
     public XnatExperimentdataI createExperiment(@ApiParam("The project in which the experiment should be created") @PathVariable @Project final String projectId,
                                                 @ApiParam("The subject in which the experiment should be created") @PathVariable @Subject final String subjectId,
-                                                @ApiParam("The subject to be created.") @RequestBody final XnatExperimentdataI experiment,
+                                                @ApiParam("The subject to be created.") @RequestBody @Experiment final XnatExperimentdataI experiment,
                                                 @ApiParam("The xsiType value") @RequestParam(required = false) String xsiType,
                                                 @ApiParam("The allowDataDelete value") @RequestParam(defaultValue = "false") String allowDataDelete,
                                                 @ApiParam("The event reason  value ") @RequestParam(required = false) String eventReason,

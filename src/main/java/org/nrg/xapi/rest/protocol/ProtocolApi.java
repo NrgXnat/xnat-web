@@ -1,17 +1,19 @@
 package org.nrg.xapi.rest.protocol;
 
-import static org.springframework.web.bind.annotation.RequestMethod.GET;
-import static org.springframework.web.bind.annotation.RequestMethod.PUT;
-import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
-
+import io.swagger.annotations.*;
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.authorization.ProjectAccessRequestXapiAuthorization;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
+import org.nrg.xapi.rest.AuthDelegate;
+import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.model.XnatDatatypeprotocolI;
 import org.nrg.xdat.model.XnatProjectdataI;
+import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.model.util.XnatEventUtil;
@@ -23,12 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import lombok.extern.slf4j.Slf4j;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 @Api("XNAT protocol Resource Management API")
 @XapiRestController
@@ -47,8 +44,9 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-	    public XnatDatatypeprotocolI getByProjectIdAndProtocolId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+	 	@AuthDelegate(ProjectAccessRequestXapiAuthorization.class)
+	    public XnatDatatypeprotocolI getByProjectIdAndProtocolId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
 																 @ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
 																 @ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
 																 @ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,
@@ -68,8 +66,9 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
 	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-							produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method =PUT)
-	    public XnatDatatypeprotocolI update(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+							produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method =PUT, restrictTo = AccessLevel.Edit)
+	 @AuthDelegate(ProjectAccessRequestXapiAuthorization.class)
+	    public XnatDatatypeprotocolI update(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
 	    		@ApiParam("The protocol to be updated.") @RequestBody final XnatDatatypeprotocolI protocol,
 	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
 	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
@@ -89,8 +88,9 @@ public class ProtocolApi extends AbstractXapiProjectRestController {
 	    	           @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
 	                   @ApiResponse(code = 404, message = "The requested protocol wasn't found."),
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE)
-	    public void delete(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+	    @XapiRequestMapping(value = "/projects/{projectId}/protocols/{protocolId}", produces = MediaType.APPLICATION_JSON_VALUE, method = DELETE, restrictTo = AccessLevel.Delete)
+	 @AuthDelegate(ProjectAccessRequestXapiAuthorization.class)
+	    public void delete(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
 	    		@ApiParam(value = "The ID of the protocol.") @PathVariable final String protocolId,
 	    		@ApiParam(value = "The datatype of value.") @RequestParam(name = "dataType") final String dataType,
 	    		@ApiParam("The event reason  value ") @RequestParam(name = "eventReason", required = false)String eventReason,

@@ -113,8 +113,8 @@ import java.util.stream.Collectors;
 
 import static org.nrg.xft.event.EventUtils.*;
 import static org.nrg.xft.event.EventUtils.TYPE.WEB_FORM;
-import static org.nrg.xft.utils.FileUtils.getPrearchiveTimestamp;
 import static org.nrg.xnat.helpers.resource.XnatResourceInfoMap.getFilesAsXnatResourceInfoMap;
+import static org.nrg.xnat.restlet.util.XNATRestConstants.getPrearchiveTimestamp;
 
 /**
  * {@inheritDoc}

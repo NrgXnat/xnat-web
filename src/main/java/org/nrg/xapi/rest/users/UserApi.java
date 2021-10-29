@@ -9,9 +9,11 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
+import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XdatUsergroupI;
+import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.db.FavEntries;
@@ -45,8 +47,8 @@ public class UserApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested projectId  wasn't found."),
                    @ApiResponse(code = 404, message = "The requested users wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/users", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XdatUsergroupI> getByProject(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
+    @XapiRequestMapping(value = "/projects/{projectId}/users", produces = MediaType.APPLICATION_JSON_VALUE, method = GET,restrictTo =  AccessLevel.Read)
+    public List<XdatUsergroupI> getByProject(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested users with project ID {}", getSessionUser().getUsername(), projectId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_userService.findByProject(getSessionUser(), projectId), XdatUsergroupI.class);

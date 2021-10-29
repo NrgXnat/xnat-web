@@ -2,14 +2,9 @@ package org.nrg.xnat.services.projects;
 
 import org.nrg.action.ActionException;
 import org.nrg.config.exceptions.ConfigServiceException;
-import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xapi.exceptions.*;
+import org.nrg.xdat.model.ArcProjectI;
 import org.nrg.xdat.model.XnatProjectdataI;
-import org.nrg.xdat.om.ArcProject;
-import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
@@ -43,5 +38,5 @@ public interface ProjectService {
 	 String update(UserI user, String access, String projectId,XnatEventUtil event) throws NotFoundException, InsufficientPrivilegesException, JustificationAbsent, ActionNameAbsent, IDAbsent, ConfigServiceException;
 
 	//Project Archive service
-	 Optional<ArcProject> findArcProjectByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
+	 Optional<ArcProjectI> findArcProjectByProjectId(UserI user, String projectId) throws NotFoundException, DataFormatException;
 }

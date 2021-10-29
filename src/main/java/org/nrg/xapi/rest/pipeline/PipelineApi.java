@@ -1,8 +1,5 @@
 package org.nrg.xapi.rest.pipeline;
 
-import static org.nrg.xdat.security.helpers.AccessLevel.*;
-import static org.springframework.web.bind.annotation.RequestMethod.*;
-
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RegExUtils;
@@ -59,6 +56,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static org.nrg.xdat.security.helpers.AccessLevel.*;
+import static org.springframework.web.bind.annotation.RequestMethod.*;
 
 /**
  * @author Mohana Ramaratnam
@@ -157,7 +157,7 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = "/parameters", method = GET, restrictTo = Authenticated, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Get the site-wide parameter details for the pipeline identified by its name; optionally pass the project id to get the project specific parameters")
-    public String getSitePipelineParameters(@ApiParam(value = "Name of the pipeline") @RequestParam("pipelinename") final String pipelineName, @RequestParam(value = "project", required = false) final String projectId) throws InitializationException {
+    public String getSitePipelineParameters(@ApiParam(value = "Name of the pipeline") @RequestParam("pipelinename") final String pipelineName, @RequestParam(value = "project", required = false) @Project final String projectId) throws InitializationException {
         final PipelineDetailsHelper pipelineDetailsHelper = new PipelineDetailsHelper(projectId);
         try {
             final Map<String, Object> pipelineDetails = pipelineDetailsHelper.getPipelineDetailsMap(pipelineName, true);
@@ -173,7 +173,7 @@ public class PipelineApi extends AbstractXapiRestController {
 
     @XapiRequestMapping(value = {"/launch/{pipelineNameOrStep}"}, method = POST, restrictTo = Edit, produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
     @ApiOperation(value = "Resolve the parameters and launch the pipeline")
-    public PipelineLaunchReport launchPipelineWQueryParams(@ApiParam(value = "The ID of the project.") @RequestParam(value = "project", required = false) final String projectId,
+    public PipelineLaunchReport launchPipelineWQueryParams(@ApiParam(value = "The ID of the project.") @RequestParam(value = "project", required = false) @Project final String projectId,
                                                            @ApiParam(value = "Name of the pipeline") @PathVariable final String pipelineNameOrStep,
                                                            final @RequestBody Map<String, String> allRequestParams) throws DataFormatException, NotFoundException {
         if (StringUtils.isNotBlank(projectId) && !Permissions.verifyProjectExists(_jdbcTemplate, projectId)) {

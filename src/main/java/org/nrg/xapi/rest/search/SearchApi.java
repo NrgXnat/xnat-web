@@ -11,6 +11,7 @@ import org.nrg.xapi.model.DisplayVersion;
 import org.nrg.xapi.model.SearchElement;
 import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
+import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
 import org.nrg.xdat.model.XdatStoredSearchI;
@@ -157,7 +158,7 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}/searches/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = DELETE)
     public void deleteSavedSearchByProjectIdAndSearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable final String searchId,
-                                                        @ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+                                                        @ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
                                                         @ApiParam("The event reason  value ") @RequestParam(required = false) String eventReason,
                                                         @ApiParam("The event id value ") @RequestParam(required = false) String eventId,
                                                         @ApiParam("The event type value ") @RequestParam(required = false) String eventType,

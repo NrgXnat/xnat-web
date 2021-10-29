@@ -7,16 +7,17 @@ import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.generics.GenericUtils;
+import org.nrg.xapi.authorization.CreateProjectXapiAuthorization;
 import org.nrg.xapi.exceptions.*;
 import org.nrg.xapi.model.DIRResource;
 import org.nrg.xapi.model.ResourceFile;
 import org.nrg.xapi.model.TriageDto;
-import org.nrg.xapi.rest.AbstractXapiProjectRestController;
-import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xapi.rest.*;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.model.XnatResourcecatalogI;
 import org.nrg.xdat.om.XnatAbstractresource;
+import org.nrg.xdat.security.helpers.AccessLevel;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.exception.ElementNotFoundException;
@@ -57,8 +58,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested experimentId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resources wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
+    @XapiRequestMapping(value = "/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<XnatAbstractresourceI> getByExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources with experiment ID {} ", getSessionUser().getUsername(), experimentId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_resourceService.findByExperimentId(getSessionUser(), experimentId), XnatAbstractresourceI.class);
@@ -69,8 +70,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either experimentId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public XnatAbstractresourceI getByIdAndExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public XnatAbstractresourceI getByIdAndExperimentId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                         @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources with experiment ID {} and with ID {}", getSessionUser().getUsername(), experimentId, resourceId);
         return _resourceService.findByIdAndExperimentId(getSessionUser(), resourceId, experimentId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId));
@@ -81,11 +82,11 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId  wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read )
     public List<XnatAbstractresourceI> getByProjectIdAndSubjectIdExperimentId(
-            @ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-            @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
-            @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId) throws NotFoundException, DataFormatException {
+            @ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+            @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
+            @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources with project ID {} , with subject ID {} and with experiment ID {} ", getSessionUser().getUsername(), projectId, subjectId, experimentId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_resourceService.findByProjectIdAndSubjectIdAndExperimentId(getSessionUser(), projectId, subjectId, experimentId), XnatAbstractresourceI.class);
@@ -110,7 +111,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws Exception {
+    public List<XnatAbstractresourceI> getByProjectId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId) throws Exception {
         log.debug("User {} requested resources with project ID {} ", getSessionUser().getUsername(), projectId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_resourceService.findByProjectId(getSessionUser(), projectId), XnatAbstractresourceI.class);
@@ -121,9 +122,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET, restrictTo = AccessLevel.Read)
     public XnatAbstractresourceI getByIdAndProjectId(@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
-                                                     @ApiParam(value = "The ID of the project.") @PathVariable final String projectId) throws NotFoundException, DataFormatException {
+                                                     @ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources with ID {} and with project ID {}", getSessionUser().getUsername(), resourceId, projectId);
         return _resourceService.findByIdAndProjectId(getSessionUser(), resourceId, projectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId));
     }
@@ -133,8 +134,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested subjectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getBySubject(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
+    @XapiRequestMapping(value = "/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<XnatAbstractresourceI> getBySubject(@ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources with subject ID {}", getSessionUser().getUsername(), subjectId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_resourceService.findBySubjectId(getSessionUser(), subjectId), XnatAbstractresourceI.class);
@@ -145,9 +146,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either subjectId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+    @XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET, restrictTo = AccessLevel.Read )
     public XnatAbstractresourceI getByIdAndSubjectId(@ApiParam(value = "The ID of the resource.") @PathVariable(required = false) final Integer resourceId,
-                                                     @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId) throws NotFoundException, DataFormatException {
+                                                     @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) @Subject final String subjectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources wth ID {} and with subject ID {} ", getSessionUser().getUsername(), resourceId, subjectId);
         return _resourceService.findByIdAndSubjectId(getSessionUser(), resourceId, subjectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, subjectId));
     }
@@ -157,9 +158,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                                  @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<XnatAbstractresourceI> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                                  @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources wth projectId {} and with subject ID{} ", getSessionUser().getUsername(), projectId, subjectId);
         // TODO: Remove convertToTypedList() wrapper when ResourceService interface is refactored to use interfaces instead of heavy XFT objects.
         return GenericUtils.convertToTypedList(_resourceService.findByProjectIdAndSubjectId(getSessionUser(), projectId, subjectId), XnatAbstractresourceI.class);
@@ -170,10 +171,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/resources/{resourceId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET, restrictTo = AccessLevel.Read)
     public XnatAbstractresourceI getByIdAndProjectIdAndSubjectId(@ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
-                                                                 @ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                                 @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId) throws NotFoundException, DataFormatException {
+                                                                 @ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                                 @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources wth project ID {} , with subject ID {} and with ID {} ", getSessionUser().getUsername(), projectId, subjectId, resourceId);
         return _resourceService.findByIdAndProjectIdAndSubjectId(getSessionUser(), resourceId, projectId, subjectId).orElseThrow(() -> new NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, resourceId));
     }
@@ -185,7 +186,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/experiments/{assessedId}/assessors/{experimentId}/resources",
                                  "/experiments/{assessedId}/assessors/{experimentId}/{type}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getByExperimentIdAndAssessed(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    public List<XnatAbstractresourceI> getByExperimentIdAndAssessed(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                                     @ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
                                                                     @ApiParam(value = "The type of resource.") @PathVariable(required = false) final String type) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources wth experiment ID {} and with assessed ID {} ", getSessionUser().getUsername(), experimentId, assessedId);
@@ -200,7 +201,7 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/experiments/{assessedId}/assessors/{experimentId}/resources/{resourceId}",
                                  "/experiments/{experimentId}/assessors/{assessedId}/{type}/resources/{resourceId}"}, produces = MediaType.APPLICATION_XML_VALUE, method = GET)
-    public XnatAbstractresourceI getByExperimentIdAndAssessedIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    public XnatAbstractresourceI getByExperimentIdAndAssessedIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                                              @ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
                                                                              @ApiParam(value = "The type of resource") @PathVariable(required = false) final String type,
                                                                              @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId) throws NotFoundException, DataFormatException {
@@ -214,10 +215,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/resources",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{type}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                                                                   @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
-                                                                                                   @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/assessors/{experimentId}/{type}/resources"}, produces = MediaType.APPLICATION_JSON_VALUE, method = GET,  restrictTo = AccessLevel.Read)
+    public List<XnatAbstractresourceI> getByIdAndProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                                                                   @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
+                                                                                                   @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                                                                    @ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
                                                                                                    @ApiParam(value = "The type string.") @PathVariable(required = false) final String type) throws NotFoundException, DataFormatException {
         log.debug("User {} requested resources wth project ID {} , with subject ID {} , with experiment ID {} and with assessedId {} }", getSessionUser().getUsername(), projectId, subjectId, experimentId, assessedId);
@@ -229,9 +230,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested resource."),
                    @ApiResponse(code = 404, message = "The requested resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<XnatAbstractresourceI> getResourceByProjectAndSubjectAndExperimentAndScans(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-                                                                                           @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{assessedId}/scans/{scanId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET,  restrictTo = AccessLevel.Read)
+    public List<XnatAbstractresourceI> getResourceByProjectAndSubjectAndExperimentAndScans(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                                                                           @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) @Subject final String subjectId,
                                                                                            @ApiParam(value = "The ID of the assessed.") @PathVariable(required = false) final String assessedId,
                                                                                            @ApiParam(value = "The ID of the scan.") @PathVariable(required = false) final String scanId) throws Exception {
         log.debug("User {} requested resources wth project ID {} , with subject ID {} , with assessed ID {} and with scan ID {} }", getSessionUser().getUsername(), projectId, subjectId, assessedId, scanId);
@@ -257,10 +258,11 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources"},
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        method = POST)
-    public XnatResourcecatalogI createResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-                                               @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
-                                               @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+                        method = POST, restrictTo = AccessLevel.Read)
+    @AuthDelegate(CreateProjectXapiAuthorization.class)
+    public XnatResourcecatalogI createResource(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                               @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) @Subject final String subjectId,
+                                               @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) @Subject final String experimentId,
                                                @ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
                                                @ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
                                                @ApiParam(value = "The label of the resource.") @RequestParam(required = false) final String label,
@@ -306,10 +308,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteResource(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) final String projectId,
-                               @ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) final String subjectId,
-                               @ApiParam("The ID of the experiment to be deleted") @PathVariable(required = false) final String experimentId,
+                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE,restrictTo = AccessLevel.Authorizer)
+    public void deleteResource(@ApiParam("The ID of the project to be deleted") @PathVariable(required = false) @Project final String projectId,
+                               @ApiParam("The ID of the subject to be deleted") @PathVariable(required = false) @Subject final String subjectId,
+                               @ApiParam("The ID of the experiment to be deleted") @PathVariable(required = false) @Experiment final String experimentId,
                                @ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
                                @ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
                                @ApiParam(value = "The label of the type.") @PathVariable(required = false) final String type,
@@ -329,8 +331,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/experiments/{experimentId}/DIR", "/projects/{projectId}/experiments/{experimentId}/DIR"}, produces = {MediaType.APPLICATION_JSON_VALUE}, method = GET)
-    public List<DIRResource> getAllDIRResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-                                                @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    public List<DIRResource> getAllDIRResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                                @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                 @ApiParam(value = "The value  of the filepath.") @RequestParam(required = false) final String filepath,
                                                 @ApiParam(value = "The value of the recursive.") @RequestParam(required = false) final boolean recursive,
                                                 @ApiParam(value = "The value of the isXarReference.") @RequestParam(required = false) final boolean isXarReference) throws NotFoundException, DataFormatException, NotAuthenticatedException, InvalidFileCharacters {
@@ -346,10 +348,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 403, message = "The user is not authorized to access one or more of the specified resources."),
                    @ApiResponse(code = 404, message = "The request was valid but one or more of the specified resources was not found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
-    @XapiRequestMapping(value = {"/experiments/{experimentId}/XAR", "/projects/{projectId}/experiments/{experimentId}/XAR"}, produces = MediaTypeUtil.APPLICATION_XAR, method = RequestMethod.GET)
+    @XapiRequestMapping(value = {"/experiments/{experimentId}/XAR", "/projects/{projectId}/experiments/{experimentId}/XAR"}, produces = MediaTypeUtil.APPLICATION_XAR, method = RequestMethod.GET,restrictTo = AccessLevel.Read)
     @ResponseBody
-    public ResponseEntity<StreamingResponseBody> downloadXarResourceZip(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) final String projectId,
-                                                                        @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    public ResponseEntity<StreamingResponseBody> downloadXarResourceZip(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                                                        @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment  final String experimentId,
                                                                         @ApiParam(value = "The value  of the filepath.") @RequestParam(required = false) final String filepath,
                                                                         @ApiParam(value = "The value  of the recursive.") @RequestParam(required = false) final boolean recursive,
                                                                         @ApiParam(value = "The value  of the isXarReference.") @RequestParam(required = false) final boolean isXarReference,
@@ -397,9 +399,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                         @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByProjectIdAndSubjectId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                         @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
                                                          @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                          @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
         log.debug("User {} requested  resource catalog with Project ID {} and subject ID {}", getSessionUser().getUsername(), projectId, subjectId);
@@ -411,9 +413,9 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                                        @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByProjectIdAndSubjectIdAndExperimentId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                                        @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
                                                                         @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
                                                                         @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                                         @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
@@ -426,8 +428,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByProjectIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
+    @XapiRequestMapping(value = "/projects/{projectId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByProjectIdAndResourceId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
                                                           @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
                                                           @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                           @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException {
@@ -441,8 +443,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either subjectId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getBySubjectIdAndResourceId(@ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
+    @XapiRequestMapping(value = "/subjects/{subjectId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getBySubjectIdAndResourceId(@ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
                                                           @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
                                                           @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                           @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
@@ -456,8 +458,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either experimentId or assessorId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByExperimentIdAndAssessorId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET,restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByExperimentIdAndAssessorId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                              @ApiParam(value = "The ID of the assessorId.") @PathVariable final String assessorId,
                                                              @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                              @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
@@ -470,8 +472,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either experimentId or assessorId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByExperimentIdAndAssessorIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/experiments/{experimentId}/assessors/{assessorId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByExperimentIdAndAssessorIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                                           @ApiParam(value = "The ID of the assessorId.") @PathVariable final String assessorId,
                                                                           @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
                                                                           @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
@@ -485,10 +487,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either projectId or subjectId or experimentId or assessorId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors/{assessedId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable final String projectId,
-                                                                                     @ApiParam(value = "The ID of the subject.") @PathVariable final String subjectId,
-                                                                                     @ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/assessors/{assessedId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(@ApiParam(value = "The ID of the project.") @PathVariable @Project final String projectId,
+                                                                                     @ApiParam(value = "The ID of the subject.") @PathVariable @Subject final String subjectId,
+                                                                                     @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                                                      @ApiParam(value = "The ID of the assessed.") @PathVariable final String assessedId,
                                                                                      @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                                                      @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
@@ -501,8 +503,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested experimentId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/experiments/{experimentId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read)
+    public List<ResourceFile> getByExperiment(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                               @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                               @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
         log.debug("User {} requested  resource catalog with experiment ID {}", getSessionUser().getUsername(), experimentId);
@@ -514,8 +516,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested either experimentId or resourceId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested resource catalog wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<ResourceFile> getByExperimentIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable final String experimentId,
+    @XapiRequestMapping(value = "/experiments/{experimentId}/resources/{resourceId}/files", produces = MediaType.APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Read )
+    public List<ResourceFile> getByExperimentIdAndResourceId(@ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
                                                              @ApiParam(value = "The ID of the resource.") @PathVariable final Integer resourceId,
                                                              @ApiParam(value = "The values of the contents.") @RequestParam(name = "contents", required = false) final String[] contents,
                                                              @ApiParam(value = "The values of the formats.") @RequestParam(name = "formats", required = false) final String[] formats) throws NotFoundException, DataFormatException, ElementNotFoundException {
@@ -533,10 +535,10 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{experimentId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
-                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteFile(@ApiParam("The ID of the resource file to be deleted") @PathVariable(required = false) final String projectId,
-                           @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) final String subjectId,
-                           @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+                                 "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE,restrictTo = AccessLevel.Edit)
+    public void deleteFile(@ApiParam("The ID of the resource file to be deleted") @PathVariable(required = false) @Project final String projectId,
+                           @ApiParam(value = "The ID of the subject.") @PathVariable(required = false) @Subject final String subjectId,
+                           @ApiParam(value = "The ID of the experiment.") @PathVariable(required = false) @Experiment final String experimentId,
                            @ApiParam(value = "The ID of the assessor.") @PathVariable(required = false) final String assessorId,
                            @ApiParam(value = "The ID of the scans.") @PathVariable(required = false) final String scanId,
                            @ApiParam(value = "The label of the type.") @PathVariable(required = false) final String type,
@@ -565,11 +567,11 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/assessors/{experimentId}/{type}/resources/{resourceId}/files",
                                  "/projects/{projectId}/subjects/{subjectId}/experiments/{assessorId}/scans/{scanId}/resources/{resourceId}/files"},
-                        consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
+                        consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}, produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST, restrictTo = AccessLevel.Edit)
     public Integer createResourceFile(@ApiParam("The resource file to be created.") @RequestParam MultipartFile file,
-                                      @ApiParam("The ID of the project.") @PathVariable(required = false) final String projectId,
-                                      @ApiParam("The ID of the subject.") @PathVariable(required = false) final String subjectId,
-                                      @ApiParam("The ID of the experiment.") @PathVariable(required = false) final String experimentId,
+                                      @ApiParam("The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                      @ApiParam("The ID of the subject.") @PathVariable(required = false) @Subject final String subjectId,
+                                      @ApiParam("The ID of the experiment.") @PathVariable(required = false) @Experiment  final String experimentId,
                                       @ApiParam("The ID of the assessor.") @PathVariable(required = false) final String assessorId,
                                       @ApiParam("The ID of the scan.") @PathVariable(required = false) final String scanId,
                                       @ApiParam("The ID of the type") @PathVariable(required = false) final String type,
@@ -613,8 +615,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested Triage resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
-    @XapiRequestMapping(value = "/services/triage/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<TriageDto> getAll(@ApiParam("The ID of the project ") @PathVariable final String projectId,
+    @XapiRequestMapping(value = "/services/triage/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET,restrictTo = AccessLevel.Read)
+    public List<TriageDto> getAll(@ApiParam("The ID of the project ") @PathVariable @Project final String projectId,
                                   @ApiParam("The value of Http Servlet request") HttpServletRequest request) throws NotFoundException, DataFormatException, InsufficientPrivilegesException, InitializationException {
         log.debug("User {} requested Triage resource", getSessionUser().getUsername());
         return _resourceService.findTriageByProjectId(getSessionUser(), projectId, request);
@@ -630,8 +632,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/services/triage/projects/{projectId}/resources/{xName}/files",
                                  "/services/triage/projects/{projectId}/resources/{xName}/files/{file}"},
                         consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST)
-    public void createTriage(@ApiParam("The ID of the project ") @PathVariable final String projectId,
+                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = POST, restrictTo = AccessLevel.Edit)
+    public void createTriage(@ApiParam("The ID of the project ") @PathVariable @Project final String projectId,
                              @ApiParam("The value of xName") @PathVariable(required = false) final String xName,
                              @ApiParam("The value of file") @PathVariable(required = false) final String file,
                              @ApiParam("The value of eventReason") @RequestParam(name = "event_reason", required = false) final String eventReason,
@@ -657,8 +659,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                                  "/services/triage/projects/{projectId}/resources/{xName}",
                                  "/services/triage/projects/{projectId}/resources/{xName}/files",
                                  "/services/triage/projects/{projectId}/resources/{xName}/files/{file}"},
-                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
-    public void deleteStudyRouting(@ApiParam("The ID of the project ") @PathVariable final String projectId,
+                        produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE, restrictTo = AccessLevel.Delete)
+    public void deleteStudyRouting(@ApiParam("The ID of the project ") @PathVariable @Project final String projectId,
                                    @ApiParam("The value of xName") @PathVariable(required = false) final String xName,
                                    @ApiParam("The value of file") @PathVariable(required = false) final String file,
                                    @ApiParam("The value of xName") @RequestParam(required = false) final String eventReason,
