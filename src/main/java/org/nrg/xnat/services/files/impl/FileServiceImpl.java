@@ -238,7 +238,7 @@ public class FileServiceImpl extends XnatCatalogTemplateUtil implements FileServ
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
 		}
-		List<XnatAbstractresource> resources = _resourceService.findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
+		List<XnatAbstractresourceI> resources = _resourceService.findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}

@@ -1,35 +1,15 @@
 package org.nrg.xnat.services.resources.impl;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.MalformedURLException;
-import java.net.URLDecoder;
-import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.zip.ZipOutputStream;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.servlet.http.HttpServletRequest;
-
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
@@ -41,29 +21,18 @@ import org.apache.oro.io.GlobFilenameFilter;
 import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.framework.generics.GenericUtils;
 import org.nrg.framework.services.ContextService;
-import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotAuthenticatedException;
-import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
+import org.nrg.xapi.exceptions.*;
+import org.nrg.xapi.model.DIRResource;
+import org.nrg.xapi.model.ResourceFile;
 import org.nrg.xapi.model.TriageDto;
 import org.nrg.xapi.model.TriageFileDto;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.bean.CatCatalogBean;
 import org.nrg.xdat.model.*;
-import org.nrg.xdat.om.WrkWorkflowdata;
-import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatImageassessordata;
-import org.nrg.xdat.om.XnatImagescandata;
-import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.om.XnatResource;
-import org.nrg.xdat.om.XnatResourcecatalog;
-import org.nrg.xdat.om.XnatSubjectassessordata;
-import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.om.*;
 import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.security.helpers.Features;
 import org.nrg.xdat.security.helpers.Permissions;
@@ -88,8 +57,6 @@ import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXWriter;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.zip.ZipUtils;
-import org.nrg.xapi.model.ResourceFile;
-import org.nrg.xapi.model.DIRResource;
 import org.nrg.xnat.dto.resource.FileSet;
 import org.nrg.xnat.dto.resource.MediaTypeUtil;
 import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
@@ -112,9 +79,9 @@ import org.nrg.xnat.services.triage.TriageManifest;
 import org.nrg.xnat.services.triage.TriageUtils;
 import org.nrg.xnat.turbine.utils.ArchivableItem;
 import org.nrg.xnat.utils.CatalogUtils;
-import org.nrg.xnat.utils.WorkflowUtils;
 import org.nrg.xnat.utils.CatalogUtils.CatEntryFilterI;
 import org.nrg.xnat.utils.CatalogUtils.CatalogData;
+import org.nrg.xnat.utils.WorkflowUtils;
 import org.restlet.data.Status;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -125,17 +92,23 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import lombok.extern.slf4j.Slf4j;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.servlet.http.HttpServletRequest;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.net.URLDecoder;
+import java.nio.file.Paths;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.zip.ZipOutputStream;
 
 @Slf4j
 @Service
@@ -152,7 +125,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified experiment ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByExperimentId(UserI user, String experimentId) throws NotFoundException, DataFormatException {
+	public List<XnatAbstractresourceI> findByExperimentId(UserI user, String experimentId) throws NotFoundException, DataFormatException {
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
@@ -160,7 +133,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}
-    		return resources;
+    		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	/**
@@ -182,7 +155,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified experiment ID and scan ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByExperimentIdAndScanId(UserI user, String assessorId, String scanId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByExperimentIdAndScanId(UserI user, String assessorId, String scanId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(assessorId)) {
     		throw new DataFormatException("The requested assessor ID "+ assessorId  + "wasn't found ");
 		}
@@ -193,14 +166,14 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	/**
 	 * Get list of resource with specified project ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectId(UserI user, String projectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(projectId)) {
     		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
 		}
@@ -208,7 +181,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	
@@ -216,7 +189,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified project ID and label
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectIdAndLabel(UserI user, String projectId, String label) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectIdAndLabel(UserI user, String projectId, String label) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
 		}
@@ -227,7 +200,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 
 	
@@ -235,7 +208,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get a resource with specified resource ID and project ID
 	 */
 	@Override
-	public Optional<XnatAbstractresource> findByIdAndProjectId(UserI user, Integer resourceId, String projectId) throws DataFormatException, NotFoundException {
+	public Optional<XnatAbstractresourceI> findByIdAndProjectId(UserI user, Integer resourceId, String projectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(resourceId)) {
     		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
 		}
@@ -254,7 +227,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified subject ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findBySubjectId(UserI user, String subjectId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(subjectId)) {
     		throw new DataFormatException("The requested subject ID "+ subjectId  + "wasn't found ");
 		}
@@ -262,7 +235,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, subjectId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	
@@ -270,7 +243,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified project ID, subject ID and experiment ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectIdAndSubjectIdAndExperimentId(UserI user, String projectId, String subjectId, String experimentId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
 		}
@@ -284,14 +257,14 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 
 	/**
 	 * Get list of resource with specified project ID and subject ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectIdAndSubjectId(UserI user, String projectId, String subjectId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("The requested project ID "+ projectId  + "wasn't found ");
 		}
@@ -302,14 +275,14 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, projectId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 
 	/**
 	 * Get a resource with specified resource ID, project ID and subject ID
 	 */
 	@Override
-	public Optional<XnatAbstractresource> findByIdAndProjectIdAndSubjectId(UserI user, Integer resourceId, String projectId, String subjectId) throws DataFormatException, NotFoundException {
+	public Optional<XnatAbstractresourceI> findByIdAndProjectIdAndSubjectId(UserI user, Integer resourceId, String projectId, String subjectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(resourceId)) {
     		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
 		}
@@ -330,7 +303,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get a resource with specified resource ID and experiment ID
 	 */
 	@Override
-	public Optional<XnatAbstractresource> findByIdAndSubjectId(UserI user, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException {
+	public Optional<XnatAbstractresourceI> findByIdAndSubjectId(UserI user, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException {
 		if(Objects.isNull(resourceId)) {
     		throw new DataFormatException("The requested resource ID "+ resourceId  + "wasn't found ");
 		}
@@ -348,7 +321,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified experiment ID and Assessor ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByExperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByExperimentIdAndAssessedId(UserI user, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
@@ -364,7 +337,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	
@@ -372,7 +345,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified experiment ID
 	 */
 	@Override
-	public Optional<XnatAbstractresource> findByExperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException  {
+	public Optional<XnatAbstractresourceI> findByExperimentIdAndAssessedIdAndResourceId(UserI user, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException  {
 		if(StringUtils.isBlank(experimentId)) {
     		throw new DataFormatException("The requested experiment ID "+ experimentId  + "wasn't found ");
 		}
@@ -397,7 +370,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * Get list of resource with specified project ID, subject ID, experiment ID and scan ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessorId, String scanId) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessorId, String scanId) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("You must specify a valid project ID when calling this method");
 		}
@@ -414,14 +387,14 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, scanId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 	
 	/**
 	 * Get list of resource with specified project ID , subjectId, experiment ID and assessor ID
 	 */
 	@Override
-	public List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
+	public List<XnatAbstractresourceI> findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String type) throws DataFormatException, NotFoundException {
 		if(StringUtils.isBlank(projectId)) {
     		throw new DataFormatException("You must specify a valid project ID when calling this method");
 		}
@@ -438,7 +411,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, assessorId) ;
 		}
-		return resources;
+		return GenericUtils.convertToTypedList(resources,XnatAbstractresourceI.class);
 	}
 
 	
@@ -446,7 +419,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 	 * create new resource catalog
 	 */
 	@Override
-	public XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResourceI xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
+	public XnatResourcecatalogI create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResourceI xnatResource, XnatEventUtil event, String description, String format, String content, String [] tags) {
 		proj = null;
 		sub = null;
 		expts = new ArrayList<>();
@@ -509,7 +482,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		} catch (Exception e) {
 			log.error(e.getMessage());
 		}
-		return (XnatResourcecatalog) xnatResource;
+		return (XnatResourcecatalogI) GenericUtils.convertToTypedList((Iterable<?>) xnatResource, XnatResourcecatalogI.class);
 	}
 
 	/**
@@ -874,7 +847,7 @@ public class ResourceServiceImpl extends XnatCatalogTemplateUtil implements Reso
 		if(StringUtils.isBlank(experimentId)) {
 			throw new DataFormatException("The requested experimentId ID " + experimentId + "wasn't found");
 		}
-		List<XnatAbstractresource> resources = findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
+		List<XnatAbstractresourceI> resources = findByProjectIdAndSubjectIdAndExperimentId(user, projectId, subjectId, experimentId);
 		if(Objects.isNull(resources) || resources.isEmpty()) {
     		throw new  NotFoundException(XnatAbstractresource.SCHEMA_ELEMENT_NAME, experimentId) ;
 		}

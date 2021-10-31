@@ -1,29 +1,27 @@
 package org.nrg.xnat.services.search;
 
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Optional;
-
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
-import org.nrg.xdat.model.XdatSearchI;
-import org.nrg.xdat.model.XdatStoredSearchI;
-import org.nrg.xdat.om.XdatSearch;
-import org.nrg.xdat.om.XdatStoredSearch;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
-import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
-import org.nrg.xft.security.UserI;
 import org.nrg.xapi.model.DisplayVersion;
 import org.nrg.xapi.model.SearchElement;
 import org.nrg.xapi.model.XnatSearchElement;
+import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
+import org.nrg.xdat.model.XdatSearchI;
+import org.nrg.xdat.model.XdatStoredSearchI;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
+import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
+import org.nrg.xft.security.UserI;
 import org.nrg.xnat.model.util.XnatEventUtil;
+
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Optional;
 
 public interface SearchService {
 
-	 List<XdatSearch> findAllSearch(UserI user) throws NotFoundException;
+	 List<XdatSearchI> findAllSearch(UserI user) throws NotFoundException;
 
 	 List<SearchElement> findAllSearchElements(UserI user, String secured, String readable, String used) throws NotFoundException ;
 	

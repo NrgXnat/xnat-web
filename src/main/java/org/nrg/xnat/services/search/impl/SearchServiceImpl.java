@@ -1,25 +1,13 @@
 package org.nrg.xnat.services.search.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.framework.generics.GenericUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
+import org.nrg.xapi.model.*;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
@@ -27,12 +15,11 @@ import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
-import org.nrg.xdat.model.*;
-import org.nrg.xdat.model.XdatCriteriaSetI;
 import org.nrg.xdat.model.XdatSearchI;
 import org.nrg.xdat.model.XdatStoredSearchAllowedUserI;
 import org.nrg.xdat.model.XdatStoredSearchGroupidI;
 import org.nrg.xdat.model.XdatStoredSearchI;
+import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.*;
 import org.nrg.xdat.om.base.BaseXnatProjectdata;
 import org.nrg.xdat.om.base.auto.AutoXdatStoredSearch;
@@ -58,22 +45,13 @@ import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.JustificationAbsent;
-import org.nrg.xft.exception.DBPoolException;
-import org.nrg.xft.exception.ElementNotFoundException;
-import org.nrg.xft.exception.FieldNotFoundException;
-import org.nrg.xft.exception.InvalidValueException;
-import org.nrg.xft.exception.XFTInitException;
+import org.nrg.xft.exception.*;
 import org.nrg.xft.schema.Wrappers.GenericWrapper.GenericWrapperElement;
 import org.nrg.xft.schema.Wrappers.XMLWrapper.SAXReader;
 import org.nrg.xft.search.ItemSearch;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.XftStringUtils;
-import org.nrg.xapi.model.SearchElement;
-import org.nrg.xapi.model.DisplayFieldReferenceI;
-import org.nrg.xapi.model.DisplayVersion;
-import org.nrg.xapi.model.Version;
-import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.search.SearchService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,7 +62,13 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
-import lombok.extern.slf4j.Slf4j;
+import java.io.File;
+import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -96,12 +80,12 @@ public class SearchServiceImpl implements SearchService {
 	}
 
 	@Override
-	public List<XdatSearch> findAllSearch(UserI user) throws NotFoundException {
+	public List<XdatSearchI> findAllSearch(UserI user) throws NotFoundException {
 		List<XdatSearch> searches = XdatSearch.getAllXdatSearchs(user, false);
 		if (Objects.isNull(searches) || searches.isEmpty()) {
 			throw new NotFoundException(XdatSearch.SCHEMA_ELEMENT_NAME);
 		}
-		return searches;
+		return GenericUtils.convertToTypedList(searches,XdatSearchI.class);
 	}
 
 	@Override

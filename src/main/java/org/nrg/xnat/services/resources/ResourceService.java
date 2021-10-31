@@ -9,8 +9,7 @@ import org.nrg.xapi.model.ResourceFile;
 import org.nrg.xapi.model.TriageDto;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatResourceI;
-import org.nrg.xdat.om.XnatAbstractresource;
-import org.nrg.xdat.om.XnatResourcecatalog;
+import org.nrg.xdat.model.XnatResourcecatalogI;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
@@ -28,39 +27,39 @@ import java.util.Optional;
 public interface ResourceService {
 	
 	 /** Start Resource Service Methods*/
-	 List<XnatAbstractresource> findByExperimentId(final UserI user, final String experimentId) throws NotFoundException, DataFormatException;
+	 List<XnatAbstractresourceI> findByExperimentId(final UserI user, final String experimentId) throws NotFoundException, DataFormatException;
 	
 	 Optional<XnatAbstractresourceI> findByIdAndExperimentId(final UserI user, final Integer resourceId, final String experimentId) throws DataFormatException, NotFoundException;
 
-	 List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentId(final UserI user, final String projectId, final String subjectId, final String experimentId) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI> findByProjectIdAndSubjectIdAndExperimentId(final UserI user, final String projectId, final String subjectId, final String experimentId) throws DataFormatException, NotFoundException;
 	
-	 List<XnatAbstractresource>findByExperimentIdAndScanId(final UserI user, final String assessedId, final String scanId) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findByExperimentIdAndScanId(final UserI user, final String assessedId, final String scanId) throws DataFormatException, NotFoundException;
 	
-	 List<XnatAbstractresource>findByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findByProjectId(final UserI user, final String projectId) throws DataFormatException, NotFoundException;
 	
-	 List<XnatAbstractresource>findByProjectIdAndLabel(final UserI user, final String projectId, String label) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findByProjectIdAndLabel(final UserI user, final String projectId, String label) throws DataFormatException, NotFoundException;
 
-	 Optional<XnatAbstractresource> findByIdAndProjectId(final UserI user, final Integer resourceId, final String projectId) throws DataFormatException, NotFoundException;
+	 Optional<XnatAbstractresourceI> findByIdAndProjectId(final UserI user, final Integer resourceId, final String projectId) throws DataFormatException, NotFoundException;
 
-	 List<XnatAbstractresource>findBySubjectId(final UserI user, final String subjectId) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findBySubjectId(final UserI user, final String subjectId) throws DataFormatException, NotFoundException;
 	
-     List<XnatAbstractresource>findByProjectIdAndSubjectId(final UserI user, final String projectId, final String subjectId) throws DataFormatException, NotFoundException;
+     List<XnatAbstractresourceI>findByProjectIdAndSubjectId(final UserI user, final String projectId, final String subjectId) throws DataFormatException, NotFoundException;
 	
-	 Optional<XnatAbstractresource> findByIdAndProjectIdAndSubjectId(final UserI user,final Integer resourceId, final String projectId, final String subjectId) throws DataFormatException, NotFoundException;
+	 Optional<XnatAbstractresourceI> findByIdAndProjectIdAndSubjectId(final UserI user,final Integer resourceId, final String projectId, final String subjectId) throws DataFormatException, NotFoundException;
 
-	 Optional<XnatAbstractresource> findByIdAndSubjectId(UserI sessionUser, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException;
+	 Optional<XnatAbstractresourceI> findByIdAndSubjectId(UserI sessionUser, Integer resourceId, String subjectId) throws DataFormatException, NotFoundException;
 
-	 List<XnatAbstractresource>findByExperimentIdAndAssessedId(UserI user,String experimentId, String assessedId, String type) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findByExperimentIdAndAssessedId(UserI user,String experimentId, String assessedId, String type) throws DataFormatException, NotFoundException;
 
-	 Optional<XnatAbstractresource> findByExperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException;
+	 Optional<XnatAbstractresourceI> findByExperimentIdAndAssessedIdAndResourceId(UserI sessionUser, String experimentId, String assessedId, String type, Integer resourceId) throws DataFormatException, NotFoundException;
 
-	 List<XnatAbstractresource>findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId, String type) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI>findByProjectIdAndSubjectIdAndExperimentIdAndAssessorId(UserI sessionUser, String projectId, String subjectId, String experimentId, String assessedId, String type) throws DataFormatException, NotFoundException;
 	
-	 XnatResourcecatalog create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResourceI xnatResourcecatalog, XnatEventUtil event, String description, String format, String content, String [] tags);
+	 XnatResourcecatalogI create(UserI user, String projectId, String subjectId, String experimentId, String assessorId, String scanId, String type, XnatResourceI xnatResourcecatalog, XnatEventUtil event, String description, String format, String content, String [] tags);
 	
 	 void delete(UserI user, String projectId, String subjectId, String experimentId,String assessorId,String scanId,String type, String resourceId,XnatEventUtil event);
 
-	 List<XnatAbstractresource> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessedId, String scanId) throws DataFormatException, NotFoundException;
+	 List<XnatAbstractresourceI> findByProjectIdAndSubjectIdAndExperimentIdAndScanId(UserI user, String projectId, String subjectId, String assessedId, String scanId) throws DataFormatException, NotFoundException;
 	 /* End Resource Service Methods*/
 	 
 	 

@@ -1,16 +1,16 @@
 package org.nrg.xnat.services.users;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xdat.om.XdatUsergroupI;
+import org.nrg.xdat.model.XdatUsergroupI;
 import org.nrg.xft.db.FavEntries;
 import org.nrg.xft.security.UserI;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 // TODO: Major issue here: there are TWO XdatUsergroupI interfaces, org.nrg.xdat.model.XdatUsergroupI and org.nrg.xdat.om.XdatUsergroupI. XdatUsergroup actually implements the latter.
 public interface UserService {

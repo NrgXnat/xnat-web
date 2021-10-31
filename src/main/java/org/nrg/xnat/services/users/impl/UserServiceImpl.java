@@ -1,16 +1,6 @@
 package org.nrg.xnat.services.users.impl;
 
-import static org.nrg.xdat.om.base.auto.AutoXdatUsergroup.SCHEMA_ELEMENT_NAME;
-
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.nrg.xapi.exceptions.DataFormatException;
@@ -18,19 +8,11 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.XDAT;
-import org.nrg.xdat.om.XdatUsergroupI;
+import org.nrg.xdat.model.XdatUsergroupI;
 import org.nrg.xdat.om.XdatUsergroup;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.security.ElementSecurity;
-import org.nrg.xdat.security.PermissionCriteria;
-import org.nrg.xdat.security.PermissionCriteriaI;
-import org.nrg.xdat.security.UserGroupI;
-import org.nrg.xdat.security.UserGroupServiceI;
-import org.nrg.xdat.security.helpers.Groups;
-import org.nrg.xdat.security.helpers.Permissions;
-import org.nrg.xdat.security.helpers.Roles;
-import org.nrg.xdat.security.helpers.UserHelper;
-import org.nrg.xdat.security.helpers.Users;
+import org.nrg.xdat.security.*;
+import org.nrg.xdat.security.helpers.*;
 import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.XFTTable;
@@ -52,7 +34,11 @@ import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.stereotype.Service;
 
-import lombok.extern.slf4j.Slf4j;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.*;
+
+import static org.nrg.xdat.om.base.auto.AutoXdatUsergroup.SCHEMA_ELEMENT_NAME;
 
 @Service
 @Slf4j
@@ -476,7 +462,7 @@ public class UserServiceImpl implements UserService{
 		@Override
 		public XdatUsergroupI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 			final String userId = resultSet.getString("GROUP_ID");
-			return XdatUsergroup.getXdatUsergroupsById(userId, _user, false);
+			return (XdatUsergroupI) XdatUsergroup.getXdatUsergroupsById(userId, _user, false);
 		}
 
 		private final UserI _user;
@@ -490,7 +476,7 @@ public class UserServiceImpl implements UserService{
 		@Override
 		public XdatUsergroupI mapRow(final ResultSet resultSet, final int rowNum) throws SQLException {
 			final Integer userGroupId = resultSet.getInt("xdat_usergroup_id");
-			return XdatUsergroup.getXdatUsergroupsByXdatUsergroupId(userGroupId, _user, false);
+			return (XdatUsergroupI) XdatUsergroup.getXdatUsergroupsByXdatUsergroupId(userGroupId, _user, false);
 		}
 
 		private final UserI _user;

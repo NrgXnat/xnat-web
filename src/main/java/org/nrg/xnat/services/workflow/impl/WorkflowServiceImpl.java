@@ -7,7 +7,6 @@ import java.util.Objects;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.pipeline.xmlbeans.workflow.WorkflowData;
 import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
