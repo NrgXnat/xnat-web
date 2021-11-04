@@ -4,9 +4,9 @@ import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.xapi.exceptions.*;
-import org.nrg.xapi.model.DIRResource;
+import org.nrg.xapi.model.xft.DicomDir;
 import org.nrg.xapi.model.ResourceFile;
-import org.nrg.xapi.model.TriageDto;
+import org.nrg.xapi.model.xft.TriageEntry;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatResourceI;
 import org.nrg.xdat.model.XnatResourcecatalogI;
@@ -65,7 +65,7 @@ public interface ResourceService {
 	 
 	 /** Start DIR Resource Service Methods
 	 * @throws InvalidFileCharacters */
-	 List<DIRResource>  findAllDIRResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters;
+	 List<DicomDir>  findAllDIRResources(UserI user, String projectId, String experimentId, String filepath, boolean recursive, boolean isXarReference) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters;
 
 	 StreamingResponseBody  findAllXARResources(UserI user, String projectId, String experimentId,String filepath, boolean recursive, boolean isXarReference, HttpServletRequest sRequest, HttpHeaders hRequest,String compression) throws NotFoundException, NotAuthenticatedException, InvalidFileCharacters, InitializationException;
 
@@ -108,7 +108,7 @@ public interface ResourceService {
 	 
 	 
 	 /** Start Triage Service Methods*/
-	 List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
+	 List<TriageEntry> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
 		
 	void findTriageFilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
 

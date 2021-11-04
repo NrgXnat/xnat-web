@@ -7,7 +7,6 @@ import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang3.StringUtils;
 import org.nrg.config.entities.Configuration;
 import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.framework.annotations.XapiRestController;
@@ -19,8 +18,7 @@ import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xnat.dto.config.ConfigDto;
-import org.nrg.xnat.model.util.XnatEventUtil;
+import org.nrg.xapi.model.config.ConfigModel;
 import org.nrg.xnat.services.config.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -107,7 +105,7 @@ public class ConfigApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = "/projects/{projectId}/config/{toolName}/{path}",  consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE},
                         						produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = PUT)
     public void updateConfiguration(@ApiParam("The ID of the Configuration to be updated") @PathVariable final String projectId,
-                                         @ApiParam("The project to be updated.") @RequestBody final ConfigDto config,
+                                         @ApiParam("The project to be updated.") @RequestBody final ConfigModel config,
                                          @ApiParam(value = "The value of tool name ") @PathVariable final String toolName,
                                          @ApiParam(value = "The value  of the path to file.") @PathVariable final String path,
                                          @ApiParam(value = "The value  of the status.")@RequestParam(name ="status", required = false) String status,
@@ -126,7 +124,7 @@ public class ConfigApi extends AbstractXapiProjectRestController {
 	                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
 	    @XapiRequestMapping(value = "/projects/{projectId}/config/{toolName}/{path}", produces = {MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE}, method = DELETE)
 	    public void deleteConfig(@ApiParam("The ID of the Configuration to be updated") @PathVariable final String projectId,
-	    					  @ApiParam("The project to be updated.") @RequestBody final ConfigDto config,
+	    					  @ApiParam("The project to be updated.") @RequestBody final ConfigModel config,
 	    					  @ApiParam(value = "The value of tool name ") @PathVariable final String toolName,
 	    					  @ApiParam(value = "The value  of the path to file.") @PathVariable final String path) throws DataFormatException, InitializationException, NotFoundException, ConfigServiceException, InsufficientPrivilegesException  {
 	    	 log.debug("User {} requested to delete project with ID {}", getSessionUser().getUsername(), projectId);

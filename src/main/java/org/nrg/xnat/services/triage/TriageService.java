@@ -10,7 +10,7 @@ import org.nrg.action.ActionException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.model.TriageDto;
+import org.nrg.xapi.model.xft.TriageEntry;
 import org.nrg.xft.exception.InvalidItemException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.uri.URIManager.DataURIA;
@@ -26,7 +26,7 @@ public interface TriageService {
 	abstract  public List<String> move(UserI user,Integer eventId,Boolean overwrite,ListMultimap<String,Object> params,DataURIA src,ResourceURII dest) throws Exception;
 	abstract  public boolean isLocked(UserI user, Integer eventId, Boolean overwrite,ListMultimap<String, Object> otherParams, DataURIA key, ResourceURII value)throws Exception;
     
-	List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
+	List<TriageEntry> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);
 	
 	void findTriagefilesByProjectIdAndXname(UserI user, String projectId, String xName, HttpServletRequest request, String compression) throws Exception;
 	

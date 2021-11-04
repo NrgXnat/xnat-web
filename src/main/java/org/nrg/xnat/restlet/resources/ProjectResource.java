@@ -19,6 +19,7 @@ import org.nrg.action.ActionException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.bean.XnatProjectdataBean;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.base.BaseXnatProjectdata;
@@ -166,6 +167,7 @@ public class ProjectResource extends ItemResource {
                 final boolean allowDataDeletion = BooleanUtils.toBoolean(getQueryVariable("allowDataDeletion"));
                 if (item.instanceOf("xnat:projectData")) {
                     XnatProjectdata workingProject = new XnatProjectdata(item);
+                    XnatProjectdataBean projectBean = new XnatProjectdataBean();
 
                     if (hasFilePath) {
                         if (StringUtils.isBlank(workingProject.getId())) {

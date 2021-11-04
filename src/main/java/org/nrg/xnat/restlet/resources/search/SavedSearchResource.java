@@ -10,6 +10,7 @@
 package org.nrg.xnat.restlet.resources.search;
 
 import com.noelios.restlet.ext.servlet.ServletCall;
+import org.nrg.xdat.base.BaseElement;
 import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.om.*;
 import org.nrg.xdat.presentation.CSVPresenter;
@@ -56,16 +57,16 @@ import java.util.Map;
 
 public class SavedSearchResource extends ItemResource {
     private XdatStoredSearch xss            = null;
-    private String           sID            = null;
     private boolean          loadedFromFile = false;
 
-    public SavedSearchResource(Context context, Request request,
-                               Response response) {
+    private final String sID;
+
+    public SavedSearchResource(Context context, Request request, Response response) {
         super(context, request, response);
 
         sID = (String) getParameter(request, "SEARCH_ID");
-        if (sID != null) {
-            this.getVariants().add(new Variant(MediaType.TEXT_XML));
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(sID)) {
+            getVariants().add(new Variant(MediaType.TEXT_XML));
         } else {
             response.setStatus(Status.CLIENT_ERROR_GONE);
         }
@@ -127,7 +128,7 @@ public class SavedSearchResource extends ItemResource {
                 } else {
                     try {
                         SAXReader reader = new SAXReader(user);
-                        XFTItem item = reader.parse(searchXml);
+                        XFTItem   item   = reader.parse(searchXml);
                         xss = new XdatStoredSearch(item);
 
                         loadedFromFile = true;
@@ -168,9 +169,9 @@ public class SavedSearchResource extends ItemResource {
                     this.setContentDisposition(filepath + ".csv");
                 }
                 try {
-                    DisplaySearch ds = xss.getDisplaySearch(user);
-                    String sortBy = this.getQueryVariable("sortBy");
-                    String sortOrder = this.getQueryVariable("sortOrder");
+                    DisplaySearch ds        = xss.getDisplaySearch(user);
+                    String        sortBy    = this.getQueryVariable("sortBy");
+                    String        sortOrder = this.getQueryVariable("sortOrder");
                     if (sortBy != null) {
                         ds.setSortBy(sortBy);
                         if (sortOrder != null) {
@@ -250,10 +251,10 @@ public class SavedSearchResource extends ItemResource {
     public void handlePut() {
         try {
             final UserI user = getUser();
-            Reader sax = this.getRequest().getEntity().getReader();
+            Reader      sax  = this.getRequest().getEntity().getReader();
 
             SAXReader reader = new SAXReader(user);
-            XFTItem item = reader.parse(sax);
+            XFTItem   item   = reader.parse(sax);
 
             if (!item.instanceOf("xdat:stored_search")) {
                 this.getResponse().setStatus(Status.CLIENT_ERROR_UNPROCESSABLE_ENTITY);
@@ -314,13 +315,13 @@ public class SavedSearchResource extends ItemResource {
             }
 
             boolean found = false;
-            for (XdatStoredSearchAllowedUser au : search.getAllowedUser()) {
+            for (XdatStoredSearchAllowedUserI au : search.getAllowedUser()) {
                 if (au.getLogin().equals(user.getLogin())) {
                     found = true;
                 }
             }
 
-            for (XdatStoredSearchGroupid ag : search.getAllowedGroups_groupid()) {
+            for (XdatStoredSearchGroupidI ag : search.getAllowedGroups_groupid()) {
                 if (Groups.isMember(user, ag.getGroupid())) {
                     found = true;
                 }
@@ -372,17 +373,17 @@ public class SavedSearchResource extends ItemResource {
                 XdatStoredSearch search = XdatStoredSearch.getXdatStoredSearchsById(sID, user, false);
 
                 if (search != null) {
-                    XdatStoredSearchAllowedUser mine = null;
-                    XdatStoredSearchGroupid group = null;
+                    XdatStoredSearchAllowedUserI mine  = null;
+                    XdatStoredSearchGroupidI     group = null;
 
-                    for (XdatStoredSearchAllowedUser au : search.getAllowedUser()) {
+                    for (XdatStoredSearchAllowedUserI au : search.getAllowedUser()) {
                         if (au.getLogin().equals(user.getLogin())) {
                             mine = au;
                             break;
                         }
                     }
 
-                    for (XdatStoredSearchGroupid ag : search.getAllowedGroups_groupid()) {
+                    for (XdatStoredSearchGroupidI ag : search.getAllowedGroups_groupid()) {
                         if (Groups.isMember(user, ag.getGroupid())) {
                             group = ag;
                             break;
@@ -391,13 +392,13 @@ public class SavedSearchResource extends ItemResource {
 
                     if (mine != null) {
                         if (search.getAllowedUser().size() > 1 || search.getAllowedGroups_groupid().size() > 0) {
-                            SaveItemHelper.authorizedDelete(mine.getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed user from stored search"));
+                            SaveItemHelper.authorizedDelete(((BaseElement) mine).getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed user from stored search"));
                         } else {
                             SaveItemHelper.authorizedDelete(search.getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search"));
                         }
                     } else if (group != null) {
                         if (search.getAllowedUser().size() > 0 || search.getAllowedGroups_groupid().size() > 1) {
-                            SaveItemHelper.authorizedDelete(group.getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed group from stored search"));
+                            SaveItemHelper.authorizedDelete(((BaseElement) group).getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed group from stored search"));
                         } else {
                             SaveItemHelper.authorizedDelete(search.getItem(), user, this.newEventInstance(EventUtils.CATEGORY.SIDE_ADMIN, "Removed stored search"));
                         }

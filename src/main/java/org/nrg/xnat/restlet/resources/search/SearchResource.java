@@ -82,10 +82,7 @@ public class SearchResource extends SecureResource {
     public void handlePost() {
         try {
             String cacheRequest = getQueryVariable("cache");
-            boolean cache = false;
-            if (cacheRequest != null && cacheRequest.equalsIgnoreCase("true")) {
-                cache = true;
-            }
+            final boolean cache = cacheRequest != null && cacheRequest.equalsIgnoreCase("true");
 
             XFTItem item = null;
             Representation entity = getRequest().getEntity();
@@ -249,7 +246,7 @@ public class SearchResource extends SecureResource {
 
                     int limit = 0;
                     if (getQueryVariable("limit") != null) {
-                        limit = Integer.valueOf(getQueryVariable("limit"));
+                        limit = Integer.parseInt(getQueryVariable("limit"));
                     }
                     table = mv.getData(null, null, limit);
                     rows = mv.getSize();
@@ -287,7 +284,6 @@ public class SearchResource extends SecureResource {
         return representTable(table, mt, tableParams, cp);
     }
 
-    @SuppressWarnings("ConstantConditions")
     public static LinkedHashMap<String, Map<String, String>> setColumnProperties(DisplaySearch search, UserI user, SecureResource sr) {
         LinkedHashMap<String, Map<String, String>> cp = new LinkedHashMap<>();
         try {
@@ -297,7 +293,7 @@ public class SearchResource extends SecureResource {
 
             if (search.getInClauses().size() > 0) {
                 for (int i = 0; i < search.getInClauses().size(); i++) {
-                    cp.put("search_field" + i, new Hashtable<String, String>());
+                    cp.put("search_field" + i, new Hashtable<>());
                     cp.get("search_field" + i).put("header", "");
                 }
             }
@@ -317,7 +313,7 @@ public class SearchResource extends SecureResource {
                     } else {
                         id = dfr.getElementSQLName().toLowerCase() + "_" + dfr.getRowID().toLowerCase();
                     }
-                    cp.put(id, new Hashtable<String, String>());
+                    cp.put(id, new Hashtable<>());
                     cp.get(id).put("element_name", dfr.getElementName());
                     try {
                         String temp_id = dfr.getDisplayField().getId();
@@ -401,9 +397,8 @@ public class SearchResource extends SecureResource {
                                                         insert_value = insert_value.substring(6);
                                                         //noinspection Duplicates
                                                         try {
-                                                            Integer i = Integer.parseInt(insert_value);
                                                             ArrayList<String> al = XftStringUtils.CommaDelimitedStringToArrayList(insertValue.toString());
-                                                            insertValue = al.get(i);
+                                                            insertValue = al.get(Integer.parseInt(insert_value));
                                                         } catch (Throwable e) {
                                                             logger.error("", e);
                                                         }
@@ -422,7 +417,7 @@ public class SearchResource extends SecureResource {
                                             insert_value = insert_value.toLowerCase();
                                         }
                                         if (cp.get(insert_value) == null) {
-                                            cp.put(insert_value, new Hashtable<String, String>());
+                                            cp.put(insert_value, new Hashtable<>());
 
                                             if (!dfr.getElementName().equalsIgnoreCase(search.getRootElement().getFullXMLName())) {
                                                 cp.get(insert_value).put("xPATH", dfr.getElementName() + "." + insert_value);
@@ -453,7 +448,7 @@ public class SearchResource extends SecureResource {
 
             }
 
-            cp.put("quarantine_status", new Hashtable<String, String>());
+            cp.put("quarantine_status", new Hashtable<>());
         } catch (ElementNotFoundException | XFTInitException e) {
             logger.error("", e);
         }

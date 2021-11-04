@@ -9,9 +9,9 @@ import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.generics.GenericUtils;
 import org.nrg.xapi.authorization.CreateProjectXapiAuthorization;
 import org.nrg.xapi.exceptions.*;
-import org.nrg.xapi.model.DIRResource;
+import org.nrg.xapi.model.xft.DicomDir;
 import org.nrg.xapi.model.ResourceFile;
-import org.nrg.xapi.model.TriageDto;
+import org.nrg.xapi.model.xft.TriageEntry;
 import org.nrg.xapi.rest.*;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.model.XnatResourceI;
@@ -325,17 +325,17 @@ public class ResourceApi extends AbstractXapiProjectRestController {
         _resourceService.delete(getSessionUser(), projectId, subjectId, experimentId, assessorId, scanId, type, resourceId, XnatEventUtil.getXnatEventUtil(eventReason, eventId, eventType, eventAction, eventComment));
     }
 
-    @ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = DIRResource.class, responseContainer = "List")
+    @ApiOperation(value = "Gets the requested  project", notes = "Returns the  project with the specified ID", response = DicomDir.class, responseContainer = "List")
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested project."),
                    @ApiResponse(code = 400, message = "The requested projectId wasn't found."),
                    @ApiResponse(code = 404, message = "The requested project wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = {"/experiments/{experimentId}/DIR", "/projects/{projectId}/experiments/{experimentId}/DIR"}, produces = {MediaType.APPLICATION_JSON_VALUE}, method = GET)
-    public List<DIRResource> getAllDIRResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
-                                                @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
-                                                @ApiParam(value = "The value  of the filepath.") @RequestParam(required = false) final String filepath,
-                                                @ApiParam(value = "The value of the recursive.") @RequestParam(required = false) final boolean recursive,
-                                                @ApiParam(value = "The value of the isXarReference.") @RequestParam(required = false) final boolean isXarReference) throws NotFoundException, DataFormatException, NotAuthenticatedException, InvalidFileCharacters {
+    public List<DicomDir> getAllDIRResources(@ApiParam(value = "The ID of the project.") @PathVariable(required = false) @Project final String projectId,
+                                             @ApiParam(value = "The ID of the experiment.") @PathVariable @Experiment final String experimentId,
+                                             @ApiParam(value = "The value  of the filepath.") @RequestParam(required = false) final String filepath,
+                                             @ApiParam(value = "The value of the recursive.") @RequestParam(required = false) final boolean recursive,
+                                             @ApiParam(value = "The value of the isXarReference.") @RequestParam(required = false) final boolean isXarReference) throws NotFoundException, DataFormatException, NotAuthenticatedException, InvalidFileCharacters {
 
         log.debug("User {} requested project with ID {}", getSessionUser().getUsername(), projectId);
         return _resourceService.findAllDIRResources(getSessionUser(), projectId, experimentId, filepath, recursive, isXarReference);
@@ -616,8 +616,8 @@ public class ResourceApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested Triage resource wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/services/triage/projects/{projectId}/resources", produces = MediaType.APPLICATION_JSON_VALUE, method = GET,restrictTo = AccessLevel.Read)
-    public List<TriageDto> getAll(@ApiParam("The ID of the project ") @PathVariable @Project final String projectId,
-                                  @ApiParam("The value of Http Servlet request") HttpServletRequest request) throws NotFoundException, DataFormatException, InsufficientPrivilegesException, InitializationException {
+    public List<TriageEntry> getAll(@ApiParam("The ID of the project ") @PathVariable @Project final String projectId,
+                                    @ApiParam("The value of Http Servlet request") HttpServletRequest request) throws NotFoundException, DataFormatException, InsufficientPrivilegesException, InitializationException {
         log.debug("User {} requested Triage resource", getSessionUser().getUsername());
         return _resourceService.findTriageByProjectId(getSessionUser(), projectId, request);
     }

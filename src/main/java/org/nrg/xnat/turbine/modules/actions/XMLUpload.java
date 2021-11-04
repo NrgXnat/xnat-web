@@ -72,9 +72,7 @@ public class XMLUpload extends SecureAction {
             XFTItem item = null;
             try {
                 item = getCatalogService().insertXmlObject(user, fileItem.getInputStream(), BooleanUtils.toBoolean(allowDeletion), TurbineUtils.GetTurbineParameters(data, context));
-
-                final DisplayItemAction displayItemAction = new DisplayItemAction();
-                displayItemAction.doPerform(TurbineUtils.SetSearchProperties(data, item), context);
+                new DisplayItemAction().doPerform(TurbineUtils.SetSearchProperties(data, item), context);
             } catch (IOException e) {
                 log.error("", e);
                 data.setScreenTemplate("Error.vm");
@@ -86,21 +84,23 @@ public class XMLUpload extends SecureAction {
                 data.setScreenTemplate("Error.vm");
                 data.setMessage("XML Validation Exception.<BR>" + e.getValidation().toHTML());
             } catch (SAXParseException e) {
+                final String message;
                 if (e.getLineNumber() == -1 && e.getColumnNumber() == -1) {
                     // This probably means they uploaded an empty file.
-                    data.setMessage("XNAT was unable to parse the uploaded document. The document appears to be empty.");
+                    message = "XNAT was unable to parse the uploaded document. The document appears to be empty.";
                 } else if (e.getLineNumber() == 1 && e.getColumnNumber() == 1) {
                     // This probably means they uploaded a non-XML file.
-                    data.setMessage("XNAT was unable to parse the uploaded document. Check that your uploaded file is valid XML.");
+                    message = "XNAT was unable to parse the uploaded document. Check that your uploaded file is valid XML.";
                 } else {
                     // This probably means they uploaded an XML file with errors.
-                    data.setMessage("<p>XNAT failed while parsing the uploaded document. Error found at line " + e.getLineNumber() + ", column " + e.getColumnNumber() + ". The specific error message was:</p><p>" + e.getMessage() + "</p>");
+                    message = "<p>XNAT failed while parsing the uploaded document. Error found at line " + e.getLineNumber() + ", column " + e.getColumnNumber() + ". The specific error message was:</p><p>" + e.getMessage() + "</p>";
                 }
+                data.setMessage(message);
                 data.setScreenTemplate("Error.vm");
                 final Map<String, String> links = new HashMap<>();
                 links.put(getLink(context), "Return to the XML Upload page");
                 context.put("links", links);
-                log.error("", e);
+                log.warn("The user {} uploaded invalid XML, which failed with the message: \"{}\". The user was told: {}", user.getUsername(), e.getMessage(), message);
             } catch (InvalidPermissionException e) {
                 log.error("The user {} tried to perform an illegal operation when uploading XML", user.getUsername(), e);
                 handleInvalidPermissions(data, item, e.getMessage());

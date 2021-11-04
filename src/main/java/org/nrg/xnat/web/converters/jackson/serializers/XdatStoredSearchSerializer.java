@@ -3,6 +3,7 @@ package org.nrg.xnat.web.converters.jackson.serializers;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import lombok.extern.slf4j.Slf4j;
+import org.nrg.framework.generics.GenericUtils;
 import org.nrg.xdat.om.*;
 
 import java.io.IOException;
@@ -35,13 +36,13 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
         writeNonBlankField(generator, "sortByFieldId", search.getSortBy_fieldId());
 
         generator.writeArrayFieldStart("login");
-        for (final XdatStoredSearchAllowedUser user : search.getAllowedUser()) {
+        for (final XdatStoredSearchAllowedUserI user : search.getAllowedUser()) {
             generator.writeString(user.getLogin());
         }
         generator.writeEndArray();
 
         generator.writeArrayFieldStart("searchField");
-        for (final XdatSearchField field : search.getSearchField()) {
+        for (final XdatSearchFieldI field : search.getSearchField()) {
             generator.writeString(field.getElementName());
             generator.writeString(field.getFieldId());
             generator.writeNumber(field.getSequence());
@@ -51,11 +52,11 @@ public class XdatStoredSearchSerializer<T extends XdatStoredSearch> extends Abst
         generator.writeEndArray();
 
         generator.writeArrayFieldStart("searchWhere");
-        for (final XdatCriteriaSet searchWhere : search.getSearchWhere()) {
+        for (final XdatCriteriaSetI searchWhere : search.getSearchWhere()) {
             generator.writeArrayFieldStart("searchChild");
-            for (final XdatCriteriaSet child : searchWhere.getChildSet()) {
+            for (final XdatCriteriaSetI child : GenericUtils.convertToTypedList(searchWhere.getChildSet(), XdatCriteriaSetI.class)) {
                 generator.writeArrayFieldStart("searchCriteria");
-                for (final XdatCriteria criteria : child.getCriteria()) {
+                for (final XdatCriteriaI criteria : GenericUtils.convertToTypedList(child.getCriteria(), XdatCriteriaI.class)) {
                     generator.writeString(criteria.getSchemaField());
                     generator.writeString(criteria.getComparisonType());
                     generator.writeNumber(criteria.getValue());

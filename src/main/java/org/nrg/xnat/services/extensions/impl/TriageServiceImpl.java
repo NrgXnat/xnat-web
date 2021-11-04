@@ -1,59 +1,7 @@
 package org.nrg.xnat.services.extensions.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URLDecoder;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.zip.ZipOutputStream;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.nrg.action.ActionException;
-import org.nrg.action.ClientException;
-import org.nrg.xapi.exceptions.DataFormatException;
-import org.nrg.xapi.exceptions.InitializationException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
-import org.nrg.xapi.model.TriageDto;
-import org.nrg.xapi.model.TriageFileDto;
-import org.nrg.xdat.om.XnatExperimentdata;
-import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xdat.security.helpers.Features;
-import org.nrg.xft.event.EventUtils;
-import org.nrg.xft.event.persist.PersistentWorkflowI;
-import org.nrg.xft.exception.InvalidItemException;
-import org.nrg.xft.security.UserI;
-import org.nrg.xft.utils.zip.ZipUtils;
-import org.nrg.xnat.dto.resource.MediaTypeUtil;
-import org.nrg.xnat.dto.resource.ZipRepresentationUtil;
-import org.nrg.xnat.helpers.uri.URIManager;
-import org.nrg.xnat.helpers.uri.UriParserUtils;
-import org.nrg.xnat.helpers.uri.archive.ResourceURII;
-import org.nrg.xnat.model.util.XnatEventUtil;
 import org.nrg.xnat.services.extensions.TriageService;
-import org.nrg.xnat.services.triage.TriageManifest;
-import org.nrg.xnat.services.triage.TriageUtils;
-import org.nrg.xnat.utils.WorkflowUtils;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.core.JsonGenerationException;
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.Maps;
 
 import lombok.extern.slf4j.Slf4j;
 

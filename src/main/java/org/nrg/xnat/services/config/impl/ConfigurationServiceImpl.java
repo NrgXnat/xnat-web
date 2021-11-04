@@ -20,7 +20,7 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.dto.config.ConfigDto;
+import org.nrg.xapi.model.config.ConfigModel;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 import org.nrg.xnat.services.config.ConfigurationService;
 import org.springframework.stereotype.Service;
@@ -116,7 +116,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 	}
 	
 	@Override
-	public void updateConfig(UserI user,ConfigDto config, String toolName, String projectId,  String path, String status, String reason, String unversioned ) throws ConfigServiceException, DataFormatException {
+	public void updateConfig(UserI user, ConfigModel config, String toolName, String projectId, String path, String status, String reason, String unversioned) throws ConfigServiceException, DataFormatException {
 		configService = XDAT.getConfigService();
 		
 		fixAnonPath(toolName, projectId, path);
@@ -186,7 +186,7 @@ public class ConfigurationServiceImpl implements ConfigurationService {
 		
 	}
 
-	private String getBodyContents(ConfigDto config) {
+	private String getBodyContents(ConfigModel config) {
         if (config != null) {
             return config.getContents();
         }

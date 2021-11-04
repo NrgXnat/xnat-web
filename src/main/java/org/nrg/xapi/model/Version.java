@@ -8,7 +8,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import org.nrg.xapi.model.DisplayFieldReferenceI;
+import org.nrg.xapi.model.xft.DisplayFieldReference;
 
 @Data
 @Builder
@@ -16,11 +16,11 @@ import org.nrg.xapi.model.DisplayFieldReferenceI;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Version implements Serializable {
-	private static final long serialVersionUID = -2361324617208025730L;
-	private String name;
-	private String orderBy;
-	private String lightColor;
+	private static final long           serialVersionUID = -2361324617208025730L;
+	private String                      name;
+	private String                      orderBy;
+	private String                      lightColor;
 	private String darkColor;
-	private String defaultSortOrder;
-	private List<DisplayFieldReferenceI> fields;
+	private String                      defaultSortOrder;
+	private List<DisplayFieldReference> fields;
 }

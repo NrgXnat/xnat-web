@@ -9,7 +9,7 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.dto.config.ConfigDto;
+import org.nrg.xapi.model.config.ConfigModel;
 
 public interface ConfigurationService {
 
@@ -21,7 +21,7 @@ public interface ConfigurationService {
 
 	List<Configuration> findAllByToolNameAndPath(UserI user,String toolName, String projectId,  String path, boolean defaultToSiteWide,  String history, String requestVersion);
 	
-	 void updateConfig(UserI user,ConfigDto config, String toolName, String projectId,  String path, String status, String reason, String unversioned ) throws ConfigServiceException, DataFormatException;
+	 void updateConfig(UserI user, ConfigModel config, String toolName, String projectId, String path, String status, String reason, String unversioned) throws ConfigServiceException, DataFormatException;
 	 
 	 void deleteConfig(UserI user,String toolName, String projectId,  String path) throws ConfigServiceException, InsufficientPrivilegesException;
 }

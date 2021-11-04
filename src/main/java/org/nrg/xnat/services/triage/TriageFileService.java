@@ -29,8 +29,8 @@ import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.exceptions.ResourceAlreadyExistsException;
-import org.nrg.xapi.model.TriageDto;
-import org.nrg.xapi.model.TriageFileDto;
+import org.nrg.xapi.model.xft.TriageEntry;
+import org.nrg.xapi.model.xft.TriageFile;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatExperimentdata;
@@ -145,15 +145,15 @@ public class TriageFileService implements TriageService {
 	
 	
 	@Override
-	public List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
+	public List<TriageEntry> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request) {
 		String projectPath=TriageUtils.getTriageProjectPath(projectId);
 		XnatProjectdata proj = XnatProjectdata.getProjectByIDorAlias(projectId, user, false);
 		return returnXnameList(proj,projectPath+File.separator+"resources", request);
 	}
 	
-	private List<TriageDto> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
-		List<TriageDto> response = new ArrayList<>();
-		File[] fileArray = new File(projectPath).listFiles();
+	private List<TriageEntry> returnXnameList(XnatProjectdata proj, String projectPath, HttpServletRequest request) {
+		List<TriageEntry> response  = new ArrayList<>();
+		File[]            fileArray = new File(projectPath).listFiles();
 		 if(fileArray!=null){
 			 for (File f : fileArray) {
 				 String fn=f.getName();
@@ -713,19 +713,19 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 		return username;
 	}
 
-	private TriageDto getTriageUtil(String fn, File f, HttpServletRequest request) {
-		return TriageDto.builder()
-				 .resource(fn)
-				 .uri(constructResourceURI(fn, request))
-				 .target(getPropertyFromManifest(f, TARGET))
-				 .user(getPropertyFromManifest(f, USER))
-				 .date(getPropertyFromManifest(f, DATE))
-				 .overwrite(getPropertyFromManifest(f, OVERWRITE))
-				 .eventReason(getPropertyFromManifest(f, EVENT_REASON))
-				 .ftarget(getPropertyFromManifest(f, FTARGET))
-				 .format(getPropertyFromManifest(f, FORMAT))
-				 .content(getPropertyFromManifest(f, CONTENT))
-				 .fSource("").build();
+	private TriageEntry getTriageUtil(String fn, File f, HttpServletRequest request) {
+		return TriageEntry.builder()
+						  .resource(fn)
+						  .uri(constructResourceURI(fn, request))
+						  .target(getPropertyFromManifest(f, TARGET))
+						  .user(getPropertyFromManifest(f, USER))
+						  .date(getPropertyFromManifest(f, DATE))
+						  .overwrite(getPropertyFromManifest(f, OVERWRITE))
+						  .eventReason(getPropertyFromManifest(f, EVENT_REASON))
+						  .fileTarget(getPropertyFromManifest(f, FTARGET))
+						  .format(getPropertyFromManifest(f, FORMAT))
+						  .content(getPropertyFromManifest(f, CONTENT))
+						  .fSource("").build();
 	}
 
 	private String constructResourceURI(String resource, HttpServletRequest request) {
@@ -776,8 +776,8 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 	}
 	
 	private void returnFileList(XnatProjectdata xproj, String projectPath, String xName, HttpServletRequest request) {
-		List<TriageFileDto> response = new  ArrayList<>();
-		File dir = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
+		List<TriageFile> response = new  ArrayList<>();
+		File             dir      = new File (projectPath+File.separator+ File.separator+"resources"+File.separator+xName+File.separator+"files");
 		//need to ignore .json files.
 		if (dir.exists() && dir.isDirectory()) {
 			ArrayList<File> fileList = new ArrayList<File>();
@@ -793,19 +793,19 @@ private void returnFile(XnatProjectdata proj, String projectPath,String xname,St
 		}
 	}
 	
-	private TriageFileDto getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
-		return TriageFileDto.builder()
-				 .name(fileRelativeName)
-				 .uri(constructURI(fileRelativeName, request))
-				 .target(getPropertyFromManifest(f, TARGET))
-				 .user(getPropertyFromManifest(f, USER))
-				 .date(getPropertyFromManifest(f, DATE))
-				 .overwrite(getPropertyFromManifest(f, OVERWRITE))
-				 .eventReason(getPropertyFromManifest(f, EVENT_REASON))
-				 .ftarget(getPropertyFromManifest(f, FTARGET))
-				 .format(getPropertyFromManifest(f, FORMAT))
-				 .content(getPropertyFromManifest(f, CONTENT))
-				 .size(f.length()).build();
+	private TriageFile getTriageFileData(String fileRelativeName, File f, HttpServletRequest request) {
+		return TriageFile.builder()
+						 .name(fileRelativeName)
+						 .uri(constructURI(fileRelativeName, request))
+						 .target(getPropertyFromManifest(f, TARGET))
+						 .user(getPropertyFromManifest(f, USER))
+						 .date(getPropertyFromManifest(f, DATE))
+						 .overwrite(getPropertyFromManifest(f, OVERWRITE))
+						 .eventReason(getPropertyFromManifest(f, EVENT_REASON))
+						 .fileTarget(getPropertyFromManifest(f, FTARGET))
+						 .format(getPropertyFromManifest(f, FORMAT))
+						 .content(getPropertyFromManifest(f, CONTENT))
+						 .size(f.length()).build();
 	}
 	
     private String constructURI(String resource, HttpServletRequest request) {

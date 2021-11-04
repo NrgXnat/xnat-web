@@ -1,16 +1,5 @@
 package org.nrg.xnat.services.extensions;
 
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.nrg.action.ActionException;
-import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
-import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.model.TriageDto;
-import org.nrg.xft.exception.InvalidItemException;
-import org.nrg.xft.security.UserI;
-
 public interface TriageService {
 
 //	List<TriageDto> findTriageByProjectId(UserI user, String projectId, HttpServletRequest request);

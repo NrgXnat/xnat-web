@@ -7,15 +7,14 @@ import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xapi.model.DisplayVersion;
+import org.nrg.xapi.model.xft.DisplayVersionModel;
 import org.nrg.xapi.model.SearchElement;
 import org.nrg.xapi.model.XnatSearchElement;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.collections.DisplayFieldCollection.DisplayFieldNotFoundException;
-import org.nrg.xdat.model.XdatStoredSearchI;
 import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.om.XdatStoredSearchI;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils.ActionNameAbsent;
@@ -48,21 +47,21 @@ public class SearchApi extends AbstractXapiProjectRestController {
     }
 
     @ApiOperation(value = "Gets a list of accessible stored searches", notes = "Returns the r search saved", response = XdatStoredSearchI.class, responseContainer = "List")
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested XdatStoredSearch."),
-                   @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested stored search."),
+                   @ApiResponse(code = 404, message = "The requested stored search wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
     public List<XdatStoredSearchI> getAllSavedSearches(@ApiParam(value = "The username search value.") @RequestParam(required = false) final String username,
                                                        @ApiParam(value = "The getAllBundles search value.") @RequestParam(required = false) final String allBundles,
                                                        @ApiParam(value = "The includeTag search value.") @RequestParam(required = false) final String includeTag) throws NotFoundException {
-        log.debug("User {} requested XdatStoredSearch ", getSessionUser().getUsername());
+        log.debug("User {} requested stored search ", getSessionUser().getUsername());
         return _searchService.findAllSavedSearch(getSessionUser(), username, allBundles, includeTag);
     }
 
     @ApiOperation(value = "Gets the requested stored search", notes = "Returns the requested stored search", response = XdatStoredSearchI.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested XdatStoredSearch."),
-                   @ApiResponse(code = 403, message = "The user doesn't have permission to create XdatStoredSearch"),
-                   @ApiResponse(code = 404, message = "The requested XdatStoredSearch wasn't found."),
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested stored search."),
+                   @ApiResponse(code = 403, message = "The user doesn't have permission to create stored search"),
+                   @ApiResponse(code = 404, message = "The requested stored search wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/saved/{searchId}", produces = MediaType.APPLICATION_XML_VALUE, method = GET)
     public XdatStoredSearchI getSavedSearchBySearchId(@ApiParam(value = "The ID of the search saved.") @PathVariable final String searchId,
@@ -77,8 +76,9 @@ public class SearchApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 404, message = "The requested search elements wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/elements", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public List<SearchElement> getAllSearchElements(@RequestParam(required = false) final String secured, @RequestParam(required = false) final String readable,
-                                                    @RequestParam(required = false) final String used) throws NotFoundException {
+    public List<SearchElement> getAllSearchElements(@RequestParam(required = false, defaultValue = "true") final boolean secured,
+                                                    @RequestParam(required = false, defaultValue = "true") final boolean readable,
+                                                    @RequestParam(required = false, defaultValue = "true") final boolean used) throws NotFoundException {
         log.debug("User {} requested search elements ", getSessionUser().getUsername());
         return _searchService.findAllSearchElements(getSessionUser(), secured, readable, used);
     }
@@ -93,12 +93,12 @@ public class SearchApi extends AbstractXapiProjectRestController {
         return _searchService.findAllSearchElementsByElementName(getSessionUser(), elementName);
     }
 
-    @ApiOperation(value = "Gets the display version of the specified element", response = DisplayVersion.class)
+    @ApiOperation(value = "Gets the display version of the specified element", response = DisplayVersionModel.class)
     @ApiResponses({@ApiResponse(code = 200, message = "Returns the requested SearchElementVersion."),
                    @ApiResponse(code = 404, message = "The requested SearchElementVersion wasn't found."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred.")})
     @XapiRequestMapping(value = "/search/elements/{elementName}/versions", produces = MediaType.APPLICATION_JSON_VALUE, method = GET)
-    public DisplayVersion getSearchElementVersionByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException, DisplayFieldNotFoundException {
+    public DisplayVersionModel getSearchElementVersionByElementName(@ApiParam("The element name of the search element") @PathVariable final String elementName) throws NotFoundException {
         log.debug("User {} requested search elements with ELEMENT NAME {} with versions ", getSessionUser().getUsername(), elementName);
         return _searchService.findSearchElementVersionByElementName(getSessionUser(), elementName).orElseThrow(() -> new NotFoundException(XdatStoredSearch.SCHEMA_ELEMENT_NAME, elementName));
     }
