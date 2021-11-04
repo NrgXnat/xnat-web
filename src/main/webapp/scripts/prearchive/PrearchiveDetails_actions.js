@@ -106,7 +106,34 @@ XNAT.app.prearchiveActions={
 	        cache:false // Turn off caching for IE
 	    };
 		YAHOO.util.Connect.asyncRequest('GET',serverRoot+"/REST" + this.url+"/logs?template=details&format=html&requested_screen=PrearchiveDetailsLogs.vm&popup=true",logsCallback,null,this);
-	}
+	},
+    buildResourceTable(resources) {
+		if (resources.length === 0) {
+			return;
+		}
+		let trs = '';
+		for (let i = 0; i < resources.length; i++) {
+			trs += '<tr id="resourceTR' + resources[i] + '">' +
+				'<td>' + resources[i] + '</td>' +
+				'<td nowrap>' +
+				'<select class="resourceActionSelect" data-resource-id="' + resources[i]+ '">' +
+				'	<option value="">Actions</option>' +
+				'	<option value="download">Download Files</option>' +
+				'	<option value="review">Review File Details</option>' +
+				'</td>' +
+				'<td nowrap><div id="res' + resources[i] + 'Files" class="fileCountAndSize">' +
+				'<a href="#" class="nolink" onclick="XNAT.app.fileCounter.load()" style="text-decoration:underline">Show Counts</a></div></td>' +
+				'</tr>';
+		}
+
+		const resTable = $('<div class="resources-table"><br><hr><div class="edit_header1" style="margin-bottom:16px">Resources</div>' +
+			'<table>' +
+			'<tr><th>Label</th><th></th><th></th></tr>' +
+			trs +
+			'</table></div>');
+
+		$('#scan_tbody').parents('table').after(resTable);
+    }
 };
 
 //validator is used to simply validate if archiving would work (not to actually archive).
@@ -182,10 +209,10 @@ XNAT.app.prearchiveActions.downloadResFiles = function( url, resId ){
 	return false;
 }
 
-XNAT.app.prearchiveActions.reviewResFileDetails = function( url, resId ){
+XNAT.app.prearchiveActions.reviewResFileDetails = function( url, resId, project ){
 	var RESTurl = serverRoot +
 		'/data' + url + '/resources/' + resId +
-		'/files?format=html&requested_screen=PrearchiveFileList.vm&popup=true&prettyPrint=true';
+		'/files?format=html&requested_screen=PrearchiveFileList.vm&popup=true&prettyPrint=true' + (project ? '&project=' + project : '');
 	XNAT.app.fileDialog.loadScan(RESTurl, 'Resource ' + resId + ' files');
 }
 
@@ -200,10 +227,10 @@ XNAT.app.prearchiveActions.downloadFiles = function( url, scan_id ){
 	return false;
 };
 
-XNAT.app.prearchiveActions.reviewFileDetails = function( url, scan_id, label ){
+XNAT.app.prearchiveActions.reviewFileDetails = function( url, scan_id, label, project ){
 	var RESTurl = serverRoot +
 		'/data' + url + '/scans/' + scan_id + '/resources/' + label +
-		'/files?format=html&requested_screen=PrearchiveFileList.vm&popup=true&prettyPrint=true';
+		'/files?format=html&requested_screen=PrearchiveFileList.vm&popup=true&prettyPrint=true' + (project ? '&project=' + project : '');
 	XNAT.app.fileDialog.loadScan(RESTurl, 'Scan ' + scan_id + ' files');
 };
 
