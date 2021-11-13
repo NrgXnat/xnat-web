@@ -19,4 +19,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = "web"
+rootProject.name = "web-scriptProvider"

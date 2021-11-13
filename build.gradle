@@ -9,7 +9,7 @@
 
 buildscript {
     ext {
-        vXnat = "1.8.5-SNAPSHOT"
+        vXnat = "1.8.5anonimport-SNAPSHOT"
     }
 }
 
@@ -44,7 +44,7 @@ repositories {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web"
+war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web-scriptprovider"
 
 configurations {
     javadocCoverage
@@ -162,6 +162,7 @@ dependencies {
     implementation "org.nrg.dicom:dicom-edit4"
     implementation "org.nrg.dicom:dicom-edit6"
     implementation "org.nrg.dicom:pixelEditor"
+    implementation "org.nrg.dicom:scriptprovider"
     implementation "org.nrg:mail"
     implementation "org.nrg:notify"
 

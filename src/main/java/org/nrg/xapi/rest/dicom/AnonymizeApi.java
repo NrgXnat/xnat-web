@@ -12,6 +12,10 @@ package org.nrg.xapi.rest.dicom;
 import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.anonscriptprovider.entities.AnonScript;
+import org.nrg.anonscriptprovider.entities.AnonScripts;
+import org.nrg.anonscriptprovider.exceptions.AnonScriptProviderServiceException;
+import org.nrg.anonscriptprovider.services.AnonScriptProviderService;
 import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NrgServiceException;
@@ -26,12 +30,13 @@ import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.helpers.merge.AnonUtils;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.util.Optional;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.*;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -45,10 +50,15 @@ import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 @Slf4j
 public class AnonymizeApi extends AbstractXapiProjectRestController {
     @Autowired
-    public AnonymizeApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final AnonUtils anonUtils, final SiteConfigPreferences preferences) {
+    public AnonymizeApi(final UserManagementServiceI userManagementService,
+                        final RoleHolder roleHolder,
+                        final AnonUtils anonUtils,
+                        final SiteConfigPreferences preferences,
+                        final AnonScriptProviderService scriptProvider) {
         super(userManagementService, roleHolder);
         _anonUtils = anonUtils;
         _preferences = preferences;
+        _scriptProvider = scriptProvider;
     }
 
     @ApiOperation(value = "Gets the default anonymization script.", response = String.class)
@@ -165,6 +175,84 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
         }
     }
 
-    private final AnonUtils             _anonUtils;
-    private final SiteConfigPreferences _preferences;
+    @ApiOperation(value = "Gets all anonymization scripts.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the contents of the anon script provider."),
+            @ApiResponse(code = 204, message = "There is no content for the response."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to access the anon script provider."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "scripts", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+    @ResponseBody
+    public ResponseEntity<AnonScripts> getAllAnonScripts() throws NrgServiceException, NoContentException {
+        final AnonScripts scripts = _scriptProvider.getAllScripts();
+        if (scripts.isEmpty()) {
+            throw new NoContentException("There are no anonymization scripts associated with the script provider.");
+        }
+        return new ResponseEntity<>(scripts, HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Posts a new anonymization script.")
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully stored the contents of the anonymization script."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to post the anonymization script."),
+            @ApiResponse(code = 409, message = "Posted script conflicts with a pre-existing script."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "scripts", consumes = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.POST, restrictTo = Admin)
+    public ResponseEntity<Void> postAnonScript(@RequestBody final AnonScript script) throws AnonScriptProviderServiceException {
+        _scriptProvider.createScript(script);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Delete all anonymization scripts.")
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully deleted all anonymization scripts."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to delete anonymization scripts."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "scripts", consumes = MediaType.ALL_VALUE, method = RequestMethod.DELETE, restrictTo = Admin)
+    public ResponseEntity<Void> deleteAllProviderScripts() throws NrgServiceException {
+        try {
+            _scriptProvider.deleteAll();
+        } catch (AnonScriptProviderServiceException e) {
+            throw new NrgServiceException( e);
+        }
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Delete anonymization script by label and version.")
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully deleted specified anonymization script."),
+            @ApiResponse(code = 204, message = "Specified script not found."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to delete anonymization script."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "scripts/{label}/version/{versionID}", consumes = MediaType.ALL_VALUE, method = RequestMethod.DELETE, restrictTo = Admin)
+    public ResponseEntity<Void> deleteProviderScriptByLabelAndVersion( @PathVariable("label") final String label,
+                                                                       @PathVariable("versionID") final String versionID) throws AnonScriptProviderServiceException {
+        _scriptProvider.deleteScriptByLabelVersion( label, versionID);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @ApiOperation(value = "Get anonymization script with label and versionID.", response = String.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the specified anon script."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to access the anon script provider."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = "scripts/{label}/version/{versionID}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Admin)
+    @ResponseBody
+    public ResponseEntity<AnonScript> getAnonScriptWithLabelAndVersion( @PathVariable("label") final String label,
+                                                                        @PathVariable("versionID") final String versionID) throws NrgServiceException, NoContentException {
+        final Optional<AnonScript> script = _scriptProvider.getScriptByLabelVersion( label, versionID);
+        return new ResponseEntity<>( script.orElseThrow( () -> new NoContentException( String.format("No such anon script with label '%s', versionID '%s'", label, versionID))),
+                HttpStatus.OK);
+    }
+
+//    @ApiOperation(value = "Get anonymization script with label and versionID.", response = String.class)
+//    @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved the specified anon script."),
+//            @ApiResponse(code = 403, message = "Insufficient permissions to access the anon script provider."),
+//            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+//    @XapiRequestMapping(value = "scripts/{label}/version/{versionID}", produces = MediaType.APPLICATION_JSON_VALUE, method = RequestMethod.GET, restrictTo = Read)
+//    @ResponseBody
+//    public ResponseEntity<AnonScript> getAnonScriptWithID( @PathVariable("scriptID") final String scriptID) throws NrgServiceException, NoContentException {
+//        final Optional<AnonScript> script = _scriptProvider.getScriptByID( scriptID);
+//        return new ResponseEntity<>( script.orElseThrow( () -> new NoContentException( String.format("No such anon script with label '%s', versionID '%s'", label, versionID))),
+//                HttpStatus.OK);
+//    }
+
+    private final AnonScriptProviderService _scriptProvider;
+    private final AnonUtils                 _anonUtils;
+    private final SiteConfigPreferences     _preferences;
 }

@@ -74,7 +74,7 @@ import java.util.concurrent.TimeUnit;
                 "org.nrg.xnat.initialization.tasks", "org.nrg.xnat.node", "org.nrg.xnat.preferences", "org.nrg.xnat.processor.dao",
                 "org.nrg.xnat.processor.services.impl", "org.nrg.xnat.processors",
                 "org.nrg.xnat.task", "org.nrg.xnat.tracking", "org.nrg.xnat.archive"})
-@Import({FeaturesConfig.class, ReactorConfig.class})
+@Import({FeaturesConfig.class, ReactorConfig.class, AnonScriptProviderConfig.class})
 @EnableCaching
 @Getter
 @Accessors(prefix = "_")

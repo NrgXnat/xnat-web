@@ -1,0 +1,8 @@
+{
+  "content": "version \"6.4\"\n(0010,0010) := \"fubar\"\n(0010,0020) := \"snafu\"",
+  "description": "This is the root script",
+  "enabled": true,
+  "label": "root",
+  "unversioned": false,
+  "version": "v1"
+}
