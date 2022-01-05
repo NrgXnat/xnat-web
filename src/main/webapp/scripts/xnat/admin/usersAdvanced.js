@@ -2,6 +2,8 @@
  * Functions for "Advanced" user settings
  */
 
+console.log('usersAdvanced.js');
+
 var XNAT = getObject(XNAT);
 
 (function(factory){
@@ -646,9 +648,50 @@ var XNAT = getObject(XNAT);
     }
     usersAdvanced.updateUserRoles = updateUserRoles;
 
+    usersAdvanced.toggleAlldata = function(adminPermission){
+        if (adminPermission === undefined) {
+            adminPermission = usersAdvanced.form$.find('#role_Administrator').is(':checked');
+        }
+
+        if (adminPermission) {
+            usersAdvanced.form$.find('input.alldata').not('.full').prop('disabled','disabled');
+            usersAdvanced.form$.find('input.alldata').not('.limited').prop('checked','checked');
+            XNAT.ui.banner.top(4000,'Site Admin permissions must be tied to "All Data Access" permissions.','warning','480px');
+        }
+        else {
+            usersAdvanced.form$.find('input.alldata').prop('disabled',false);
+            usersAdvanced.form$.find('input.alldata').each(function(){
+                if ($(this).data('preset')) $(this).prop('checked','checked')
+            });
+        }
+    }
+
     $(document).ready(function(){
         var userform$ = $('#userform');
         usersAdvanced.form$ = userform$;
+
+        XNAT.xhr.getJSON({
+            url: XNAT.url.restUrl('/xapi/users/rolemap'),
+            failure: function(e) {
+                XNAT.dialog.message('Could not load user role map, which is required to display the user table');
+                console.warn(e);
+            },
+            success: function(data){
+                XNAT.usersGroups.roles = Object.keys(data);
+                XNAT.usersGroups.adminUsers = data['Administrator'] || []; // Add special tracking for admin users
+                if (XNAT.usersGroups.adminUsers.length === 1 && data['Administrator'][0] === editUser) {
+                    // if there is only one site administrator account and it is currently being edited,
+                    // prevent modification of the admin user role
+
+                }
+            }
+        })
+
+        $('#role_Administrator').on('click',function(e){
+            var adminPermission = $(this).prop('checked');
+            XNAT.admin.usersAdvanced.toggleAlldata(adminPermission);
+        })
+
         $('#update-user-roles').on('click', function(e){
             e.preventDefault();
             xmodal.loading.open();

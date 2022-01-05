@@ -35,7 +35,7 @@ $page.setVlinkColor($ui.vlink)
 
 #parse("/screens/LoadProjectsJS.vm")
 <form id="userform" name="form1" method="post" action="$link.setAction("ModifyUserGroups")">
-    <table width=100% align="left" border="0">
+    <div width=100% align="left" border="0">
         <tr>
             <td align="left">
                 #addCustomScreens($om.getXSIType() "report/preDetails")
@@ -175,135 +175,56 @@ $page.setVlinkColor($ui.vlink)
             <td>
                 <div style="padding:10px;background:#f0f0f0;border:1px solid #ccc">
                     <h3>Define security settings</h3>
-                    <table width="100%" border="0">
-                        <tr>
-                            <td valign="top">
-                                <table border="0" width="100%" style="margin-top:10px;">
-                                    <tr>
-                                        <th align="left">System Roles:</th>
-                                    </tr>
-                                    #foreach($role in $allRoles)
-                                        <tr>
-                                            <td align="left">
-                                                <input class="access role" type="checkbox" id="role_$role.getKey()" name="custom_role" value="$role.getKey()" #if($userObject.checkRole($role.getKey()))checked#end/>
-                                                <label for="role_$role.getKey()">$role.getName()</label>
-                                                : $!role.getDescription()
-                                            </td>
-                                        </tr>
-                                        #if($role.getWarning())
-                                            <tr>
-                                            ## <td align="center" valign="top"><img src="$content.getURI("images/rc.gif")" border="0"></td>
-                                                <td align="left">
-                                                    <div class="warning">
-                                                        $role.getWarning()
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td></td>
-                                            </tr>
-                                        #end
-                                    #end
-                                </table>
+                    <div id="system-roles">
+                        <h4>System Roles:</h4>
+                        #foreach($role in $allRoles)
+                            <p>
+                                <input class="access role" type="checkbox" id="role_$role.getKey()" name="custom_role" value="$role.getKey()" #if($userObject.checkRole($role.getKey()))checked#end/>
+                                <label for="role_$role.getKey()">$role.getName()</label>
+                                : $!role.getDescription()
+                            </p>
+                            #if($role.getWarning())
+                                <div class="warning" style="margin-bottom: 1em">
+                                    $role.getWarning()
+                                </div>
+                            #end
+                        #end
+                    </div>
 
-                                #set($groupCounter=0)
+                    #set($groupCounter=0)
 
-                                #if($siteConfig.allowDataAdmins)
-                                    <table border="0" width="100%" style="margin-top:20px;">
-                                        <tr>
-                                            <th align="left">Allow All Data Access:</th>
-                                        </tr>
-                                        <tr>
-                                        ## <td align="center" valign="top" style="width:20px"><img src="$content.getURI("images/rc.gif")" border="0"></td>
-                                            <td align="left">
-                                                <div class="warning">
-                                                    WARNING: Allowing 'All Data Access' will allow this user to see ALL data stored in this system, superseding project membership.
-                                                    This permission is automatically granted to all site administrators, but should not be granted to most other users.
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td align="left">
-                                                <label style="margin-right:10px;white-space:nowrap;">
-                                                    <input class="access group alldata limited" type="radio" id="data_none" name="xdat:user.groups.groupID[$groupCounter].groupID" value="NULL" checked/><label for="data_none">No</label>
-                                                </label>
-                                                <label style="margin-right:10px;white-space:nowrap;">
-                                                    <input class="access group alldata limited" type="radio" id="data_access" name="xdat:user.groups.groupID[$groupCounter].groupID" value="ALL_DATA_ACCESS" #if($userObjectHelper.isMember("ALL_DATA_ACCESS"))checked#end/><label for="data_access">Read Only</label>
-                                                </label>
-                                                <label style="margin-right:10px;white-space:nowrap;">
-                                                    <input class="access group alldata full" type="radio" id="data_admin" name="xdat:user.groups.groupID[$groupCounter].groupID" value="ALL_DATA_ADMIN" #if($userObjectHelper.isMember("ALL_DATA_ADMIN"))checked#end/><label for="data_admin">Read, Edit & Delete</label>
-                                                </label>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <script>
-                                        var XNAT = getObject(XNAT);
+                    #if($siteConfig.allowDataAdmins)
+                        <div id="data-admin-groups" style="margin-top:20px;">
+                            <h4>Allow All Data Access:</h4>
+                            <div class="warning">
+                                WARNING: Allowing 'All Data Access' will allow this user to see ALL data stored in this system, superseding project membership.
+                                This permission is automatically granted to all site administrators, but should not be granted to most other users.
+                            </div>
 
-                                        (function(factory){
-                                            if (typeof define === 'function' && define.amd) {
-                                                define(factory);
-                                            }
-                                            else if (typeof exports === 'object') {
-                                                module.exports = factory();
-                                            }
-                                            else {
-                                                return factory();
-                                            }
-                                        }(function() {
-                                            var undefined, usersGroups;
-                                            XNAT.admin = getObject(XNAT.admin || {});
+                            <p>
+                                <label style="margin-right:10px;white-space:nowrap;">
+                                    <input class="access group alldata limited" type="radio" id="data_none" name="xdat:user.groups.groupID[$groupCounter].groupID" value="NULL" checked/><label for="data_none">No</label>
+                                </label>
+                                <label style="margin-right:10px;white-space:nowrap;">
+                                    <input class="access group alldata limited" type="radio" id="data_access" name="xdat:user.groups.groupID[$groupCounter].groupID" value="ALL_DATA_ACCESS" #if($userObjectHelper.isMember("ALL_DATA_ACCESS"))checked#end/><label for="data_access">Read Only</label>
+                                </label>
+                                <label style="margin-right:10px;white-space:nowrap;">
+                                    <input class="access group alldata full" type="radio" id="data_admin" name="xdat:user.groups.groupID[$groupCounter].groupID" value="ALL_DATA_ADMIN" #if($userObjectHelper.isMember("ALL_DATA_ADMIN"))checked#end/><label for="data_admin">Read, Edit & Delete</label>
+                                </label>
+                            </p>
+                        </div>
+                    #end
 
-                                            XNAT.admin.usersGroups = usersGroups =
-                                                    getObject(XNAT.admin.usersGroups || {});
-                                            XNAT.usersGroups = extend(true, usersGroups, XNAT.usersGroups);
+                    <p>
+                        <button id="update-user-roles" type="button" class="btn1 pull-right">Save</button>
 
-                                            usersGroups.toggleAlldata = function(adminPermission){
-                                                if (adminPermission === undefined) {
-                                                    adminPermission = jq('#role_Administrator').is(':checked');
-                                                }
-
-                                                if (adminPermission) {
-                                                    jq('input.alldata').not('.full').prop('disabled','disabled');
-                                                    jq('input.alldata').not('.limited').prop('checked','checked');
-                                                    XNAT.ui.banner.top(4000,'Site Admin permissions must be tied to "All Data Access" permissions.','warning','480px');
-                                                }
-                                                else {
-                                                    jq('input.alldata').prop('disabled',false);
-                                                    jq('input.alldata').each(function(){
-                                                        if (jq(this).data('preset')) jq(this).prop('checked','checked')
-                                                    });
-                                                }
-                                            }
-
-                                        }));
-
-                                        jq(document).ready(function(){
-                                            jq('input.alldata:checked').data('preset','true');
-                                            XNAT.admin.usersGroups.toggleAlldata();
-                                        })
-                                        jq(document).on('click','#role_Administrator',function(){
-                                            // determine if user has been given site Admin privileges. If so, grant all data access and prevent user modification
-                                            var adminPermission = jq(this).prop('checked');
-                                            XNAT.admin.usersGroups.toggleAlldata(adminPermission);
-                                        })
-                                    </script>
-                                #end
-                            </td>
-                        </tr>
-                        <tr>
-                            <td align="right">
-
-                                <button id="update-user-roles" type="button" class="btn1">Save</button>
-
-                                ## #set ($projectAccessScript = "/scripts/xnat/data/projectAccess.jsp?user=${USERNAME}")
-                                ## <script type="text/javascript" src="$content.getURI($projectAccessScript)"></script>
-                                <script type="text/javascript" src="$content.getURI('/scripts/xnat/admin/usersAdvanced.js')"></script>
-
-                            </td>
-                        </tr>
-                        #set($groupCounter=$groupCounter+1)
-                    </table>
+                        ## #set ($projectAccessScript = "/scripts/xnat/data/projectAccess.jsp?user=${USERNAME}")
+                        ## <script type="text/javascript" src="$content.getURI($projectAccessScript)"></script>
+                        <script type="text/javascript" src="$content.getURI('/scripts/xnat/admin/usersAdvanced.js')"></script>
+                    </p>
+                    #set($groupCounter=$groupCounter+1)
                 </div>
+
             </td>
         </tr>
         <tr>
