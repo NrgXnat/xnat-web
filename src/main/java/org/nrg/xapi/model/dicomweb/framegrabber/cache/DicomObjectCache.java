@@ -23,7 +23,9 @@ public class DicomObjectCache {
             return dicomObjectCache.get( dicomObjectKey);
         }
         else {
-            DicomImageObject newDicomObject = transCoder.transcode( dobj, EVLE);
+            //DicomImageObject newDicomObject = transCoder.transcode( dobj, EVLE);
+            //TODO Fix this assumption
+            DicomImageObject newDicomObject = transCoder.transcode( dobj, "1.2.840.10008.1.2.4.50");
             dicomObjectCache.clear();
             dicomObjectCache.put( dicomObjectKey, newDicomObject);
             return newDicomObject;

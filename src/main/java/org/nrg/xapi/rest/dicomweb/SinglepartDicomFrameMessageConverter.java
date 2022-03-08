@@ -19,7 +19,6 @@ import org.springframework.http.converter.HttpMessageNotWritableException;
 import javax.activation.MimeType;
 import javax.activation.MimeTypeParseException;
 import javax.servlet.http.HttpServletRequest;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -29,7 +28,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConverter<DicomFrames> {
+public class SinglepartDicomFrameMessageConverter extends AbstractHttpMessageConverter<DicomFrames> {
 
     @Autowired
     HttpServletRequest request;
@@ -38,16 +37,16 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
     @Autowired
     private TransCoder transCoder;
 
-    private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
-    private final static MediaType APPLICATION_OCTETSTREAM = new MediaType("application", "octet-stream");
+//    private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
+//    private final static MediaType APPLICATION_OCTETSTREAM = new MediaType("application", "octet-stream");
     private final static MediaType IMAGE_JPG = new MediaType("image", "jpeg");
-    private final static MediaType IMAGE_JLS = new MediaType("image", "jls");
-    private final static MediaType IMAGE_JP2 = new MediaType("image", "jp2");
-    private final static MediaType IMAGE_JPX = new MediaType("image", "jpx");
-    private static final Logger _log = LoggerFactory.getLogger(MultiparDicomFrameMessageConverter.class);
+//    private final static MediaType IMAGE_JLS = new MediaType("image", "jls");
+//    private final static MediaType IMAGE_JP2 = new MediaType("image", "jp2");
+//    private final static MediaType IMAGE_JPX = new MediaType("image", "jpx");
+    private static final Logger _log = LoggerFactory.getLogger(SinglepartDicomFrameMessageConverter.class);
 
-    public MultiparDicomFrameMessageConverter() {
-        super( MULTIPART_RELATED);
+    public SinglepartDicomFrameMessageConverter() {
+        super(IMAGE_JPG);
     }
 
     // for reading from the input message.
@@ -58,7 +57,6 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
 
     @Override
     protected void writeInternal(DicomFrames dicomFrames, HttpOutputMessage outputMessage) throws HttpMessageNotWritableException {
-
         try {
             if( dicomFrames.isEmpty()) {
                 String msg = "Error. Attempting to write response with no body.";
@@ -66,7 +64,8 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 throw new HttpMessageNotWritableException(msg);
             }
             DicomImageObject dobj = dicomFrames.get(0).getDicomObject();
-
+//            MimeType partContentType = new MimeType("image", "jpeg");
+/*
             String inputTsuid = dobj.getTransferSyntaxUID();
             final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
                 String msg = String.format("Error finding acceptable transfer syntax for data in: %s", inputTsuid);
@@ -80,17 +79,22 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 return new HttpMessageNotWritableException(msg);
             });
 
-//            DicomFrame fr = dicomFrames.get(0);
-//            DicomImageObject doj = fr.getDicomObject();
-//            String z = doj.getStudyInstanceUID();
-            DicomImageObject dicomImageObject = transCoder.transcode(dicomFrames.get(0).getDicomObject(), tsuid);
+ */
+
+            DicomFrame fr = dicomFrames.get(0);
+            DicomImageObject doj = fr.getDicomObject();
+            String z = doj.getStudyInstanceUID();
+            //TODO Fix this
+//            DicomImageObject dicomImageObject = transCoder.transcode(dicomFrames.get(0).getDicomObject(), tsuid);
+            DicomImageObject dicomImageObject = dicomFrames.get(0).getDicomObject();
 
             HttpHeaders outputHeaders = outputMessage.getHeaders();
             Map<String, String> contentTypeArgs = new HashMap<>(1);
-            String boundary = getBoundary();
-            contentTypeArgs.put("type", "\"" + partContentType.toString() + "\"");
-            contentTypeArgs.put("boundary", boundary);
-            MediaType mediaType = new MediaType("multipart", "related", contentTypeArgs);
+//            String boundary = getBoundary();
+//            contentTypeArgs.put("type", "\"" + partContentType.toString() + "\"");
+//            contentTypeArgs.put("boundary", boundary);
+            //TODO Fix this
+            MediaType mediaType = new MediaType("image", "jpeg");
             outputHeaders.setContentType( mediaType);
 
             String contentLocation = getContentLocation(request);
@@ -101,9 +105,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
 
             for (DicomFrame dicomFrame : dicomFrames) {
 
-                outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
-                outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
-                outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
+//                outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
+//                outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
+//                outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
 
                 int frameNumber = dicomFrame.getFrameNumber();
                 dicomImageObject.seekToFrame(frameNumber);
@@ -113,12 +117,12 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 OutputStream outputStream = outputMessage.getBody();
                 InputStream  inputStream  = dicomImageObject.getInputStream();
 
-                outputStream.write(("Content-Length: " + pixelDataLength + "\r\n\r\n").getBytes());
+//                outputStream.write(("Content-Length: " + pixelDataLength + "\r\n\r\n").getBytes());
                 // TODO we could still move the pixel IO back into dicomImageObject
 //                dicomImageObject.writePixelData( frameNumber, outputStream);
                 StreamUtils.copy(inputStream, outputStream, pixelDataLength);
 
-                outputStream.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
+//                outputStream.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
             }
 
         } catch (IOException | TransCoderException e) {
@@ -126,6 +130,25 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
             _log.error(msg);
             throw new HttpMessageNotWritableException(msg, e.getCause());
         }
+    }
+
+    private void skipFrame(DicomInputStream dis) throws IOException {
+/*        if (!dis.readItemHeader())
+            throw new IOException(
+                    "Number of data fragments not sufficient for number of frames in requested object");
+
+ */
+
+        Path tmp = Paths.get("/tmp/foo");
+        Path f = Files.createTempFile(tmp, null, null);
+        OutputStream o = Files.newOutputStream(f);
+        dis.readItemHeader();
+        int j = dis.length();
+        StreamUtils.copy(dis, o, j);
+//        dis.skipFully(j);
+        int k = dis.length();
+        String p = f.toString();
+        String x = p;
     }
 
     private String getContentLocation(HttpServletRequest request) {
@@ -141,18 +164,19 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
         boolean canWrite = false;
-        if( supports( clazz) && MULTIPART_RELATED.isCompatibleWith( mediaType)) {
+        if( supports( clazz) && IMAGE_JPG.isCompatibleWith( mediaType)) {
             MediaType partMediaType = getPartType( mediaType);
-            String tx = getTransferSyntax( mediaType);
-            canWrite = canWrite( partMediaType, tx);
+//            String tx = getTransferSyntax( mediaType);
+            canWrite = true;
+//            canWrite = canWrite( partMediaType, tx);
         }
+
         return canWrite;
     }
-
+/*
     private boolean canWrite(MediaType partMediaType, String tsuid) {
         boolean canWrite = false;
         if( APPLICATION_OCTETSTREAM.isCompatibleWith( partMediaType)) {
-            // TODO Fix
             switch (tsuid) {
                 case "1.2.840.10008.1.2.1":
                 case "*":
@@ -190,10 +214,11 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
         }
         return canWrite;
     }
+    */
 
     private MediaType getPartType(MediaType mediaType) {
         MediaType partType = null;
-        if (MULTIPART_RELATED.isCompatibleWith(mediaType)) {
+        if (IMAGE_JPG.isCompatibleWith(mediaType)) {
             String type = mediaType.getParameter("type");
             if (type != null) {
                 type = type.replaceAll("^\"|\"$", "");
@@ -203,22 +228,26 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
         return partType;
     }
 
+/*
     private Optional<String> getAcceptableTransferSyntax( String inputTsuid) {
         if( isAcceptedTransferSyntax( inputTsuid)) {
             return Optional.of( inputTsuid);
         }
         else {
-            // TODO Remove the debugging lines
-//            List<String> s1 = transCoder.getAcceptableTranscodings(inputTsuid);
-//            Optional<String> s2 = transCoder.getAcceptableTranscodings( inputTsuid).stream()
-//                    .filter( getAcceptedTransferSyntaxes()::contains)
-//                    .findAny();
+            String s = transCoder.toString();
+            Class c = transCoder.getClass();
+            List<String> s1 = transCoder.getAcceptableTranscodings(inputTsuid);
+            Optional<String> s2 = transCoder.getAcceptableTranscodings( inputTsuid).stream()
+                    .filter( getAcceptedTransferSyntaxes()::contains)
+                    .findAny();
 
             return transCoder.getAcceptableTranscodings( inputTsuid).stream()
                     .filter( getAcceptedTransferSyntaxes()::contains)
                     .findAny();
         }
     }
+
+ */
 
     /**
      * Map from transfer-syntax uid to the corresponding Mime type.
@@ -272,10 +301,10 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
         }
         return Optional.ofNullable( mt);
     }
-
+/*
     private String getTransferSyntax( MediaType mediaType) {
         String tx = "";
-        if (MULTIPART_RELATED.isCompatibleWith(mediaType)) {
+        if (IMAGE_JPG.isCompatibleWith(mediaType)) {
             String t = mediaType.getParameter("transfer-syntax");
             tx = (t != null) ? t : getDefaultTransferSyntax( getPartType( mediaType));
         }
@@ -303,12 +332,15 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
         }
     }
 
+ */
+
     /**
      * Search the request's list of acceptable transfer syntaxes for a match.
      *
      * @param tsuid
      * @return
      */
+    /*
     private boolean isAcceptedTransferSyntax( String tsuid) {
         HttpHeaders headers = new HttpHeaders();
         headers.add( "Accept", request.getHeader("Accept"));
@@ -336,8 +368,11 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 .collect(Collectors.toSet());
     }
 
+     */
+/*
     private  String getBoundary() {
         return String.format( "Part__%s.%s", (new Object()).hashCode(), System.currentTimeMillis());
     }
+ */
 
 }

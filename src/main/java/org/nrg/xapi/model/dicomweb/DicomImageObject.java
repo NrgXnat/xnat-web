@@ -17,6 +17,10 @@ public interface DicomImageObject extends DicomObject {
 
     byte[] getPixelsForFrame( int frameNumber) throws IOException;
 
+    void seekToFrame(int frameNumber) throws IOException;
+    int getCurrentFrame();
+    int getCurrentFrameLength();
+
     int getPixelDataLength() throws IOException;
     int getPixelDataLength( int frame) throws IOException;
 

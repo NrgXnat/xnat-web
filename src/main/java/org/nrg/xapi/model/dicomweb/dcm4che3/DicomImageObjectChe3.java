@@ -7,12 +7,16 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.dcm4che3.data.*;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.json.JSONWriter;
+import org.dcm4che3.util.StreamUtils;
 import org.nrg.xapi.model.dicomweb.DicomImageObject;
 import org.nrg.xapi.model.dicomweb.FrameGrabber;
 import org.nrg.xapi.rest.dicomweb.JsonDicomObjectSerializer;
 
 import javax.xml.transform.sax.TransformerHandler;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * References an object on disk. Delete the object on disk if it is labeled as temporary.
@@ -24,6 +28,8 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
     // Attributes are inherited from DicomObjectChe3
     //    protected Attributes attributes;
     private final File file;
+    DicomInputStream dis = null;
+    int currentFrameNumber=1;
     private boolean isTemporary;
     private final static int PIXEL_DATA = 0x7FE00010;
     private TransformerHandler transformerHandler;
@@ -37,6 +43,12 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
         this.frameGrabber = frameGrabber;
         // Create the handler only if it is needed.
         this.transformerHandler = null;
+    }
+
+    public void finalize() throws Throwable {
+        if (dis != null) {
+            dis.close();
+        }
     }
 
     /**
@@ -62,7 +74,8 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
 
     @Override
     public InputStream getInputStream() throws IOException {
-        return new DicomInputStream( file);
+        //return new DicomInputStream( file);
+        return dis;
     }
 
     @Override
@@ -133,13 +146,14 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
 
     public byte[] getPixels() throws IOException {
         byte[] pixels = getBytes( PIXEL_DATA);
-        if( pixels == null) {
+        if( pixels == null || pixels.length == 0) {
             try (DicomInputStream dis = new DicomInputStream( file)) {
                 Attributes dataSet = dis.readDataset( -1, -1);
                 attributes.setBytes( PIXEL_DATA, dataSet.getVR( PIXEL_DATA), dataSet.getBytes( PIXEL_DATA) );
                 pixels = getBytes( PIXEL_DATA);
             }
         }
+        int k = pixels.length;
         return pixels;
     }
 
@@ -152,6 +166,52 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
      */
     public byte[] getPixelsForFrame( int frameNumber) throws IOException {
         return frameGrabber.getPixelsForFrame( this, frameNumber);
+    }
+
+    public void seekToFrame(int frameNumber) throws IOException {
+        if (dis == null) {
+            dis = new DicomInputStream(file);
+            int j = dis.length();
+            dis.readDataset(-1, Tag.PixelData);
+            int k = dis.length();
+            if (dis.tag() != Tag.PixelData || dis.length() != -1 || !dis.readItemHeader()) {
+                throw new IOException("No or incorrect encapsulated compressed pixel data in requested object");
+            }
+            dis.skipFully(dis.length());
+            int l = dis.length();
+        }
+
+        int m = dis.length();
+
+        while (currentFrameNumber < frameNumber) {
+            skipFrame(dis);
+            currentFrameNumber++;
+        }
+        dis.readItemHeader();
+        int n = dis.length();
+
+//        dis.close();
+    }
+
+    public int getCurrentFrame() {
+        return currentFrameNumber;
+    }
+    public int getCurrentFrameLength() {
+        return (dis == null) ? 0 : dis.length();
+    }
+
+
+    private void skipFrame(DicomInputStream dis) throws IOException {
+        // TODO fix the implementation of temporary files. These should really be cached.
+        Path tmp = Paths.get("/tmp/foo");
+        Path f = Files.createTempFile(tmp, null, null);
+        OutputStream o = Files.newOutputStream(f);
+        dis.readItemHeader();
+        int j = dis.length();
+        StreamUtils.copy(dis, o, j);
+        int k = dis.length();
+        String p = f.toString();
+        String x = p;
     }
 
 //    private void readHeader() throws IOException {
@@ -179,10 +239,10 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
     }
 
     @Override
-    public String getStudyInstanceUID() { return attributes.getString( 0x002000D); }
+    public String getStudyInstanceUID() { return attributes.getString( 0x0020000D); }
 
     @Override
-    public String getSeriesInstanceUID() { return attributes.getString( 0x002000E); }
+    public String getSeriesInstanceUID() { return attributes.getString( 0x0020000E); }
 
     @Override
     public String getSOPInstanceUID() { return attributes.getString( 0x00080018); }

@@ -364,6 +364,41 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         }
     }
 
+    @ApiOperation(value = "WADO-RS Retrieve Frame Rendered.", response = DicomObject.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve frame."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}/rendered",
+            "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}/rendered",
+            "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}/rendered" },
+            produces = {
+                    "multipart/related; type=\"image/jpeg\"",
+                    "image/jpeg"
+            },
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    public ResponseEntity<List<DicomFrame>> doRetrieveFramesListRendered( @PathVariable("sessionID") Optional<String> sessionID,
+                                                                  @PathVariable("projectID") Optional<String> projectID,
+                                                                  @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                                  @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                                  @PathVariable("sopInstanceUID") String sopInstanceUID,
+                                                                  @PathVariable("frameNumbers") String frameNumbers)
+            throws UserNotFoundException, UserInitException, SearchException, NoContentException {
+        UserI user = getUser();
+        List<Integer> frameList = Arrays.stream(frameNumbers.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+        DicomFrames frames = _searchEngine.retrieveFrames( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameList, user);
+        if( frames == null || frames.isEmpty()) {
+            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+        }
+        else if( frames.size() < frameList.size()) {
+            return new ResponseEntity<>( frames, HttpStatus.NOT_FOUND);
+        }
+        else {
+            return new ResponseEntity<>(frames, HttpStatus.OK );
+        }
+    }
+
+
 //    @ApiOperation(value = "WADO-RS Retrieve Frame with session ID.", response = DicomObject.class)
 //    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve frame."),
 //            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),

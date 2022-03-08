@@ -313,6 +313,9 @@ public class XftSearchEngine implements SearchEngineI {
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
             DicomImageObject instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
             if( instance != null) {
+                // TODO: Fix for multiple frames
+//                int ix = frameNumbers.get(0);
+//                DicomFrame f1 = new DicomFrame(instance, ix);
                 return frameNumbers.stream().map( fn -> new DicomFrame( instance, fn)).collect(Collectors.toCollection(DicomFrames::new));
             }
             else {

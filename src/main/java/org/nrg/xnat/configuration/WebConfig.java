@@ -94,6 +94,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         converters.add(multipartDicomFileMessageConverter());
         converters.add(multipartCompressedDicomFileMessageConverter( ));
         converters.add(multipartDicomFrameMessageConverter( ));
+        converters.add(singlepartDicomFrameMessageConverter());
         converters.add( dicomFrameMessageConverter( ));
         converters.add(zipFileHttpMessageConverter());
     }
@@ -170,6 +171,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
         return new MultiparDicomFrameMessageConverter( );
     }
 
+    @Bean
+    public HttpMessageConverter<?> singlepartDicomFrameMessageConverter() {
+        return new SinglepartDicomFrameMessageConverter( );
+    }
+
+    //TODO Explore this one
     @Bean
     public HttpMessageConverter<?> dicomFrameMessageConverter() {
         return new DicomFrameMessageConverter( );
