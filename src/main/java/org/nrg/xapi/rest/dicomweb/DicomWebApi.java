@@ -484,7 +484,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
 
         UserI user = getUser();
         _populator.populate( project);
-
+        XnatProjectHandlerMethod
         return new ResponseEntity<>("Success populating project: " + project, HttpStatus.OK );
     }
 

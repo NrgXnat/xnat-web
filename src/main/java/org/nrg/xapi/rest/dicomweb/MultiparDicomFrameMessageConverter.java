@@ -80,9 +80,6 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 return new HttpMessageNotWritableException(msg);
             });
 
-//            DicomFrame fr = dicomFrames.get(0);
-//            DicomImageObject doj = fr.getDicomObject();
-//            String z = doj.getStudyInstanceUID();
             DicomImageObject dicomImageObject = transCoder.transcode(dicomFrames.get(0).getDicomObject(), tsuid);
 
             HttpHeaders outputHeaders = outputMessage.getHeaders();
