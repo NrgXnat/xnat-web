@@ -243,6 +243,7 @@ public class XftSearchEngine implements SearchEngineI {
         List<QIDOResponse> responses = new ArrayList();
         if( ic.getItems().size() == 1) {
             XnatImagesessiondata sessionData = new XnatImagesessiondata( ic.get(0));
+            String localSessionID = (sessionID == null) ? sessionData.getId() : sessionID;
             XnatImagescandata scan = sessionData.getScans_scan().stream()
                     .filter( XnatImagescandata.class::isInstance)
                     .map( XnatImagescandata.class::cast)
@@ -255,7 +256,7 @@ public class XftSearchEngine implements SearchEngineI {
 
             XnatResourcecatalog catalog;
             try {
-                catalog = _catalogService.getDicomResourceCatalog(sessionID, scan.getId());
+                catalog = _catalogService.getDicomResourceCatalog(localSessionID, scan.getId());
                 final Path dicomRootPath = Paths.get(catalog.getUri()).getParent();
                 final CatalogUtils.CatalogData catalogData = CatalogUtils.CatalogData.getOrCreate(dicomRootPath.toString(), catalog, null);
                 final CatDcmcatalogBean dcmCatalog = (CatDcmcatalogBean) catalogData.catBean;
