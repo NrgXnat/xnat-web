@@ -10,6 +10,7 @@
 package org.nrg.xnat.initialization.tasks;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.orm.DatabaseHelper;
 import org.nrg.xdat.display.DisplayManager;
@@ -24,6 +25,8 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
@@ -87,7 +90,12 @@ public class CreateOrUpdateDatabaseViews extends AbstractInitializingTask {
                     transaction.rollback();
                     transaction.execute(SQLUpdateGenerator.getViewDropSql(_dbUsername));//drop all
                     log.info("Drop views step complete.  Begin rebuilding views.");
-                    transaction.execute(DisplayManager.GetCreateViewsSQL());//then try to create all
+                    File logs=new File("/home/xnat/logs/update-views.sql");
+                    List<String> sql =DisplayManager.GetCreateViewsSQL();
+                    for(String st : sql){
+                        FileUtils.writeStringToFile(logs,st);
+                    }
+                    transaction.execute(sql);//then try to create all
                     log.info("View rebuild complete.");
                 }
                 try {
@@ -96,7 +104,7 @@ public class CreateOrUpdateDatabaseViews extends AbstractInitializingTask {
                     transaction.rollback();
                     throw new InitializingTaskException(InitializingTaskException.Level.Error, "An error occurred trying to commit the transaction.", e);
                 }
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 throw new InitializingTaskException(InitializingTaskException.Level.Error, "An error occurred trying to roll back the transaction.", e);
             }
         }
