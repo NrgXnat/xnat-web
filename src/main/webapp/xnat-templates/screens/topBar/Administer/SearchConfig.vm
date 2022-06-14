@@ -1,0 +1,8 @@
+<!-- Sequence: 16 -->
+<!-- Administer/SearchConfig -->
+    <li><a href="#!" class="nolink">Search</a>
+        <ul>
+            <li><a href="$link.setPage("ConfigureSearchFields.vm")">Configure Fields</a>
+            <li><a href="$link.setPage("ConfigureSearchViews.vm")">Configure Views</a></li>
+        </ul>
+    </li>
