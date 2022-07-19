@@ -36,11 +36,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Read;
@@ -298,7 +294,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         UserI user = getUser();
         DicomObject instance = _searchEngine.retrieveInstance( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
         if( instance == null) {
-            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>( instance, HttpStatus.OK );
     }
@@ -326,7 +322,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         UserI user = getUser();
         DicomObject instance = _searchEngine.retrieveInstance( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
         if( instance == null) {
-            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
         }
         instances.add(instance);
         return new ResponseEntity<>( instances, HttpStatus.OK );
@@ -446,7 +442,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         UserI user = getUser();
         instances.addAll( _searchEngine.retrieveSeries( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, seriesInstanceUID, user));
         if( instances.isEmpty()) {
-            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(instances, HttpStatus.OK );
     }
@@ -469,7 +465,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
         UserI user = getUser();
         instances.addAll( _searchEngine.retrieveStudy( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, user));
         if( instances.isEmpty()) {
-            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>( HttpStatus.NOT_FOUND);
         }
         return new ResponseEntity<>(instances, HttpStatus.OK );
     }

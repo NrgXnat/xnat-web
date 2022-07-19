@@ -115,12 +115,13 @@ public class SinglepartDicomFrameMessageConverter extends AbstractHttpMessageCon
                 int pixelDataLength = dicomImageObject.getCurrentFrameLength();
 
                 OutputStream outputStream = outputMessage.getBody();
-                InputStream  inputStream  = dicomImageObject.getInputStream();
+                dicomImageObject.writePixelDataRandomFrame(frameNumber, outputStream);
+//                InputStream  inputStream  = dicomImageObject.getInputStream();
 
 //                outputStream.write(("Content-Length: " + pixelDataLength + "\r\n\r\n").getBytes());
                 // TODO we could still move the pixel IO back into dicomImageObject
 //                dicomImageObject.writePixelData( frameNumber, outputStream);
-                StreamUtils.copy(inputStream, outputStream, pixelDataLength);
+//                StreamUtils.copy(inputStream, outputStream, pixelDataLength);
 
 //                outputStream.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
             }

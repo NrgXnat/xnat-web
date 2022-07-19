@@ -37,6 +37,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     }
     private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
     private final static MediaType APPLICATION_DICOM_XML = new MediaType("application", "dicom+xml");
+    private final static MediaType APPLICATION_DICOM = new MediaType("application", "dicom");
     private static final Logger _log = LoggerFactory.getLogger(MultipartDicomFileMessageConverter.class);
 
     public MultipartDicomFileMessageConverter() {
@@ -76,19 +77,39 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
             MediaType mediaType = new MediaType( "multipart", "related", contentTypeArgs );
             outputHeaders.setContentType( mediaType);
 
+            boolean isXML = true;
+            String mediaTypeParamType = mediaType.getParameter("type");
+            if (mediaTypeParamType != null && mediaTypeParamType.equals("\"application/dicom\"")) {
+                isXML = false;
+            }
+
             // write preamble, just CRLF if preamble is empty.
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
+            String crlf="";
+
             for ( DicomObject dicomPart: dicomParts) {
 
-                outputMessage.getBody().write( ("--"+ boundary + "\r\n").getBytes());
-                outputMessage.getBody().write( ("Content-Type: application/dicom+xml\r\n").getBytes());
+                outputMessage.getBody().write( (crlf + "--"+ boundary + "\r\n").getBytes());
+                crlf = "\r\n";
+                if (isXML) {
+                    outputMessage.getBody().write(("Content-Type: application/dicom+xml\r\n").getBytes());
+                } else {
+                    outputMessage.getBody().write(("Content-Type: application/dicom\r\n").getBytes());
+                }
+                //  TODO This is wrong. Content length is based on the number of bytes in the image file
+                int length = dicomPart.getLength();
                 outputMessage.getBody().write( ("Content-Length: " + dicomPart.getLength() + "\r\n\r\n").getBytes());
-                dicomPart.writeAsXML( outputMessage.getBody());
+                if (isXML) {
+                    dicomPart.writeAsXML(outputMessage.getBody());
+                } else {
+                    dicomPart.writeAsPart10(outputMessage.getBody());
+                }
 
-                outputMessage.getBody().write( ("\r\n--"+ boundary + "--\r\n\r\n").getBytes());
+//                outputMessage.getBody().write( ("\r\n--"+ boundary + "--\r\n\r\n").getBytes());
             }
+            outputMessage.getBody().write( ("\r\n--"+ boundary + "--").getBytes());
 
         } catch (IOException e) {
             String msg = "Error streaming dicom: " + e.getMessage();
@@ -105,11 +126,16 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
         MediaType partMediaType = getPartType( mediaType);
-        return APPLICATION_DICOM_XML.isCompatibleWith( partMediaType);
+//        return APPLICATION_DICOM_XML.isCompatibleWith( partMediaType);
+
+        //TODO
+        // Review to see if this is the right converter for APPLICATION_DICOM
+        return (APPLICATION_DICOM_XML.isCompatibleWith( partMediaType) || APPLICATION_DICOM.isCompatibleWith(partMediaType));
     }
 
     @Override
     protected boolean canWrite(MediaType mediaType) {
+
         return MULTIPART_RELATED.isCompatibleWith( mediaType);
     }
 

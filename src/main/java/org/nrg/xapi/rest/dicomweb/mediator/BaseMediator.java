@@ -11,6 +11,14 @@ public class BaseMediator implements Mediator {
     @Override
     public Optional<List<Conflict>> getConflicts( List<XnatImagesessiondata> sessions) {
 
+        Set<String> uniqueUIDs = new HashSet<>();
+        for (XnatImagesessiondata sessionInstance: sessions) {
+            uniqueUIDs.add(sessionInstance.getUid());
+        }
+
+        boolean atLeastOneStudyInstanceUIDInMultipleProjects = (sessions.size() != uniqueUIDs.size());
+
+        /*
         Map<String, List<XnatImagesessiondata>> studyUIDPartition = sessions.stream()
                 .collect(Collectors.groupingBy(XnatImagesessiondata::getUid));
 
@@ -23,6 +31,8 @@ public class BaseMediator implements Mediator {
                 break;
             }
         }
+
+         */
         if (atLeastOneStudyInstanceUIDInMultipleProjects) {
             List<Conflict> conflicts = new ArrayList<>();
             conflicts.add( new BaseConflict( SearchException.Type.STUDY_INSTANCE_UID_CONFLICT, Arrays.asList("This query matches study-instance UID in multiple projects.")));

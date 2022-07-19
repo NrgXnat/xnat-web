@@ -172,6 +172,16 @@ public class XftSearchEngine implements SearchEngineI {
             throw new SearchException( SearchException.Type.UNEXPECTED, e);
         }
 
+        // TODO
+        // Fix this; there needs to be something before this that catches the fact that the user has no access to this session.
+        try {
+            getSession(studyInstanceUID, user);
+        } catch (Exception e) {
+            // This user does not have access to this session. So, clear the list of scans.
+            // The loop below will have an empty input to process.
+            ic.clear();
+        }
+
         List<QIDOResponse> responses = new ArrayList();
         for( ItemI item: ic.getItems()) {
             XnatImagescandata scandata = new XnatImagescandata(item);
@@ -181,6 +191,7 @@ public class XftSearchEngine implements SearchEngineI {
             response.setSeriesInstanceUID( scandata.getUid());
             response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
             response.setPerformedProcedureStepStartDate( scandata.getStartDate());
+            scandata.getStarttime();
             response.setPerformedProcedureStepStartTime( scandata.getStarttime());
 //            response.setNumberOfSeriesRelatedInstances( countSeriesInstances( scandata));
             try {
@@ -284,9 +295,14 @@ public class XftSearchEngine implements SearchEngineI {
     @Override
     public DicomObject retrieveInstance( String projectID, String sessionID, String studyInstanceUID, String seriesInstanceUID, String sopInstanceUID, UserI user) throws SearchException {
         try {
+            DicomObject instance = null;
             XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
-            XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
-            DicomObject instance = getInstance( session.getArchiveRootPath(), scan, sopInstanceUID);
+            if (session != null) {
+                XnatImagescandata scan = getScan(studyInstanceUID, seriesInstanceUID, sopInstanceUID, user);
+                if (scan != null) {
+                    instance = getInstance(session.getArchiveRootPath(), scan, sopInstanceUID);
+                }
+            }
             return instance;
         }
         catch( Exception e) {
@@ -333,7 +349,10 @@ public class XftSearchEngine implements SearchEngineI {
         try {
             XnatImagesessiondata session = getSession( projectID, sessionID, studyInstanceUID, user);
             XnatImagescandata scan = getScan( studyInstanceUID, seriesInstanceUID, null, user);
-            List<DicomObject> instances = getInstances( scan);
+            List<DicomObject> instances = new ArrayList<>();
+            if (scan != null) {
+                instances = getInstances(scan);
+            }
             return instances;
         }
         catch( Exception e) {
@@ -391,37 +410,63 @@ public class XftSearchEngine implements SearchEngineI {
             XnatImagescandata scandata = new XnatImagescandata(item);
             _log.debug("Item: {}", scandata);
             _log.debug("Scandata's ImageSessionData: {}", scandata.getImageSessionData());
-            QIDOResponseStudySeries response = _dicomObjectFactory.createQIDOResponseStudySeries();
-            response.setModality( scandata.getModality());
-            response.setSeriesDescription( scandata.getSeriesDescription());
-            response.setSeriesInstanceUID( scandata.getUid());
-            response.setSeriesNumber( (scandata.getSeriesNumber() != null)? scandata.getSeriesNumber().toString(): "");
-            response.setPerformedProcedureStepStartDate( scandata.getStartDate());
-            response.setPerformedProcedureStepStartTime( scandata.getStarttime());
+
+            // TODO Fix this
+            // Need a better check on security for this study/series object
+            boolean skip = false;
             try {
-                String archiveRootPath = scandata.getImageSessionData().getArchiveRootPath();
-                response.setNumberOfSeriesRelatedInstances( countSeriesInstances( archiveRootPath, scandata));
+                scandata.getImageSessionData();
+            } catch (Exception e) {
+                String yy = "";
+                skip = true;
+//                continue;
             }
-            catch( Exception e) {
-                throw new SearchException( SearchException.Type.UNEXPECTED, e);
+            if (! skip) {
+                QIDOResponseStudySeries response = _dicomObjectFactory.createQIDOResponseStudySeries();
+                response.setModality(scandata.getModality());
+                response.setSeriesDescription(scandata.getSeriesDescription());
+                response.setSeriesInstanceUID(scandata.getUid());
+                response.setSeriesNumber((scandata.getSeriesNumber() != null) ? scandata.getSeriesNumber().toString() : "");
+                response.setPerformedProcedureStepStartDate(scandata.getStartDate());
+                response.setPerformedProcedureStepStartTime(scandata.getStarttime());
+                XnatImagesessiondata x = null;
+                //String y = null;
+                try {
+/*
+                    x = scandata.getImageSessionData();
+                    if (x == null) {
+                        String z = "xxx";
+                    } else {
+                        y = x.getArchiveRootPath();
+                    }
+ */
+
+                    String archiveRootPath = scandata.getImageSessionData().getArchiveRootPath();
+                    response.setNumberOfSeriesRelatedInstances(countSeriesInstances(archiveRootPath, scandata));
+                } catch (Exception e) {
+                    skip = true;
+//                    throw new SearchException(SearchException.Type.UNEXPECTED, e);
+                }
+
+                if (! skip) {
+                    response.setStudyDate(scandata.getImageSessionData().getExperimentdata().getDate());
+                    response.setStudyTime(scandata.getImageSessionData().getExperimentdata().getTime());
+                    response.setAccessionNumber(scandata.getImageSessionData().getDcmaccessionnumber());
+                    response.setInstanceAvailability("ONLINE");
+                    response.setStudyInstanceUID(scandata.getImageSessionData().getUid());
+                    response.setPatientID(scandata.getImageSessionData().getDcmpatientid());
+                    response.setPatientsName(scandata.getImageSessionData().getDcmpatientname());
+                    response.setModalitiesInStudy(getModalitiesInStudy(scandata.getImageSessionData()));
+                    response.setPatientsSex(scandata.getImageSessionData().getSubjectData().getGender());
+                    response.setPatientsBirthDate(scandata.getImageSessionData().getSubjectData().getDOB());
+                    response.setStudyID(scandata.getImageSessionData().getStudyId());
+                    response.setNumberOfStudyRelatedSeries(countSeries(scandata.getImageSessionData()));
+                    response.setNumberOfStudyRelatedInstances(countStudyInstances(scandata.getImageSessionData()));
+                    response.setReferringPhysiciansName("");
+
+                    responses.add(response);
+                }
             }
-
-            response.setStudyDate( scandata.getImageSessionData().getExperimentdata().getDate());
-            response.setStudyTime( scandata.getImageSessionData().getExperimentdata().getTime());
-            response.setAccessionNumber( scandata.getImageSessionData().getDcmaccessionnumber());
-            response.setInstanceAvailability( "ONLINE");
-            response.setStudyInstanceUID( scandata.getImageSessionData().getUid());
-            response.setPatientID( scandata.getImageSessionData().getDcmpatientid());
-            response.setPatientsName( scandata.getImageSessionData().getDcmpatientname());
-            response.setModalitiesInStudy( getModalitiesInStudy( scandata.getImageSessionData()));
-            response.setPatientsSex( scandata.getImageSessionData().getSubjectData().getGender());
-            response.setPatientsBirthDate( scandata.getImageSessionData().getSubjectData().getDOB());
-            response.setStudyID( scandata.getImageSessionData().getStudyId());
-            response.setNumberOfStudyRelatedSeries( countSeries( scandata.getImageSessionData()));
-            response.setNumberOfStudyRelatedInstances( countStudyInstances( scandata.getImageSessionData()));
-            response.setReferringPhysiciansName("");
-
-            responses.add( response);
         }
         return responses;
     }
@@ -772,6 +817,15 @@ public class XftSearchEngine implements SearchEngineI {
     private List<DicomObject> getInstances(XnatImagescandataI scandata) throws SearchException {
         try {
             XnatResourcecatalog dicomResourceCatalog = _catalogService.getDicomResourceCatalog(scandata.getImageSessionId(), scandata.getId());
+            // TODO There are two bad assumptions in this method
+            // 1. It assumes that all scans have at least one DICOM file. When that is not true (all NIFTI),
+            //    the call above returns a null dicomResourceCatalog
+            // 2. Once you get past that, the code below assumes all DICOM files end with .dcm
+            //    One should look through the scan catalog instead.
+
+            if (dicomResourceCatalog == null) {
+                return new ArrayList<DicomObject>();
+            }
             Path resourceDir = Paths.get(dicomResourceCatalog.getUri()).getParent();
             return Files.list(resourceDir)
                     .filter(path -> path.getFileName().toString().endsWith(".dcm"))

@@ -13,6 +13,7 @@ import java.io.OutputStream;
 public interface DicomObject {
 
     int getLength();
+    void writeAsPart10 (OutputStream os) throws IOException;
     void writeAsXML( OutputStream os) throws IOException;
     void writeAsJSON( OutputStream os) throws IOException;
     void writeAsJSON( JsonGenerator jsonGenerator) throws IOException;

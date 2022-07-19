@@ -36,12 +36,21 @@ public class DicomObjectChe3 implements DicomObject {
     private TransformerHandler transformerHandler;
 
     public DicomObjectChe3() {
+
         attributes = new Attributes();
     }
 
     public int getLength() {
+        // TODO
+        // This calculation is not correct because the code that actually retrieves the file just opens the file and sends it
+        // No encoding is done. The lengths might match up, or they might not.
         attributes.calcLength( DicomEncodingOptions.DEFAULT, true);
         return attributes.getLength();
+    }
+
+    @Override
+    public void writeAsPart10 (OutputStream os) throws IOException {
+        throw new IOException("The writeAsPart10 method should be implemented by a child class");
     }
 
     @Override

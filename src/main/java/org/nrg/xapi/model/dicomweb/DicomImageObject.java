@@ -26,6 +26,7 @@ public interface DicomImageObject extends DicomObject {
 
     void writePixelData(OutputStream os) throws IOException;
     void writePixelData(int frame, OutputStream os) throws IOException;
+    void writePixelDataRandomFrame(int frame, OutputStream os) throws IOException;
 
     byte[] getPixels() throws IOException;
 
