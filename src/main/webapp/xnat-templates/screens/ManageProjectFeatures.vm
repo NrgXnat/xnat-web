@@ -4,18 +4,12 @@
 #* @vtlvariable name="content" type="org.apache.turbine.services.pull.tools.ContentTool" *#
 <!-- Title: Features -->
 
-<table id="project-features" class="xnat-table features" width="100%" style="display:none;">
-    <thead>
-    <tr>
-        <th class="featureProject">Project</th>
-        <th class="featureGroup">Group</th>
-        #foreach($feature in $features)
-            <th class="featureEnabled">$feature.getName()</th>
-        #end
-    </tr>
+<table id="project-features" class="xnat-table features" style="display:none;">
+    <thead id="featureHead">
+        ## head built dynamically in manageFeatures.js
     </thead>
     <tbody id="featureBody">
-    ## body built dynamically in manageFeatures.js
+        ## body built dynamically in manageFeatures.js
     </tbody>
 </table>
 
