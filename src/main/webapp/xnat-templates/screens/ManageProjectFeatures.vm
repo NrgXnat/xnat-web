@@ -4,6 +4,7 @@
 #* @vtlvariable name="content" type="org.apache.turbine.services.pull.tools.ContentTool" *#
 <!-- Title: Features -->
 
+<div id="feature-select-div"></div>
 <table id="project-features" class="xnat-table features" style="display:none;">
     <thead id="featureHead">
         ## head built dynamically in manageFeatures.js

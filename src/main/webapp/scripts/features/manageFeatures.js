@@ -13,10 +13,14 @@ XNAT.app.featureMgr={
 		//once the existing settings are loaded from the server for these groups, the UI needs to be generated
 		let parsedResponse = YAHOO.lang.JSON.parse(resp.responseText);
 
+		let $featureSelectDiv = $("#feature-select-div");
+		featureSelectorSpawn( $featureSelectDiv);
+
 		let $featureHead = $("#featureHead");
 		$featureHead.html( buildHead( parsedResponse));
 		let $featureBody = $("#featureBody");
         $featureBody.html( buildBody( parsedResponse));
+
         $featureBody.closest('.features').fadeIn(100); // show table only after it has the HTML
         $("input.half-check").each(function(i1,v1){
 			//class=inherited implies that this feature was set to OnByDefault at a higher level.  So, it defaults to being on here, but not because it was specifically set here.
@@ -178,3 +182,48 @@ function featureFailure(res){
 
 	$("input.featureToggle").removeAttr("disabled");
 }
+
+function foo(){
+
+}
+
+function featureSelectorSpawn( $el) {
+	let groupSelectOptions = [];
+	groupSelectOptions.push({
+		value: 'foo-value',
+		label: 'foo-label'
+	});
+	groupSelectOptions.push({
+		value: 'bar-value',
+		label: 'bar-label'
+	});
+
+	$el.spawn('div.panel').spawn('form', {
+		method: 'post',
+		apply: 'alert("snafu")'
+	}, [
+
+		// by putting these elements in an array inside the spawned
+		// 'form' element, they will be automatically appended
+		// spawn('p', 'Upon submission of this form an email will be sent to the project manager. The manager will be asked to give you access to this project. Once the manager approves or denies your access, an email will be sent to you.'),
+
+		XNAT.ui.input.hidden({
+			name: 'XNAT_CSRF',
+			value: window.csrfToken
+		}).get(),
+
+		// XNAT.ui.input.hidden({
+		// 	name: 'project',
+		// 	value: reqProjectId
+		// }).get(),
+
+		XNAT.ui.panel.select.multi({
+			name: 'features_select',
+			options: groupSelectOptions,
+			label: 'Select Features',
+			validation: 'required not-empty'
+		}).get()
+
+	]);
+}
+
