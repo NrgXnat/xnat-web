@@ -856,14 +856,17 @@ var XNAT = getObject(XNAT || {});
             });
             return false;
         }
+        openModalPanel("accessibilityChange","Updating permissions",null,{body:'This may take a few minutes...<br><img src="' + serverRoot + '/images/rel_interstitial_loading.gif" />'});
         XNAT.xhr.putJSON({
             url: csrfUrl('/REST/projects/'+projectId+'/accessibility/'+accessibility),
             success: function(){
+                closeModalPanel("accessibilityChange");
                 XNAT.ui.banner.top(2000,'<b>Success.</b> Project accessibility set to '+accessibility+'.', 'success');
                 $('#accessibility_save').prop('disabled', true);
                 currAccessibility = accessibility;
             },
             fail: function(e){
+                closeModalPanel("accessibilityChange");
                 errorHandler(e)
             }
         })
