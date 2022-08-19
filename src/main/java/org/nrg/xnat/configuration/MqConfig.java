@@ -29,12 +29,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jms.annotation.EnableJms;
 import org.springframework.jms.config.DefaultJmsListenerContainerFactory;
+import org.springframework.jms.config.JmsListenerContainerFactory;
 import org.springframework.jms.connection.CachingConnectionFactory;
 import org.springframework.jms.core.JmsTemplate;
+import org.springframework.jms.support.destination.DynamicDestinationResolver;
 import org.springframework.util.ErrorHandler;
 
 import javax.jms.ConnectionFactory;
 import javax.jms.Destination;
+import javax.jms.JMSException;
 import javax.jms.Session;
 
 import static org.nrg.xdat.XDAT.DEFAULT_REQUEST_QUEUE;
@@ -159,7 +162,9 @@ public class MqConfig {
 
     @Bean
     public JmsTemplate jmsTemplate() {
-        return new JmsTemplate(connectionFactory());
+        JmsTemplate temp= new JmsTemplate(connectionFactory());
+        temp.setDestinationResolver(destinationResolver());
+        return temp;
     }
 
     @Bean
@@ -170,5 +175,29 @@ public class MqConfig {
         factory.setConcurrency("10-40");
         factory.setSessionAcknowledgeMode(Session.SESSION_TRANSACTED);
         return factory;
+    }
+
+    @Bean
+    public JmsListenerContainerFactory<?> pubSubConnectionFactory(final ErrorHandler errorHandler) {
+        final DefaultJmsListenerContainerFactory factory = new DefaultJmsListenerContainerFactory();
+        factory.setConnectionFactory(connectionFactory());
+        factory.setErrorHandler(errorHandler);
+        factory.setConcurrency("1");
+        factory.setSessionAcknowledgeMode(Session.SESSION_TRANSACTED);
+        factory.setPubSubDomain(true);
+        return factory;
+    }
+
+    @Bean
+    public DynamicDestinationResolver destinationResolver() {
+        return new DynamicDestinationResolver() {
+            @Override
+            public Destination resolveDestinationName(Session session, String destinationName, boolean pubSubDomain) throws JMSException {
+                if (destinationName.endsWith(".BROADCAST")) {
+                    pubSubDomain = true;
+                }
+                return super.resolveDestinationName(session, destinationName, pubSubDomain);
+            }
+        };
     }
 }
