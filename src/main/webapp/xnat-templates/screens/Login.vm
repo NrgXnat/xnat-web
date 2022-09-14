@@ -221,6 +221,9 @@ $page.setTitle("$siteId - Please Login")
         <input type="hidden" name="XNAT_CSRF" value="">
     </form>
     </div>
+
+    #addGlobalCustomScreens("postLoginForm")
+
     <div id="loginBoxMoreOptions">
         <ul>
         #foreach($screenProps in $turbineUtils.getTemplates("loginBoxMoreOptions"))
