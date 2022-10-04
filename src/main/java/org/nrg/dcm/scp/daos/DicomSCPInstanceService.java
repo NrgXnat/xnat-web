@@ -19,10 +19,13 @@ public class DicomSCPInstanceService extends AbstractHibernateEntityService<Dico
      **
      * @param ae
      * @param port
-     * @return Optional DicomSCPInstance for specified aeTitle and port.
+     * @return Optional containing either the sole DicomSCPInstance, or nothing (empty) if there are zero or multiple elements.
      */
     @Transactional
     public Optional<DicomSCPInstance> findByAETitleAndPort(String ae, int port) {
+        if( ae == null) {
+            return Optional.ofNullable(null);
+        }
         Map<String, Object> map = Stream.of(new Object[][] {
                 { "aeTitle", ae },
                 { "port", port },

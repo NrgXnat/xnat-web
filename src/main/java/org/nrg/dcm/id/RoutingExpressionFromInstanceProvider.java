@@ -22,35 +22,43 @@ public class RoutingExpressionFromInstanceProvider implements RoutingExpressionP
     public RoutingExpressionFromInstanceProvider(DicomSCPInstanceService dicomSCPInstanceService) {
         _dicomSCPInstanceService = dicomSCPInstanceService;
     }
+
+    /**
+     * provide list of routing expressions
+     *
+     * @param type the type of routing expression (project/subject/session...)
+     * @return list of routing expressions or empty list.
+     */
     @Override
     public List<String> provide(CompositeDicomObjectIdentifier.ExtractorType type) {
-        DicomSCPInstance instance = _dicomSCPInstanceService.findByAETitleAndPort( _aeTitle, _port)
-                .orElseThrow(() -> new IllegalArgumentException(String.format("No configuration found for receiver at %s:%d.", _aeTitle, _port)));
-
         List<String> rules = new ArrayList<>();
-        if (instance.isRoutingExpressionsEnabled()) {
-            String routingExpression;
-            switch (type) {
-                case PROJECT:
-                    routingExpression = instance.getProjectRoutingExpression();
-                    break;
-                case SUBJECT:
-                    routingExpression = instance.getSubjectRoutingExpression();
-                    break;
-                case SESSION:
-                    routingExpression = instance.getSessionRoutingExpression();
-                    break;
-                case AA:
-                    routingExpression = null;
-                    break;
-                default:
-                    routingExpression = null;
-            }
-            if( routingExpression != null) {
-                rules.addAll( parseConfig( routingExpression));
-            }
-        }
-        return rules;
+        return _dicomSCPInstanceService.findByAETitleAndPort( _aeTitle, _port)
+            .map( dicomSCPInstance -> {
+                if (dicomSCPInstance.isRoutingExpressionsEnabled()) {
+                    String routingExpression;
+                    switch (type) {
+                        case PROJECT:
+                            routingExpression = dicomSCPInstance.getProjectRoutingExpression();
+                            break;
+                        case SUBJECT:
+                            routingExpression = dicomSCPInstance.getSubjectRoutingExpression();
+                            break;
+                        case SESSION:
+                            routingExpression = dicomSCPInstance.getSessionRoutingExpression();
+                            break;
+                        case AA:
+                            routingExpression = null;
+                            break;
+                        default:
+                            routingExpression = null;
+                    }
+                    if (routingExpression != null) {
+                        rules.addAll(parseConfig(routingExpression));
+                    }
+                }
+                return rules;
+            })
+            .orElse( rules);
     }
 
     /**
