@@ -2,6 +2,7 @@ package org.nrg.xnat.security.provider;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
+import org.jetbrains.annotations.NotNull;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 
 import java.util.Arrays;
@@ -21,16 +22,16 @@ public class ProviderAttributes {
     public static final String PROVIDER_AUTO_ENABLED  = "auto.enabled";
     public static final String PROVIDER_AUTO_VERIFIED = "auto.verified";
 
-    public ProviderAttributes(final String providerId, final String authMethod, final String displayName, final Boolean visible, final Boolean autoEnabled, final Boolean autoVerified, final Properties properties) {
+    public ProviderAttributes(final String providerId, final String authMethod, final String name, final Boolean visible, final Boolean autoEnabled, final Boolean autoVerified, final Properties properties) {
         _providerId = providerId;
         _authMethod = authMethod;
-        _displayName = displayName;
+        _name       = name;
 
         setVisible(ObjectUtils.defaultIfNull(visible, true));
         setAutoEnabled(ObjectUtils.defaultIfNull(autoEnabled, false));
         setAutoVerified(ObjectUtils.defaultIfNull(autoVerified, false));
 
-        _properties = ObjectUtils.defaultIfNull(properties, new Properties());
+        _properties = getScrubbedProperties(ObjectUtils.defaultIfNull(properties, new Properties()));
     }
 
     public ProviderAttributes(final Properties properties) {
@@ -73,7 +74,7 @@ public class ProviderAttributes {
      * @return The display name for the specified XNAT authentication provider.
      */
     public String getName() {
-        return _displayName;
+        return _name;
     }
 
     /**
@@ -143,13 +144,34 @@ public class ProviderAttributes {
         return getProperty(property, null);
     }
 
+    public String getQualifiedProperty(final String providerId, final String property) {
+        return getQualifiedProperty(providerId, property, null);
+    }
+
     public String getProperty(final String property, final String defaultValue) {
         return _properties.getProperty(property, defaultValue);
     }
 
+    public String getQualifiedProperty(final String providerId, final String property, final String defaultValue) {
+        return _properties.getProperty(formatQualifiedProperty(providerId, property), defaultValue);
+    }
+
+    public boolean hasProperty(final String property) {
+        return _properties.containsKey(property);
+    }
+
+    public boolean hasQualifiedProperty(final String providerId, final String property) {
+        return _properties.containsKey(formatQualifiedProperty(providerId, property));
+    }
+
+    @NotNull
+    private String formatQualifiedProperty(final String providerId, final String property) {
+        return String.join(".", _authMethod, providerId, property);
+    }
+
     @Override
     public String toString() {
-        return "Provider " + _displayName + " (" + _authMethod + ": " + _providerId + ") " + _properties;
+        return "Provider " + _name + " (" + _authMethod + ": " + _providerId + ") " + _properties;
     }
 
     private static Properties getScrubbedProperties(final Properties properties) {
@@ -164,7 +186,7 @@ public class ProviderAttributes {
 
     private final String     _providerId;
     private final String     _authMethod;
-    private final String     _displayName;
+    private final String     _name;
     private final Properties _properties;
 
     private boolean _visible;
