@@ -2,6 +2,7 @@
 #* @vtlvariable name="data" type="org.apache.turbine.util.RunData" *#
 #* @vtlvariable name="link" type="org.apache.turbine.services.pull.tools.TemplateLink" *#
 #* @vtlvariable name="login_methods" type="java.util.Collection" *#
+#* @vtlvariable name="linked_logins" type="java.util.Collection" *#
 #* @vtlvariable name="page" type="org.apache.turbine.util.template.HtmlPageAttributes" *#
 #* @vtlvariable name="provider" type="org.nrg.xnat.security.provider.XnatAuthenticationProvider" *#
 #* @vtlvariable name="siteConfig" type="org.nrg.xdat.preferences.SiteConfigPreferences" *#
@@ -169,6 +170,7 @@ $page.setTitle("$siteId - Please Login")
                 #end
             </form>
         </div>
+        #displayLoginLinks($linked_logins)
     </div>
 
     <div class="clear"></div>
@@ -245,7 +247,7 @@ $page.setTitle("$siteId - Please Login")
         <input type="hidden" name="XNAT_CSRF" value="">
     </form>
     </div>
-    #displayLoginLinks($login_methods)
+    #displayLoginLinks($linked_logins)
     <div id="loginBoxMoreOptions">
         <ul>
         #foreach($screenProps in $turbineUtils.getTemplates("loginBoxMoreOptions"))
