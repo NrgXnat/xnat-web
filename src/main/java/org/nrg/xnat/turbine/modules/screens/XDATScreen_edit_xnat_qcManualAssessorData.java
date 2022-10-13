@@ -89,7 +89,11 @@ public class XDATScreen_edit_xnat_qcManualAssessorData
 
 
 		if(StringUtils.isEmpty(qcAccessor.getProject())){
-			qcAccessor.setProject(imageSession.getProject());
+			if(data.getParameters().containsKey("project")){
+				qcAccessor.setProject((String) TurbineUtils.GetPassedParameter("project",data));
+			}else{
+				qcAccessor.setProject(imageSession.getProject());
+			}
 		}
 
 		List<Object> types=Lists.newArrayList();
