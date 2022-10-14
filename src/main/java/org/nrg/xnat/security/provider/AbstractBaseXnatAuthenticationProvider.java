@@ -34,20 +34,10 @@ public abstract class AbstractBaseXnatAuthenticationProvider implements XnatAuth
         _authMethod   = attributes.getAuthMethod();
         _providerId   = providerId;
         _name         = attributes.getName();
-        _visible      = attributes.hasQualifiedProperty(providerId, ProviderAttributes.PROVIDER_VISIBLE)
-                        ? Boolean.parseBoolean(attributes.getQualifiedProperty(providerId, ProviderAttributes.PROVIDER_VISIBLE))
-                        : attributes.isVisible();
-        _autoEnabled  = attributes.hasQualifiedProperty(providerId, ProviderAttributes.PROVIDER_AUTO_ENABLED)
-                        ? Boolean.parseBoolean(attributes.getQualifiedProperty(providerId, ProviderAttributes.PROVIDER_AUTO_ENABLED))
-                        : attributes.isAutoEnabled();
-        _autoVerified = attributes.hasQualifiedProperty(providerId, ProviderAttributes.PROVIDER_AUTO_VERIFIED)
-                        ? Boolean.parseBoolean(attributes.getQualifiedProperty(providerId, ProviderAttributes.PROVIDER_AUTO_VERIFIED))
-                        : attributes.isAutoVerified();
-        if (attributes.hasProperty(ATTRIBUTE_LINK)) {
-            _link = attributes.getProperty(ATTRIBUTE_LINK);
-        } else if (attributes.hasQualifiedProperty(providerId, ATTRIBUTE_LINK)) {
-            _link = attributes.getQualifiedProperty(providerId, ATTRIBUTE_LINK);
-        }
+        _visible      = attributes.getQualifiedBoolean(ProviderAttributes.PROVIDER_VISIBLE, attributes::isVisible);
+        _autoEnabled  = attributes.getQualifiedBoolean(ProviderAttributes.PROVIDER_AUTO_ENABLED, attributes::isAutoEnabled);
+        _autoVerified = attributes.getQualifiedBoolean(ProviderAttributes.PROVIDER_AUTO_VERIFIED, attributes::isAutoVerified);
+        _link         = attributes.getProperty(ATTRIBUTE_LINK, () -> attributes.getQualifiedProperty(ATTRIBUTE_LINK));
     }
 
     /**

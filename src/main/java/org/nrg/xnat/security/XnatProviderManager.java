@@ -9,7 +9,9 @@
 
 package org.nrg.xnat.security;
 
+import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -212,14 +214,18 @@ public class XnatProviderManager extends ProviderManager {
     }
 
     private Map<String, XnatAuthenticationProvider> getFilteredEnabledProviders(final Predicate<XnatAuthenticationProvider> filter) {
-        final Map<Boolean, List<String>> enabledProviders = _preferences.getEnabledProviders().stream().collect(Collectors.partitioningBy(_xnatAuthenticationProviders::containsKey));
-        if (!enabledProviders.get(false).isEmpty()) {
-            log.warn("Some provider IDs are enabled, but don't have configured definitions: {}", String.join(", ", enabledProviders.get(false)));
+        final List<String> enabled = _preferences.getEnabledProviders();
+        final Map<String, XnatAuthenticationProvider> configured = enabled.stream()
+                                                                          .map(_xnatAuthenticationProviders::get)
+                                                                          .filter(Objects::nonNull)
+                                                                          .collect(Collectors.toMap(XnatAuthenticationProvider::getProviderId, Function.identity()));
+        if (enabled.size() > configured.size()) {
+            final Sets.SetView<String> difference = Sets.difference(new HashSet<>(enabled), configured.keySet());
+            log.warn("{} provider IDs are enabled, but don't have configured definitions: {}", difference.size(), String.join(", ", difference));
         }
-        final Map<String, XnatAuthenticationProvider> filteredProviders = enabledProviders.get(true).stream()
-                                                                                          .map(_xnatAuthenticationProviders::get)
-                                                                                          .filter(filter)
-                                                                                          .collect(Collectors.toMap(XnatAuthenticationProvider::getProviderId, Function.identity(), (k1, k2) -> k2, LinkedHashMap::new));
+        final Map<String, XnatAuthenticationProvider> filteredProviders = configured.values().stream()
+                                                                                    .filter(filter)
+                                                                                    .collect(Collectors.toMap(XnatAuthenticationProvider::getProviderId, Function.identity(), (k1, k2) -> k2, LinkedHashMap::new));
         if (log.isDebugEnabled()) {
             log.debug("Added {} provider IDs to the list of filtered authentication providers: {}", filteredProviders.keySet().size(), String.join(", ", filteredProviders.keySet()));
         }
