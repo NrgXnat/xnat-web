@@ -51,10 +51,10 @@
                     </div>
                 #end
             #end
+            <fieldset class="divider">
+                <legend>OR</legend>
+            </fieldset>
         </div>
-        <fieldset class="divider">
-            <legend>OR</legend>
-        </fieldset>
         #end
     #end
     <!-- END xnat-templates/screens/Login.vm@displayLoginLinks -->

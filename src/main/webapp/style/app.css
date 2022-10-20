@@ -1510,6 +1510,9 @@ body.xnat .chosen-container {
     border: 1px solid #ccc;
     padding: 20px;
 }
+#login_auth_providers + #login_form {
+    border-width: 0 1px 1px;
+}
 
 .login-box-container-fixed #login_box,
 .login-box-container-fixed #register_box {
@@ -1554,7 +1557,9 @@ body.xnat .chosen-container {
 }
 
 #login_auth_providers {
-    padding: 10px;
+    padding: 20px 20px 0;
+    border: 1px solid #ccc;
+    border-width: 1px 1px 0;
 }
 
 fieldset.divider {
