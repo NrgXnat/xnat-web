@@ -1553,6 +1553,25 @@ body.xnat .chosen-container {
     padding-bottom: 10px;
 }
 
+#login_auth_providers {
+    padding: 10px;
+}
+
+fieldset.divider {
+    border-top: 1px solid #aaa;
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    display: block;
+    text-align: center;
+    margin: 1px;
+    padding: 1px;
+}
+
+fieldset.divider legend {
+    padding: 5px 10px;
+}
+
 #register_forgot a,
 #register_forgot span.sep {
     margin-right: 12px;
