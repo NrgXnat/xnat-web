@@ -9,19 +9,32 @@
 
 package org.nrg.xnat.restlet.resources.search;
 
+import com.google.common.collect.Lists;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.nrg.xdat.XDAT;
+import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.security.ElementSecurity;
+import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xdat.security.helpers.UserHelper;
+import org.nrg.xft.XFTItem;
 import org.nrg.xft.XFTTable;
+import org.nrg.xft.XFTTool;
+import org.nrg.xft.exception.ElementNotFoundException;
+import org.nrg.xft.exception.XFTInitException;
+import org.nrg.xft.schema.XFTManager;
+import org.nrg.xft.schema.db.services.DBBackedSchemaService;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.restlet.resources.SecureResource;
 import org.restlet.Context;
 import org.restlet.data.MediaType;
 import org.restlet.data.Request;
 import org.restlet.data.Response;
+import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
 
+import java.io.IOException;
 import java.util.*;
 
 public class SearchElementListResource extends SecureResource {
@@ -32,6 +45,66 @@ public class SearchElementListResource extends SecureResource {
 			this.getVariants().add(new Variant(MediaType.TEXT_HTML));
 			this.getVariants().add(new Variant(MediaType.TEXT_XML));
 			
+	}
+
+	@Override
+	public boolean allowPost() {
+		return true;
+	}
+
+	private final List<String> allowedExtensions = Lists.newArrayList("subjectAssessorData","imageAssessorData");
+
+	@Override
+	public void handlePost() {
+		if (Roles.isSiteAdmin(this.getUser())) {
+			if ("create".equals(getQueryVariable("task"))) {
+				String prefix = getQueryVariable("prefix");
+				String type = getQueryVariable("complexType");
+				String name = getQueryVariable("name");
+				String extensionS = getQueryVariable("extends");
+
+				if(StringUtils.isBlank(name) || StringUtils.isBlank(prefix) || StringUtils.isBlank(extensionS)){
+					this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+					return;
+				}
+
+				if(!allowedExtensions.contains(extensionS)){
+					this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN);
+					return;
+				}
+
+				SchemaElement extension=null;
+				try {
+					extension = SchemaElement.GetElement("xnat:"+extensionS);
+				} catch (XFTInitException e) {
+					logger.error("",e);
+					this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
+					return;
+				} catch (ElementNotFoundException e) {
+					this.getResponse().setStatus(Status.CLIENT_ERROR_BAD_REQUEST);
+					return;
+				}
+
+				String newElement = prefix + ":" + name;
+
+				//confirm it doesn't exist
+				try {
+					SchemaElement se = SchemaElement.GetElement(newElement);
+
+					this.getResponse().setStatus(Status.CLIENT_ERROR_CONFLICT);
+					return;
+				} catch (XFTInitException e) {
+					logger.error("",e);
+					this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL);
+					return;
+				} catch (ElementNotFoundException e) {
+					//ignoore, this is right.
+				}
+
+				DBBackedSchemaService dbService=XFTManager.getDBBackedSchemaService();
+				dbService.registerNewElement(prefix,type,name,extension);
+			}
+		}
 	}
 
 	@Override
