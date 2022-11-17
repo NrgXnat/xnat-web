@@ -1,0 +1,1300 @@
+/*
+ * XNAT http://www.xnat.org
+ * Copyright (c) 2005-2021, Washington University School of Medicine and Howard Hughes Medical Institute
+ * All Rights Reserved
+ *
+ * Released under the Simplified BSD.
+ *
+ * @author: Mohana Ramaratnam (mohana@radiologics.com)
+ * @since: 07-03-2021
+ */
+
+console.log('IN formJsonConfig.js');
+
+var XNAT = getObject(XNAT || {});
+
+(function(factory) {
+    if (typeof define === 'function' && define.amd) {
+        define(factory);
+    } else if (typeof exports === 'object') {
+        module.exports = factory();
+    } else {
+        return factory();
+    }
+}(function() {
+
+    var xnatFormManager, undefined, undef,
+        restUrl = XNAT.url.restUrl;
+
+    var projectDataTypeSingularName = XNAT.app.displayNames.singular.project;
+    var addNewBuilderObj = {};
+
+    var onAddNewBuilderChange = function (build) {
+        try {
+            let modalId = 'addNewModal';
+            let button_id = modalId + '-save-button';
+            let saveBtn = document.getElementById(button_id);
+            saveBtn.removeAttribute('disabled');
+            saveBtn.classList.remove("disabled");
+        }catch(err) {console.log(err);}
+        addNewBuilderObj.builderSchema = build;
+    };
+
+
+    XNAT.customFormManager =
+        getObject(XNAT.customFormManager || {});
+
+
+    XNAT.customFormManager.protocolManager = getObject(XNAT.customFormManager.protocolManager || {});
+    XNAT.customFormManager.datatypeManager = getObject(XNAT.customFormManager.datatypeManager || {});
+
+    XNAT.customFormManager.xnatFormManager = xnatFormManager =
+        getObject(XNAT.customFormManager.xnatFormManager || {});
+
+    xnatFormManager.sitedefinitions = [];
+
+    xnatFormManager.siteHasProtocolsPluginDeployed = false;
+
+    const PRIMARY_KEY_FIELDNAME = "idCustomVariableFormAppliesTo";
+
+
+    function spacer(width) {
+        return spawn('i.spacer', {
+            style: {
+                display: 'inline-block',
+                width: width + 'px'
+            }
+        })
+    }
+
+    function customFormUrl(append, paramsForMe) {
+        var params = paramsForMe || {};
+        return XNAT.url.restUrl('xapi/customforms/' + append, params, false, true);
+    }
+
+    function promoteFormUrl(id) {
+        return customFormUrl('promote');
+    }
+
+
+    function errorHandler(e, title, closeAll) {
+        console.log(e);
+        title = (title) ? 'Error Found: ' + title : 'Error';
+        closeAll = (closeAll === undefined) ? true : closeAll;
+        var errormsg = (e.statusText) ? '<p><strong>Error ' + e.status + ': ' + e.statusText + '</strong></p><p>' + e.responseText + '</p>' : e;
+        XNAT.dialog.open({
+            width: 450,
+            title: title,
+            content: errormsg,
+            buttons: [{
+                label: 'OK',
+                isDefault: true,
+                close: true,
+                action: function () {
+                    if (closeAll) {
+                        xmodal.closeAll();
+                    }
+                }
+            }]
+        });
+    }
+
+    function setupBuilder(builder) {
+        builder.on('change',onAddNewBuilderChange);
+        Formio.Builders.addBuilder("addNew",builder);
+        let formComponentDivs = document.getElementsByClassName('formcomponents');
+        let formAreaDivs = document.getElementsByClassName('formarea');
+        try {
+            let formComponentDiv = formComponentDivs[0];
+            let formAreaDiv = formAreaDivs[0];
+            formComponentDiv.setAttribute('style','height:65vh; overflow-y:scroll');
+            formAreaDiv.setAttribute('style','height:60vh; overflow-y:scroll');
+        }catch(err){console.log("Could not add scroll bar");}
+    }
+
+
+    // Is Visit and Protocols Plugin Installed?
+    xnatFormManager.getDeploymentEnvironment = function (callback) {
+        callback = isFunction(callback) ? callback : function () {
+        };
+        return XNAT.xhr.get({
+            url: restUrl('xapi/customforms/env'),
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                xnatFormManager.siteHasProtocolsPluginDeployed = data['siteHasProtocolsPluginDeployed'];
+                callback.apply(this, arguments);
+            }
+        });
+    };
+
+    // Are we in a project context?
+    xnatFormManager.isItAProjectContext = function (callback) {
+        callback = isFunction(callback) ? callback : function () {
+        };
+        if (XNAT.data.context.projectID.length > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    function initBuilder(form) {
+        let formType = form.data.formType;
+        let formTitle = form.data.formTitle;
+        let formBuilderElement = document.getElementById("form-builder");
+        let builderConfig = xnatFormManager.getBuilderConfiguration();
+        if (jQuery.isEmptyObject(addNewBuilderObj) || !addNewBuilderObj.hasOwnProperty('builderSchema')) {
+            Formio.builder(formBuilderElement, {
+                display: formType,
+                title: formTitle,
+                components: [],
+                settings: {}
+            }, {
+                noDefaultSubmitButton: true,
+                builder: builderConfig
+            }).then((builder) => {
+                setupBuilder(builder);
+            });
+        }else {
+            let builderSchema = addNewBuilderObj.builderSchema;
+            Formio.builder(formBuilderElement, builderSchema, {
+                noDefaultSubmitButton: true,
+                builder: builderConfig
+            }).then((builder) => {
+                setupBuilder(builder);
+            });
+        }
+    }
+
+
+    function saveConfiguration() {
+        let builder = Formio.Builders.getBuilder("addNew");
+        let builderJson = builder.schema;
+        let submissionJson = {};
+        submissionJson['submission'] = addNewBuilderObj.submission;
+        submissionJson['builder'] = builderJson;
+
+        var url = restUrl('xapi/customforms/save', {}, false, true);
+
+        XNAT.xhr.put({
+            url: url,
+            contentType: 'application/json',
+            data: JSON.stringify(submissionJson),
+            success: function () {
+                xmodal.closeAll();
+                XNAT.ui.banner.top(2000, 'Configuration saved.', 'success');
+                xnatFormManager.refreshTable();
+            },
+            fail: function (e) {
+                errorHandler(e, 'Could Not save the form', false);
+            }
+        });
+
+    }
+
+    function getPK(item) {
+        return item['appliesToList'][0][PRIMARY_KEY_FIELDNAME];
+    }
+
+
+    function getSubmissionObjectForRow(configItem) {
+        let dbRowId = getPK(configItem);
+        let path = configItem.path;
+        let zIndex = configItem.formZIndex;
+        let submissionJson = {};
+        let submissionObj = {};
+        let submissionDataObj = {};
+        if (dbRowId == undef) {
+            submissionDataObj[PRIMARY_KEY_FIELDNAME] = '-1_-1';
+        } else {
+            submissionDataObj[PRIMARY_KEY_FIELDNAME] = dbRowId;
+        }
+        submissionDataObj['formType'] = configItem['contents']['display'];
+        submissionDataObj['formTitle'] = configItem['contents']['title'];
+        let dataXsiType = extractParts(path, 1);
+        let dataSingular = XNAT.customFormManager.datatypeManager.getDatatypeByXsiType(dataXsiType).label;
+        let xnatDataTypeObj = {};
+        xnatDataTypeObj['label'] = dataSingular;
+        xnatDataTypeObj['value'] = dataXsiType;
+        submissionDataObj['xnatDatatype'] = xnatDataTypeObj;
+        submissionDataObj['xnatProject'] = [];
+        submissionDataObj['xnatProtocol'] = [];
+        submissionDataObj['xnatVisit'] = [];
+        submissionDataObj['xnatSubtype'] = [];
+
+        let projectList = getProject(configItem);
+        submissionDataObj.zIndex = zIndex;
+        let rowProtocol = extractParts(configItem['path'], 3);
+        if (!isAProjectSpecificForm(projectList)) {
+            // A site wide configuration
+            submissionDataObj['isThisASiteWideConfiguration'] = 'yes';
+        } else {
+            submissionDataObj['isThisASiteWideConfiguration'] = 'no';
+            projectList.forEach(project => {
+                let xnatProject = {};
+                if (rowProtocol === '--') {
+                    xnatProject['label'] = project;
+                    xnatProject['value'] = project;
+                } else {
+                    xnatProject['label'] = project + "[" + rowProtocol + "]";
+                    xnatProject['value'] = rowProtocol + ":" + project;
+                }
+                submissionDataObj['xnatProject'].push(xnatProject);
+            });
+        }
+        if (rowProtocol != '--') {
+            let xnatProtocol = {};
+            xnatProtocol['label'] = rowProtocol;
+            xnatProtocol['value'] = rowProtocol;
+            submissionDataObj['xnatProtocol'].push(xnatProtocol);
+            let visit = extractParts(configItem['path'], 5);
+            if (visit != '--') {
+                let xnatVisit = {};
+                xnatVisit['label'] = rowProtocol + ":" + visit;
+                xnatVisit['value'] = rowProtocol + ":" + visit;
+                submissionDataObj['xnatVisit'].push(xnatVisit);
+                let subType = extractParts(configItem['path'], 7);
+                if (subType != '--') {
+                    let xnatSubType = {};
+                    xnatSubType['label'] = rowProtocol + ":" + visit + ":" + subType;
+                    xnatSubType['value'] = rowProtocol + ":" + visit + ":" + subType;
+                    submissionDataObj['xnatSubtype'].push(xnatSubType);
+                }
+            }
+        }
+        submissionObj['data'] = submissionDataObj;
+        submissionObj['state'] = 'submitted';
+        submissionJson['submission'] = submissionObj;
+        return submissionJson;
+    }
+
+
+    // prepare to display the wizard for form creation
+    xnatFormManager.getWizard =  function (callback) {
+        callback = isFunction(callback) ? callback : function () {};
+        let url = XNAT.url.scriptUrl('/xnat/app/formJson/formManagerWizard.json');
+        if (xnatFormManager.siteHasProtocolsPluginDeployed == true) {
+            url = XNAT.url.scriptUrl('/xnat/app/formJson/formManagerWizard_protocol.json');
+        }
+        let formWizardJson = undefined;
+        XNAT.xhr.get({
+            url: url,
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                formWizardJson = data;
+            }
+        });
+        Formio.createForm(document.getElementById('formio'), formWizardJson, {
+            breadcrumbSettings: {clickable:false},
+            buttonSettings: {
+                showCancel: false,
+                showSubmit: false
+            }
+        }).then(function (wizard) {
+            addNewBuilderObj.submission = wizard.submission;
+            // Prevent the submission from going to the form.io server.
+            wizard.nosubmit = true;
+            wizard.on('nextPage', function (page) {
+                if (xnatFormManager.siteHasProtocolsPluginDeployed == true) {
+                    if (page.page === 3) {
+                        if (wizard.data.isThisASiteWideConfiguration === 'no' && (wizard.data.xnatProject == undef || wizard.data.xnatProject.length == 0)) {
+                            XNAT.dialog.message('ERROR ', 'Please select atleast one project.');
+                            wizard.prevPage();
+                        }
+                        initBuilder(wizard);
+                    }
+                } else {
+                    if (page.page === 2) {
+                        if (wizard.data.isThisASiteWideConfiguration === 'no' && (wizard.data.xnatProject == undef || wizard.data.xnatProject.length == 0)) {
+                            XNAT.dialog.message('ERROR ', 'Please select atleast one project.');
+                            wizard.prevPage();
+                        }
+                        initBuilder(wizard);
+                    }
+                }
+            });
+        });
+    };
+
+
+    // get the list of Site wide Configs
+    xnatFormManager.getCustomFormConfigs = xnatFormManager.getAllCustomFormConfigs = function (callback) {
+        callback = isFunction(callback) ? callback : function () {
+        };
+        return XNAT.xhr.get({
+            url: restUrl('xapi/customforms'),
+            dataType: 'json',
+            async: false,
+            success: function (data) {
+                xnatFormManager.sitedefinitions = [];
+                data.forEach(function (item) {
+                    xnatFormManager.sitedefinitions.push(item);
+                });
+                xnatFormManager.sitedefinitions.sort(function (a, b) {
+                    return (a.path > b.path) ? 1 : -1;
+                });
+                callback.apply(this, arguments);
+            },
+            fail: function (e) {
+                errorHandler(e, 'Could not retrieve forms');
+            }
+
+        });
+    };
+
+
+    xnatFormManager.getBuilderConfiguration = function () {
+        return XNAT.customFormManager.builderConfigManager.getBuilderConfig();
+    }
+
+    xnatFormManager.builderDialog = function (configDefinition) {
+            let configDefinitionObj = JSON.parse(configDefinition['contents']);
+            let builderConfig = xnatFormManager.getBuilderConfiguration();
+            Formio.builder(document.getElementById("formio-builder"), configDefinitionObj, {
+                noDefaultSubmitButton: true,
+                builder: builderConfig
+            }).then((form) => {
+                Formio.Builders.addBuilder("wysiwyg", form);
+            });
+    };
+
+
+
+
+    xnatFormManager.submitJson = function(submissionJson) {
+        let url = restUrl('xapi/customforms/save', {}, false, true);
+
+        XNAT.xhr.put({
+            url: url,
+            contentType: 'application/json',
+            data: JSON.stringify(submissionJson),
+            success: function () {
+                xmodal.closeAll();
+                XNAT.ui.banner.top(2000, 'Form JSON definition updated.', 'success');
+                xnatFormManager.refreshTable();
+            },
+            fail: function (e) {
+                errorHandler(e, 'Could Not save the form', false);
+            }
+        });
+
+    }
+
+
+    xnatFormManager.dialog = function (configDefinition, newCommand) {
+        let _source, _editor;
+        if (!newCommand) {
+            let path = configDefinition.path;
+            let configDefinitionObj = JSON.parse(configDefinition['contents']);
+            let label = configDefinitionObj.title;
+            label = label || {};
+
+            let dialogButtons = {
+                update: {
+                    label: 'Save',
+                    isDefault: true,
+                    close: false,
+                    action: function (obj) {
+                        let editorContent = _editor.getValue().code;
+                        let submissionJson = getSubmissionObjectForRow(configDefinition);
+                        try {
+                            submissionJson['builder'] = JSON.parse(editorContent);
+                            xnatFormManager.submitJson(submissionJson);
+                            obj.close();
+                        } catch (error) {
+                            console.error(error);
+                            XNAT.dialog.confirm({
+                                title: 'Invalid JSON',
+                                content: 'Please fix the errors in the JSON.',
+                                okAction: function(){
+                                }
+                            });
+                        }
+
+                    }
+                },
+                cancel: {
+                    label: 'Cancel',
+                    close: false,
+                    action: function(obj) {
+                        let $thisModal = obj.$modal;
+                        xmodal.confirm({
+                            content: 'Are you sure you want to abandon?',
+                            okAction: function(){
+                                // close 'parent' modal
+                                xmodal.close($thisModal);
+                            }
+                        });
+                    }
+                }
+            };
+            _source = spawn('textarea', configDefinition.contents);
+
+            _editor = XNAT.app.codeEditor.init(_source, {
+                language: 'json'
+            });
+
+            _editor.openEditor({
+                title: 'Form JSON Definition For ' + label,
+                classes: 'plugin-json',
+                buttons: dialogButtons,
+                height: 680,
+                closeBtn: false,
+                afterShow: function (dialog, obj) {
+                    obj.aceEditor.setReadOnly(false);
+                    dialog.$modal.find('.body .inner').prepend(
+                        spawn('div', [
+                            spawn('p', 'Path: ' + path),
+                        ])
+                    );
+                }
+            });
+
+        }
+    };
+
+
+    xnatFormManager.disable = function (configDefinition, title) {
+        let appliesTo = configDefinition['appliesToList'];
+        xmodal.open({
+            title: 'Disable?',
+            content: 'Are you sure you want to disable the form?',
+            width: 200,
+            height: 200,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Ok',
+                    isDefault: true,
+                    action: function () {
+                        let url = customFormUrl('disable');
+                        XNAT.xhr.post({
+                            url: url,
+                            contentType: 'application/json',
+                            data: JSON.stringify(appliesTo),
+                            success: function () {
+                                xmodal.closeAll();
+                                XNAT.ui.banner.top(2000, 'Form disabled.', 'success');
+                                xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not disable form for ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Close'
+                }
+            }
+        });
+
+    }
+
+    xnatFormManager.deleteForm = function (configDefinition, title) {
+        let appliesTo = configDefinition['appliesToList'];
+        xmodal.open({
+            title: 'Delete form?',
+            content: 'Are you sure you want to delete the form? <br><br><p>In case data has been acquired using the form, form will be disabled. This allows access to data in the future.</p>',
+            width: 300,
+            height: 300,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Proceed',
+                    isDefault: true,
+                    action: function () {
+                        let url = customFormUrl('');
+                        XNAT.xhr.delete({
+                            url: url,
+                            contentType: 'application/json',
+                            data: JSON.stringify(appliesTo),
+                            success: function (resp) {
+                                xmodal.closeAll();
+                                const regex = /\: disabled$/;
+                                const found = resp.match(regex);
+                                if (found != null) {
+                                    xnatFormManager.warnUserDataExists();
+                                } else {
+                                    XNAT.ui.banner.top(4000, resp, 'success');
+                                }
+                                xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not delete form ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Cancel'
+                }
+            }
+        });
+
+    }
+
+    xnatFormManager.warnUserDataExists = function () {
+        XNAT.dialog.open({
+            width: 450,
+            title: "Form deletion not possible",
+            content: "Form has been disabled as data has been acquired using the form.",
+            buttons: [{
+                label: 'OK',
+                isDefault: true,
+                close: true,
+                action: function () {
+                    xmodal.closeAll();
+                }
+            }]
+        });
+    }
+
+    xnatFormManager.warnUserDataLossOnClosing = function () {
+        XNAT.dialog.open({
+            width: 450,
+            title: "Are you sure you want to abandon form creation?",
+            content: "You you sure you want to abandon form creation? All data will be lost.",
+            buttons: [{
+                label: 'OK',
+                isDefault: true,
+                close: true
+            }]
+        });
+    }
+
+    xnatFormManager.enable = function (configDefinition, title) {
+        let appliesTo = configDefinition['appliesToList'];
+        xmodal.open({
+            title: 'Enable?',
+            content: 'Are you sure you want to enable the form?',
+            width: 200,
+            height: 200,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Ok',
+                    isDefault: true,
+                    action: function () {
+                        let url = customFormUrl('enable');
+                        XNAT.xhr.post({
+                            url: url,
+                            contentType: 'application/json',
+                            data: JSON.stringify(appliesTo),
+                            success: function () {
+                                xmodal.closeAll();
+                                XNAT.ui.banner.top(2000, 'Configuration enabled.', 'success');
+                                xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not enable configuration for ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Close'
+                }
+            }
+        });
+
+    }
+
+    xnatFormManager.modifyZIndex = function (configDefinition, title) {
+        let zIndex = configDefinition['formZIndex'];
+        let formId = configDefinition['formId'];
+        xmodal.open({
+            title: 'Modify ZIndex?',
+            content: 'Current zIndex: ' + zIndex + '<br><br> New zIndex: <input type="number" step="1"  id="zIndexTxt" value="'+ zIndex + '">',
+            width: 200,
+            height: 200,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Ok',
+                    isDefault: true,
+                    action: function () {
+                        let desiredZIndex = document.getElementById('zIndexTxt').value;
+                        let containsDot = /\./.test(desiredZIndex);
+                        if (containsDot) {
+                            XNAT.dialog.open({
+                                width: 450,
+                                title: "Invalid Value for Z Index",
+                                content: "ZIndex must be an integer value",
+                                buttons: [{
+                                    label: 'OK',
+                                    isDefault: true,
+                                    close: true
+                                }]
+                            });
+                            return;
+                        }
+                        let url = customFormUrl( 'formId/' + formId + '?zIndex=' + desiredZIndex );
+                        XNAT.xhr.post({
+                            url: url,
+                            contentType: 'application/json',
+                            success: function () {
+                                xmodal.closeAll();
+                                XNAT.ui.banner.top(2000, 'ZIndex updated.', 'success');
+                                xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not update zIndex ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Close'
+                }
+            }
+        });
+
+    }
+
+
+    xnatFormManager.promote = function (configDefinition, title) {
+        let appliesTo = configDefinition['appliesToList'];
+        xmodal.open({
+            title: 'Confirm form promotion',
+            content: 'Are you sure you want to promote form to site? <br> <br> <p> Promoting a form would make it available to the entire site.</p>',
+            width: 300,
+            height: 400,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Ok',
+                    isDefault: true,
+                    action: function () {
+                        let url = promoteFormUrl();
+                        XNAT.xhr.post({
+                            url: url,
+                            contentType: 'application/json',
+                            data: JSON.stringify(appliesTo),
+                            success: function () {
+                                xmodal.closeAll();
+                                XNAT.ui.banner.top(2000, 'Form promoted to site', 'success');
+                                xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not promote form ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Close'
+                }
+            }
+        });
+    }
+
+    function displayFormWizard() {
+        addNewBuilderObj = {};
+        xnatFormManager.getWizard();
+    }
+
+    function getOptedOutProjectsForTheForm(formId) {
+        let definitions = xnatFormManager.sitedefinitions;
+        let optedOutFromThisForm = [];
+        for (let k = 0; k < definitions.length; k++) {
+            let item = definitions[k];
+            if (item['scope'] === 'Project' && item['formId'] === formId && item['status'] === 'optedout') {
+                let projects = getProject(item);
+                for (let i=0; i< projects.length; i++) {
+                    optedOutFromThisForm.push(projects[i]);
+                }
+            }
+        }
+        return optedOutFromThisForm;
+    }
+
+    function getProject(itemObj) {
+        let projects = [];
+        if (itemObj.scope === 'Site') {
+            projects.push('All');
+        } else {
+            itemObj['appliesToList'].forEach(function (item) {
+                projects.push(item['entityId']);
+            });
+        }
+        return projects.sort();
+    }
+
+    function extractParts(path, partIndex) {
+        let pathParts = path.split('/');
+        if (partIndex > pathParts.length) {
+            return '--';
+        } else {
+            return pathParts[partIndex];
+        }
+    }
+
+    xnatFormManager.addNewBtn = function (container, callback) {
+        return spawn('button.btn1.btn-sm', {
+            onclick: function (e) {
+                e.preventDefault();
+                xmodal.open({
+                    id: 'addNewModal',
+                    title: 'Custom Form Generation',
+                    classes: 'xnat-bootstrap',
+                    template: $('#addFormVariable'),
+                    width: 1600,
+                    height: 2400,
+                    closeBtn: false,
+                    scroll: false,
+                    beforeShow: function (obj) {
+                       displayFormWizard();
+                    },
+                    buttons: {
+                        save: {
+                            label: 'Save',
+                            isDefault: true,
+                            disabled: true,
+                            action: function () {
+                                saveConfiguration();
+                            }
+                        },
+                        cancel: {
+                            label: 'Cancel',
+                            close: false,
+                            action: function(obj) {
+                                let $thisModal = obj.$modal;
+                                xmodal.confirm({
+                                    content: 'Are you sure you want to abandon?',
+                                    okAction: function(){
+                                        // close 'parent' modal
+                                        xmodal.close($thisModal);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }, 'Add New');
+    }
+
+
+    function saveWYSIWYGContent(itemObj) {
+        let wysiygBuilder = Formio.Builders.getBuilder("wysiwyg");
+        let editorContent = wysiygBuilder.schema;
+
+        let submissionJson = getSubmissionObjectForRow(itemObj);
+        submissionJson['builder'] = editorContent;
+
+        let url = restUrl('xapi/customforms/save', {}, false, true);
+
+        XNAT.xhr.put({
+            url: url,
+            contentType: 'application/json',
+            data: JSON.stringify(submissionJson),
+            success: function () {
+                xmodal.closeAll();
+                XNAT.ui.banner.top(2000, 'Form  updated.', 'success');
+                xnatFormManager.refreshTable();
+            },
+            fail: function (e) {
+                errorHandler(e, 'Could Not save the form', false);
+            }
+        });
+
+    }
+
+    function isAProjectSpecificForm(projectIds) {
+        if (projectIds.length === 1 && projectIds[0] === 'All') {
+            return false;
+        }
+        return true;
+    }
+
+    function editButton(itemObj) {
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                xmodal.open({
+                    title: 'Edit Custom Form',
+                    classes: 'xnat-bootstrap',
+                    template: $('#editForm'),
+                    width: 1600,
+                    height: 1600,
+                    scroll: false,
+                    closeBtn: false,
+                    beforeShow: function (obj) {
+                        xnatFormManager.builderDialog(itemObj);
+                    },
+                    afterShow: function(o) {
+                      let formComponentDivs = document.getElementsByClassName('formcomponents');
+                      let formAreaDivs = document.getElementsByClassName('formarea');
+                      try {
+                          let formComponentDiv = formComponentDivs[0];
+                          let formAreaDiv = formAreaDivs[0];
+                          formComponentDiv.setAttribute('style','height:75vh; overflow-y:scroll');
+                          formAreaDiv.setAttribute('style','height:80vh; overflow-y:scroll');
+                      }catch(err){console.log("Could not add scroll bar");}
+                    },
+                    buttons: {
+                        update: {
+                            label: 'Save',
+                            isDefault: true,
+                            action: function () {
+                                saveWYSIWYGContent(itemObj);
+                            }
+                        },
+                        cancel: {
+                            label: 'Cancel',
+                            close: false,
+                            action: function(obj) {
+                                let $thisModal = obj.$modal;
+                                xmodal.confirm({
+                                    content: 'Are you sure you want to abandon?',
+                                    okAction: function(){
+                                        // close 'parent' modal
+                                        xmodal.close($thisModal);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        }, 'WYSIWYG');
+    }
+
+
+    function jsonEditButton(itemObj) {
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    xnatFormManager.dialog(itemObj, false);
+                }
+            }
+        }, 'Edit JSON');
+    }
+
+    function promoteButton(itemObj, title) {
+        let projectId = getProject(itemObj);
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    xnatFormManager.promote(itemObj, title);
+                }
+            }
+        }, 'Promote');
+    }
+
+
+    function optOutButton(itemObj, title) {
+        let isFormSharedBetweenProjects = itemObj['doProjectsShareForm'];
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    let rowId = getPK(itemObj);
+                    let title = itemObj.title || '';
+                    if (isFormSharedBetweenProjects) {
+                        let projects = getProject(itemObj);
+                        XNAT.customFormManager.assignDialog.assignProject(itemObj,true, title, 'Opted out', customFormUrl('/optout/' + rowId), true, projects);
+                    } else {
+                        let projects = getOptedOutProjectsForTheForm(itemObj['formId']);
+                        XNAT.customFormManager.assignDialog.assignProject(itemObj,false, title,'Opted out',  customFormUrl('/optout/' + rowId), false, projects);
+                    }
+                }
+            }
+        }, 'OptOut');
+    }
+
+    function optInButton(itemObj, title) {
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    let rowId = getPK(itemObj);
+                    let title = itemObj.title || '';
+                    let projects = getProject(itemObj);
+                    XNAT.customFormManager.assignDialog.assignProject(itemObj,true, title, 'Opted out', customFormUrl('/optin/' + rowId), true, projects);
+                }
+            }
+        }, 'OptIn');
+    }
+
+
+    function deleteButton(itemObj, title) {
+        let status = itemObj['status'];
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    xnatFormManager.deleteForm(itemObj, title);
+                }
+            }
+        }, 'Delete');
+    }
+
+    function disableButton(itemObj, title) {
+        let status = itemObj['status'];
+        let btnLbl = 'Disable';
+        if (status === 'disabled') {
+            btnLbl = 'Enable';
+        }
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    if (status === 'disabled') {
+                        xnatFormManager.enable(itemObj, title);
+                    } else {
+                        xnatFormManager.disable(itemObj, title);
+                    }
+                }
+            }
+        }, btnLbl);
+    }
+
+
+    function zIndexButton(itemObj, title) {
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    xnatFormManager.modifyZIndex(itemObj, title);
+                }
+            }
+        }, 'ZIndex');
+    }
+
+    function assignProjectButton(itemObj, title) {
+        let projects = getProject(itemObj);
+        return spawn('button.btn.btn-sm.edit', {
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    let rowId = getPK(itemObj);
+                    let title = itemObj.title || '';
+                    XNAT.customFormManager.assignDialog.assignProject(itemObj,false, title,'Form added to ', customFormUrl('/add/' + rowId), false, projects);
+                }
+            }
+        }, 'Add ' + XNAT.app.displayNames.plural.project);
+    }
+
+
+    function spawnProjects(item) {
+        let projectsArray = getProject(item);
+        if (typeof projectsArray === "string") {
+            return projectsArray;
+        }
+        if (projectsArray.length < 4) {
+            return projectsArray.join(", ")
+        } else {
+            let title = item.title || '';
+            return spawn('button.btn.btn-sm.edit', {
+                onclick: function (e) {
+                    e.preventDefault();
+                    XNAT.customFormManager.projectListModalManager.show(projectsArray, title);
+                }
+            }, 'View');
+        }
+    }
+
+    // table cell formatting
+    function truncCell(val, truncClass) {
+        let elClass = truncClass ? 'truncate ' + truncClass : 'truncate';
+        return spawn('span', {
+            className: elClass,
+            title: val,
+            html: val
+        });
+    }
+
+
+    // create table for FormIO JSON Forms for site
+    xnatFormManager.table = function (container, callback) {
+        let tableData = [];
+        let definitions = xnatFormManager.sitedefinitions;
+        let DATA_FIELDS = 'title, datatype, status';
+        for (let k = 0; k < definitions.length; k++) {
+            let item = definitions[k];
+            let itemObj = JSON.parse(item['contents']);
+            let title = itemObj.title || '';
+            let tableDataRow = {};
+            tableDataRow['title'] = title;
+            tableDataRow['datatype'] = XNAT.customFormManager.datatypeManager.getDatatypeByXsiType(extractParts(item['path'], 1)).label;
+            tableDataRow['project'] = item;
+            if (xnatFormManager.siteHasProtocolsPluginDeployed) {
+                tableDataRow['protocol'] = extractParts(item['path'], 3);
+                tableDataRow['visit'] = extractParts(item['path'], 5);
+                tableDataRow['subtype'] = extractParts(item['path'], 7);
+            }
+            tableDataRow['status'] = xnatFormManager.prettyPrint(item['status']);
+            tableDataRow['actions'] = item;
+            tableData.push(tableDataRow);
+        }
+
+
+    let columns = {
+        title: {
+            label: 'Title'
+        },
+        datatype: {
+            label: 'Datatype',
+            sortable: true
+        },
+        project: {
+            label: projectDataTypeSingularName
+        }
+    };
+    if (xnatFormManager.siteHasProtocolsPluginDeployed) {
+        columns['protocol'] = {
+            label: 'Protocol',
+            sortable: true
+        };
+        columns['visit'] = {
+            label: 'Visit',
+            sortable: true
+        };
+        columns['subtype'] = {
+            label: 'Subtype',
+            sortable: true
+        };
+    }
+    columns['status'] = {
+        label: 'Status',
+        sortable: true
+    };
+    columns['actions'] = {
+        label: 'Actions'
+    };
+
+
+    let columnsInTable = {
+        title: {
+            label: 'Title',
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (title) {
+                return truncCell.call(this, title, '');
+            }
+        },
+        datatype: {
+            label: 'Datatype',
+            sortable: true,
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (datatype) {
+                return truncCell.call(this, datatype, '');
+            }
+        },
+        project: {
+            label: projectDataTypeSingularName,
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (project) {
+                return spawnProjects.call(this, project, '');
+            }
+        }
+    };
+    if (xnatFormManager.siteHasProtocolsPluginDeployed) {
+        columnsInTable['protocol'] = {
+            label: 'Protocol',
+            sortable: true,
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (protocol) {
+                return truncCell.call(this, protocol, '');
+            }
+        };
+        columnsInTable['visit'] = {
+            label: 'Visit',
+            sortable: true,
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (visit) {
+                return truncCell.call(this, visit, '');
+            }
+        };
+        columnsInTable['subtype'] = {
+            label: 'Subtype',
+            sortable: true,
+            td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (subtype) {
+                return truncCell.call(this, subtype, '');
+            }
+        };
+
+    }
+        columnsInTable['status']= {
+            label: 'Status',
+                td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (status) {
+                return truncCell.call(this, status, '');
+            }
+        };
+        columnsInTable['actions']= {
+            label: 'Actions',
+                td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (actions) {
+                return xnatFormManager.getActionButtons(actions);
+            }
+        };
+
+
+
+        let projectFormsTable = XNAT.table.dataTable(tableData, {
+        container: container,
+        header: true,
+        sortable: DATA_FIELDS,
+        filter: DATA_FIELDS,
+        height: 'auto',
+        overflowY: 'scroll',
+        table: {
+            className: 'project-formjson xnat-table selectable scrollable-table',
+            style: {
+                width: '100%',
+                marginTop: '15px',
+                marginBottom: '15px'
+            }
+        },
+        columns: columnsInTable
+    });
+
+        xnatFormManager.$table = $(projectFormsTable.table);
+
+        return projectFormsTable.table;
+    };
+
+    xnatFormManager.prettyPrint = function(statusStr) {
+        return statusStr[0].toUpperCase() + statusStr.slice(1, statusStr.length);
+    }
+
+    xnatFormManager.getActionButtons = function(item) {
+        let isProjectSpecific = isAProjectSpecificForm(getProject(item));
+        let isFormSharedBetweenProjects = item['doProjectsShareForm'];
+
+        let title = item['title'] || '';
+        let status = item['status'];
+        let isDisabled = false;
+        let isEnabled = false;
+        let optedOut = false;
+        if (status === 'optedout') {
+            optedOut = true;
+        }else if (status === 'disabled') {
+            isDisabled = true;
+        }else if (status === 'enabled') {
+            isEnabled = true;
+        }
+        let actions = [];
+        if (isEnabled) {
+            actions = [editButton(item), spacer(4), jsonEditButton(item), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title), spacer(4), zIndexButton(item, title)];
+        }else if (isDisabled) {
+            actions = [deleteButton(item, title),spacer(4), disableButton(item, title)];
+        }
+        if (isProjectSpecific) {
+            if (optedOut) {
+                actions.push(spacer(4));
+                actions.push(optInButton(item, title));
+            } else {
+                if (isFormSharedBetweenProjects) {
+                    actions.push(spacer(4));
+                    actions.push(optOutButton(item, title));
+                }
+                actions.push(spacer(4));
+                actions.push(promoteButton(item, title));
+                actions.push(spacer(4));
+                actions.push(assignProjectButton(item, title));
+            }
+        }else if (isEnabled ) {
+            actions.push(spacer(4));
+            actions.push(optOutButton(item, title));
+        }
+        return actions;
+    }
+
+    xnatFormManager.init = function(container) {
+        xnatFormManager.getDeploymentEnvironment();
+        XNAT.customFormManager.datatypeManager.init();
+        if (xnatFormManager.siteHasProtocolsPluginDeployed) {
+            XNAT.customFormManager.protocolManager.init();
+        }
+        xnatFormManager.getAllCustomFormConfigs();
+
+        let $manager = $$(container || 'div#form-json-container');
+
+        xnatFormManager.$container = $manager;
+
+        $manager.append(xnatFormManager.table());
+        $manager.append(xnatFormManager.addNewBtn());
+
+        return {
+            element: $manager[0],
+            spawned: $manager[0],
+            get: function() {
+                return $manager[0]
+            }
+        };
+
+
+    };
+
+    xnatFormManager.refresh = xnatFormManager.refreshTable = function() {
+       xnatFormManager.getAllCustomFormConfigs();
+        if (typeof xnatFormManager.$table != 'undefined') {
+            xnatFormManager.$table.remove();
+        }
+        let $manager = $('div#form-json-container');
+        $manager.prepend(xnatFormManager.table());
+    };
+
+
+    xnatFormManager.init();
+
+    //We need the following code snippet to force the xnat-bootstrap onto the
+    //dynamically added div elements of the form builder
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            for(let node of mutation.addedNodes) {
+                if(!(node instanceof HTMLElement)) continue;
+                // check the inserted element for being a code snippets
+                if(node.matches('div')) {
+                    node.classList.add("xnat-bootstrap");
+                }
+            }
+        });
+    });
+
+    observer.observe(document.getElementById('page_body'), { childList: true });
+
+
+    return XNAT.customFormManager.xnatFormManager = xnatFormManager;
+
+}));

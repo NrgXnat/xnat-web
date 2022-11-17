@@ -1239,7 +1239,7 @@ body [type="submit"]:active {
 body button,
 body [type="button"],
 body [type="reset"] {
-    background: #f8f8f8 linear-gradient( #ffffff, #f0f0f0 );
+    /*background: #f8f8f8 linear-gradient( #ffffff, #f0f0f0 );*/
     border: 1px solid #a0a0a0;
 }
 
