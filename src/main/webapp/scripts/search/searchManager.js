@@ -907,7 +907,11 @@ function SearchXMLManager(_xml){
             cache:false, // Turn off caching for IE
 			scope:this
 		}
-		YAHOO.util.Connect.asyncRequest('GET',serverRoot +'/REST/search/elements/'+ ce.toCommaString() +'?XNAT_CSRF=' + window.csrfToken + '&format=json',fcb,null,this);
+		let projectScopeParam = "";
+		if (window.projectScope) {
+			projectScopeParam = 'projectScope='+ window.projectScope + '&';
+		}
+		YAHOO.util.Connect.asyncRequest('GET',serverRoot +'/REST/search/elements/'+ ce.toCommaString() +'?' + projectScopeParam +'XNAT_CSRF=' + window.csrfToken + '&format=json',fcb,null,this);
 	}
 
 	this.shouldShowLabels=false;
