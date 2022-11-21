@@ -16,12 +16,13 @@ import java.util.*;
 @Slf4j
 public class ResourceScanReport {
     @Builder
-    public ResourceScanReport(final long resourceScanRequestId, final int totalEntries, final Set<String> uids, final List<File> badFiles, final Map<File, String> mismatchedFiles, final Map<String, Map<File, String>> duplicates) {
-        this(resourceScanRequestId, totalEntries, -1, -1, -1, -1, uids, badFiles, mismatchedFiles, duplicates);
+    public ResourceScanReport(final long resourceScanRequestId, final Date resourceScanDate, final int totalEntries, final Set<String> uids, final List<File> badFiles, final Map<File, String> mismatchedFiles, final Map<String, Map<File, String>> duplicates) {
+        this(resourceScanRequestId, resourceScanDate, totalEntries, -1, -1, -1, -1, uids, badFiles, mismatchedFiles, duplicates);
     }
 
     @JsonCreator
     public ResourceScanReport(final @JsonProperty("resourceScanRequestId") long resourceScanRequestId,
+                              final @JsonProperty("resourceScanDate") Date resourceScanDate,
                               final @JsonProperty("totalEntries") int totalEntries,
                               final @JsonProperty("totalUids") int totalUids,
                               final @JsonProperty("totalBadFiles") int totalBadFiles,
@@ -33,6 +34,7 @@ public class ResourceScanReport {
                               final @JsonProperty("duplicates") Map<String, Map<File, String>> duplicates) {
         Validate.isTrue(resourceScanRequestId > 0, "You must specify a valid resource scan request ID for each report");
         _resourceScanRequestId = resourceScanRequestId;
+        _resourceScanDate      = Optional.ofNullable(resourceScanDate).orElseGet(Date::new);
         _totalEntries          = totalEntries;
         _uids                  = Optional.ofNullable(uids).orElseGet(Collections::emptySet);
         _badFiles              = Optional.ofNullable(badFiles).orElseGet(Collections::emptyList);
@@ -45,6 +47,8 @@ public class ResourceScanReport {
     }
 
     long _resourceScanRequestId;
+
+    Date _resourceScanDate;
 
     int _totalEntries;
 

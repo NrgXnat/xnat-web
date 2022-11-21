@@ -4,13 +4,13 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
+import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.services.archive.ResourceMitigationReport;
 import org.nrg.xnat.services.archive.ResourceScanReport;
 import org.springframework.jdbc.core.RowMapper;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotNull;
-import java.util.Date;
 
 @Entity
 @Table(schema = "xdat_search", uniqueConstraints = {@UniqueConstraint(columnNames = {"projectId", "subjectId", "experimentId", "scanId"})})
@@ -23,6 +23,8 @@ import java.util.Date;
 @Slf4j
 public class ResourceScanRequest extends AbstractHibernateEntity {
     private static final long serialVersionUID = 2010289624125993378L;
+
+    private static final String TEMPLATE_REPAIR_ID = "repair-id-%09d-%s";
 
     public static final RowMapper<ResourceScanRequest> ROW_MAPPER = (resultSet, index) -> ResourceScanRequest.builder()
                                                                                                              .subjectLabel(resultSet.getString("subject_label"))
@@ -43,6 +45,10 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
         Scanned,
         Divergent,
         Conforming
+    }
+
+    public String generateRepairId() {
+        return String.format(TEMPLATE_REPAIR_ID, getId(), FileUtils.getMsTimestamp());
     }
 
     @Column(unique = true)
@@ -75,8 +81,6 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
     private String experimentLabel;
     private String scanLabel;
     private String scanDescription;
-
-    private Date scannedDate;
 
     @Type(type = "com.vladmihalcea.hibernate.type.json.JsonType")
     @Column(columnDefinition = "json")
