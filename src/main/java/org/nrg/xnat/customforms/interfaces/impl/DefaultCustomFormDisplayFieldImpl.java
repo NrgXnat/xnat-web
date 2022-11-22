@@ -39,7 +39,7 @@ public class DefaultCustomFormDisplayFieldImpl implements CustomFormDisplayField
             availableField[0] = displayFieldId;
             availableField[1] = displayHelper.getCleanFieldHeader(formJsonPojo);
             availableField[2] = "Custom Field: "  + formJsonPojo.getLabel();
-            availableField[3] = formJsonPojo.getType();
+            availableField[3] = "string"; //formJsonPojo.getType();
             availableField[4] = false;
             availableField[5] = "Custom Field: "  + formJsonPojo.getLabel();
             availableField[6] = se.getFullXMLName();
