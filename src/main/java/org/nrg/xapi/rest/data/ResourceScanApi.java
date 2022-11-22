@@ -26,6 +26,7 @@ import java.util.List;
 
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
+import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 
 @Api("XNAT Resource Scanning API")
 @XapiRestController
@@ -56,8 +57,8 @@ public class ResourceScanApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "No project exists with the specified ID."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "scan/project/{projectId}", produces = APPLICATION_JSON_VALUE, method = POST, restrictTo = AccessLevel.Delete)
-    public List<ResourceScanRequest> generateScanRequestsForProject(final @PathVariable String projectId) throws InsufficientPrivilegesException, NotFoundException {
-        return _resourceScanService.queueScansForProject(getSessionUser(), projectId);
+    public List<ResourceScanRequest> createResourceScanRequestsForProject(final @PathVariable String projectId) throws InsufficientPrivilegesException, NotFoundException {
+        return _resourceScanService.createResourceScanRequests(getSessionUser(), projectId);
     }
 
     @ApiOperation(value = "Get the resource scan request for the specified resource", notes = "Returns the requested scan request", response = ResourceScanRequest.class)
@@ -75,6 +76,15 @@ public class ResourceScanApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Insufficient permissions to generate resource scan requests."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "scan/resource/{resourceId}", produces = APPLICATION_JSON_VALUE, method = POST, restrictTo = AccessLevel.Delete)
+    public ResourceScanRequest createResourceScanRequest(final @PathVariable int resourceId) throws InsufficientPrivilegesException, NotFoundException {
+        return _resourceScanService.createResourceScanRequest(getSessionUser(), resourceId);
+    }
+
+    @ApiOperation(value = "Create resource scan requests for the specified project", notes = "Returns the newly generated requests", response = ResourceScanRequest.class, responseContainer = "List")
+    @ApiResponses({@ApiResponse(code = 200, message = "Returns a list of resource scan requests for the specified project."),
+                   @ApiResponse(code = 403, message = "Insufficient permissions to generate resource scan requests."),
+                   @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
+    @XapiRequestMapping(value = "scan/resource/{resourceId}", produces = APPLICATION_JSON_VALUE, method = PUT, restrictTo = AccessLevel.Delete)
     public ResourceScanReport scanResource(final @PathVariable int resourceId) throws InsufficientPrivilegesException, NotFoundException {
         return _resourceScanService.scanResource(getSessionUser(), resourceId);
     }

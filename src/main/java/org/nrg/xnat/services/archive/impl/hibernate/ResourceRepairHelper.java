@@ -64,9 +64,10 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
             final Map<Path, Path> moves   = new HashMap<>();
 
             final List<File> badFiles = scanReport.getBadFiles();
-            writer.format(" * %d bad files\n", badFiles.size());
+            writer.format(" * %d bad files (unparsable, etc.)\n", badFiles.size());
             if (!badFiles.isEmpty()) {
-                backups.putAll(badFiles.stream().collect(Collectors.toMap(File::toPath, backupMapper)));
+                badFiles.forEach(badFile -> writer.println("    - " + badFile));
+                writer.println("\nNote: bad files are not removed from the resource folder and are recorded for later review and possible mitigation.");
             }
 
             final Map<File, String> mismatchedFiles = scanReport.getMismatchedFiles();

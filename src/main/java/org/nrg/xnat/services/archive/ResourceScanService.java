@@ -37,6 +37,20 @@ public interface ResourceScanService extends BaseHibernateService<ResourceScanRe
     ResourceScanRequest getByResourceId(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException;
 
     /**
+     * Creates a {@link ResourceScanRequest resource scan request} for the resource with the specified ID. The requesting
+     * user <i>must</i> have sufficient permissions to delete data in the project containing the resource.
+     *
+     * @param requester  The user requesting the project scan.
+     * @param resourceId The ID of the resource to scan.
+     *
+     * @return The scan request created for the resource.
+     *
+     * @throws InsufficientPrivilegesException When the requesting user has insufficient permissions to request resource scans.
+     * @throws NotFoundException               When the specified resource doesn't exist.
+     */
+    ResourceScanRequest createResourceScanRequest(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException;
+
+    /**
      * Locates all DICOM resources in the specified project and creates a {@link ResourceScanRequest resource scan
      * request} for each one. The requesting user <i>must</i> have sufficient permissions to delete data in the specified
      * project.
@@ -49,7 +63,7 @@ public interface ResourceScanService extends BaseHibernateService<ResourceScanRe
      * @throws InsufficientPrivilegesException When the requesting user has insufficient permissions to request resource scans.
      * @throws NotFoundException               When the specified project doesn't exist.
      */
-    List<ResourceScanRequest> queueScansForProject(final UserI requester, final String projectId) throws InsufficientPrivilegesException, NotFoundException;
+    List<ResourceScanRequest> createResourceScanRequests(final UserI requester, final String projectId) throws InsufficientPrivilegesException, NotFoundException;
 
     /**
      * Runs a scan on the catalog and files in the specified resource. The requesting user <i>must</i> have sufficient
