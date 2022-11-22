@@ -4,7 +4,6 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.annotations.Type;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntity;
-import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.services.archive.ResourceMitigationReport;
 import org.nrg.xnat.services.archive.ResourceScanReport;
 import org.springframework.jdbc.core.RowMapper;
@@ -34,21 +33,20 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
                                                                                                              .projectId(resultSet.getString("project_id"))
                                                                                                              .subjectId(resultSet.getString("subject_id"))
                                                                                                              .experimentId(resultSet.getString("experiment_id"))
+                                                                                                             .xsiType(resultSet.getString("xsi_type"))
                                                                                                              .scanId(resultSet.getInt("scan_id"))
                                                                                                              .resourceId(resultSet.getInt("resource_id"))
                                                                                                              .resourceUri(resultSet.getString("resource_uri"))
                                                                                                              .build();
 
     public enum Status {
-        Queued,
+        Created,
+        QueuedForScanning,
         Scanning,
-        Scanned,
         Divergent,
-        Conforming
-    }
-
-    public String generateRepairId() {
-        return String.format(TEMPLATE_REPAIR_ID, getId(), FileUtils.getMsTimestamp());
+        Conforming,
+        QueuedForRepair,
+        Repairing
     }
 
     @Column(unique = true)
@@ -56,7 +54,7 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
-    private Status rsnStatus = Status.Queued;
+    private Status rsnStatus = Status.Created;
 
     @NonNull
     @NotNull
@@ -70,6 +68,10 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
     @NotNull
     private String experimentId;
 
+    @NonNull
+    @NotNull
+    private String xsiType;
+
     @NotNull
     private int scanId;
 
@@ -81,6 +83,9 @@ public class ResourceScanRequest extends AbstractHibernateEntity {
     private String experimentLabel;
     private String scanLabel;
     private String scanDescription;
+
+    private int    workflowId;
+    private String requester;
 
     @Type(type = "com.vladmihalcea.hibernate.type.json.JsonType")
     @Column(columnDefinition = "json")

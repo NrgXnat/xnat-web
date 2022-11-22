@@ -2,6 +2,7 @@ package org.nrg.xnat.services.archive.impl.hibernate;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.nrg.xft.utils.FileUtils;
 import org.nrg.xnat.entities.ResourceScanRequest;
 import org.nrg.xnat.services.archive.ResourceMitigationReport;
 import org.nrg.xnat.services.archive.ResourceMitigationReport.ResourceMitigationReportBuilder;
@@ -35,12 +36,10 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
 
     private final ResourceScanRequest _request;
     private final Path                _cachePath;
-    private final String              _repairId;
 
-    public ResourceRepairHelper(final ResourceScanRequest request, final Path cachePath, final String repairId) {
+    public ResourceRepairHelper(final ResourceScanRequest request, final Path cachePath) {
         _request   = request;
         _cachePath = cachePath;
-        _repairId  = repairId;
     }
 
     @Override
@@ -55,7 +54,7 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
         final Function<File, Path>                    backupMapper = file -> _cachePath.resolve(sourcePath.relativize(file.toPath()));
         final Function<Map.Entry<File, String>, Path> renameMapper = entry -> sourcePath.resolve(entry.getValue());
 
-        try (final PrintWriter writer = new PrintWriter(new FileWriter(_cachePath.resolve(_repairId + ".log").toFile()))) {
+        try (final PrintWriter writer = new PrintWriter(new FileWriter(_cachePath.resolve("repair-" + FileUtils.getMsTimestamp() + ".log").toFile()))) {
             writer.println("Beginning repair from resource scan request " + _request.getId() + " for resource " + _request.getResourceId() + "\n");
             writer.println("Have the following items:");
 

@@ -87,7 +87,7 @@ public class TestResourceScanHelperAndResourceRepairHelper {
 
         request.setScanReport(scanReport);
 
-        final ResourceRepairHelper     repairHelper     = new ResourceRepairHelper(request, _cachePath, request.generateRepairId());
+        final ResourceRepairHelper     repairHelper     = new ResourceRepairHelper(request, _cachePath);
         final ResourceMitigationReport mitigationReport = repairHelper.call();
 
         assertThat(mitigationReport).isNotNull();
@@ -99,7 +99,7 @@ public class TestResourceScanHelperAndResourceRepairHelper {
         final ResourceScanRequest request = ResourceScanRequest.builder()
                                                                .resourceId(RESOURCE_ID)
                                                                .resourceUri(_resourcePath.toString())
-                                                               .rsnStatus(ResourceScanRequest.Status.Queued)
+                                                               .rsnStatus(ResourceScanRequest.Status.Created)
                                                                .projectId(PROJECT_ID)
                                                                .subjectId(SUBJECT_ID)
                                                                .subjectLabel(SUBJECT_LABEL)
