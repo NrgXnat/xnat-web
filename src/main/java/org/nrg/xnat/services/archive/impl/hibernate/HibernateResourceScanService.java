@@ -5,18 +5,24 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.dcm4che2.io.StopTagInputHandler;
+import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.dcm.DicomFileNamer;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.framework.services.SerializerService;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatResourcecatalog;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.entities.ResourceScanRequest;
+import org.nrg.xnat.helpers.uri.UriParserUtils;
+import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.services.archive.ResourceMitigationReport;
 import org.nrg.xnat.services.archive.ResourceScanReport;
 import org.nrg.xnat.services.archive.ResourceScanService;
@@ -35,6 +41,7 @@ import java.util.List;
 @Transactional
 @Slf4j
 public class HibernateResourceScanService extends AbstractHibernateEntityService<ResourceScanRequest, ResourceScanRequestRepository> implements ResourceScanService {
+    private static final String TEMPLATE_EXPERIMENT_URI               = "/data/archive/experiments/%s/scans/%s";
     private static final String PARAM_PROJECT_ID                      = "projectId";
     private static final String PARAM_RESOURCE_ID                     = "resourceId";
     private static final String QUERY_GENERATE_RESOURCE_SCAN_REQUESTS = "SELECT s.label                     AS subject_label, "
@@ -67,6 +74,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
     private static final String QUERY_GET_RESOURCE_PROJECT            = String.format(QUERY_RESOURCE_ATTRIBUTES_TEMPLATE, "x.project");
     private static final String QUERY_GET_RESOURCE_EXPERIMENT         = String.format(QUERY_RESOURCE_ATTRIBUTES_TEMPLATE, "x.label AS experiment_label, s.id AS scan_id");
 
+    private final CatalogService             _catalogService;
     private final SerializerService          _serializer;
     private final DicomFileNamer             _dicomFileNamer;
     private final StopTagInputHandler        _stopTagInputHandler;
@@ -74,7 +82,8 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
     private final NamedParameterJdbcTemplate _template;
 
     @Autowired
-    public HibernateResourceScanService(final SerializerService serializer, final DicomFileNamer dicomFileNamer, final SiteConfigPreferences preferences, final NamedParameterJdbcTemplate template) {
+    public HibernateResourceScanService(final CatalogService catalogService, final SerializerService serializer, final DicomFileNamer dicomFileNamer, final SiteConfigPreferences preferences, final NamedParameterJdbcTemplate template) {
+        _catalogService      = catalogService;
         _serializer          = serializer;
         _dicomFileNamer      = dicomFileNamer;
         _preferences         = preferences;
@@ -134,7 +143,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
     }
 
     @Override
-    public ResourceMitigationReport repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException {
+    public ResourceMitigationReport repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException, InitializationException {
         validateResourceAccess(requester, resourceId);
 
         final ResourceScanRequest request   = getDao().findByResourceId(resourceId).orElseThrow(() -> new NotFoundException(ResourceScanRequest.class.getSimpleName(), resourceId));
@@ -146,6 +155,15 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
         request.setMitigationReport(report);
         request.setRsnStatus(ResourceScanRequest.Status.Conforming);
         update(request);
+
+        final String resourceUri = String.format(TEMPLATE_EXPERIMENT_URI, request.getExperimentId(), request.getScanLabel());
+        try {
+            _catalogService.refreshResourceCatalog(requester, resourceUri);
+            log.info("Refreshed the catalog for resource ID {} at URL {}", resourceId, resourceUri);
+        } catch (ServerException | ClientException e) {
+            throw new InitializationException("An error occurred trying to refresh the resource catalog for ID " + resourceId + " with URI " + resourceUri, e);
+        }
+
         return report;
     }
 

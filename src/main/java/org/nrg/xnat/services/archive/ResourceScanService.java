@@ -1,6 +1,7 @@
 package org.nrg.xnat.services.archive;
 
 import org.nrg.framework.orm.hibernate.BaseHibernateService;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
@@ -77,5 +78,5 @@ public interface ResourceScanService extends BaseHibernateService<ResourceScanRe
      * @throws InsufficientPrivilegesException When the requesting user has insufficient permissions to request resource repairs.
      * @throws NotFoundException               When the specified resource doesn't exist.
      */
-    ResourceMitigationReport repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException;
+    ResourceMitigationReport repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException, InitializationException;
 }

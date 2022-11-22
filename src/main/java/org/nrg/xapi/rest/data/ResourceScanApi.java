@@ -6,6 +6,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.annotations.XapiRestController;
+import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.InsufficientPrivilegesException;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xapi.rest.AbstractXapiRestController;
@@ -83,7 +84,7 @@ public class ResourceScanApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Insufficient permissions to generate resource scan requests."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "repair/resource/{resourceId}", produces = APPLICATION_JSON_VALUE, method = POST, restrictTo = AccessLevel.Delete)
-    public ResourceMitigationReport repairResource(final @PathVariable int resourceId) throws InsufficientPrivilegesException, NotFoundException {
+    public ResourceMitigationReport repairResource(final @PathVariable int resourceId) throws InsufficientPrivilegesException, NotFoundException, InitializationException {
         return _resourceScanService.repairResource(getSessionUser(), resourceId);
     }
 }
