@@ -43,18 +43,18 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
     });
 
     private final ResourceScanRequest _request;
-    private final Path _cachePath;
+    private final Path                _cachePath;
     private final PersistentWorkflowI _workflow;
-    private final UserI _requestor;
+    private final UserI               _requester;
 
     public ResourceRepairHelper(final ResourceScanRequest request,
                                 final Path cachePath,
                                 final PersistentWorkflowI workflow,
-                                final UserI requestor) {
-        _request = request;
+                                final UserI requester) {
+        _request   = request;
         _cachePath = cachePath;
-        _workflow = workflow;
-        _requestor = requestor;
+        _workflow  = workflow;
+        _requester = requester;
     }
 
     @Override
@@ -64,12 +64,12 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
 
         final ResourceScanReport scanReport = _request.getScanReport();
 
-        final XnatResourcecatalog catalogResource = getCatalogResource();
-        final CatalogUtils.CatalogData catalogData = getCatalogData(catalogResource);
-        final Map<String, CatalogUtils.CatalogMapEntry> catalogMap = CatalogUtils.buildCatalogMap(catalogData);
-        final Path sourcePath = Paths.get(catalogData.catPath);
+        final XnatResourcecatalog                       catalogResource = getCatalogResource();
+        final CatalogUtils.CatalogData                  catalogData     = getCatalogData(catalogResource);
+        final Map<String, CatalogUtils.CatalogMapEntry> catalogMap      = CatalogUtils.buildCatalogMap(catalogData);
+        final Path                                      sourcePath      = Paths.get(catalogData.catPath);
 
-        final Function<File, Path> backupMapper = file -> _cachePath.resolve(sourcePath.relativize(file.toPath()));
+        final Function<File, Path>                    backupMapper = file -> _cachePath.resolve(sourcePath.relativize(file.toPath()));
         final Function<Map.Entry<File, String>, Path> renameMapper = entry -> sourcePath.resolve(entry.getValue());
 
         try (final PrintWriter writer = new PrintWriter(new FileWriter(_cachePath.resolve("repair-" + FileUtils.getMsTimestamp() + ".log").toFile()))) {
@@ -78,7 +78,7 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
 
             // ALL files get backed up: renames get backed and then renamed, all remaining are deleted after renaming finished.
             final Map<Path, Path> backups = new HashMap<>();
-            final Map<Path, Path> moves = new HashMap<>();
+            final Map<Path, Path> moves   = new HashMap<>();
 
             final List<File> badFiles = scanReport.getBadFiles();
             writer.format(" * %d bad files (unparsable, etc.)\n", badFiles.size());
@@ -112,9 +112,9 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
             builder.movedFiles(moves.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().toAbsolutePath().toFile(), entry -> entry.getValue().toAbsolutePath().toFile())));
 
             writer.format("Actions:\n\nI have %d files to backup, %d files to rename\n\nBacking up files\n", backups.size(), moves.size());
-            final Map<Pair<Path, Path>, String> backupErrors = new HashMap<>();
-            final Map<Pair<Path, Path>, String> moveErrors = new HashMap<>();
-            final Map<Path, String> deleteErrors = new HashMap<>();
+            final Map<File, Pair<File, String>> backupErrors = new HashMap<>();
+            final Map<File, Pair<File, String>> moveErrors   = new HashMap<>();
+            final Map<File, String>             deleteErrors = new HashMap<>();
 
             final List<Path> deletes = new ArrayList<>();
             backups.forEach((source, target) -> {
@@ -126,19 +126,19 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
                         deletes.add(source);
                     }
                 } catch (IOException e) {
-                    backupErrors.put(Pair.of(source, target), makeErrorMessage(e));
+                    backupErrors.put(source.toFile(), Pair.of(target.toFile(), makeErrorMessage(e)));
                 }
             });
 
             // Run deletes so files are cleared for potential moves with the same names.
             if (!deletes.isEmpty()) {
                 writer.println("\nDeleting files");
-                deletes.forEach(file -> {
+                deletes.forEach(path -> {
                     try {
-                        Files.delete(file);
-                        removeFromCatalog(file, catalogData, catalogMap, sourcePath);
+                        Files.delete(path);
+                        removeFromCatalog(path, catalogData, catalogMap, sourcePath);
                     } catch (IOException e) {
-                        deleteErrors.put(file, makeErrorMessage(e));
+                        deleteErrors.put(path.toFile(), makeErrorMessage(e));
                     }
                 });
             }
@@ -156,26 +156,26 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
                         writer.format(" * %s renamed to %s\n", source.toAbsolutePath(), target.toAbsolutePath());
                         deletes.remove(source);
                     } catch (IOException | InvalidReference e) {
-                        moveErrors.put(Pair.of(source, target), makeErrorMessage(e));
+                        moveErrors.put(source.toFile(), Pair.of(target.toFile(), makeErrorMessage(e)));
                     }
                 });
             }
 
             if (!backupErrors.isEmpty()) {
                 writer.format("\n\nBackup errors:");
-                backupErrors.forEach((pair, message) -> writer.println(" *  From: " + pair.getKey().toAbsolutePath() + "\n      To: " + pair.getValue().toAbsolutePath() + "\n   " + message));
+                backupErrors.forEach((source, info) -> writer.println(" *  From: " + source.getAbsolutePath() + "\n      To: " + info.getKey().getAbsolutePath() + "\n   " + info.getValue()));
                 writer.println();
                 builder.backupErrors(backupErrors);
             }
             if (!moveErrors.isEmpty()) {
                 writer.format("\n\nMove errors:\n");
-                moveErrors.forEach((pair, message) -> writer.println(" *  From: " + pair.getKey().toAbsolutePath() + "\n      To: " + pair.getValue().toAbsolutePath() + "\n   " + message));
+                moveErrors.forEach((source, info) -> writer.println(" *  From: " + source.getAbsolutePath() + "\n      To: " + info.getKey().getAbsolutePath() + "\n   " + info.getValue()));
                 writer.println();
                 builder.moveErrors(moveErrors);
             }
             if (!deleteErrors.isEmpty()) {
                 writer.format("\n\nDelete errors:\n");
-                deleteErrors.forEach((path, message) -> writer.println(" * " + path.toAbsolutePath() + " " + message));
+                deleteErrors.forEach((source, info) -> writer.println(" * " + source.getAbsolutePath() + " " + info));
                 writer.println();
                 builder.deleteErrors(deleteErrors);
             }
@@ -186,22 +186,22 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
             } catch (Exception e) {
                 log.error("Unable to save catalog after resource repair on {}", catalogResource.getUri(), e);
                 builder.catalogWriteError(String.format("Unable to write catalog %s: %s %s. To access this data, " +
-                        "you will need to perform a catalog refresh. It would be ideal to then download and " +
-                        "re-import the data or pull scan data from headers so it is properly understood as DICOM.",
-                        catalogResource.getUri(), e.getClass().getSimpleName(), e.getMessage()));
+                                                        "you will need to perform a catalog refresh. It would be ideal to then download and " +
+                                                        "re-import the data or pull scan data from headers so it is properly understood as DICOM.",
+                                                        catalogResource.getUri(), e.getClass().getSimpleName(), e.getMessage()));
             }
 
             // Populate resource statistics
             if (CatalogUtils.populateStats(catalogResource, catalogData.catPath)) {
                 try {
-                    SaveItemHelper.authorizedSave(catalogResource, _requestor,
-                            false, false, _workflow.buildEvent());
+                    SaveItemHelper.authorizedSave(catalogResource, _requester,
+                                                  false, false, _workflow.buildEvent());
                 } catch (Exception e) {
                     log.error("Unable to update resource statistics for {}",
-                            catalogResource.getXnatAbstractresourceId(), e);
+                              catalogResource.getXnatAbstractresourceId(), e);
                     builder.resourceSaveError(String.format("Unable to update resource statistics on %s: %s %s. Running " +
-                            "a catalog refresh requesting the populateStats operation will hopefully fix the issue",
-                            catalogResource.getXnatAbstractresourceId(), e.getClass().getSimpleName(), e.getMessage()));
+                                                            "a catalog refresh requesting the populateStats operation will hopefully fix the issue",
+                                                            catalogResource.getXnatAbstractresourceId(), e.getClass().getSimpleName(), e.getMessage()));
                 }
             }
         } catch (IOException e) {
@@ -215,6 +215,7 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
      * An error message from exception
      *
      * @param e the exception
+     *
      * @return the error message
      */
     private String makeErrorMessage(Exception e) {
@@ -228,7 +229,7 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
      */
     private XnatResourcecatalog getCatalogResource() {
         final XnatResource resource = XnatResource.getXnatResourcesByXnatAbstractresourceId(_request.getResourceId(),
-                null, false);
+                                                                                            null, false);
         if (!(resource instanceof XnatResourcecatalog)) {
             throw new RuntimeException(_request.getResourceId() + " is not a catalog resource");
         }
@@ -239,17 +240,18 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
      * Get catalog data for resource
      *
      * @param catalogResource the catalog resource
+     *
      * @return the catalog data object
      */
     private CatalogUtils.CatalogData getCatalogData(final XnatResourcecatalog catalogResource) {
         final CatalogUtils.CatalogData catalogData;
         try {
             catalogData = CatalogUtils.CatalogData.get(catalogResource, _request.getProjectId())
-                    .orElseThrow(() -> new RuntimeException("Catalog file does not exist for resource " +
-                            catalogResource.getXnatAbstractresourceId()));
+                                                  .orElseThrow(() -> new RuntimeException("Catalog file does not exist for resource " +
+                                                                                          catalogResource.getXnatAbstractresourceId()));
         } catch (ServerException e) {
             throw new RuntimeException(String.format("%s (%s)", e.getMessage(),
-                    catalogResource.getXnatAbstractresourceId()));
+                                                     catalogResource.getXnatAbstractresourceId()));
         }
         return catalogData;
     }
@@ -257,10 +259,10 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
     /**
      * Remove entry from catalog
      *
-     * @param file the file whose catalog entry should be removed
+     * @param file        the file whose catalog entry should be removed
      * @param catalogData the catalog data object
-     * @param catalogMap map of relative paths to catalog entries
-     * @param sourcePath the catalog path
+     * @param catalogMap  map of relative paths to catalog entries
+     * @param sourcePath  the catalog path
      */
     private void removeFromCatalog(final Path file,
                                    final CatalogUtils.CatalogData catalogData,
@@ -276,8 +278,8 @@ public class ResourceRepairHelper implements Callable<ResourceMitigationReport> 
     /**
      * Update catalog entry with new URI and ID corresponding to a new filename
      *
-     * @param source the original file
-     * @param target the renamed file
+     * @param source     the original file
+     * @param target     the renamed file
      * @param catalogMap map of relative paths to catalog entries
      * @param sourcePath the catalog path
      *

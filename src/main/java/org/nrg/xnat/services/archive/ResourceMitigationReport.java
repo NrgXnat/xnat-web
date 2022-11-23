@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
-import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +19,7 @@ import java.util.Optional;
 public class ResourceMitigationReport {
     @Builder
     public ResourceMitigationReport(final long resourceScanRequestId, final Map<File, File> movedFiles, final Map<File, File> removedFiles,
-                                    final Map<Pair<Path, Path>, String> backupErrors, final Map<Pair<Path, Path>, String> moveErrors, final Map<Path, String> deleteErrors, final String catalogWriteError, final String resourceSaveError) {
+                                    final Map<File, Pair<File, String>> backupErrors, final Map<File, Pair<File, String>> moveErrors, final Map<File, String> deleteErrors, final String catalogWriteError, final String resourceSaveError) {
         this(resourceScanRequestId, movedFiles, removedFiles, backupErrors, moveErrors, deleteErrors,
                 catalogWriteError, resourceSaveError, -1, -1, -1);
     }
@@ -29,9 +28,9 @@ public class ResourceMitigationReport {
     public ResourceMitigationReport(final @JsonProperty("resourceScanRequestId") long resourceScanRequestId,
                                     final @JsonProperty("movedFiles") Map<File, File> movedFiles,
                                     final @JsonProperty("removedFiles") Map<File, File> removedFiles,
-                                    final @JsonProperty("backupErrors") Map<Pair<Path, Path>, String> backupErrors,
-                                    final @JsonProperty("moveErrors") Map<Pair<Path, Path>, String> moveErrors,
-                                    final @JsonProperty("deleteErrors") Map<Path, String> deleteErrors,
+                                    final @JsonProperty("backupErrors") Map<File, Pair<File, String>> backupErrors,
+                                    final @JsonProperty("moveErrors") Map<File, Pair<File, String>> moveErrors,
+                                    final @JsonProperty("deleteErrors") Map<File, String> deleteErrors,
                                     final @JsonProperty("catalogWriteError") String catalogWriteError,
                                     final @JsonProperty("resourceSaveError") String resourceSaveError,
                                     final @JsonProperty("totalMovedFiles") int totalMovedFiles,
@@ -56,9 +55,9 @@ public class ResourceMitigationReport {
 
     Map<File, File>               _movedFiles;
     Map<File, File>               _removedFiles;
-    Map<Pair<Path, Path>, String> _backupErrors;
-    Map<Pair<Path, Path>, String> _moveErrors;
-    Map<Path, String>             _deleteErrors;
+    Map<File, Pair<File, String>> _backupErrors;
+    Map<File, Pair<File, String>> _moveErrors;
+    Map<File, String>             _deleteErrors;
     String                        _catalogWriteError;
     String                        _resourceSaveError;
     int                           _totalMovedFiles;

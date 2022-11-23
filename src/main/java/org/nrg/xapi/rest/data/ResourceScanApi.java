@@ -140,7 +140,7 @@ public class ResourceScanApi extends AbstractXapiRestController {
                    @ApiResponse(code = 403, message = "Insufficient permissions to generate resource scan requests."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "repair/status/{workflowId}", produces = APPLICATION_JSON_VALUE, restrictTo = AccessLevel.Delete)
-    public String getRepairStatus(final @PathVariable int workflowId) throws NotFoundException {
+    public String getRepairStatus(final @PathVariable int workflowId) throws NotFoundException, InsufficientPrivilegesException {
         return _resourceScanService.getRepairStatus(getSessionUser(), workflowId);
     }
 

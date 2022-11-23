@@ -42,8 +42,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.nrg.xft.event.persist.PersistentWorkflowUtils.QUEUED;
-
 @Service
 @Transactional
 @Slf4j
@@ -245,7 +243,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
      * {@inheritDoc}
      */
     @Override
-    public void repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException, InitializationException {
+    public void repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException {
         validateResourceAccess(requester, resourceId);
 
         final ResourceScanRequest request = getDao().findByResourceId(resourceId).orElseThrow(() -> new NotFoundException(ResourceScanRequest.class.getSimpleName(), resourceId));
@@ -257,6 +255,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
             }
             return;
         }
+
         final WrkWorkflowdata workflow = WrkWorkflowdata.getWrkWorkflowdatasByWrkWorkflowdataId(request.getWorkflowId(), requester, false);
         setStatus(request, workflow, ResourceScanRequest.Status.Repairing);
 
@@ -272,9 +271,10 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
      * {@inheritDoc}
      */
     @Override
-    public String getRepairStatus(final UserI requester, final int workflowId) throws NotFoundException {
-        return Optional.ofNullable(WrkWorkflowdata.getWrkWorkflowdatasByWrkWorkflowdataId(workflowId, requester, false))
-                       .orElseThrow(() -> new NotFoundException(WrkWorkflowdata.SCHEMA_ELEMENT_NAME, workflowId))
+    public String getRepairStatus(final UserI requester, final int resourceId) throws NotFoundException, InsufficientPrivilegesException {
+        final ResourceScanRequest request = getByResourceId(requester, resourceId);
+        return Optional.ofNullable(WrkWorkflowdata.getWrkWorkflowdatasByWrkWorkflowdataId(request.getWorkflowId(), requester, false))
+                       .orElseThrow(() -> new NotFoundException(WrkWorkflowdata.SCHEMA_ELEMENT_NAME, resourceId))
                        .getStatus();
     }
 
@@ -282,12 +282,15 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
      * {@inheritDoc}
      */
     @Override
-    public Map<Integer, String> getRepairStatuses(final UserI requester, final List<Integer> workflowIds) {
-        return workflowIds.stream().map(workflowId -> {
+    public Map<Integer, String> getRepairStatuses(final UserI requester, final List<Integer> resourceIds) {
+        return resourceIds.stream().map(resourceId -> {
                               try {
-                                  return Pair.of(workflowId, getRepairStatus(requester, workflowId));
+                                  return Pair.of(resourceId, getRepairStatus(requester, resourceId));
                               } catch (NotFoundException e) {
-                                  log.warn("User {} requested status for workflow ID {}, but couldn't find an item: {}", requester.getUsername(), workflowId, e.getMessage());
+                                  log.warn("User {} requested status for resource ID {}, but couldn't find an item: {}", requester.getUsername(), resourceId, e.getMessage());
+                                  return null;
+                              } catch (InsufficientPrivilegesException e) {
+                                  log.warn("User {} requested status for resource ID {}, but doesn't have sufficient access to that resource", requester.getUsername(), resourceId);
                                   return null;
                               }
                           })
@@ -316,7 +319,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
     private void setStatus(final ResourceScanRequest request, final WrkWorkflowdata workflow, final ResourceScanRequest.Status status) {
         request.setRsnStatus(status);
         update(request);
-        workflow.setStatus(status.toString());
+        workflow.setStatus(status == ResourceScanRequest.Status.Conforming ? PersistentWorkflowUtils.COMPLETE : status.toString());
         try {
             WorkflowUtils.save(workflow, workflow.buildEvent());
         } catch (Exception e) {
@@ -359,9 +362,6 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
      */
     private int queueRepairRequest(UserI requester, ResourceScanRequest request, String reason, String comment) throws InitializationException {
         final PersistentWorkflowI workflow = buildRepairRequestWorkflow(requester, request, reason, comment);
-        request.setWorkflowId(workflow.getWorkflowId());
-        request.setRsnStatus(ResourceScanRequest.Status.QueuedForRepair);
-        getDao().update(request);
         XDAT.sendJmsRequest(_jmsTemplate, request);
         return workflow.getWorkflowId();
     }
@@ -414,13 +414,18 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
         }
     }
 
-    private static PersistentWorkflowI buildRepairRequestWorkflow(final UserI requester, final ResourceScanRequest request, final String reason, final String comment) throws InitializationException {
+    private PersistentWorkflowI buildRepairRequestWorkflow(final UserI requester, final ResourceScanRequest request, final String reason, final String comment) throws InitializationException {
         try {
             final PersistentWorkflowI workflow = PersistentWorkflowUtils.buildOpenWorkflow(requester, request.getXsiType(), request.getExperimentId(), request.getScanLabel(), request.getProjectId(), EventUtils.newEventInstance(EventUtils.CATEGORY.DATA, EventUtils.TYPE.REST, "Repair resource", reason, comment));
-            workflow.setStatus(QUEUED);
+            workflow.setStatus(ResourceScanRequest.Status.QueuedForRepair.toString());
             workflow.setSrc(Integer.toString(request.getResourceId()));
             final EventMetaI event = workflow.buildEvent();
             PersistentWorkflowUtils.save(workflow, event);
+
+            request.setWorkflowId(workflow.getWorkflowId());
+            request.setRsnStatus(ResourceScanRequest.Status.QueuedForRepair);
+            update(request);
+
             return workflow;
         } catch (PersistentWorkflowUtils.JustificationAbsent e) {
             throw new InitializationException("You must provide a justification/reason for the repair resource operation");

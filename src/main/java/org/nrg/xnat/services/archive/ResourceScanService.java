@@ -170,22 +170,22 @@ public interface ResourceScanService extends BaseHibernateService<ResourceScanRe
     void repairResource(final UserI requester, final int resourceId) throws InsufficientPrivilegesException, NotFoundException, InitializationException;
 
     /**
-     * Gets the current status of the repair operation associated with the specified workflow ID.
+     * Gets the current status of the repair operation for the specified resource ID.
      *
      * @param requester  The user requesting the repair status.
-     * @param workflowId The workflow ID to check.
+     * @param resourceId The resource ID to check.
      *
      * @return The status of the repair request.
      */
-    String getRepairStatus(final UserI requester, final int workflowId) throws NotFoundException;
+    String getRepairStatus(final UserI requester, final int resourceId) throws NotFoundException, InsufficientPrivilegesException;
 
     /**
-     * Gets the current status of one or more repair operations associated with the specified workflow IDs.
+     * Gets the current status of one or more repair operations for the specified resource IDs.
      *
      * @param requester   The user requesting the repair status.
-     * @param workflowIds The workflow IDs to check.
+     * @param resourceIds The resource IDs to check.
      *
-     * @return The workflow ID with the status of each repair request.
+     * @return The resource ID with the status of each repair request.
      */
-    Map<Integer, String> getRepairStatuses(final UserI requester, final List<Integer> workflowIds);
+    Map<Integer, String> getRepairStatuses(final UserI requester, final List<Integer> resourceIds);
 }

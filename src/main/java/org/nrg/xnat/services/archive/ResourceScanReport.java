@@ -9,12 +9,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Validate;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.*;
 
 @Value
 @Accessors(prefix = "_")
 @Slf4j
-public class ResourceScanReport {
+public class ResourceScanReport implements Serializable {
+    private static final long serialVersionUID = -7698999740451793135L;
+
     @Builder
     public ResourceScanReport(final long resourceScanRequestId, final Date resourceScanDate, final int totalEntries, final Set<String> uids, final List<File> badFiles, final Map<File, String> mismatchedFiles, final Map<String, Map<File, String>> duplicates) {
         this(resourceScanRequestId, resourceScanDate, totalEntries, -1, -1, -1, -1, uids, badFiles, mismatchedFiles, duplicates);

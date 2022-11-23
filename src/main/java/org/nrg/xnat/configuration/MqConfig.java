@@ -107,6 +107,11 @@ public class MqConfig {
         return new ActiveMQQueue("processingOperationRequest");
     }
 
+    @Bean
+    public Destination resourceScanRequest() {
+        return new ActiveMQQueue("resourceScanRequest");
+    }
+
     @Bean({"redeliveryPolicyMap", "activeMQRedeliveryPolicyMap"})
     public RedeliveryPolicyMap redeliveryPolicyMap() {
         final RedeliveryPolicy defaultEntry = new RedeliveryPolicy();
