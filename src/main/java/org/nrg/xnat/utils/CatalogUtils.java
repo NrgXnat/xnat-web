@@ -271,6 +271,15 @@ public class CatalogUtils {
             return projects.get(0);
         }
 
+        public static Optional<CatalogData> get(final XnatResourcecatalog catalogResource, @Nullable final String projectId)
+                throws ServerException {
+            File catalogFile = new File(catalogResource.getUri());
+            if (!catalogFile.exists()) {
+                return Optional.empty();
+            }
+            return Optional.of(new CatalogData(catalogFile, catalogResource, projectId));
+        }
+
         @Nonnull
         public static CatalogData getOrCreate(ArchivableItem item, final XnatResourcecatalogI resource)
                 throws ServerException {

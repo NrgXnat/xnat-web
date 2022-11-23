@@ -5,8 +5,6 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.dcm4che2.io.StopTagInputHandler;
 import org.jetbrains.annotations.NotNull;
-import org.nrg.action.ClientException;
-import org.nrg.action.ServerException;
 import org.nrg.dcm.DicomFileNamer;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
@@ -27,7 +25,6 @@ import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.entities.ResourceScanRequest;
-import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.services.archive.ResourceMitigationReport;
 import org.nrg.xnat.services.archive.ResourceScanReport;
 import org.nrg.xnat.services.archive.ResourceScanService;
@@ -51,7 +48,6 @@ import static org.nrg.xft.event.persist.PersistentWorkflowUtils.QUEUED;
 @Transactional
 @Slf4j
 public class HibernateResourceScanService extends AbstractHibernateEntityService<ResourceScanRequest, ResourceScanRequestRepository> implements ResourceScanService {
-    private static final String TEMPLATE_EXPERIMENT_URI                  = "/data/archive/experiments/%s/scans/%s";
     private static final String PARAM_PROJECT_ID                         = "projectId";
     private static final String PARAM_RESOURCE_ID                        = "resourceId";
     private static final String TEMPLATE_GENERATE_RESOURCE_SCAN_REQUESTS = "SELECT s.label                     AS subject_label, "
@@ -86,7 +82,6 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
                                                                            + "         JOIN xnat_experimentdata x ON s.image_session_id = x.id "
                                                                            + "WHERE ar.xnat_abstractresource_id = :" + PARAM_RESOURCE_ID;
 
-    private final CatalogService             _catalogService;
     private final SerializerService          _serializer;
     private final DicomFileNamer             _dicomFileNamer;
     private final StopTagInputHandler        _stopTagInputHandler;
@@ -95,8 +90,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
     private final JmsTemplate                _jmsTemplate;
 
     @Autowired
-    public HibernateResourceScanService(final CatalogService catalogService, final SerializerService serializer, final DicomFileNamer dicomFileNamer, final SiteConfigPreferences preferences, final NamedParameterJdbcTemplate jdbcTemplate, final JmsTemplate jmsTemplate) {
-        _catalogService      = catalogService;
+    public HibernateResourceScanService(final SerializerService serializer, final DicomFileNamer dicomFileNamer, final SiteConfigPreferences preferences, final NamedParameterJdbcTemplate jdbcTemplate, final JmsTemplate jmsTemplate) {
         _serializer          = serializer;
         _dicomFileNamer      = dicomFileNamer;
         _stopTagInputHandler = DicomUtils.getMaxStopTagInputHandler();
@@ -268,19 +262,10 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
 
         final Path cachePath = getCachePath(request);
 
-        final ResourceRepairHelper     helper = new ResourceRepairHelper(request, cachePath);
+        final ResourceRepairHelper     helper = new ResourceRepairHelper(request, cachePath, workflow, requester);
         final ResourceMitigationReport report = helper.call();
         request.setMitigationReport(report);
         setStatus(request, workflow, ResourceScanRequest.Status.Conforming);
-
-        final String resourceUri = String.format(TEMPLATE_EXPERIMENT_URI, request.getExperimentId(), request.getScanLabel());
-        try {
-            _catalogService.refreshResourceCatalog(requester, resourceUri);
-            log.info("Refreshed the catalog for resource ID {} at URL {}", resourceId, resourceUri);
-        } catch (ServerException | ClientException e) {
-            throw new InitializationException("An error occurred trying to refresh the resource catalog for ID " + resourceId + " with URI " + resourceUri, e);
-        }
-
     }
 
     /**
