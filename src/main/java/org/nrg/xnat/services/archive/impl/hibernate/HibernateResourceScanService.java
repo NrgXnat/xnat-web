@@ -1,5 +1,7 @@
 package org.nrg.xnat.services.archive.impl.hibernate;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.tuple.Pair;
@@ -37,6 +39,7 @@ import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -48,6 +51,7 @@ import java.util.stream.Collectors;
 public class HibernateResourceScanService extends AbstractHibernateEntityService<ResourceScanRequest, ResourceScanRequestRepository> implements ResourceScanService {
     private static final String PARAM_PROJECT_ID                         = "projectId";
     private static final String PARAM_RESOURCE_ID                        = "resourceId";
+    private static final String PARAM_DATE_ID                        = "dateId";
     private static final String TEMPLATE_GENERATE_RESOURCE_SCAN_REQUESTS = "SELECT s.label                     AS subject_label, "
                                                                            + "       x.label                     AS experiment_label, "
                                                                            + "       sc.id                       AS scan_label, "
@@ -59,6 +63,7 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
                                                                            + "       sc.xnat_imagescandata_id    AS scan_id, "
                                                                            + "       ar.xnat_abstractresource_id AS resource_id, "
                                                                            + "       r.uri                       AS resource_uri "
+                                                                           + "       md.insert_date                       AS insert_date "
                                                                            + "FROM xnat_abstractresource ar "
                                                                            + "         LEFT JOIN xdat_search.xhbm_resource_scan_request rns "
                                                                            + "                   ON ar.xnat_abstractresource_id = rns.resource_id "
@@ -69,10 +74,12 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
                                                                            + "         LEFT JOIN xdat_meta_element e ON x.extension = e.xdat_meta_element_id  "
                                                                            + "         LEFT JOIN xnat_subjectassessordata sa ON x.id = sa.id "
                                                                            + "         LEFT JOIN xnat_subjectdata s ON sa.subject_id = s.id "
+                                                                           + "         LEFT JOIN xnat_abstractResource_meta_data md ON ar.abstractresource_info=md.meta_data_id "
                                                                            + "WHERE ar.label = 'DICOM' "
                                                                            + "  AND rns.resource_id IS NULL "
                                                                            + "  %s";
     private static final String QUERY_GENERATE_PROJECT_SCAN_REQUESTS     = String.format(TEMPLATE_GENERATE_RESOURCE_SCAN_REQUESTS, "  AND x.project = :" + PARAM_PROJECT_ID);
+    private static final String QUERY_GENERATE_PROJECT_DATE_SCAN_REQUESTS     = String.format(TEMPLATE_GENERATE_RESOURCE_SCAN_REQUESTS, "  AND x.project = :" + PARAM_PROJECT_ID, "  AND md.insert_date >= :" + PARAM_DATE_ID);
     private static final String QUERY_GENERATE_RESOURCE_SCAN_REQUEST     = String.format(TEMPLATE_GENERATE_RESOURCE_SCAN_REQUESTS, "  AND ar.xnat_abstractresource_id = :" + PARAM_RESOURCE_ID);
     private static final String QUERY_GET_RESOURCE_PROJECT               = "SELECT x.project "
                                                                            + "FROM xnat_abstractresource ar "
@@ -141,12 +148,15 @@ public class HibernateResourceScanService extends AbstractHibernateEntityService
      * {@inheritDoc}
      */
     @Override
-    public List<ResourceScanRequest> createResourceScanRequests(final UserI requester, final String projectId) throws NotFoundException, InsufficientPrivilegesException {
+    public List<ResourceScanRequest> createResourceScanRequests(final UserI requester, final @Nullable Date startDate, final String projectId) throws NotFoundException, InsufficientPrivilegesException {
         // TODO: This should really be implemented as an aspect, similar to XapiRequestMappingAspect.
         validateProjectAccess(requester, projectId);
 
-        // TODO: Add ability to restrict by date to query
-        final List<ResourceScanRequest> requests = _jdbcTemplate.query(QUERY_GENERATE_PROJECT_SCAN_REQUESTS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), ResourceScanRequest.ROW_MAPPER);
+        final List<ResourceScanRequest> requests=(
+                Objects.nonNull(startDate))?
+                _jdbcTemplate.query(QUERY_GENERATE_PROJECT_DATE_SCAN_REQUESTS, new MapSqlParameterSource(Maps.newHashMap(ImmutableMap.of(PARAM_PROJECT_ID, projectId, PARAM_DATE_ID, startDate))), ResourceScanRequest.ROW_MAPPER):
+                _jdbcTemplate.query(QUERY_GENERATE_PROJECT_SCAN_REQUESTS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), ResourceScanRequest.ROW_MAPPER);
+
         log.debug("Got {} resource scan requests for project {}", requests.size(), projectId);
         requests.forEach(request -> {
             request.setRequester(requester.getUsername());

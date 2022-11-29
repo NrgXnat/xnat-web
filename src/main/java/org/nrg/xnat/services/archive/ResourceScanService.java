@@ -8,6 +8,8 @@ import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.entities.ResourceScanRequest;
 
+import javax.annotation.Nullable;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -80,7 +82,7 @@ public interface ResourceScanService extends BaseHibernateService<ResourceScanRe
      * @throws InsufficientPrivilegesException When the requesting user has insufficient permissions to request resource scans.
      * @throws NotFoundException               When the specified project doesn't exist.
      */
-    List<ResourceScanRequest> createResourceScanRequests(final UserI requester, final String projectId) throws InsufficientPrivilegesException, NotFoundException;
+    List<ResourceScanRequest> createResourceScanRequests(final UserI requester, final @Nullable Date startDate, final String projectId) throws InsufficientPrivilegesException, NotFoundException;
 
     /**
      * Runs scan on the catalog and files for resource scan requests with status "Created" in the specified project. The

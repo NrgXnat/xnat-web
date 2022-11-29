@@ -1,9 +1,6 @@
 package org.nrg.xapi.rest.data;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
+import io.swagger.annotations.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
@@ -22,7 +19,10 @@ import org.nrg.xnat.services.archive.ResourceScanService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.annotation.Nullable;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -49,8 +49,8 @@ public class ResourceScanApi extends AbstractXapiRestController {
                    @ApiResponse(code = 404, message = "No project exists with the specified ID."),
                    @ApiResponse(code = 500, message = "An unexpected or unknown error occurred")})
     @XapiRequestMapping(value = "scan/project/{projectId}", produces = APPLICATION_JSON_VALUE, method = POST, restrictTo = AccessLevel.Delete)
-    public List<ResourceScanRequest> createResourceScanRequestsForProject(final @PathVariable String projectId) throws InsufficientPrivilegesException, NotFoundException {
-        return _resourceScanService.createResourceScanRequests(getSessionUser(), projectId);
+    public List<ResourceScanRequest> createResourceScanRequestsForProject(final @PathVariable String projectId, final @ApiParam("Start date of scan.") @RequestParam(required = false) @Nullable Date startDate) throws InsufficientPrivilegesException, NotFoundException {
+        return _resourceScanService.createResourceScanRequests(getSessionUser(), startDate, projectId);
     }
 
     @ApiOperation(value = "Create a resource scan request for the specified resource", notes = "Returns the newly generated request", response = ResourceScanRequest.class)
