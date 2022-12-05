@@ -562,6 +562,26 @@ XNAT.plugin =
         return submissionJson;
     }
 
+    function waitForElementInDOM(selector) {
+        return new Promise(resolve => {
+            if (document.querySelector(selector)) {
+                return resolve(document.querySelector(selector));
+            }
+
+            const observer = new MutationObserver(mutations => {
+                if (document.querySelector(selector)) {
+                    resolve(document.querySelector(selector));
+                    observer.disconnect();
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    }
+
     function editButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
@@ -579,12 +599,14 @@ XNAT.plugin =
                         projectFormManager.builderDialog(itemObj);
                     },
                     afterShow: function(o) {
-                        let formComponentDivs = document.getElementsByClassName('formcomponents');
-                        let formAreaDivs = document.getElementsByClassName('formarea');
-                        let formComponentDiv = formComponentDivs[0];
-                        let formAreaDiv = formAreaDivs[0];
-                        formComponentDiv.setAttribute('style','height:75vh; overflow-y:scroll');
-                        formAreaDiv.setAttribute('style','height:80vh; overflow-y:scroll');
+                        waitForElementInDOM('.formcomponents').then((formComponentDiv) => {
+                            formComponentDiv.setAttribute('style','height:75vh; overflow-y:scroll');
+                        });
+
+                        waitForElementInDOM('.formarea').then((formAreaDiv) => {
+                            formAreaDiv.setAttribute('style','height:80vh; overflow-y:scroll');
+                        });
+
                     },
                     buttons: {
                         update: {
