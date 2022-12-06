@@ -120,7 +120,7 @@ XNAT.plugin =
     }
 
     function initBuilder(form) {
-        let formType = form.data.formType;
+        let formType = "form";
         let formTitle = form.data.formTitle;
         let formBuilderElement = document.getElementById("form-builder");
         let builderConfig = projectFormManager.getBuilderConfiguration();
@@ -510,7 +510,7 @@ XNAT.plugin =
         }else {
             submissionDataObj[PRIMARY_KEY_FIELDNAME] = dbRowId;
         }
-        submissionDataObj['formType'] = configItem['contents']['display'];
+        submissionDataObj['formType'] = "form";
         submissionDataObj['formTitle'] = configItem['contents']['title'];
         let dataXsiType = extractParts(path, 1);
         let dataSingular = XNAT.customFormManager.datatypeManager.getDatatypeByXsiType(dataXsiType).label;

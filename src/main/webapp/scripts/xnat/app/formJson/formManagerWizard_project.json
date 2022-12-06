@@ -20,31 +20,6 @@
       "label": "basicInfo",
       "components": [
         {
-          "label": "Form type",
-          "widget": "choicesjs",
-          "placeholder": "Select form type",
-          "tableView": true,
-          "data": {
-            "values": [
-              {
-                "label": "Form",
-                "value": "form"
-              },
-              {
-                "label": "Wizard",
-                "value": "wizard"
-              }
-            ]
-          },
-          "selectThreshold": 0.3,
-          "key": "formType",
-          "type": "select",
-          "validate": {
-            "required": true
-          },
-          "input": true
-        },
-        {
           "label": "Title of the form",
           "widget": "choicesjs",
           "placeholder": "Enter a short title for your Form. This will help you identify it later.",

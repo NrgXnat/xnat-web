@@ -11,30 +11,6 @@
             "tableView": false,
             "components": [
                 {
-                    "key": "formType",
-                    "data": {
-                        "values": [
-                            {
-                                "label": "Form",
-                                "value": "form"
-                            },
-                            {
-                                "label": "Wizard",
-                                "value": "wizard"
-                            }
-                        ]
-                    },
-                    "type": "select",
-                    "input": true,
-                    "label": "Form type",
-                    "widget": "choicesjs",
-                    "validate": {
-                        "required": true
-                    },
-                    "tableView": true,
-                    "placeholder": "Select form type"
-                },
-                {
                     "key": "formTitle",
                     "type": "textfield",
                     "input": true,
