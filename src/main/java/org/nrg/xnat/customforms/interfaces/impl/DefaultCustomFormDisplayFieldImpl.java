@@ -35,13 +35,15 @@ public class DefaultCustomFormDisplayFieldImpl implements CustomFormDisplayField
             if (addedJsonFields.contains(displayFieldId)) {
                 continue;
             }
+            final String fieldDisplayLabel = formJsonPojo.getLabel() +"["+formJsonPojo.getFormUUID()+"]";
+
             Object[] availableField = new Object[8];
-            availableField[0] = displayFieldId;
-            availableField[1] = displayHelper.getCleanFieldHeader(formJsonPojo);
-            availableField[2] = "Custom Field: "  + formJsonPojo.getLabel();
-            availableField[3] = "string"; //formJsonPojo.getType();
+            availableField[0] = displayFieldId; //Id
+            availableField[1] = displayHelper.getCleanFieldHeader(formJsonPojo); //Header
+            availableField[2] = fieldDisplayLabel; //Summary
+            availableField[3] = "string";
             availableField[4] = false;
-            availableField[5] = "Custom Field: "  + formJsonPojo.getLabel();
+            availableField[5] = fieldDisplayLabel; //Description
             availableField[6] = se.getFullXMLName();
             availableField[7] = 1;
             fields.insertRow(availableField);

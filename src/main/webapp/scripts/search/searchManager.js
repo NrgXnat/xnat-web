@@ -762,7 +762,8 @@ function SearchXMLManager(_xml){
 							"ElementName":this.afS.options[cfSc].element_name,
 		  					"FieldId":this.afS.options[cfSc].field_id,
 		  					"Header":this.afS.options[cfSc].header,
-		  					"Type":this.afS.options[cfSc].type});
+		  					"Type":this.afS.options[cfSc].type,
+							 "DESC":this.afS.options[cfSc].desc});
 	                    for(var pfSc=0;pfSc<this.manager.pFs.length;pfSc++){
 	                        var pF = this.manager.pFs[pfSc];
 	                        if(pF.ELEMENT_NAME==this.afS.options[cfSc].element_name
@@ -800,7 +801,7 @@ function SearchXMLManager(_xml){
                             // Add this field back to the potential fields column...
                             var pF = { // I seem to have no other choice but to recreate this object from the selected current field element.
                                        // I don't see it represented anywhere else in memory when debugging this. (Justin)
-                                'DESC':cF.Header,
+                                'DESC':cF.DESC,
                                 'ELEMENT_NAME':cF.ElementName,
                                 'FIELD_ID':cF.FieldId,
                                 'HEADER':cF.Header,
@@ -943,6 +944,7 @@ function SearchXMLManager(_xml){
 					tO.requires_value=this.pFs[_efC].REQUIRES_VALUE;
 					tO.type=this.pFs[_efC].TYPE;
 					tO.style.backgroundColor=this.gbc(this.pFs[_efC].ELEMENT_NAME);
+					tO.desc = this.pFs[_efC].DESC;
 					this.afS.options[this.afS.options.length]=tO;
 				}
 			}

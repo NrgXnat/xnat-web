@@ -1,6 +1,7 @@
 package org.nrg.xnat.customforms.helpers;
 
 import org.nrg.xdat.forms.models.pojo.FormFieldPojo;
+import org.nrg.xnat.customforms.utils.CustomFormsConstants;
 
 public class CustomFormDisplayFieldHelper {
 
@@ -24,7 +25,7 @@ public class CustomFormDisplayFieldHelper {
     }
 
     public String getCleanFieldHeader(final FormFieldPojo field){
-        final String fieldKey = field.getKey();
+        final String fieldKey = field.getFormUUID() + CustomFormsConstants.DOT_SEPARATOR + field.getKey();
         return fieldKey;
     }
 
