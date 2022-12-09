@@ -57,7 +57,15 @@
 <a id="moreDetailsBtn" href="#!">View Custom Field(s)</a>
 <script type="text/javascript">
    var oMoreDetailsBtn = new YAHOO.widget.Button("moreDetailsBtn");
-   var formOptions = {readOnly:true};
+   var formOptions = { readOnly:true,
+                       renderMode:'html',
+                       buttonSettings: {
+                             showCancel: false,
+                             showSubmit: false,
+                             showNext: false,
+                             showPrevious: false
+                       }
+            };
     function getFormIOContainer() {
         let formioContainer = $.spawn('div#moreDetailsFormIO',{className:'xnat-bootstrap'});
         $$(formioContainer).empty();
