@@ -37,6 +37,7 @@
 
 <script type="text/javascript"> 
    var formOptions = {  readOnly:true,
+                        renderMode: 'html',
                         buttonSettings: {
                              showCancel: false,
                              showSubmit: false,
