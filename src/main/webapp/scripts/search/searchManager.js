@@ -763,7 +763,7 @@ function SearchXMLManager(_xml){
 		  					"FieldId":this.afS.options[cfSc].field_id,
 		  					"Header":this.afS.options[cfSc].header,
 		  					"Type":this.afS.options[cfSc].type,
-							 "DESC":this.afS.options[cfSc].desc});
+							 "DESC":this.afS.options[cfSc].DESC});
 	                    for(var pfSc=0;pfSc<this.manager.pFs.length;pfSc++){
 	                        var pF = this.manager.pFs[pfSc];
 	                        if(pF.ELEMENT_NAME==this.afS.options[cfSc].element_name
@@ -799,17 +799,17 @@ function SearchXMLManager(_xml){
 						if(cF.ElementName==this.cfS.options[afSc].element_name
                             && cF.FieldId==this.cfS.options[afSc].field_id){
                             // Add this field back to the potential fields column...
-                            var pF = { // I seem to have no other choice but to recreate this object from the selected current field element.
-                                       // I don't see it represented anywhere else in memory when debugging this. (Justin)
-                                'DESC':cF.DESC,
-                                'ELEMENT_NAME':cF.ElementName,
-                                'FIELD_ID':cF.FieldId,
-                                'HEADER':cF.Header,
-                                'SRC':'0',    // Not sure about what this value does exactly
-                                'TYPE':cF.Type
-                            };
-                            this.manager.pFs.push(pF);
-                            //...then remove it from the current fields column.
+							var pF = { // I seem to have no other choice but to recreate this object from the selected current field element.
+									   // I don't see it represented anywhere else in memory when debugging this. (Justin)
+								'DESC':cF.DESC,
+								'ELEMENT_NAME':cF.ElementName,
+								'FIELD_ID':cF.FieldId,
+								'HEADER':cF.Header,
+								'SRC':'0',    // Not sure about what this value does exactly
+								'TYPE':cF.Type
+							};
+							this.manager.pFs.push(pF);
+							//...then remove it from the current fields column.
 							this.manager.currentFields.splice(cfSC,1);
 						}
 					}
@@ -845,10 +845,12 @@ function SearchXMLManager(_xml){
 
 		this.currentFields=new Array();
 		for(var rAfC=0;rAfC<this.searchDOM.SearchField.length;rAfC++){
-	  		this.currentFields[rAfC]={"ElementName":this.searchDOM.getSortedFields()[rAfC].ElementName,
-	  		"FieldId":this.searchDOM.SearchField[rAfC].FieldId,
-	  		"Header":this.searchDOM.SearchField[rAfC].Header,
-	  		"Type":this.searchDOM.SearchField[rAfC].Type};
+	  		this.currentFields[rAfC]={
+				  "ElementName":this.searchDOM.getSortedFields()[rAfC].ElementName,
+				  "FieldId":this.searchDOM.SearchField[rAfC].FieldId,
+	  			  "Header":this.searchDOM.SearchField[rAfC].Header,
+				  "DESC": this.searchDOM.SearchField[rAfC].DESC,
+	  		      "Type":this.searchDOM.SearchField[rAfC].Type};
 	  	}
 
 		this.renderCurrentFieldsDT();
@@ -930,13 +932,12 @@ function SearchXMLManager(_xml){
 
 	this.renderPotentialFields=function(){
 		while(this.afS.options.length>0){this.afS.removeChild(this.afS.options[0])};
-
 		for(var _efC=0;_efC<this.pFs.length;_efC++){
 			if(this.shouldShowLabels || this.pFs[_efC].SRC!=2){
 				if(this.pFs[_efC].d==undefined){
 					this.pFs[_efC].d=this.pFs[_efC].DESC + " (" + window.available_elements_getByName(this.pFs[_efC].ELEMENT_NAME).singular + ")";
 				}
-				if(!this.containsField(this.pFs[_efC].ELEMENT_NAME,this.pFs[_efC].FIELD_ID)){
+				if(!this.containsField(this.pFs[_efC].ELEMENT_NAME,this.pFs[_efC].FIELD_ID) && !this.containsAvailableFields(this.pFs[_efC].ELEMENT_NAME,this.pFs[_efC].FIELD_ID)){
 					var tO=new Option(this.pFs[_efC].d);
 					tO.element_name=this.pFs[_efC].ELEMENT_NAME;
 					tO.field_id=this.pFs[_efC].FIELD_ID;
@@ -944,12 +945,26 @@ function SearchXMLManager(_xml){
 					tO.requires_value=this.pFs[_efC].REQUIRES_VALUE;
 					tO.type=this.pFs[_efC].TYPE;
 					tO.style.backgroundColor=this.gbc(this.pFs[_efC].ELEMENT_NAME);
-					tO.desc = this.pFs[_efC].DESC;
+					tO.DESC = this.pFs[_efC].DESC;
 					this.afS.options[this.afS.options.length]=tO;
 				}
 			}
 		}
 	}
+
+	this.containsAvailableFields=function(element,fieldId) {
+		if (this.afS == undefined) {
+			return false;
+		}
+		for(var cfSC=0;cfSC<this.afS.length;cfSC++){
+			if(this.afS[cfSC].element_name==element &&
+				this.afS[cfSC].field_id==fieldId){
+				return true;
+			}
+		}
+		return false;
+	}
+
 
 	this.containsField=function(e,f){
 		for(var cfSC=0;cfSC<this.currentFields.length;cfSC++){
@@ -972,6 +987,7 @@ function SearchXMLManager(_xml){
 			this.cfS.options[cfSC].element_name=this.currentFields[cfSC].ElementName;
 			this.cfS.options[cfSC].field_id=this.currentFields[cfSC].FieldId;
 			this.cfS.options[cfSC].header=this.currentFields[cfSC].Header;
+			this.cfS.options[cfSC].DESC=this.currentFields[cfSC].DESC;
 			this.cfS.options[cfSC].style.backgroundColor=this.gbc(this.currentFields[cfSC].ElementName);
 			if(sel!=undefined && sel.contains(cfSC))this.cfS.options[cfSC].selected=true;
 		}
@@ -1001,6 +1017,7 @@ var handleValueSubmit = function(obj1, obj2, obj3, obj4) {
 			"FieldId":this.sm.selectedFieldValueOption.field_id+"="+enteredValue,
 			"Header":enteredValue,
 			"Type":this.sm.selectedFieldValueOption.type,
+			"DESC":this.sm.selectedFieldValueOption.DESC,
 			"Value":enteredValue});
 		this.sm.renderCurrentFieldsDT();
 		this.sm.renderPotentialFields();
