@@ -66,84 +66,82 @@ public class CustomFormHelper {
      * @return - matched rows as serialized PseudoConfiguration
      * @throws InsufficientPermissionsException
      */
-
-    public List<PseudoConfiguration> getAllCustomFormConfigurations(final UserI user, final String projectId) throws InsufficientPermissionsException {
+    public List<PseudoConfiguration> getAllCustomForms(final UserI user, final String projectId) throws InsufficientPermissionsException {
         List<PseudoConfiguration> configurations = new ArrayList<>();
         CustomVariableFormService customVariableFormService = XDAT.getContextService().getBeanSafely(CustomVariableFormService.class);
-        List<CustomVariableFormAppliesTo> filter = new ArrayList<CustomVariableFormAppliesTo>();
+        List<CustomVariableForm> filter = new ArrayList<CustomVariableForm>();
 
         if (customVariableFormService != null) {
             List<CustomVariableForm> customVariableForms = customVariableFormService.getAllEagerly();
             if (null != customVariableForms) {
                 for (CustomVariableForm form : customVariableForms) {
                     List<CustomVariableFormAppliesTo> formAppliesTos = form.getCustomVariableFormAppliesTos();
+                    PseudoConfiguration configuration = setBasicElements(form, form.getCustomVariableFormAppliesTos().get(0));
+                    Scope scope = Scope.Project;
                     if (projectId != null) {
-                        List<CustomVariableFormAppliesTo> siteForms = new ArrayList<CustomVariableFormAppliesTo>();
-                        List<CustomVariableFormAppliesTo> projectForms = new ArrayList<CustomVariableFormAppliesTo>();
-                        //Add only Site and Project specific forms
+                        boolean projectInvolved = false;
+                        List<FormAppliesToPoJo> appliesToPoJos = new ArrayList<>();
+                        List<FormAppliesToPoJo> projectFormAppliesTos = new ArrayList<>();
                         for (CustomVariableFormAppliesTo formAppliesTo : formAppliesTos) {
                             CustomVariableAppliesTo appliesTo = formAppliesTo.getCustomVariableAppliesTo();
-                            if ((appliesTo.getScope().equals(Scope.Site) && formAppliesTo.getStatus().equals(CustomFormsConstants.ENABLED_STATUS_STRING))) {
-                                siteForms.add(formAppliesTo);
+                            FormAppliesToPoJo formAppliesToPoJo = new FormAppliesToPoJo(formAppliesTo, formAppliesTo.getStatus());
+                            if (appliesTo.getScope().equals(Scope.Site)) {
+                                formAppliesToPoJo.setEntityId("Site");
+                                appliesToPoJos.add(formAppliesToPoJo);
+                                projectInvolved = true;
+                                scope = Scope.Site;
                             } else if (appliesTo.getScope().equals(Scope.Project) && appliesTo.getEntityId().equals(projectId)) {
-                                projectForms.add(formAppliesTo);
+                                projectFormAppliesTos.add(formAppliesToPoJo);
+                                projectInvolved = true;
                             }
                         }
-                        FormsIOJsonUtils formsIOJsonUtils = new FormsIOJsonUtils();
-                        filter.addAll(formsIOJsonUtils.removeSiteFormOptedOutByProject(siteForms, projectForms));
-                        filter.addAll(projectForms);
-                    } else {
-                        filter.addAll(formAppliesTos);
+                        if (projectInvolved == false) {
+                            continue;
+                        }
+                        appliesToPoJos.addAll(projectFormAppliesTos);
+                        configuration.setScope(scope);
+                        configuration.setAppliesToList(appliesToPoJos);
+                    } else{
+                        List<FormAppliesToPoJo> appliesToPoJos = new ArrayList<>();
+                        List<FormAppliesToPoJo> projectFormAppliesTos = new ArrayList<>();
+                        for (CustomVariableFormAppliesTo formAppliesTo : formAppliesTos) {
+                            FormAppliesToPoJo formAppliesToPoJo = new FormAppliesToPoJo(formAppliesTo, formAppliesTo.getStatus());
+                            if (formAppliesTo.getCustomVariableAppliesTo().getScope().equals(Scope.Site)) {
+                                scope = Scope.Site;
+                                formAppliesToPoJo.setEntityId("Site");
+                                appliesToPoJos.add(formAppliesToPoJo);
+                            } else {
+                                projectFormAppliesTos.add(formAppliesToPoJo);
+                            }
+                        }
+                        appliesToPoJos.addAll(projectFormAppliesTos);
+                        configuration.setAppliesToList(appliesToPoJos);
+                        configuration.setScope(scope);
                     }
+                    configurations.add(configuration);
                 }
             }
-        }
-        //Group the forms by Status and for a given status collect the Project Information
-        Hashtable<FormByStatusPoJo, List<CustomVariableFormAppliesTo>> formsByStatus = new Hashtable<FormByStatusPoJo, List<CustomVariableFormAppliesTo>>();
-        for (CustomVariableFormAppliesTo c : filter) {
-            FormByStatusPoJo f = new FormByStatusPoJo(c);
-            if (formsByStatus.containsKey(f)) {
-                formsByStatus.get(f).add(c);
-            } else {
-                List<CustomVariableFormAppliesTo> forms = new ArrayList<CustomVariableFormAppliesTo>();
-                forms.add(c);
-                formsByStatus.put(f, forms);
-            }
-        }
-
-        Set<FormByStatusPoJo> keys = formsByStatus.keySet();
-        for (FormByStatusPoJo k : keys) {
-            PseudoConfiguration configuration = new PseudoConfiguration();
-            configuration.setStatus(k.getStatus());
-            configuration.setFormId(Long.toString(k.getFormId()));
-            configuration.setFormUUID(k.getFormUUID());
-            configuration.setFormZIndex(k.getZIndex());
-            List<CustomVariableFormAppliesTo> formAppliesTos = formsByStatus.get(k);
-            List<FormAppliesToPoJo> formAppliesToPoJos = new ArrayList<FormAppliesToPoJo>();
-            boolean formJsonContentHasBeenSet = false;
-            for (CustomVariableFormAppliesTo formAppliesTo : formAppliesTos) {
-                if (!formJsonContentHasBeenSet) {
-                    configuration.setPath(formAppliesTo.getCustomVariableAppliesTo().pathAsString());
-                    configuration.setScope(formAppliesTo.getCustomVariableAppliesTo().getScope());
-                    configuration.setDoProjectsShareForm(formAppliesTo.doProjectsShareForm());
-                    try {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        JsonNode jNode = formAppliesTo.getCustomVariableForm().getFormIOJsonDefinition();
-                        String pretty = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jNode);
-                        configuration.setContents(pretty);
-                    } catch (JsonProcessingException jpe) {
-                        log.debug("Could not process json", jpe);
-                    } finally {
-                        formJsonContentHasBeenSet = true;
-                    }
-                }
-                FormAppliesToPoJo formAppliesToPoJo = new FormAppliesToPoJo(formAppliesTo);
-                formAppliesToPoJos.add(formAppliesToPoJo);
-            }
-            configuration.setAppliesToList(formAppliesToPoJos);
-            configurations.add(configuration);
         }
         return configurations;
+    }
+
+    private PseudoConfiguration setBasicElements(CustomVariableForm form, CustomVariableFormAppliesTo formAppliesTo) {
+        PseudoConfiguration configuration = new PseudoConfiguration();
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            JsonNode jNode = form.getFormIOJsonDefinition();
+            String pretty = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(jNode);
+            configuration.setContents(pretty);
+        } catch (JsonProcessingException jpe) {
+            log.debug("Could not process json", jpe);
+        }
+        configuration.setFormUUID(form.getFormUuid().toString());
+        configuration.setFormId(Long.toString(form.getId()));
+        configuration.setFormZIndex(form.getzIndex());
+        configuration.setPath(formAppliesTo.getCustomVariableAppliesTo().pathAsString());
+        configuration.setDoProjectsShareForm(formAppliesTo.doProjectsShareForm());
+        configuration.setDateCreated(form.getCreated());
+        return configuration;
     }
 
 

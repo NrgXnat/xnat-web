@@ -32,7 +32,7 @@
           "input": true
         },
         {
-          "label": "Z-Index",
+          "label": "Form Order: Relative form order is a preference set via integer values, where lower numbers reflect higher positions. If multiple forms have the same value, creation date is used as a tie breaker.",
           "mask": false,
           "tableView": false,
           "delimiter": false,

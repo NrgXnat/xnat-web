@@ -95,7 +95,7 @@ public class RoleBasedDataAccessApi extends AbstractXapiRestController {
             method = RequestMethod.GET, restrictTo = Authorizer)
     @AuthDelegate(CustomFormUserXapiAuthorization.class)
     public ResponseEntity<List<Map<String, Object>>> getSiteProjects() throws UserInitException, UserNotFoundException{
-        final String query = "SELECT proj.ID, proj.name, proj.description,proj.secondary_id FROM xnat_projectData proj;";
+        final String query = "SELECT proj.ID, proj.name, proj.description,proj.secondary_id, inv.title FROM xnat_projectData proj LEFT JOIN xnat_investigatordata inv ON proj.pi_xnat_investigatordata_id=inv.xnat_investigatordata_id;";
         List<Map<String, Object>> resultSet = jdbcTemplate.queryForList(query);
         return ResponseEntity.ok(resultSet);
     }

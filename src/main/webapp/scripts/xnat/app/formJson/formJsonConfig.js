@@ -67,13 +67,13 @@ var XNAT = getObject(XNAT || {});
         })
     }
 
-    function customFormUrl(append, paramsForMe) {
+    xnatFormManager.customFormUrl = function(append, paramsForMe) {
         var params = paramsForMe || {};
         return XNAT.url.restUrl('xapi/customforms/' + append, params, false, true);
     }
 
     function promoteFormUrl(id) {
-        return customFormUrl('promote');
+        return xnatFormManager.customFormUrl('promote');
     }
 
 
@@ -223,10 +223,10 @@ var XNAT = getObject(XNAT || {});
         submissionDataObj['xnatVisit'] = [];
         submissionDataObj['xnatSubtype'] = [];
 
-        let projectList = getProject(configItem);
+        let projectList = getProjects(configItem);
         submissionDataObj.zIndex = zIndex;
         let rowProtocol = extractParts(configItem['path'], 3);
-        if (!isAProjectSpecificForm(projectList)) {
+        if (configItem.scope === "Project") {
             // A site wide configuration
             submissionDataObj['isThisASiteWideConfiguration'] = 'yes';
         } else {
@@ -469,7 +469,7 @@ var XNAT = getObject(XNAT || {});
                     label: 'Ok',
                     isDefault: true,
                     action: function () {
-                        let url = customFormUrl('disable');
+                        let url = xnatFormManager.customFormUrl('disable');
                         XNAT.xhr.post({
                             url: url,
                             contentType: 'application/json',
@@ -506,7 +506,7 @@ var XNAT = getObject(XNAT || {});
                     label: 'Proceed',
                     isDefault: true,
                     action: function () {
-                        let url = customFormUrl('');
+                        let url = xnatFormManager.customFormUrl('');
                         XNAT.xhr.delete({
                             url: url,
                             contentType: 'application/json',
@@ -578,7 +578,7 @@ var XNAT = getObject(XNAT || {});
                     label: 'Ok',
                     isDefault: true,
                     action: function () {
-                        let url = customFormUrl('enable');
+                        let url = xnatFormManager.customFormUrl('enable');
                         XNAT.xhr.post({
                             url: url,
                             contentType: 'application/json',
@@ -602,27 +602,31 @@ var XNAT = getObject(XNAT || {});
 
     }
 
-    xnatFormManager.modifyZIndex = function (configDefinition, title) {
-        let zIndex = configDefinition['formZIndex'];
-        let formId = configDefinition['formId'];
+    xnatFormManager.modifyDisplayOrder = function (configDefinition) {
+        let formOrder = configDefinition['formZIndex'];
+        let itemObj = JSON.parse(configDefinition['contents']);
+        const title = itemObj['title'] || '';
+        const dateCreated = new Date(configDefinition['dateCreated']);
+        const formId = configDefinition['formId'];
+        var info_button = '<div class="info">Relative form order is a preference set via integer values, where lower numbers reflect higher positions. If multiple forms have the same value, creation date is used as a tie breaker.</div>';
         xmodal.open({
-            title: 'Modify ZIndex?',
-            content: 'Current zIndex: ' + zIndex + '<br><br> New zIndex: <input type="number" step="1"  id="zIndexTxt" value="'+ zIndex + '">',
-            width: 200,
-            height: 200,
+            title: 'Change Form Order for ' + title,
+            content: info_button + '<br><br>Current Form Order: ' + formOrder + '<br><br> Creation Date: ' + dateCreated + '<br><br> New Form Order: <input type="number" step="1"  id="formOrderTxt" value="'+ formOrder + '">',
+            width: 500,
+            height: 350,
             overflow: 'auto',
             buttons: {
                 ok: {
                     label: 'Ok',
                     isDefault: true,
                     action: function () {
-                        let desiredZIndex = document.getElementById('zIndexTxt').value;
-                        let containsDot = /\./.test(desiredZIndex);
+                        let desiredFormOrder = document.getElementById('formOrderTxt').value;
+                        let containsDot = /\./.test(desiredFormOrder);
                         if (containsDot) {
                             XNAT.dialog.open({
                                 width: 450,
-                                title: "Invalid Value for Z Index",
-                                content: "ZIndex must be an integer value",
+                                title: "Invalid Value for Form Order",
+                                content: "Form Order must be an integer value",
                                 buttons: [{
                                     label: 'OK',
                                     isDefault: true,
@@ -631,17 +635,17 @@ var XNAT = getObject(XNAT || {});
                             });
                             return;
                         }
-                        let url = customFormUrl( 'formId/' + formId + '?zIndex=' + desiredZIndex );
+                        let url = xnatFormManager.customFormUrl( 'formId/' + formId + '?zIndex=' + desiredFormOrder );
                         XNAT.xhr.post({
                             url: url,
                             contentType: 'application/json',
                             success: function () {
                                 xmodal.closeAll();
-                                XNAT.ui.banner.top(2000, 'ZIndex updated.', 'success');
+                                XNAT.ui.banner.top(2000, 'Form Order updated.', 'success');
                                 xnatFormManager.refreshTable();
                             },
                             fail: function (e) {
-                                errorHandler(e, 'Could not update zIndex ' + title);
+                                errorHandler(e, 'Could not update Form Order ' + title);
                             }
                         });
                     }
@@ -651,7 +655,6 @@ var XNAT = getObject(XNAT || {});
                 }
             }
         });
-
     }
 
 
@@ -701,8 +704,8 @@ var XNAT = getObject(XNAT || {});
         let optedOutFromThisForm = [];
         for (let k = 0; k < definitions.length; k++) {
             let item = definitions[k];
-            if (item['scope'] === 'Project' && item['formId'] === formId && item['status'] === 'optedout') {
-                let projects = getProject(item);
+            if (item['scope'] === 'Project' && item['formId'] === formId && item['appliesToList'][0]['status'] === 'optedout') {
+                let projects = getProjects(item);
                 for (let i=0; i< projects.length; i++) {
                     optedOutFromThisForm.push(projects[i]);
                 }
@@ -711,17 +714,22 @@ var XNAT = getObject(XNAT || {});
         return optedOutFromThisForm;
     }
 
-    function getProject(itemObj) {
-        let projects = [];
-        if (itemObj.scope === 'Site') {
-            projects.push('All');
-        } else {
+    function getProjects(itemObj, status) {
+            let projects = [];
             itemObj['appliesToList'].forEach(function (item) {
-                projects.push(item['entityId']);
+                if (item['entityId'] === 'Site') {
+                    return;
+                } else if (status != null) {
+                    if (item['status'] === status) {
+                        projects.push(item['entityId']);
+                    }
+                } else {
+                    projects.push(item['entityId']);
+                }
+
             });
+            return projects.sort();
         }
-        return projects.sort();
-    }
 
     function extractParts(path, partIndex) {
         let pathParts = path.split('/');
@@ -803,80 +811,102 @@ var XNAT = getObject(XNAT || {});
 
     }
 
-    function isAProjectSpecificForm(projectIds) {
-        if (projectIds.length === 1 && projectIds[0] === 'All') {
-            return false;
+    function editWindow(itemObj) {
+        xmodal.open({
+        title: 'Edit Custom Form',
+        classes: 'xnat-bootstrap',
+        template: $('#editForm'),
+        width: 1600,
+        height: 1600,
+        scroll: false,
+        closeBtn: false,
+        beforeShow: function (obj) {
+            var has_data = false;
+            XNAT.xhr.get({
+                url: xnatFormManager.customFormUrl( 'hasdata/' + itemObj['appliesToList'][0]['idCustomVariableFormAppliesTo']),
+                dataType: 'json',
+                async: false,
+                success: function (data) {
+                    has_data = data;
+                }
+            });
+            if (has_data) {
+                let $thisModal = obj.$modal;
+                xmodal.confirm({
+                    content: 'This form already has data associated with it. Use caution when editing this form as it may affect the functioning of the previously collected data.',
+                    okAction: function(){
+                    },
+                    cancelAction: function() {
+                       // close 'parent' modal
+                       xmodal.close($thisModal);
+                    }
+                });
+            }
+            xnatFormManager.builderDialog(itemObj);
+        },
+        afterShow: function(o) {
+          let formComponentDivs = document.getElementsByClassName('formcomponents');
+          let formAreaDivs = document.getElementsByClassName('formarea');
+          try {
+              let formComponentDiv = formComponentDivs[0];
+              let formAreaDiv = formAreaDivs[0];
+              formComponentDiv.setAttribute('style','height:75vh; overflow-y:scroll');
+              formAreaDiv.setAttribute('style','height:80vh; overflow-y:scroll');
+          }catch(err){console.log("Could not add scroll bar");}
+        },
+        buttons: {
+            update: {
+                label: 'Save',
+                isDefault: true,
+                action: function () {
+                    saveWYSIWYGContent(itemObj);
+                }
+            },
+            editJson: {
+                label: 'Edit JSON',
+                close: true,
+                action: function () {
+                    xnatFormManager.dialog(itemObj, false);
+                }
+            },
+            cancel: {
+                label: 'Cancel',
+                close: false,
+                action: function(obj) {
+                    let $thisModal = obj.$modal;
+                    xmodal.confirm({
+                        content: 'Are you sure you want to abandon?',
+                        okAction: function(){
+                            // close 'parent' modal
+                            xmodal.close($thisModal);
+                        }
+                    });
+                }
+            }
         }
-        return true;
+    });
+    }
+
+    function editLink(itemObj, text){
+        return spawn('a.link|href=#!', {
+            onclick: function(e){
+                e.preventDefault();
+                editWindow(itemObj)
+            }
+        }, [['b', text]]);
     }
 
     function editButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
-                xmodal.open({
-                    title: 'Edit Custom Form',
-                    classes: 'xnat-bootstrap',
-                    template: $('#editForm'),
-                    width: 1600,
-                    height: 1600,
-                    scroll: false,
-                    closeBtn: false,
-                    beforeShow: function (obj) {
-                        xnatFormManager.builderDialog(itemObj);
-                    },
-                    afterShow: function(o) {
-                      let formComponentDivs = document.getElementsByClassName('formcomponents');
-                      let formAreaDivs = document.getElementsByClassName('formarea');
-                      try {
-                          let formComponentDiv = formComponentDivs[0];
-                          let formAreaDiv = formAreaDivs[0];
-                          formComponentDiv.setAttribute('style','height:75vh; overflow-y:scroll');
-                          formAreaDiv.setAttribute('style','height:80vh; overflow-y:scroll');
-                      }catch(err){console.log("Could not add scroll bar");}
-                    },
-                    buttons: {
-                        update: {
-                            label: 'Save',
-                            isDefault: true,
-                            action: function () {
-                                saveWYSIWYGContent(itemObj);
-                            }
-                        },
-                        cancel: {
-                            label: 'Cancel',
-                            close: false,
-                            action: function(obj) {
-                                let $thisModal = obj.$modal;
-                                xmodal.confirm({
-                                    content: 'Are you sure you want to abandon?',
-                                    okAction: function(){
-                                        // close 'parent' modal
-                                        xmodal.close($thisModal);
-                                    }
-                                });
-                            }
-                        }
-                    }
-                });
+                editWindow(itemObj)
             }
-        }, 'WYSIWYG');
-    }
-
-
-    function jsonEditButton(itemObj) {
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function (e) {
-                e.preventDefault();
-                if (itemObj) {
-                    xnatFormManager.dialog(itemObj, false);
-                }
-            }
-        }, 'Edit JSON');
+        }, 'Edit');
     }
 
     function promoteButton(itemObj, title) {
-        let projectId = getProject(itemObj);
+        let projectId = getProjects(itemObj);
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
@@ -886,42 +916,6 @@ var XNAT = getObject(XNAT || {});
             }
         }, 'Promote');
     }
-
-
-    function optOutButton(itemObj, title) {
-        let isFormSharedBetweenProjects = itemObj['doProjectsShareForm'];
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function (e) {
-                e.preventDefault();
-                if (itemObj) {
-                    let rowId = getPK(itemObj);
-                    let title = itemObj.title || '';
-                    if (isFormSharedBetweenProjects) {
-                        let projects = getProject(itemObj);
-                        XNAT.customFormManager.assignDialog.assignProject(itemObj,true, title, 'Opted out', customFormUrl('/optout/' + rowId), true, projects);
-                    } else {
-                        let projects = getOptedOutProjectsForTheForm(itemObj['formId']);
-                        XNAT.customFormManager.assignDialog.assignProject(itemObj,false, title,'Opted out',  customFormUrl('/optout/' + rowId), false, projects);
-                    }
-                }
-            }
-        }, 'OptOut');
-    }
-
-    function optInButton(itemObj, title) {
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function (e) {
-                e.preventDefault();
-                if (itemObj) {
-                    let rowId = getPK(itemObj);
-                    let title = itemObj.title || '';
-                    let projects = getProject(itemObj);
-                    XNAT.customFormManager.assignDialog.assignProject(itemObj,true, title, 'Opted out', customFormUrl('/optin/' + rowId), true, projects);
-                }
-            }
-        }, 'OptIn');
-    }
-
 
     function deleteButton(itemObj, title) {
         let status = itemObj['status'];
@@ -936,7 +930,7 @@ var XNAT = getObject(XNAT || {});
     }
 
     function disableButton(itemObj, title) {
-        let status = itemObj['status'];
+        let status = itemObj['appliesToList'][0]['status'];
         let btnLbl = 'Disable';
         if (status === 'disabled') {
             btnLbl = 'Enable';
@@ -956,37 +950,55 @@ var XNAT = getObject(XNAT || {});
     }
 
 
-    function zIndexButton(itemObj, title) {
+    function displayOrderButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
                 if (itemObj) {
-                    xnatFormManager.modifyZIndex(itemObj, title);
+                    xnatFormManager.modifyDisplayOrder(itemObj);
                 }
             }
-        }, 'ZIndex');
+        }, 'Display Order');
     }
 
-    function assignProjectButton(itemObj, title) {
-        let projects = getProject(itemObj);
+    function manageProjectsButton(itemObj, title) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
                 if (itemObj) {
+                    let projects = getProjects(itemObj);
                     let rowId = getPK(itemObj);
                     let title = itemObj.title || '';
-                    XNAT.customFormManager.assignDialog.assignProject(itemObj,false, title,'Form added to ', customFormUrl('/add/' + rowId), false, projects);
+                    let isSiteWide = itemObj.scope === "Site";
+                    XNAT.customFormManager.assignDialog.assignProject(itemObj, title, rowId, isSiteWide, projects);
                 }
             }
-        }, 'Add ' + XNAT.app.displayNames.plural.project);
+        }, 'Manage ' + XNAT.app.displayNames.plural.project);
     }
 
 
     function spawnProjects(item) {
-        let projectsArray = getProject(item);
+        var returnItems = []
+        if (item.scope === "Site") {
+            let projectsArray = getProjects(item, 'optedout');
+            returnItems.push(spawn('p', 'All Projects'));
+            if (projectsArray.length > 0) {
+                returnItems.push(spacer(2));
+                let title = " Opted Out of Form";
+                returnItems.push(spawn('button.btn.btn-sm.edit', {
+                     onclick: function (e) {
+                         e.preventDefault();
+                         XNAT.customFormManager.projectListModalManager.show(projectsArray, title);
+                     }
+                 }, projectsArray.length + " Projects Opted Out"));
+            }
+            return returnItems;
+        }
+        let projectsArray = getProjects(item);
         if (typeof projectsArray === "string") {
             return projectsArray;
         }
+
         if (projectsArray.length < 4) {
             return projectsArray.join(", ")
         } else {
@@ -1029,7 +1041,7 @@ var XNAT = getObject(XNAT || {});
                 tableDataRow['visit'] = extractParts(item['path'], 5);
                 tableDataRow['subtype'] = extractParts(item['path'], 7);
             }
-            tableDataRow['status'] = xnatFormManager.prettyPrint(item['status']);
+            tableDataRow['status'] = xnatFormManager.prettyPrint(item['appliesToList'][0]['status']);
             tableDataRow['actions'] = item;
             tableData.push(tableDataRow);
         }
@@ -1079,7 +1091,7 @@ var XNAT = getObject(XNAT || {});
                 }
             },
             apply: function (title) {
-                return truncCell.call(this, title, '');
+                return editLink(this.actions, title);
             }
         },
         datatype: {
@@ -1198,44 +1210,24 @@ var XNAT = getObject(XNAT || {});
     }
 
     xnatFormManager.getActionButtons = function(item) {
-        let isProjectSpecific = isAProjectSpecificForm(getProject(item));
+        let isProjectSpecific = item.scope === "Project";
         let isFormSharedBetweenProjects = item['doProjectsShareForm'];
 
         let title = item['title'] || '';
-        let status = item['status'];
-        let isDisabled = false;
+        let status = item['appliesToList'][0]['status'];
         let isEnabled = false;
-        let optedOut = false;
-        if (status === 'optedout') {
-            optedOut = true;
-        }else if (status === 'disabled') {
-            isDisabled = true;
-        }else if (status === 'enabled') {
+        if (status === 'enabled') {
             isEnabled = true;
         }
         let actions = [];
         if (isEnabled) {
-            actions = [editButton(item), spacer(4), jsonEditButton(item), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title), spacer(4), zIndexButton(item, title)];
-        }else if (isDisabled) {
-            actions = [deleteButton(item, title),spacer(4), disableButton(item, title)];
-        }
-        if (isProjectSpecific) {
-            if (optedOut) {
-                actions.push(spacer(4));
-                actions.push(optInButton(item, title));
-            } else {
-                if (isFormSharedBetweenProjects) {
-                    actions.push(spacer(4));
-                    actions.push(optOutButton(item, title));
-                }
+            actions = [editButton(item), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title), spacer(4), displayOrderButton(item), spacer(4), manageProjectsButton(item, title)];
+            if (isProjectSpecific) {
                 actions.push(spacer(4));
                 actions.push(promoteButton(item, title));
-                actions.push(spacer(4));
-                actions.push(assignProjectButton(item, title));
             }
-        }else if (isEnabled ) {
-            actions.push(spacer(4));
-            actions.push(optOutButton(item, title));
+        }else {
+            actions = [deleteButton(item, title),spacer(4), disableButton(item, title)];
         }
         return actions;
     }

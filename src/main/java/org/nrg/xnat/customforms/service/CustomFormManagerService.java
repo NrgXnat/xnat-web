@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import javassist.NotFoundException;
 import javassist.tools.web.BadHttpRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.NonUniqueObjectException;
 import org.nrg.framework.constants.Scope;
 import org.nrg.xdat.XDAT;
@@ -92,6 +93,9 @@ public class CustomFormManagerService {
         try {
             RowIdentifier rowId = RowIdentifier.Unmarshall(formAppliesToId);
             CustomVariableFormAppliesTo customVariableFormAppliesTo = customVariableFormAppliesToService.findByRowIdentifier(rowId);
+            if (StringUtils.equals(CustomFormsConstants.OPTED_OUT_STATUS_STRING, customVariableFormAppliesTo.getStatus())) {
+                return true;
+            }
             if (customVariableFormAppliesTo != null && customFormPermissionsService.isUserAuthorized(user, customVariableFormAppliesTo)) {
                 customVariableFormAppliesTo.setStatus(CustomFormsConstants.ENABLED_STATUS_STRING);
                 objectSaver.saveCustomVariableFormAppliesTo(customVariableFormAppliesTo);
@@ -122,6 +126,9 @@ public class CustomFormManagerService {
         try {
             RowIdentifier rowId = RowIdentifier.Unmarshall(formAppliesId);
             CustomVariableFormAppliesTo customVariableFormAppliesTo = customVariableFormAppliesToService.findByRowIdentifier(rowId);
+            if (StringUtils.equals(CustomFormsConstants.OPTED_OUT_STATUS_STRING, customVariableFormAppliesTo.getStatus())) {
+                return true;
+            }
             if (customVariableFormAppliesTo != null && customFormPermissionsService.isUserAuthorized(user, customVariableFormAppliesTo)) {
                 customVariableFormAppliesTo.setStatus(CustomFormsConstants.DISABLED_STATUS_STRING);
                 objectSaver.saveCustomVariableFormAppliesTo(customVariableFormAppliesTo);
@@ -247,7 +254,7 @@ public class CustomFormManagerService {
      * @return - boolean - success status
      * @throws Exception
      */
-    public boolean addProjectsToForm(final UserI user, final RowIdentifier rowIdentifier, final List<String> projects) throws Exception {
+    public boolean optProjectsIntoForm(final UserI user, final RowIdentifier rowIdentifier, final List<String> projects) throws Exception {
         CustomVariableFormAppliesTo formAppliesTo = customVariableFormAppliesToService.findByRowIdentifier(rowIdentifier);
         boolean savedAll = true;
         final String formStatus = formAppliesTo.getStatus();
@@ -276,8 +283,10 @@ public class CustomFormManagerService {
             );
             if (appliesTos != null && appliesTos.size() > 0) {
                 CustomVariableAppliesTo appliesTo = appliesTos.get(0);
-                boolean success = objectSaver.saveOnlyAssign(appliesTo, formAppliesTo.getCustomVariableForm(), user, formStatus);
-                savedAll = savedAll && success;
+                if (appliesTo.getCustomVariableFormAppliesTos().size() > 0) {
+                    CustomVariableFormAppliesTo removalRow = appliesTo.getCustomVariableFormAppliesTos().get(0);
+                    deleteSafely(removalRow.getRowIdentifier(), removalRow);
+                }
             } else {
                 CustomVariableAppliesTo customVariableAppliesTo = getCustomVariableAppliesTo(userOptionsPojo, project);
                 objectSaver.saveOnlyAppliesToAndAssign(customVariableAppliesTo, formAppliesTo.getCustomVariableForm(), user, formStatus);
@@ -464,51 +473,6 @@ public class CustomFormManagerService {
                     throw new InsufficientPermissionsException("User " + user.getUsername() + " does not have sufficient permissions to perform the Opt Out operation");
                 }
 
-        } catch (Exception e) {
-            log.error("Could not find the form to opt out of", e);
-            throw e;
-        }
-        return successStatus;
-    }
-
-    /**
-     * Opt in back into a form
-     * @param user - user who requests the operation
-     * @param formAppliesToId - the row identifier for the join table
-     * @param projectIds - List of project opting back in
-     * @return - boolean - success status
-     * @throws InsufficientPermissionsException
-     * @throws IllegalArgumentException
-     */
-
-    public boolean optInForm(final UserI user, final String formAppliesToId, final List<String> projectIds) throws InsufficientPermissionsException, IllegalArgumentException {
-        boolean successStatus = false;
-        try {
-            RowIdentifier rowId = RowIdentifier.Unmarshall(formAppliesToId);
-            boolean userAuthorized = true;
-            for (String projectId : projectIds ) {
-                userAuthorized = userAuthorized &&  customFormPermissionsService.isUserAdminOrDataManager(user) || customFormPermissionsService.isUserProjectOwner(user, projectId);
-            }
-            if (userAuthorized) {
-                    List<CustomVariableFormAppliesTo> customVariableFormAppliesTos = customVariableFormAppliesToService.findByFormId(rowId.getFormId());
-                    if (customVariableFormAppliesTos != null) {
-                        for (CustomVariableFormAppliesTo f: customVariableFormAppliesTos) {
-                            CustomVariableAppliesTo appliesTo = f.getCustomVariableAppliesTo();
-                            if (null != appliesTo && appliesTo.getScope().equals(Scope.Project) && projectIds.contains(appliesTo.getEntityId())) {
-                                deleteSafely(rowId, f);
-                                for (String projectId: projectIds) {
-                                    createWorkFlowEntry(user, projectId, rowId.getFormId(), "Form opted in" );
-                                }
-                                successStatus = true;
-                            }
-
-                        }
-                    } else {
-                        throw new IllegalArgumentException("Form identified by " + formAppliesToId + " not found");
-                    }
-            } else {
-                throw new InsufficientPermissionsException("User " + user.getUsername() + " does not have sufficient permissions to perform the Opt In operation");
-            }
         } catch (Exception e) {
             log.error("Could not find the form to opt out of", e);
             throw e;
@@ -720,6 +684,11 @@ public class CustomFormManagerService {
             customFormJson = fetcher.getCustomForm(user, xsiType, id, projectId, visitId, subtype, appendPreviousNextButtons);
         }
         return customFormJson;
+    }
+
+    public boolean checkCustomFormForData(final RowIdentifier rowId) throws Exception {
+        CustomVariableFormAppliesTo formAppliesTo = customVariableFormAppliesToService.findByRowIdentifier(rowId);
+        return dataLocateService.hasDataBeenAcquired(formAppliesTo);
     }
 
     private List<String> toProjectIds(final List<ComponentPojo> entityIds) {

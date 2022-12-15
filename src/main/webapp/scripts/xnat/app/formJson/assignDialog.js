@@ -37,7 +37,6 @@ var XNAT = getObject(XNAT || {});
     var projectDataTypeSingularName = XNAT.app.displayNames.singular.project;
     var projectDataTypePluralName = XNAT.app.displayNames.plural.project;
 
-
     function errorHandler(e) {
         console.log(e);
         xmodal.alert({
@@ -65,14 +64,31 @@ var XNAT = getObject(XNAT || {});
         submissionJson['builder'] = formIOContents;
     }
 
-    launcher.populateForm = function($form, resetProjectList, useProvidedProjectList, projectsAlreadyAssigned = []) {
+    function updateFormAssociations(urlToSubmit, selectedProjects) {
+        XNAT.xhr.post({
+            url: urlToSubmit,
+            contentType: 'application/json',
+            async: false,
+            data: JSON.stringify(selectedProjects),
+            success: function() {
+                xmodal.closeAll();
+                refreshMainTable = true;
+                XNAT.ui.banner.top(2000, 'Form ' + projectDataTypeSingularName +  ' associations successfully updated. ', 'success');
+            },
+            fail: function(e) {
+                errorHandler(e, 'Could not assign form for ' + projectDataTypePluralName , false);
+            }
+        });
+    }
+
+    launcher.populateForm = function($form, siteWide, projectsAlreadyAssigned = []) {
         if (typeof launcher.$table != 'undefined') {
             projectsList = [];
             launcher.$table.remove();
         }
 
         let projectsUrl = XNAT.url.restUrl('xapi/role/projects',{},false,false);
-        let columnIds = ["assign", "name", "id"];
+        let columnIds = ["assign", "name", "id", "investigator"];
         let labelMap = {
             assign: {
                 label: "Select",
@@ -88,6 +104,11 @@ var XNAT = getObject(XNAT || {});
                 label: projectDataTypeSingularName + " ID",
                 checkboxes: false,
                 id: projectDataTypeSingularName + " ID"
+            },
+            investigator: {
+                label: "Primary Investigator",
+                checkboxes: false,
+                id: "Primary Investigator"
             }
 
         };
@@ -98,29 +119,12 @@ var XNAT = getObject(XNAT || {});
                 dataType: 'json',
                 success: function(data) {
                     hasAccessToProjects = true;
-                    $.each(data, function(i, prj) {
-                        let projId = prj['id'];
-                        if (useProvidedProjectList && (projectsAlreadyAssigned.includes(projId))) {
-                            projectsList.push(prj);
-                        }else if (!useProvidedProjectList && !(projectsAlreadyAssigned.includes(projId))) {
-                            projectsList.push(prj);
-                        }
-                    });
-                    if (projectsList.length === 0 && resetProjectList) {
-                        //All the projects have opted out
-                        $.each(data, function(i, prj) {
-                            projectsList.push(prj);
-                        });
-                    }
+                    projectsList = data;
                 },
                 error: function(e) {
                     errorHandler(e);
                 }
             });
-
-        if (projectsList.length === 0) {
-            return;
-        }
 
         var projectsTable = XNAT.table({
             className: 'projects-table xnat-table data-table clean fixed-header selectable scrollable-table',
@@ -156,10 +160,10 @@ var XNAT = getObject(XNAT || {});
             });
         }
 
-        function selectProjectCheckbox(projectId) {
+        function selectProjectCheckbox(projectId, checked) {
             var ckbox = spawn('input', {
                 type: 'checkbox',
-                checked: false,
+                checked: checked,
                 disabled: false,
                 value: projectId,
                 id: 'assign-' + projectId,
@@ -222,13 +226,18 @@ var XNAT = getObject(XNAT || {});
 
         $.each(projectsList, function(i, e) {
             projectsTable.tr();
-            projectsTable.td([selectProjectCheckbox(e.id)]);
+            projectsTable.td([selectProjectCheckbox(e.id, siteWide != projectsAlreadyAssigned.includes(e.id))]);
             projectsTable.td({
                 classes: columnIds[1]
             }, e.name);
             projectsTable.td({
                 classes: columnIds[2]
             }, e.id);
+            if (e.title){
+                projectsTable.td({
+                    classes: columnIds[3]
+                }, e.title);
+            }
         });
         $form.empty().prepend(projectsTable.table);
         launcher.container = $form;
@@ -236,7 +245,7 @@ var XNAT = getObject(XNAT || {});
 
     }
 
-    launcher.assignProject = function(configDefinition,resetProjectList, title, message,  urlToSubmit, useProvidedProjectList,  projectsAlreadyAssigned) {
+    launcher.assignProject = function(configDefinition, title,  rowId, siteWide,  projectsAlreadyAssigned) {
         let myArgumentCount = arguments.length;
         let projectSelectorContent = spawn('div.panel', [
             spawn('p', 'Please select ' + projectDataTypePluralName),
@@ -260,11 +269,7 @@ var XNAT = getObject(XNAT || {});
                 let $panel = obj.$modal.find('.panel');
                 let $standardInputContainer = $panel.find('.standard-settings');
                 let $advancedInputContainer = $panel.find('.advanced-settings');
-                if (myArgumentCount == 7) {
-                    launcher.populateForm($panel, resetProjectList, useProvidedProjectList, projectsAlreadyAssigned);
-                }else {
-                    launcher.populateForm($panel, resetProjectList, useProvidedProjectList);
-                }
+                launcher.populateForm($panel, siteWide, projectsAlreadyAssigned);
             },
             afterShow: function(obj) {
                 xmodal.loading.close();
@@ -294,38 +299,57 @@ var XNAT = getObject(XNAT || {});
                     let $panel = obj.$modal.find('.panel'),
                         targetData = {};
                     let refreshMainTable = false;
-                    $.each(projectsList, function(i, project) {
-                        var checkBoxElt = document.getElementById('assign-' + project.id);
-                        if (checkBoxElt.checked) {
-                            selectedProjects.push(project.id);
-                        }
-                    });
-                    if (selectedProjects.length == 0) {
-                        //Atleast one project must be selected
+                    var additions, subtractions;
+                    var oneChecked = false;
+                    if (siteWide) {
+                        $.each(projectsList, function(i, project) {
+                            var checkBoxElt = document.getElementById('assign-' + project.id);
+                            if (!checkBoxElt.checked) {
+                                selectedProjects.push(project.id);
+                            } else {
+                                oneChecked = true;
+                            }
+                        });
+                        subtractions = selectedProjects.filter(x => !projectsAlreadyAssigned.includes(x));
+                        additions = projectsAlreadyAssigned.filter(x => !selectedProjects.includes(x));
+                    } else {
+                        $.each(projectsList, function(i, project) {
+                            var checkBoxElt = document.getElementById('assign-' + project.id);
+                            if (checkBoxElt.checked) {
+                                selectedProjects.push(project.id);
+                                oneChecked = true;
+                            }
+                        });
+                        additions = selectedProjects.filter(x => !projectsAlreadyAssigned.includes(x));
+                        subtractions = projectsAlreadyAssigned.filter(x => !selectedProjects.includes(x));
+                    }
+
+                    if (additions.length === 0 && subtractions.length === 0) {
                         xmodal.alert({
                             title: 'Select ' + projectDataTypeSingularName,
-                            content: '<p><strong>Please select atleast one ' + projectDataTypeSingularName + '</strong></p>',
+                            content: '<p><strong>Please select at least one ' + projectDataTypeSingularName + ' to add or remove</strong></p>',
+                            okAction: function() {
+                                xmodal.closeAll();
+                            }
+                        });
+                    } else if(oneChecked === false) {
+                        xmodal.alert({
+                            title: 'No ' + projectDataTypePluralName + ' associated',
+                            content: '<p><strong>Performing this action would mean no ' + projectDataTypePluralName + ' would be associated with this form. Try disabling the form to make the form inactive for all ' +projectDataTypePluralName + ' instead.</strong></p>',
                             okAction: function() {
                                 xmodal.closeAll();
                             }
                         });
                     }else {
                         //Save the current rows contents into the new path for the selected project
-                        refreshMainTable = false;
-                        XNAT.xhr.post({
-                            url: urlToSubmit,
-                            contentType: 'application/json',
-                            async: false,
-                            data: JSON.stringify(selectedProjects),
-                            success: function() {
-                                xmodal.closeAll();
-                                refreshMainTable = true;
-                                XNAT.ui.banner.top(2000, message + ' ' + projectDataTypeSingularName, 'success');
-                            },
-                            fail: function(e) {
-                                errorHandler(e, 'Could not assign form for ' + projectDataTypePluralName , false);
-                            }
-                        });
+                        refreshMainTable = true;
+                        if (additions.length > 0) {
+                            updateFormAssociations(XNAT.customFormManager.xnatFormManager.customFormUrl('/optin/' + rowId), additions);
+                        }
+                        if (subtractions.length > 0) {
+                            updateFormAssociations(XNAT.customFormManager.xnatFormManager.customFormUrl('/optout/' + rowId), subtractions);
+                        }
+
                         if (refreshMainTable) {
                             XNAT.customFormManager.xnatFormManager.refreshTable();
                         }
