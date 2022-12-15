@@ -287,27 +287,31 @@ XNAT.plugin =
 
     }
 
-    projectFormManager.modifyZIndex = function (configDefinition, title) {
-        let zIndex = configDefinition['formZIndex'];
-        let formId = configDefinition['formId'];
+    modifyDisplayOrder = function (configDefinition) {
+        let formOrder = configDefinition['formZIndex'];
+        let itemObj = JSON.parse(configDefinition['contents']);
+        const title = itemObj['title'] || '';
+        const dateCreated = new Date(configDefinition['dateCreated']);
+        const formId = configDefinition['formId'];
+        var info_button = '<div class="info">Relative form order is a preference set via integer values, where lower numbers reflect higher positions. If multiple forms have the same value, creation date is used as a tie breaker.</div>';
         xmodal.open({
-            title: 'Modify ZIndex?',
-            content: 'Current zIndex: ' + zIndex + '<br><br> New zIndex: <input type="number" step="1"  id="zIndexTxt" value="'+ zIndex + '">',
-            width: 200,
-            height: 200,
+            title: 'Change Form Order for ' + title,
+            content: info_button + '<br><br>Current Form Order: ' + formOrder + '<br><br> Creation Date: ' + dateCreated + '<br><br> New Form Order: <input type="number" step="1"  id="formOrderTxt" value="'+ formOrder + '">',
+            width: 500,
+            height: 350,
             overflow: 'auto',
             buttons: {
                 ok: {
                     label: 'Ok',
                     isDefault: true,
                     action: function () {
-                        let desiredZIndex = document.getElementById('zIndexTxt').value;
-                        let containsDot = /\./.test(desiredZIndex);
+                        let desiredFormOrder = document.getElementById('formOrderTxt').value;
+                        let containsDot = /\./.test(desiredFormOrder);
                         if (containsDot) {
                             XNAT.dialog.open({
                                 width: 450,
-                                title: "Invalid Value for Z Index",
-                                content: "ZIndex must be an integer value",
+                                title: "Invalid Value for Form Order",
+                                content: "Form Order must be an integer value",
                                 buttons: [{
                                     label: 'OK',
                                     isDefault: true,
@@ -316,17 +320,17 @@ XNAT.plugin =
                             });
                             return;
                         }
-                        let url = customFormUrl( 'formId/' + formId + '?zIndex=' + desiredZIndex );
+                        let url = customFormUrl( 'formId/' + formId + '?zIndex=' + desiredFormOrder );
                         XNAT.xhr.post({
                             url: url,
                             contentType: 'application/json',
                             success: function () {
                                 xmodal.closeAll();
-                                XNAT.ui.banner.top(2000, 'ZIndex updated.', 'success');
+                                XNAT.ui.banner.top(2000, 'Form Order updated.', 'success');
                                 projectFormManager.refreshTable();
                             },
                             fail: function (e) {
-                                errorHandler(e, 'Could not update zIndex ' + title);
+                                errorHandler(e, 'Could not update Form Order ' + title);
                             }
                         });
                     }
@@ -336,7 +340,6 @@ XNAT.plugin =
                 }
             }
         });
-
     }
 
 
@@ -586,7 +589,6 @@ XNAT.plugin =
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
-
                 xmodal.open({
                     title: 'Edit Custom Form',
                     classes: 'xnat-bootstrap',
@@ -596,6 +598,27 @@ XNAT.plugin =
                     scroll: false,
                     closeBtn: false,
                     beforeShow: function (obj) {
+                        var has_data = false;
+                        XNAT.xhr.get({
+                            url: customFormUrl( 'hasdata/' + itemObj['appliesToList'][0]['idCustomVariableFormAppliesTo']),
+                            dataType: 'json',
+                            async: false,
+                            success: function (data) {
+                                has_data = data;
+                            }
+                        });
+                        if (has_data) {
+                            let $thisModal = obj.$modal;
+                            xmodal.confirm({
+                                content: 'This form already has data associated with it. Use caution when editing this form as it may affect the functioning of the previously collected data.',
+                                okAction: function(){
+                                },
+                                cancelAction: function() {
+                                   // close 'parent' modal
+                                   xmodal.close($thisModal);
+                                }
+                            });
+                        }
                         projectFormManager.builderDialog(itemObj);
                     },
                     afterShow: function(o) {
@@ -633,7 +656,7 @@ XNAT.plugin =
                     }
                 });
             }
-        }, 'WYSIWYG');
+        }, 'Edit');
     }
 
     function deleteButton(itemObj) {
@@ -691,7 +714,7 @@ XNAT.plugin =
 
 
     function disableButton(itemObj, title) {
-        let status = itemObj['status'];
+        let status = getStatus(itemObj['appliesToList']);
         let btnLbl = 'Disable';
         if (status === 'disabled') {
             btnLbl = 'Enable';
@@ -710,15 +733,15 @@ XNAT.plugin =
         }, btnLbl);
     }
 
-    function zIndexButton(itemObj, title) {
+    function displayOrderButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
                 e.preventDefault();
                 if (itemObj) {
-                    projectFormManager.modifyZIndex(itemObj, title);
+                    modifyDisplayOrder(itemObj);
                 }
             }
-        }, 'ZIndex');
+        }, 'Display Order');
     }
 
 
@@ -846,7 +869,7 @@ XNAT.plugin =
                 tableDataRow['visit'] = extractParts(item['path'], 5);
                 tableDataRow['subtype'] = extractParts(item['path'], 7);
             }
-            tableDataRow['status'] = projectFormManager.prettyPrint(item['status']);
+            tableDataRow['status'] = projectFormManager.prettyPrint(getStatus(item['appliesToList']));
             tableDataRow['actions'] = item;
             tableData.push(tableDataRow);
         }
@@ -998,77 +1021,44 @@ XNAT.plugin =
     }
 
     function getPK(item) {
+        console.log(item['appliesToList']);
         return item['appliesToList'][0][PRIMARY_KEY_FIELDNAME];
     }
 
-
-    function getProject(itemObj) {
-        let projects = [];
-        if (itemObj.scope === 'Site') {
-            projects.push('All');
+    function getStatus(appliesToList) {
+        if (appliesToList.length === 1) {
+            return appliesToList[0]['status'];
         } else {
-            itemObj['appliesToList'].forEach(function (item) {
-                projects.push(item['entityId']);
-            });
+            return appliesToList[1]['status'];
         }
-        return projects.sort();
     }
 
     projectFormManager.getActionButtons = function(item) {
-        let isProjectSpecific = isAProjectSpecificForm(getProject(item));
+        let isProjectSpecific = !(item.scope === 'Site');
         let isFormSharedBetweenProjects = item['doProjectsShareForm'];
         let title = item['title'] || '';
-        let status = item['status'];
+        let status = getStatus(item['appliesToList']);
         let isDisabled = false;
-        let isEnabled = false;
         let optedOut = false;
-        if (status === 'optedout') {
-            optedOut = true;
-        }else if (status === 'disabled') {
-            isDisabled = true;
-        }else if (status === 'enabled') {
-            isEnabled = true;
-        }
         let actions = [];
-        if (isProjectSpecific  && isFormSharedBetweenProjects == true) {
-            if (optedOut == true) {
-                actions.push(optInButton(item, title));
-                return actions;
-            }else {
-                actions.push(optOutButton(item, title));
-                return actions;
-            }
-            return actions;
-        }
-        if (isProjectSpecific && isEnabled) {
-            actions = [editButton(item),spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title)];
-        }else if (isProjectSpecific && isDisabled) {
-            actions = [deleteButton(item, title),spacer(4), disableButton(item, title)];
-        }
-        if (isProjectSpecific) {
-            if (optedOut == true) {
+        if (status === 'optedout') {
+            actions = [optInButton(item, title)];
+        }else if (status === 'disabled') {
+            actions = [disableButton(item, title)];
+            if (isProjectSpecific && !isFormSharedBetweenProjects) {
                 actions.push(spacer(4));
-                actions.push(optInButton(item, title));
+                actions.push(deleteButton(item, title));
             }
-            if (!isFormSharedBetweenProjects) {
-                actions.push(zIndexButton(item, title));
+        } else {
+            if (isProjectSpecific && !isFormSharedBetweenProjects) {
+                actions = [editButton(item),spacer(4), displayOrderButton(item, title), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title)];
+            } else {
+                actions = [disableButton(item, title), spacer(4), optOutButton(item, title)];
             }
-        }
-        if (!isProjectSpecific && isEnabled) {
-            actions.push(spacer(4));
-            actions.push(optOutButton(item, title));
-        }
 
+        }
         return actions;
     }
-
-    function isAProjectSpecificForm(projectIds) {
-        if (projectIds.length === 1 && projectIds[0] === 'All') {
-            return false;
-        }
-        return true;
-    }
-
 
     // Is Visit and Protocols Plugin Installed?
     projectFormManager.getDeploymentEnvironment = function(callback) {

@@ -172,7 +172,7 @@ var XNAT = getObject(XNAT || {});
 
 
         XNAT.ui.dialog.open({
-            title: XNAT.app.displayNames.plural.project + ' associated with :' + formtitle,
+            title: XNAT.app.displayNames.plural.project + ' ' + formtitle,
             content: projectSelectorContent,
             width: 400,
             scroll: true,

@@ -51,6 +51,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.zip.DataFormatException;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Role;
 
@@ -183,23 +184,23 @@ public class CustomFormsApi extends AbstractXapiRestController {
             @ApiResponse(code = 400, message = "Bad Request"),
             @ApiResponse(code = 401, message = "Unauthorized"),
             @ApiResponse(code = 500, message = "Unexpected error")})
-    @XapiRequestMapping(value = "/add/{rowId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, restrictTo = Role)
+    @XapiRequestMapping(value = "/optin/{rowId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, restrictTo = Role)
     @AuthorizedRoles({CustomFormsConstants.ADMIN_ROLE_NAME, CustomFormsConstants.DATAFORM_MANAGER_ROLE})
-    public ResponseEntity<String> addProjectsToForm(final @PathVariable String rowId, final @RequestBody String jsonbody) {
+    public ResponseEntity<String> optInCustomForm(final @PathVariable String rowId, final @RequestBody String jsonbody) {
         final UserI user = XDAT.getUserDetails();
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             List<String> projects = Arrays.asList(objectMapper.readValue(jsonbody, String[].class));
             RowIdentifier rowIdentifier = RowIdentifier.Unmarshall(rowId);
-            boolean success = formNanagerService.addProjectsToForm(user, rowIdentifier, projects);
+            boolean success = formNanagerService.optProjectsIntoForm(user, rowIdentifier, projects);
             if (success) {
-                return new ResponseEntity<>("Projects added to form", HttpStatus.OK);
+                return new ResponseEntity<>("Projects opted into form", HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("Projects could not be added to form", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Projects could not be opted into form", HttpStatus.BAD_REQUEST);
             }
         } catch (Exception e) {
-            log.error("Could not add project to form ", e);
-            return new ResponseEntity<>("Could not add project to form:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Could not opt project into form ", e);
+            return new ResponseEntity<>("Could not opt project into form:" + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -224,34 +225,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
         } catch (InsufficientPermissionsException ie) {
             return new ResponseEntity<>("Not enough permissions to opt out of form", HttpStatus.FORBIDDEN);
         } catch (Exception e) {
-            log.error("Could not enable form ", e);
+            log.error("Could not opt out of form ", e);
             return new ResponseEntity<>("Custom Form could not be opted out of:" + e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    @ApiOperation(value = "Opt in of a form", notes = "Opt in of a form", response = String.class)
-    @ApiResponses({
-            @ApiResponse(code = 200, message = "Success"),
-            @ApiResponse(code = 400, message = "Bad Request"),
-            @ApiResponse(code = 401, message = "Unauthorized"),
-            @ApiResponse(code = 500, message = "Unexpected error")})
-    @XapiRequestMapping(value = "/optin/{formId}", method = RequestMethod.POST, consumes = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public ResponseEntity<String> optInCustomForm(final @PathVariable String formId, final @RequestBody String jsonbody) {
-        final UserI user = XDAT.getUserDetails();
-        try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<String> projectIds = Arrays.asList(objectMapper.readValue(jsonbody, String[].class));
-            boolean success = formNanagerService.optInForm(user, formId, projectIds);
-            if (success) {
-                return new ResponseEntity<>(String.join(",", projectIds) + " opted in", HttpStatus.OK);
-            } else {
-                return new ResponseEntity<>("Failed to opt in", HttpStatus.BAD_REQUEST);
-            }
-        } catch (InsufficientPermissionsException ie) {
-            return new ResponseEntity<>("Not enough permissions to opt in form", HttpStatus.FORBIDDEN);
-        } catch (Exception e) {
-            log.error("Could not enable form ", e);
-            return new ResponseEntity<>("Custom Form could not be opted in :" + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
     }
 
@@ -381,7 +356,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
         try {
             final UserI user = XDAT.getUserDetails();
             CustomFormHelper customFormHelper = new CustomFormHelper();
-            List<PseudoConfiguration> configurations = customFormHelper.getAllCustomFormConfigurations(user, projectId);
+            List<PseudoConfiguration> configurations;
+            configurations = customFormHelper.getAllCustomForms(user, projectId);
             if (null == configurations) {
                 return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
             }
@@ -413,6 +389,22 @@ public class CustomFormsApi extends AbstractXapiRestController {
             return new ResponseEntity<>(env, HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @ApiOperation(value = "Checks to see if any data has been created and associated with a given custom form.", response = String.class)
+    @ApiResponses({
+            @ApiResponse(code = 200, message = "Success"),
+            @ApiResponse(code = 400, message = "Bad Request"),
+            @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 500, message = "Unexpected error")})
+    @XapiRequestMapping(value = "/hasdata/{rowId}", method = RequestMethod.GET)
+    public boolean checkForCustomFormHasData(final @PathVariable String rowId) throws DataFormatException {
+        try {
+            RowIdentifier rowIdentifier = RowIdentifier.Unmarshall(rowId);
+            return formNanagerService.checkCustomFormForData(rowIdentifier);
+        } catch (Exception e) {
+            throw new DataFormatException("Invalid row ID " + rowId);
         }
     }
 

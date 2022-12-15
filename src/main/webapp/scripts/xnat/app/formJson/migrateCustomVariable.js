@@ -177,7 +177,7 @@ var XNAT = getObject(XNAT || {});
             return spawn('button.btn.btn-sm.edit', {
                 onclick: function (e) {
                     e.preventDefault();
-                    XNAT.customFormManager.projectListModalManager.show(projectsArray, item.id);
+                    XNAT.customFormManager.projectListModalManager.show(projectsArray, "associated with: " + item.id);
                 }
             }, 'View');
         }
