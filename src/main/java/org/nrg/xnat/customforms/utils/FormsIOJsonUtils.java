@@ -169,8 +169,9 @@ public class FormsIOJsonUtils {
         if (forms == null || forms.size() < 1) {
             return concatenatedFormsJson;
         }
-        Comparator<CustomVariableFormAppliesTo> comparator = Comparator.comparing(h -> h.getCustomVariableForm().getzIndex());
-        forms.sort(comparator.reversed());
+        Comparator comparator = Comparator.comparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getzIndex())
+                .thenComparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getCreated()).reversed();
+        forms.sort(comparator);
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode concatenatedNode = objectMapper.createObjectNode();
         concatenatedNode.put("title", title);
