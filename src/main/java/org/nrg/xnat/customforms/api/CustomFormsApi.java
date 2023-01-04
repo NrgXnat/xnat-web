@@ -12,8 +12,10 @@
 package org.nrg.xnat.customforms.api;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.introspect.VisibilityChecker;
 import io.swagger.annotations.Api;
@@ -34,9 +36,8 @@ import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.customforms.exceptions.CustomVariableNameClashException;
 import org.nrg.xnat.customforms.exceptions.InsufficientPermissionsException;
-import org.nrg.xnat.customforms.helpers.CustomFormHelper;
-import org.nrg.xnat.customforms.customvariable.migration.service.CustomVariableMigrator;
 import org.nrg.xnat.customforms.pojo.ClientPojo;
+import org.nrg.xnat.customforms.pojo.SubmissionPojo;
 import org.nrg.xnat.customforms.pojo.XnatFormsIOEnv;
 import org.nrg.xnat.customforms.pojo.formio.FormAppliesToPoJo;
 import org.nrg.xnat.customforms.pojo.formio.PseudoConfiguration;
@@ -48,9 +49,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.zip.DataFormatException;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Role;
@@ -61,24 +71,30 @@ import static org.nrg.xdat.security.helpers.AccessLevel.Role;
 @Slf4j
 public class CustomFormsApi extends AbstractXapiRestController {
 
-    private final CustomFormManagerService formNanagerService;
+    private final CustomFormManagerService formManagerService;
     private final CustomFormPermissionsService permissionsService;
     private final Map<String, XnatPluginBean> plugins;
-    private final CustomVariableMigrator customVariableMigrator;
+    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapperNoFailOnUnknown;
 
     @Autowired
     public CustomFormsApi(final UserManagementServiceI userManagementService,
-                          final CustomFormManagerService formNanagerService,
+                          final CustomFormManagerService formManagerService,
                           final RoleHolder roleHolder,
                           final XnatPluginBeanManager manager,
                           final CustomFormPermissionsService permissionsService,
-                          final CustomVariableMigrator customVariableMigrator
+                          final ObjectMapper objectMapper
     ) {
         super(userManagementService, roleHolder);
-        this.formNanagerService = formNanagerService;
+        this.formManagerService = formManagerService;
         plugins = new HashMap<>(manager.getPluginBeans());
         this.permissionsService = permissionsService;
-        this.customVariableMigrator = customVariableMigrator;
+
+        this.objectMapper = objectMapper;
+
+        objectMapperNoFailOnUnknown = objectMapper.copy();
+        objectMapperNoFailOnUnknown.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        objectMapperNoFailOnUnknown.setVisibility(VisibilityChecker.Std.defaultInstance().withFieldVisibility(JsonAutoDetect.Visibility.ANY));
     }
 
     @ApiOperation(value = "Accepts a JSON", notes = "Accepts a JSON", response = String.class)
@@ -88,35 +104,21 @@ public class CustomFormsApi extends AbstractXapiRestController {
             @ApiResponse(code = 401, message = "Unauthorized"),
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "/save", consumes = MediaType.APPLICATION_JSON_UTF8_VALUE, method = RequestMethod.PUT)
-    public ResponseEntity<String> addCustomFormsToProtocolsAndProjects(final @RequestBody String jsonbody) {
-        try {
-            final UserI user = XDAT.getUserDetails();
-            ObjectMapper objectMapper = new ObjectMapper();
-            objectMapper.setSerializationInclusion(Include.NON_NULL);
-            objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
-            objectMapper.setVisibility(VisibilityChecker.Std.defaultInstance().withFieldVisibility(JsonAutoDetect.Visibility.ANY));
-            ClientPojo clientPojo = objectMapper.readValue(jsonbody, ClientPojo.class);
-            List<String> problems = clientPojo.validate(user);
-            if (problems.size() > 0) {
-                String issues = "Rejected:" + String.join(" ; ", problems);
-                return new ResponseEntity<>(issues, HttpStatus.BAD_REQUEST);
-            }
-            CustomFormHelper customFormSaver = new CustomFormHelper();
-            String formId = customFormSaver.save(clientPojo, user);
-            if (formId != null) {
-                return new ResponseEntity<>(formId, HttpStatus.CREATED);
-            } else {
-                return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-            }
-        } catch (CustomVariableNameClashException ce) {
-            log.error("Name clash detected ", ce);
-            return new ResponseEntity<>("Could not save form as there exist other forms at the same level with identical property name(s) :" + ce.getClashes(), HttpStatus.BAD_REQUEST);
-        } catch (IllegalArgumentException e) {
-            log.error("Possibly invalid row id ", e);
-            return new ResponseEntity<>("Invalid:" + e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (Exception e) {
-            log.error("Possibly Invalid JSON ", e);
-            return new ResponseEntity<>("Invalid json rejected:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<String> addCustomFormsToProtocolsAndProjects(final @RequestBody String jsonbody)
+            throws JsonProcessingException {
+        final UserI user = XDAT.getUserDetails();
+        ClientPojo clientPojo = objectMapperNoFailOnUnknown.readValue(jsonbody, ClientPojo.class);
+        List<String> problems = clientPojo.validate(user);
+        if (!problems.isEmpty()) {
+            return new ResponseEntity<>("Rejected: " + String.join(" ; ", problems), HttpStatus.BAD_REQUEST);
+        }
+        final SubmissionPojo submission = clientPojo.getSubmission().getData();
+        final JsonNode proposedFormDefinition = objectMapper.readTree(clientPojo.getBuilder());
+        final String formId = formManagerService.save(submission, proposedFormDefinition, user);
+        if (formId != null) {
+            return new ResponseEntity<>(formId, HttpStatus.CREATED);
+        } else {
+            return new ResponseEntity<>("Could not create form", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -138,14 +140,14 @@ public class CustomFormsApi extends AbstractXapiRestController {
     ) {
         try {
             final UserI user = XDAT.getUserDetails();
-            final String customFormJson = formNanagerService.getCustomForm(user, xsiType, id, projectId, visitId, subtype, appendPrevNextButtons);
+            final String customFormJson = formManagerService.getCustomForm(user, xsiType, id, projectId, visitId, subtype, appendPrevNextButtons);
             if (null == customFormJson) {
-                return new ResponseEntity<>("Custom Forms Not Found", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Custom Forms Not Found", HttpStatus.NOT_FOUND);
             }
             return new ResponseEntity<>(customFormJson, HttpStatus.OK);
         } catch (Exception e) {
             log.error("Possibly Custom Form Fetcher Class had issues ", e);
-            return new ResponseEntity<>("Could not fetch custom forms:" + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            return new ResponseEntity<>("Could not fetch custom forms: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -160,10 +162,10 @@ public class CustomFormsApi extends AbstractXapiRestController {
         final UserI user = XDAT.getUserDetails();
         ObjectMapper objectMapper = new ObjectMapper();
         try {
-            List<FormAppliesToPoJo> formAppliesToPoJos = Arrays.asList(objectMapper.readValue(jsonbody, FormAppliesToPoJo[].class));
+            List<FormAppliesToPoJo> formAppliesToPoJos = objectMapper.readValue(jsonbody, new TypeReference<List<FormAppliesToPoJo>>() {});
             boolean success = true;
             for (FormAppliesToPoJo formByStatusPoJo : formAppliesToPoJos) {
-                success = success && formNanagerService.enableForm(user, formByStatusPoJo.getIdCustomVariableFormAppliesTo());
+                success = success && formManagerService.enableForm(user, formByStatusPoJo.getIdCustomVariableFormAppliesTo());
             }
             if (success) {
                 return new ResponseEntity<>("Form Enabled", HttpStatus.OK);
@@ -174,7 +176,7 @@ public class CustomFormsApi extends AbstractXapiRestController {
             return new ResponseEntity<>("Not enough permissions to enable form", HttpStatus.FORBIDDEN);
         } catch (Exception e) {
             log.error("Could not enable form ", e);
-            return new ResponseEntity<>("Custom Form could not be enabled:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Custom Form could not be enabled: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -188,11 +190,10 @@ public class CustomFormsApi extends AbstractXapiRestController {
     @AuthorizedRoles({CustomFormsConstants.ADMIN_ROLE_NAME, CustomFormsConstants.DATAFORM_MANAGER_ROLE})
     public ResponseEntity<String> optInCustomForm(final @PathVariable String rowId, final @RequestBody String jsonbody) {
         final UserI user = XDAT.getUserDetails();
-        ObjectMapper objectMapper = new ObjectMapper();
         try {
-            List<String> projects = Arrays.asList(objectMapper.readValue(jsonbody, String[].class));
+            List<String> projects = objectMapper.readValue(jsonbody, new TypeReference<List<String>>() {});
             RowIdentifier rowIdentifier = RowIdentifier.Unmarshall(rowId);
-            boolean success = formNanagerService.optProjectsIntoForm(user, rowIdentifier, projects);
+            boolean success = formManagerService.optProjectsIntoForm(user, rowIdentifier, projects);
             if (success) {
                 return new ResponseEntity<>("Projects opted into form", HttpStatus.OK);
             } else {
@@ -214,9 +215,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public ResponseEntity<String> optOutCustomForm(final @PathVariable String formId, final @RequestBody String jsonbody) {
         final UserI user = XDAT.getUserDetails();
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<String> projectIds = Arrays.asList(objectMapper.readValue(jsonbody, String[].class));
-            boolean success = formNanagerService.optOutOfForm(user, formId, projectIds);
+            List<String> projectIds = objectMapper.readValue(jsonbody, new TypeReference<List<String>>() {});
+            boolean success = formManagerService.optOutOfForm(user, formId, projectIds);
             if (success) {
                 return new ResponseEntity<>("Projects  have opted out", HttpStatus.OK);
             } else {
@@ -226,7 +226,7 @@ public class CustomFormsApi extends AbstractXapiRestController {
             return new ResponseEntity<>("Not enough permissions to opt out of form", HttpStatus.FORBIDDEN);
         } catch (Exception e) {
             log.error("Could not opt out of form ", e);
-            return new ResponseEntity<>("Custom Form could not be opted out of:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Custom Form could not be opted out of: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -240,7 +240,7 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public ResponseEntity<String> modifyZIndex(final @PathVariable String formId, final @RequestParam Integer zIndex) {
         final UserI user = XDAT.getUserDetails();
         try {
-            boolean success = formNanagerService.modifyZIndex(user, zIndex, formId);
+            boolean success = formManagerService.modifyZIndex(user, zIndex, formId);
             if (success) {
                 return new ResponseEntity<>("ZIndex updated to " + zIndex, HttpStatus.OK);
             } else {
@@ -248,7 +248,7 @@ public class CustomFormsApi extends AbstractXapiRestController {
             }
         } catch (Exception e) {
             log.error("Could not modify zIndex of  form " + formId, e);
-            return new ResponseEntity<>("ZIndex of Custom Form could not be modified :" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("ZIndex of Custom Form could not be modified: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -264,19 +264,18 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public ResponseEntity<String> promoteform(final @RequestBody String jsonbody) {
         try {
             final UserI user = XDAT.getUserDetails();
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<FormAppliesToPoJo> formAppliesToPoJos = Arrays.asList(objectMapper.readValue(jsonbody, FormAppliesToPoJo[].class));
-            boolean success = formNanagerService.promoteForm(user, formAppliesToPoJos);
+            List<FormAppliesToPoJo> formAppliesToPoJos = objectMapper.readValue(jsonbody, new TypeReference<List<FormAppliesToPoJo>>() {});
+            boolean success = formManagerService.promoteForm(user, formAppliesToPoJos);
             if (success) {
                 return new ResponseEntity<>("Form promoted to site repository", HttpStatus.OK);
             } else {
-                return new ResponseEntity<>("Failed to promote form to site repository. Possibly same form id not provided", HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>("Failed to promote form to site repository. Possibly same form id not provided.", HttpStatus.BAD_REQUEST);
             }
         } catch (NotFoundException ie) {
-            return new ResponseEntity<>("Form  not found", HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Form  not found", HttpStatus.NOT_FOUND);
         } catch (CustomVariableNameClashException ce) {
             log.error("Name clash detected ", ce);
-            return new ResponseEntity<>("Could not promote form as there exist other forms at the same level with identical property name(s) :" + ce.getClashes(), HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>("Could not promote form as there exist other forms at the same level with identical property name(s): " + ce.getClashes(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return new ResponseEntity<>("Possibly failed to parse json " + e.getMessage(), HttpStatus.BAD_REQUEST);
         }
@@ -292,11 +291,10 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public ResponseEntity<String> disableCustomForm(final @RequestBody String jsonbody) {
         final UserI user = XDAT.getUserDetails();
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<FormAppliesToPoJo> formAppliesToPoJos = Arrays.asList(objectMapper.readValue(jsonbody, FormAppliesToPoJo[].class));
+            List<FormAppliesToPoJo> formAppliesToPoJos = objectMapper.readValue(jsonbody, new TypeReference<List<FormAppliesToPoJo>>() {});
             boolean success = true;
             for (FormAppliesToPoJo formByStatusPoJo : formAppliesToPoJos) {
-                success = success && formNanagerService.disableForm(user, formByStatusPoJo.getIdCustomVariableFormAppliesTo());
+                success = success && formManagerService.disableForm(user, formByStatusPoJo.getIdCustomVariableFormAppliesTo());
             }
             if (success) {
                 return new ResponseEntity<>("Form disabled", HttpStatus.OK);
@@ -306,8 +304,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
         } catch (InsufficientPermissionsException ie) {
             return new ResponseEntity<>("Not enough permissions to disable form", HttpStatus.FORBIDDEN);
         } catch (Exception e) {
-            log.error("Could not disable form ", e);
-            return new ResponseEntity<>("Custom Form could not be disabled:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Could not disable form", e);
+            return new ResponseEntity<>("Custom Form could not be disabled: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -321,11 +319,10 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public ResponseEntity<String> deleteCustomForm(final @RequestBody String jsonbody) {
         final UserI user = XDAT.getUserDetails();
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
-            List<FormAppliesToPoJo> formAppliesToPoJos = Arrays.asList(objectMapper.readValue(jsonbody, FormAppliesToPoJo[].class));
-            List<String> deleteStatuses = new ArrayList<String>();
+            List<FormAppliesToPoJo> formAppliesToPoJos = objectMapper.readValue(jsonbody, new TypeReference<List<FormAppliesToPoJo>>() {});
+            List<String> deleteStatuses = new ArrayList<>();
             for (FormAppliesToPoJo formAppliesToPoJo : formAppliesToPoJos) {
-                String status = formNanagerService.deleteForm(user, formAppliesToPoJo.getIdCustomVariableFormAppliesTo());
+                String status = formManagerService.deleteForm(user, formAppliesToPoJo.getIdCustomVariableFormAppliesTo());
                 if (null != status) {
                     deleteStatuses.add(formAppliesToPoJo.getEntityId() == null ? "Site Wide: " + status : formAppliesToPoJo.getEntityId() + ": " + status);
                 }
@@ -338,8 +335,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
         } catch (InsufficientPermissionsException ie) {
             return new ResponseEntity<>("Not enough permissions to disable form", HttpStatus.FORBIDDEN);
         } catch (Exception e) {
-            log.error("Could not disable form ", e);
-            return new ResponseEntity<>("Custom Form could not be disabled:" + e.getMessage(), HttpStatus.BAD_REQUEST);
+            log.error("Could not delete form", e);
+            return new ResponseEntity<>("Custom Form could not be deleted: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -355,15 +352,13 @@ public class CustomFormsApi extends AbstractXapiRestController {
             final @RequestParam(required = false) String projectId) {
         try {
             final UserI user = XDAT.getUserDetails();
-            CustomFormHelper customFormHelper = new CustomFormHelper();
-            List<PseudoConfiguration> configurations;
-            configurations = customFormHelper.getAllCustomForms(user, projectId);
+            List<PseudoConfiguration> configurations = formManagerService.getAllCustomForms(projectId);
             if (null == configurations) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+                return new ResponseEntity<>(HttpStatus.NOT_FOUND);
             }
             return new ResponseEntity<>(configurations, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -388,7 +383,7 @@ public class CustomFormsApi extends AbstractXapiRestController {
             XnatFormsIOEnv env = new XnatFormsIOEnv(protocolsPluginDeployed);
             return new ResponseEntity<>(env, HttpStatus.OK);
         } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -402,11 +397,17 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public boolean checkForCustomFormHasData(final @PathVariable String rowId) throws DataFormatException {
         try {
             RowIdentifier rowIdentifier = RowIdentifier.Unmarshall(rowId);
-            return formNanagerService.checkCustomFormForData(rowIdentifier);
+            return formManagerService.checkCustomFormForData(rowIdentifier);
         } catch (Exception e) {
             throw new DataFormatException("Invalid row ID " + rowId);
         }
     }
 
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(JsonProcessingException.class)
+    public String handleJackson(final JsonProcessingException e) {
+        log.info("Invalid JSON", e);
+        return "Invalid input JSON. " + e.getLocalizedMessage();
+    }
 }

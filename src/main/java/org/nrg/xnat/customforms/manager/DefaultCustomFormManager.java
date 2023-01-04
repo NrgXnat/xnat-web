@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.customforms.exceptions.CustomFormFetcherNotFoundException;
 import org.nrg.xnat.customforms.interfaces.CustomFormDisplayFieldsI;
-import org.nrg.xnat.customforms.interfaces.CustomFormFetcherI;
 import org.nrg.xnat.customforms.interfaces.annotations.CustomFormFetcherAnnotation;
 import org.springframework.stereotype.Component;
 
@@ -25,43 +24,6 @@ import java.util.Map;
 @Slf4j
 @Component
 public class DefaultCustomFormManager {
-
-    /**
-     * Based on the annotation, returns the Custom Form Fetcher
-     * @param type - the type in the annonation @see CustomFormFetcherAnnotation
-     * @return - the CustomFormFetcher for the given type
-     * @throws CustomFormFetcherNotFoundException
-     */
-    public CustomFormFetcherI getCustomFormFetcherByTypeAnnotation(String type) throws CustomFormFetcherNotFoundException {
-        List<CustomFormFetcherI> fetchers = null;
-        CustomFormFetcherI formFetcher = null;
-        try {
-            Map<String, CustomFormFetcherI> serviceMap = XDAT.getContextService().getBeansOfType(CustomFormFetcherI.class);
-            if (serviceMap != null) {
-                fetchers = new ArrayList<>(serviceMap.values());
-            }
-        } catch (Exception e) {
-            log.error("Unable to retrieve injected CustomFetcher beans", e);
-            throw new CustomFormFetcherNotFoundException("Could not retrieve custom form fetcher of class " + CustomFormFetcherI.class.getName(), new IllegalArgumentException());
-        }
-
-        if (fetchers == null || fetchers.isEmpty()) {
-            log.trace("No Custom Fetcher  beans");
-            throw new CustomFormFetcherNotFoundException("No form fetching beans ", new IllegalArgumentException());
-        }
-
-        for (CustomFormFetcherI e : fetchers) {
-            final CustomFormFetcherAnnotation annotation = e.getClass().getAnnotation(CustomFormFetcherAnnotation.class);
-            if (annotation != null) {
-                if (type.equals(annotation.type())) {
-                    formFetcher = e;
-                    break;
-                }
-            }
-
-        }
-        return formFetcher;
-    }
 
     public CustomFormDisplayFieldsI getCustomFormDisplayFieldBuilderByTypeAnnotation(String type) throws CustomFormFetcherNotFoundException {
         List<CustomFormDisplayFieldsI> displayBuilders = null;

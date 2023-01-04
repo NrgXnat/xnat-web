@@ -12,15 +12,8 @@
 
 package org.nrg.xnat.turbine.modules.screens;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.Hashtable;
-import java.util.List;
-
 import org.apache.turbine.util.RunData;
 import org.apache.velocity.context.Context;
-import org.nrg.framework.constants.Scope;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.turbine.modules.screens.XDATScreen_uploadCSV1;
@@ -28,11 +21,17 @@ import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.utils.FieldMapping;
 import org.nrg.xnat.customforms.helpers.CustomFormHelper;
 import org.nrg.xnat.customforms.pojo.FormIOJsonToXnatCustomField;
-import org.nrg.xnat.customforms.service.CustomVariableAppliesToService;
 import org.nrg.xnat.customforms.service.impl.CustomVariableFormAppliesToServiceImpl;
 import org.nrg.xnat.customforms.utils.CustomFormsConstants;
-import org.nrg.xnat.entities.CustomVariableAppliesTo;
 import org.nrg.xnat.entities.CustomVariableForm;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class XDATScreen_uploadCSVWithCustomVariables1 extends XDATScreen_uploadCSV1 {
 
@@ -59,12 +58,11 @@ public class XDATScreen_uploadCSVWithCustomVariables1 extends XDATScreen_uploadC
 	    //For this datatype root, get all custom variables across site and projects
 	    //organize by configuration path
 	    Hashtable<String, ArrayList<Object>> formsById = new Hashtable<String,ArrayList<Object>>();
-	    CustomFormHelper customFormHelper = new CustomFormHelper();
 	    for (CustomVariableForm form : allEnabledFormsForDataType) {
 			String key =  String.format("%s (Form ID: %s)", form.title(), form.getFormUuid());
 
-			List<FormIOJsonToXnatCustomField> customFields = customFormHelper.getFormObj(form, dataType);
-			List<FormIOJsonToXnatCustomField> appendedFormUUIDToKeys = customFormHelper.appendFormUUIDToKey(customFields);
+			List<FormIOJsonToXnatCustomField> customFields = CustomFormHelper.getFormObj(form);
+			List<FormIOJsonToXnatCustomField> appendedFormUUIDToKeys = appendFormUUIDToKey(customFields);
 			ArrayList<Object> formFields = formsById.get(key);
 			if (formFields == null || formFields.isEmpty()) {
 				formFields = new ArrayList<Object>();
@@ -78,6 +76,11 @@ public class XDATScreen_uploadCSVWithCustomVariables1 extends XDATScreen_uploadC
 	    	((Hashtable<String,ArrayList<Object>>)allFieldsAddedBySuperClass).put(key, formsById.get(key));
 	    }
 	}
-	
-	
+
+	private List<FormIOJsonToXnatCustomField> appendFormUUIDToKey(final List<FormIOJsonToXnatCustomField> fields) {
+		return fields == null ? Collections.emptyList() :
+				fields.stream()
+						.map(f -> new FormIOJsonToXnatCustomField(f.getFormUUID(), f.getLabel(), f.getFormUUID() + CustomFormsConstants.DOT_SEPARATOR + f.getKey(), f.getFieldName(), f.getType()))
+						.collect(Collectors.toList());
+	}
 }
