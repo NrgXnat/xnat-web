@@ -12,10 +12,8 @@ package org.nrg.xnat.customforms.service.impl;
 
 import org.nrg.framework.constants.Scope;
 import org.nrg.xapi.exceptions.NotFoundException;
-import org.nrg.xdat.XDAT;
 import org.nrg.xdat.forms.models.pojo.FormFieldPojo;
 import org.nrg.xdat.forms.services.FormIOJsonService;
-import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xnat.customforms.helpers.CustomFormHelper;
 import org.nrg.xnat.customforms.pojo.FormIOJsonToXnatCustomField;
 import org.nrg.xnat.customforms.service.CustomVariableAppliesToService;
@@ -30,6 +28,7 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class FormIOJsonServiceImpl implements FormIOJsonService {
@@ -71,14 +70,11 @@ public class FormIOJsonServiceImpl implements FormIOJsonService {
     }
 
     private List<FormFieldPojo> getFields(@Nonnull Scope scope, String scopeId, @Nonnull String dataType, String protocol, String visit, String visitSubtype) {
-        CustomFormHelper customFormHelper = new CustomFormHelper();
-        FormsIOJsonUtils formsIOJsonUtils = new FormsIOJsonUtils();
 
         List<FormFieldPojo> formFields = new ArrayList();
         List<String> statuses = new ArrayList<String>();
         statuses.add(CustomFormsConstants.ENABLED_STATUS_STRING);
         statuses.add(CustomFormsConstants.OPTED_OUT_STATUS_STRING);
-
 
         List<CustomVariableAppliesTo> projectSpecificSelections = customVariableAppliesToService.filterByPossibleStatusFindByScopeEntityIdDataTypeProtocolVisitSubtype(scope, scopeId,
                 dataType, protocol, visit,
@@ -89,35 +85,37 @@ public class FormIOJsonServiceImpl implements FormIOJsonService {
         //A project can opt out of the site wide form.
         //Go through all the site wide forms for a datatype/protoocol/visit/subtype
         //Include it only if the project has not opted out of the form
-        List<CustomVariableFormAppliesTo> optedInSiteForms = formsIOJsonUtils.removeSiteFormsOptedOutByProject(siteWideSelections, projectSpecificSelections);
+        List<CustomVariableFormAppliesTo> optedInSiteForms = FormsIOJsonUtils.removeSiteFormsOptedOutByProject(siteWideSelections, projectSpecificSelections);
 
         if (optedInSiteForms != null && optedInSiteForms.size() > 0) {
             for (CustomVariableFormAppliesTo siteWideSelection : optedInSiteForms) {
-                try {
-                    List<FormIOJsonToXnatCustomField> formsIOJsonToXnatCustomFields = customFormHelper.getFormObj(siteWideSelection.getCustomVariableAppliesTo(), dataType);
-                    if (formsIOJsonToXnatCustomFields.size() > 0) {
-                        formFields.addAll(formsIOJsonToXnatCustomFields);
-                    }
-                } catch (Exception e) {
-                }
-
+                formFields.addAll(getFormObj(siteWideSelection.getCustomVariableAppliesTo()));
             }
         }
 
         if (projectSpecificSelections != null && projectSpecificSelections.size() > 0) {
             for (CustomVariableAppliesTo projectSpecificSelection : projectSpecificSelections) {
-                try {
-                    List<FormIOJsonToXnatCustomField> formsIOJsonToXnatCustomFields = customFormHelper.getFormObj(projectSpecificSelection, dataType);
-                    if (formsIOJsonToXnatCustomFields.size() > 0) {
-                        formFields.addAll(formsIOJsonToXnatCustomFields);
-                    }
-                } catch (Exception e) {
-                }
+                formFields.addAll(getFormObj(projectSpecificSelection));
             }
         }
         return formFields;
 
     }
 
+    /**
+     * Parses a configuration and converts the FormsIO Fields to XNAT Custom Fields
+     *
+     * @param c - CustomVariableAppliesTo from which the formsIO fields are to be extracted
+     * @return List of FormIOJsonToXnatCustomField
+     */
+    private List<FormIOJsonToXnatCustomField> getFormObj(CustomVariableAppliesTo c) {
+        // Convert the configuration into a new FormJson Pojo
+        return c.getCustomVariableFormAppliesTos().stream()
+                .filter(customVariableFormAppliesTo -> CustomFormsConstants.ENABLED_STATUS_STRING.equals(customVariableFormAppliesTo.getStatus()))
+                .map(CustomVariableFormAppliesTo::getCustomVariableForm)
+                .map(CustomFormHelper::getFormObj)
+                .flatMap(List::stream)
+                .collect(Collectors.toList());
+    }
 
 }

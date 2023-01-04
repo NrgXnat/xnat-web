@@ -1,9 +1,6 @@
 package org.nrg.xnat.customforms.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.Criteria;
-import org.hibernate.NonUniqueObjectException;
-import org.hibernate.criterion.Restrictions;
 import org.nrg.framework.orm.hibernate.AbstractHibernateEntityService;
 import org.nrg.xnat.customforms.daos.CustomVariableFormAppliesToRepository;
 import org.nrg.xnat.customforms.pojo.UserOptionsPojo;

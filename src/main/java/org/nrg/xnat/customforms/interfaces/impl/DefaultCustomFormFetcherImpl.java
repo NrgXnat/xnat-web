@@ -13,7 +13,6 @@ import org.nrg.framework.constants.Scope;
 import org.nrg.xdat.om.XnatExperimentdata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
-import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.customforms.interfaces.CustomFormFetcherI;
 import org.nrg.xnat.customforms.interfaces.annotations.CustomFormFetcherAnnotation;
@@ -58,14 +57,13 @@ public class DefaultCustomFormFetcherImpl implements CustomFormFetcherI {
                                 final String projectIdQueryParam, final String visitId,
                                 final String subType, final boolean appendPreviousNextButtons) throws Exception {
 
-        FormsIOJsonUtils formsIOJsonUtils = new FormsIOJsonUtils();
         if ((null == id || id.equalsIgnoreCase("NULL")) && (null == projectIdQueryParam || projectIdQueryParam.equalsIgnoreCase("") || projectIdQueryParam.equalsIgnoreCase("NULL"))) {
             List<CustomVariableAppliesTo> forms = formService.filterByStatusFindByScopeEntityIdDataTypeProtocolVisitSubtype(Scope.Site, null, xsiType, null, null, null, CustomFormsConstants.ENABLED_STATUS_STRING);
             List<CustomVariableFormAppliesTo> formsToConcatenate = new ArrayList<CustomVariableFormAppliesTo>();
             for (CustomVariableAppliesTo c : forms) {
                 formsToConcatenate.addAll(c.getCustomVariableFormAppliesTos());
             }
-            String concatenatedJson = formsIOJsonUtils.concatenate(formsToConcatenate, "Custom Variables", true, appendPreviousNextButtons);
+            String concatenatedJson = FormsIOJsonUtils.concatenate(formsToConcatenate, "Custom Variables", true, appendPreviousNextButtons);
             return concatenatedJson;
         }
 
@@ -82,7 +80,7 @@ public class DefaultCustomFormFetcherImpl implements CustomFormFetcherI {
                 throw new Exception("Did not find any project with ID " + id + " or " + projectIdQueryParam);
             }
             List<CustomVariableFormAppliesTo> forms = getFormsToConcatenate(project.getId(), xsiType);
-            String concatenatedJson = formsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
+            String concatenatedJson = FormsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
             return concatenatedJson;
         } else if (XnatSubjectdata.SCHEMA_ELEMENT_NAME.equals(xsiType)) {
             // A Subject
@@ -102,7 +100,7 @@ public class DefaultCustomFormFetcherImpl implements CustomFormFetcherI {
                 }
             }
             List<CustomVariableFormAppliesTo> forms = getFormsToConcatenate(projectId, xsiType);
-            String concatenatedJson = formsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
+            String concatenatedJson = FormsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
             return concatenatedJson;
         } else {
             // An experiment
@@ -122,14 +120,13 @@ public class DefaultCustomFormFetcherImpl implements CustomFormFetcherI {
                 }
             }
             List<CustomVariableFormAppliesTo> forms = getFormsToConcatenate(projectId, xsiType);
-            String concatenatedJson = formsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
+            String concatenatedJson = FormsIOJsonUtils.concatenate(forms, "Custom Variables", true, appendPreviousNextButtons);
             return concatenatedJson;
         }
     }
 
     private List<CustomVariableFormAppliesTo> getFormsToConcatenate(final String projectId, final String xsiType) {
         List<CustomVariableFormAppliesTo> forms = new ArrayList<CustomVariableFormAppliesTo>();
-        FormsIOJsonUtils formsIOJsonUtils = new FormsIOJsonUtils();
 
         List<String> statuses = new ArrayList<String>();
         statuses.add(CustomFormsConstants.ENABLED_STATUS_STRING);
@@ -137,7 +134,7 @@ public class DefaultCustomFormFetcherImpl implements CustomFormFetcherI {
 
         List<CustomVariableAppliesTo> projectForms = formService.filterByPossibleStatusFindByScopeEntityIdDataTypeProtocolVisitSubtype(Scope.Project, projectId, xsiType, null, null, null, statuses);
         List<CustomVariableAppliesTo> siteForms = formService.filterByStatusFindByScopeEntityIdDataTypeProtocolVisitSubtype(Scope.Site, null, xsiType, null, null, null, CustomFormsConstants.ENABLED_STATUS_STRING);
-        List<CustomVariableFormAppliesTo> optedInForms = formsIOJsonUtils.removeSiteFormsOptedOutByProject(siteForms, projectForms);
+        List<CustomVariableFormAppliesTo> optedInForms = FormsIOJsonUtils.removeSiteFormsOptedOutByProject(siteForms, projectForms);
         forms.addAll(optedInForms);
         for (CustomVariableAppliesTo c : projectForms) {
             forms.addAll(c.getCustomVariableFormAppliesTos());

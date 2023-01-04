@@ -15,15 +15,29 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import groovy.util.logging.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xnat.customforms.exceptions.CustomVariableNameClashException;
 import org.nrg.xnat.entities.CustomVariableAppliesTo;
 import org.nrg.xnat.entities.CustomVariableForm;
 import org.nrg.xnat.entities.CustomVariableFormAppliesTo;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-import static org.nrg.xnat.customforms.utils.CustomFormsConstants.*;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENTS_COLUMNS_TYPE;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENTS_KEY;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENTS_KEY_FIELD;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENTS_TYPE_FIELD;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENT_CONTENT_TYPE;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.COMPONENT_PANEL_TYPE;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.DISPLAY_KEY;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.OPTED_OUT_STATUS_STRING;
+import static org.nrg.xnat.customforms.utils.CustomFormsConstants.TITLE_KEY;
 
 
 /**
@@ -42,14 +56,12 @@ public class FormsIOJsonUtils {
      * @param proposed - Second of the two JSON's being compared
      * @throws CustomVariableNameClashException - which contains a list of fields identified as clashing
      */
-
-    public void checkForNameClash(JsonNode existing, JsonNode proposed)
-            throws JsonProcessingException, IOException, NullPointerException, CustomVariableNameClashException {
-        List<String> nameClashes = new ArrayList<String>();
+    public static void checkForNameClash(JsonNode existing, JsonNode proposed)
+            throws NullPointerException, CustomVariableNameClashException {
         if (existing == null) throw new NullPointerException();
         if (proposed == null) throw new NullPointerException();
-        List<JsonNode> proposedComponents = proposed.findValues(COMPONENTS_KEY);
-        for (JsonNode componentNode : proposedComponents) {
+        List<String> nameClashes = new ArrayList<>();
+        for (JsonNode componentNode : proposed.findValues(COMPONENTS_KEY)) {
             if (!componentNode.isMissingNode()) {
                 try {
                     checkForNameClashPerNode(existing, componentNode);
@@ -69,33 +81,20 @@ public class FormsIOJsonUtils {
      * @param projectSpecificSelections - list of project specific forms
      * @return
      */
-
-    public List<CustomVariableFormAppliesTo> removeSiteFormsOptedOutByProject(final List<CustomVariableAppliesTo> siteWideSelections, final List<CustomVariableAppliesTo> projectSpecificSelections) {
-        List<CustomVariableFormAppliesTo> filteredRows = new ArrayList<CustomVariableFormAppliesTo>();
-        if ((siteWideSelections == null || siteWideSelections.isEmpty()) && (projectSpecificSelections == null || projectSpecificSelections.isEmpty())) {
-            return filteredRows;
-        }
-        if (projectSpecificSelections == null || projectSpecificSelections.isEmpty()) {
-            for (CustomVariableAppliesTo c : siteWideSelections) {
-                filteredRows.addAll(c.getCustomVariableFormAppliesTos());
-            }
-            return filteredRows;
-        }
-        for (CustomVariableAppliesTo site : siteWideSelections) {
-            CustomVariableAppliesTo siteClone = site;
-            for (CustomVariableFormAppliesTo c : site.getCustomVariableFormAppliesTos()) {
-                long formId = c.getCustomVariableForm().getId();
-                boolean optedOut = hasProjectOptedOutOfForm(formId, projectSpecificSelections);
-                if (!optedOut) {
-                    if (!filteredRows.contains(c)) {
-                        filteredRows.add(c);
-                    }
-                }
-            }
-        }
-        return filteredRows;
+    public static List<CustomVariableFormAppliesTo> removeSiteFormsOptedOutByProject(final List<CustomVariableAppliesTo> siteWideSelections, final List<CustomVariableAppliesTo> projectSpecificSelections) {
+        return removeSiteFormOptedOutByProject(
+                pullOutFormAppliesTo(siteWideSelections),
+                pullOutFormAppliesTo(projectSpecificSelections)
+        );
     }
 
+    private static List<CustomVariableFormAppliesTo> pullOutFormAppliesTo(final List<CustomVariableAppliesTo> appliesTo) {
+        return appliesTo == null || appliesTo.isEmpty() ? Collections.emptyList() :
+                appliesTo.stream()
+                        .map(CustomVariableAppliesTo::getCustomVariableFormAppliesTos)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toList());
+    }
 
     /**
      * Convenience method to filter site wide forms which a project has opted out of
@@ -103,68 +102,34 @@ public class FormsIOJsonUtils {
      * @param projectSpecificSelections - list of project specific forms
      * @return
      */
+    public static List<CustomVariableFormAppliesTo> removeSiteFormOptedOutByProject(final List<CustomVariableFormAppliesTo> siteWideSelections, final List<CustomVariableFormAppliesTo> projectSpecificSelections) {
+        if (siteWideSelections == null || siteWideSelections.isEmpty()) {
+            return Collections.emptyList();
+        }
 
+        final Set<Long> optedOutSiteFormIds = projectSpecificSelections == null ?
+                Collections.emptySet() :
+                projectSpecificSelections.stream()
+                        .filter(customVariableFormAppliesTo -> StringUtils.equals(customVariableFormAppliesTo.getStatus(), OPTED_OUT_STATUS_STRING))
+                        .map(CustomVariableFormAppliesTo::getCustomVariableForm)
+                        .map(CustomVariableForm::getId)
+                        .collect(Collectors.toSet());
 
-    public List<CustomVariableFormAppliesTo> removeSiteFormOptedOutByProject(final List<CustomVariableFormAppliesTo> siteWideSelections, final List<CustomVariableFormAppliesTo> projectSpecificSelections) {
-        List<CustomVariableFormAppliesTo> filteredRows = new ArrayList<CustomVariableFormAppliesTo>();
-        if (siteWideSelections == null || siteWideSelections.size() < 1) {
-            return filteredRows;
-        }
-        if (projectSpecificSelections == null || projectSpecificSelections.size() < 1) {
-            filteredRows.addAll(siteWideSelections);
-            return filteredRows;
-        }
-        for (CustomVariableFormAppliesTo c : siteWideSelections) {
-            long formId = c.getCustomVariableForm().getId();
-            boolean optedOut = hasProjectOptedOutOfSiteForm(formId, projectSpecificSelections);
-            if (!optedOut) {
-                if (!filteredRows.contains(c)) {
-                    filteredRows.add(c);
-                }
-            }
-        }
-        return filteredRows;
+        return siteWideSelections.stream()
+                .filter(customVariableFormAppliesTo -> !optedOutSiteFormIds.contains(customVariableFormAppliesTo.getCustomVariableForm().getId()))
+                .distinct()
+                .collect(Collectors.toList());
     }
-
-    private boolean hasProjectOptedOutOfForm(long formId, List<CustomVariableAppliesTo> projectSpecificSelections) {
-        boolean optedOut = false;
-        for (CustomVariableAppliesTo c : projectSpecificSelections) {
-            for (CustomVariableFormAppliesTo cs : c.getCustomVariableFormAppliesTos()) {
-                String status = cs.getStatus();
-                if (cs.getCustomVariableForm().getId() == formId && status != null && status.equals(CustomFormsConstants.OPTED_OUT_STATUS_STRING)) {
-                    optedOut = true;
-                    break;
-                }
-            }
-            if (optedOut) {
-                break;
-            }
-        }
-        return optedOut;
-    }
-
-    private boolean hasProjectOptedOutOfSiteForm(long formId, List<CustomVariableFormAppliesTo> projectSpecificSelections) {
-        boolean optedOut = false;
-        for (CustomVariableFormAppliesTo cs : projectSpecificSelections) {
-            String status = cs.getStatus();
-            if (cs.getCustomVariableForm().getId() == formId && status != null && status.equals(CustomFormsConstants.OPTED_OUT_STATUS_STRING)) {
-                optedOut = true;
-                break;
-            }
-        }
-        return optedOut;
-    }
-
 
     /**
-     * Concateate forms
+     * Concatenate forms
      * @param forms - List of forms to concatenate
      * @param title - the title of the concatenated form
      * @param onlyEnabled - boolean - if only enabled forms are to be concatenated
      * @return - String - the concatenated form JSON
-     * @throws Exception
+     * @throws JsonProcessingException
      */
-    public String concatenate(final List<CustomVariableFormAppliesTo> forms, final String title, final boolean onlyEnabled, final boolean appendPreviousNextButtons) throws Exception {
+    public static String concatenate(final List<CustomVariableFormAppliesTo> forms, final String title, final boolean onlyEnabled, final boolean appendPreviousNextButtons) throws JsonProcessingException {
         String concatenatedFormsJson = "{}";
         if (forms == null || forms.size() < 1) {
             return concatenatedFormsJson;
@@ -256,13 +221,10 @@ public class FormsIOJsonUtils {
         }
 
         concatenatedNode.set("components", rootComponentsNode);
-        concatenatedFormsJson = getAsJsonString(concatenatedNode);
-        return concatenatedFormsJson;
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(concatenatedNode);
     }
 
-
-
-    private ObjectNode getObjectnode(final String panelTitle, final int index) {
+    private static ObjectNode getObjectnode(final String panelTitle, final int index) {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode panelNode  = objectMapper.createObjectNode();
         panelNode.put("key", "page"+index);
@@ -279,7 +241,7 @@ public class FormsIOJsonUtils {
         return panelNode;
     }
 
-    private JsonNode addNextButtonOnFirstPage(final String pageKey, final ObjectMapper mapper) throws Exception{
+    private static JsonNode addNextButtonOnFirstPage(final String pageKey, final ObjectMapper mapper) throws JsonProcessingException {
       final String nextButtonJsonStr = "        {" +
               "          \"label\": \"Columns\"," +
               "          \"input\": false," +
@@ -324,7 +286,7 @@ public class FormsIOJsonUtils {
       return mapper.readTree(nextButtonJsonStr);
     }
 
-    private JsonNode addPrevNextButtons(final String pageKey, final ObjectMapper mapper) throws Exception{
+    private static JsonNode addPrevNextButtons(final String pageKey, final ObjectMapper mapper) throws JsonProcessingException {
         final String prevAndNextJsonStr = "        {" +
                 "          \"label\": \"Columns\"," +
                 "          \"input\": false," +
@@ -384,7 +346,7 @@ public class FormsIOJsonUtils {
         return mapper.readTree(prevAndNextJsonStr);
     }
 
-    private JsonNode addPreviousButtonOnLastPage(final String pageKey, final ObjectMapper mapper) throws Exception{
+    private static JsonNode addPreviousButtonOnLastPage(final String pageKey, final ObjectMapper mapper) throws JsonProcessingException {
         final String prevButtonJsonStr = "        {" +
                 "          \"label\": \"Columns\"," +
                 "          \"input\": false," +
@@ -429,16 +391,9 @@ public class FormsIOJsonUtils {
         return mapper.readTree(prevButtonJsonStr);
     }
 
-
-    private String getAsJsonString(final ObjectNode objectNode) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        String pretty = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(objectNode);
-        return objectNode.toString();
-    }
-
-    private void checkForNameClashPerNode(JsonNode existing, JsonNode proposedComponents)
-            throws JsonProcessingException, IOException, NullPointerException, CustomVariableNameClashException {
-        List<String> nameClashes = new ArrayList<String>();
+    private static void checkForNameClashPerNode(JsonNode existing, JsonNode proposedComponents)
+            throws CustomVariableNameClashException {
+        List<String> nameClashes = new ArrayList<>();
         if (proposedComponents != null) {
             if (proposedComponents.isArray()) {
                 for (final JsonNode proposedComp : proposedComponents) {
@@ -482,8 +437,7 @@ public class FormsIOJsonUtils {
         }
     }
 
-    private boolean searchJsonForKeyWithValue(JsonNode existing, String value)
-            throws JsonProcessingException, IOException, NullPointerException {
+    private static boolean searchJsonForKeyWithValue(JsonNode existing, String value) {
         boolean found = false;
         List<JsonNode> existingComponents = existing.findValues(COMPONENTS_KEY);
         for (JsonNode e : existingComponents) {
@@ -497,8 +451,7 @@ public class FormsIOJsonUtils {
         return found;
     }
 
-    private boolean searchJsonForKeyWithValuePerNode(JsonNode existingComponents, String value)
-            throws JsonProcessingException, IOException, NullPointerException {
+    private static boolean searchJsonForKeyWithValuePerNode(JsonNode existingComponents, String value) {
         boolean found = false;
         if (existingComponents != null) {
             if (existingComponents.isArray()) {

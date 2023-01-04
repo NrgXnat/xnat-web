@@ -11,7 +11,6 @@ import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xnat.customforms.helpers.CustomFormDisplayFieldHelper;
 import org.nrg.xnat.customforms.helpers.CustomFormHelper;
-import org.nrg.xnat.customforms.pojo.FormIOJsonToXnatCustomField;
 import org.nrg.xnat.customforms.service.CustomVariableFormService;
 import org.nrg.xnat.customforms.service.FormDisplayFieldService;
 import org.nrg.xnat.entities.CustomVariableForm;
@@ -122,7 +121,6 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
     }
 
     private void resetDisplayField(final SchemaElement schemaElement, final String formUUID, final boolean deleteExistingFormDisplayFields) {
-        final String dataType = schemaElement.getFullXMLName();
         CustomVariableForm form = formService.findByUuid(UUID.fromString(formUUID));
         if (form == null) {
             return;
@@ -130,12 +128,8 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
         if (deleteExistingFormDisplayFields) {
             removeDisplayFieldsThatBeginWith(schemaElement, formUUID);
         }
-        CustomFormHelper formHelper = new CustomFormHelper();
-        List<FormIOJsonToXnatCustomField> formObjects =  formHelper.getFormObj(form, dataType);
-        if (formObjects.isEmpty()) {
-            return;
-        }
-        formObjects.forEach(f -> addDisplayField(schemaElement, f));
+        CustomFormHelper.getFormObj(form)
+                .forEach(f -> addDisplayField(schemaElement, f));
     }
 
     private void removeDisplayFieldsThatBeginWith(final SchemaElement schemaElement, final String formUUID) {

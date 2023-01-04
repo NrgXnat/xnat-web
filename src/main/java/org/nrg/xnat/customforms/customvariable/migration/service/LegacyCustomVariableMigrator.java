@@ -4,22 +4,27 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import lombok.AccessLevel;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.services.NrgEventService;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatDatatypeprotocolI;
+import org.nrg.xdat.model.XnatFielddefinitiongroupFieldPossiblevalueI;
 import org.nrg.xdat.model.XnatFielddefinitiongroupI;
-import org.nrg.xdat.om.*;
-import org.nrg.xdat.om.base.BaseXnatProjectdata;
+import org.nrg.xdat.om.XdatSearchField;
+import org.nrg.xdat.om.XdatStoredSearch;
+import org.nrg.xdat.om.XnatAbstractprotocol;
+import org.nrg.xdat.om.XnatDatatypeprotocol;
+import org.nrg.xdat.om.XnatFielddefinitiongroup;
+import org.nrg.xdat.om.XnatFielddefinitiongroupField;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatSubjectdata;
+import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.ElementSecurity;
-import org.nrg.xdat.security.UserGroup;
-import org.nrg.xdat.security.UserGroupI;
 import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Roles;
-import org.nrg.xdat.security.services.RoleServiceI;
 import org.nrg.xdat.security.user.XnatUserProvider;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.event.EventDetails;
@@ -28,23 +33,26 @@ import org.nrg.xft.event.EventUtils;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.customforms.customvariable.migration.execption.CustomVariableMigrationException;
-import org.nrg.xnat.customforms.customvariable.migration.model.*;
-import org.nrg.xnat.customforms.customvariable.migration.reviewer.MigrationDataReviewer;
-import org.nrg.xnat.customforms.helpers.CustomFormHelper;
-import org.nrg.xnat.customforms.helpers.CustomVariableMigrationHelper;
 import org.nrg.xnat.customforms.customvariable.migration.event.CustomVariableMigrationEvent;
+import org.nrg.xnat.customforms.customvariable.migration.execption.CustomVariableMigrationException;
+import org.nrg.xnat.customforms.customvariable.migration.model.CustomVariable;
+import org.nrg.xnat.customforms.customvariable.migration.model.DataIntegrityFailureReport;
+import org.nrg.xnat.customforms.customvariable.migration.model.DataIntegrityFailureReportItem;
+import org.nrg.xnat.customforms.customvariable.migration.model.DataIntegrityItem;
+import org.nrg.xnat.customforms.customvariable.migration.model.FieldDefinition;
+import org.nrg.xnat.customforms.customvariable.migration.reviewer.MigrationDataReviewer;
+import org.nrg.xnat.customforms.helpers.CustomVariableMigrationHelper;
 import org.nrg.xnat.customforms.pojo.CollatedLegacyCustomVariable;
 import org.nrg.xnat.customforms.pojo.ComponentPojo;
 import org.nrg.xnat.customforms.pojo.LegacyCustomVariable;
 import org.nrg.xnat.customforms.pojo.UserOptionsPojo;
 import org.nrg.xnat.customforms.pojo.formio.RowIdentifier;
+import org.nrg.xnat.customforms.service.CustomFormManagerService;
 import org.nrg.xnat.customforms.service.CustomFormPermissionsService;
 import org.nrg.xnat.customforms.service.CustomVariableAppliesToService;
 import org.nrg.xnat.customforms.service.CustomVariableFormService;
 import org.nrg.xnat.customforms.utils.CustomFormsConstants;
 import org.nrg.xnat.entities.CustomVariableForm;
-import org.nrg.xnat.utils.UserUtils;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.postgresql.util.PGobject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +65,13 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Set;
+import java.util.StringJoiner;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
 import static org.nrg.xnat.customforms.utils.CustomFormsConstants.EMPTY_FORM_DATA_FOR_CUSTOM_VARIABLE;
@@ -72,17 +86,171 @@ public class LegacyCustomVariableMigrator   {
                                         final CustomFormPermissionsService customFormPermissionsService,
                                         final CustomVariableFormService formService,
                                         final CustomVariableAppliesToService customVariableAppliesToService,
+                                        final CustomFormManagerService customFormManagerService,
                                         final XnatUserProvider userProvider,
                                         final NrgEventService eventService,
-                                        final ExecutorService executorService
+                                        final ExecutorService executorService,
+                                        final ObjectMapper objectMapper,
+                                        final SiteConfigPreferences siteConfigPreferences
     ) {
         this.template = template;
         this.formService = formService;
         this.customVariableAppliesToService = customVariableAppliesToService;
+        this.customFormManagerService = customFormManagerService;
         this.primaryAdminUserProvider = userProvider;
         this.customFormPermissionsService = customFormPermissionsService;
         this.eventService = eventService;
         this.executorService = executorService;
+        this.siteConfigPreferences = siteConfigPreferences;
+        this.objectMapper = objectMapper;
+        objectMapperEscapeNonAscii = objectMapper.copy();
+        objectMapperEscapeNonAscii.enable(JsonGenerator.Feature.ESCAPE_NON_ASCII);
+    }
+
+    /**
+     * Generates the FormsIO components array from XnatFielddefinitiongroup
+     *
+     * @param fieldDefinitionGroup - The legacy custom variable
+     * @return
+     */
+
+    private ArrayNode buildComponentsForFormsIO(final XnatFielddefinitiongroup fieldDefinitionGroup, final UUID formUUID) {
+        String description = fieldDefinitionGroup.getDescription();
+        String field_definition_id = fieldDefinitionGroup.getId();
+        ArrayNode componentsArrayNode = objectMapper.createArrayNode();
+        //Create a HTML Title Node
+        ObjectNode componentTitleNode = objectMapper.createObjectNode();
+        //Create a container node to be able to separate the Custom Variable Data
+        ObjectNode containerNode = objectMapper.createObjectNode();
+        containerNode.put("key", formUUID.toString());
+        containerNode.put("type", "container");
+        containerNode.put("input", true);
+        containerNode.put("label", formUUID.toString());
+        containerNode.put("hideLabel", true);
+        containerNode.put("tableView", false);
+        ArrayNode containerComponentsArrayNode = objectMapper.createArrayNode();
+        if (!field_definition_id.equalsIgnoreCase("DEFAULT")) {
+            componentTitleNode.put("input", false);
+            componentTitleNode.put("html", "<p><span class=\"text-tiny\" style=\"font-family:Arial, Helvetica, sans-serif;\"><b> Form UUID: " + formUUID.toString() + "</b></span></p>");
+            componentTitleNode.put("type", "content");
+            if (null != description)
+                componentTitleNode.put("description", description);
+            else {
+                componentTitleNode.put("description", field_definition_id);
+            }
+            containerComponentsArrayNode.add(componentTitleNode);
+        }
+
+        ArrayList<XnatFielddefinitiongroupField> fields = fieldDefinitionGroup.getFields_field();
+        for (XnatFielddefinitiongroupField f : fields) {
+            String fieldLabel = f.getName();
+            //String, Integer, Float, Boolean, Date
+            String fieldType = f.getDatatype();
+            Boolean isRequired = f.getRequired();
+            List<XnatFielddefinitiongroupFieldPossiblevalueI> possibleValues = f.getPossiblevalues_possiblevalue();
+            ObjectNode fieldNode = buildFieldNode(fieldLabel, fieldType, isRequired, f.getXmlpath(), possibleValues);
+            containerComponentsArrayNode.add(fieldNode);
+        }
+        containerNode.set("components", containerComponentsArrayNode);
+        componentsArrayNode.add(containerNode);
+        return componentsArrayNode;
+    }
+
+    /**
+     * A helper to convert the legacy Field Definition Groups to FORMSIO JSONs
+     *
+     * @param fieldDefinitionGroup - FieldDefinitionGroup
+     * @return - String: If found, Custom Field Definition Group represented as FormIO Json or null
+     */
+
+    private String convertToFormJson(XnatFielddefinitiongroupI fieldDefinitionGroup, final UUID formUUID) throws JsonProcessingException {
+        ObjectNode parentNode = objectMapper.createObjectNode();
+        parentNode.put("display", "form");
+        parentNode.put("title", fieldDefinitionGroup.getId());
+        ObjectNode settingsNode = objectMapper.createObjectNode();
+        parentNode.set("settings", settingsNode);
+        ArrayNode componentsArrayNode = buildComponentsForFormsIO((XnatFielddefinitiongroup)fieldDefinitionGroup,formUUID);
+        parentNode.set("components", componentsArrayNode);
+        return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(parentNode);
+    }
+
+    private ObjectNode buildFieldNode(final String fieldLabel, final String fieldType, final Boolean isRequired, final String fieldXmlPath, final List<XnatFielddefinitiongroupFieldPossiblevalueI> possibleValues) {
+        ObjectNode fieldNode = objectMapper.createObjectNode();
+        fieldNode.put("label", fieldLabel);
+        fieldNode.put("inline", false);
+        fieldNode.put("tableView", false);
+        fieldNode.put("optionsLabelPosition", "right");
+        fieldNode.put("selectThreshold", 0.3);
+        if (fieldType.equalsIgnoreCase("DATE")) {
+            String preferredDateFormat = "MM/dd/yyyy";
+            String dateFormat = (String) siteConfigPreferences.get("UI.date-format");
+            if (null != dateFormat) {
+                preferredDateFormat = dateFormat;
+            }
+            fieldNode.put("format", preferredDateFormat);
+            fieldNode.put("type", "xnatdate");
+         } else {
+            fieldNode.put("widget", "choicejs");
+            if (null != possibleValues && possibleValues.size() > 0) {
+                fieldNode.put("widget", "choicesjs");
+                fieldNode.put("type", "select");
+                ObjectNode fieldDataValuesNode = objectMapper.createObjectNode();
+                ArrayNode dataValuesArrayNode = objectMapper.createArrayNode();
+                for (XnatFielddefinitiongroupFieldPossiblevalueI p : possibleValues) {
+                    ObjectNode valueNode = objectMapper.createObjectNode();
+                    valueNode.put("label", p.getDisplay() == null ? p.getPossiblevalue() : p.getDisplay());
+                    valueNode.put("value", p.getPossiblevalue());
+                    dataValuesArrayNode.add(valueNode);
+                }
+                fieldDataValuesNode.set("values", dataValuesArrayNode);
+                fieldNode.set("data", fieldDataValuesNode);
+                fieldNode.put("searchEnabled", false);
+                fieldNode.put("type", "select");
+            } else {
+                if (fieldType.equalsIgnoreCase("INTEGER") || fieldType.equalsIgnoreCase("FLOAT")) {
+                    fieldNode.put("mask", false);
+                    fieldNode.put("tableView", false);
+                    fieldNode.put("delimiter", false);
+                    //Setting this to true, sets the decimal precision to 2 by FormIO
+                    //fieldNode.put("requireDecimal", fieldType.equalsIgnoreCase("FLOAT"));
+                    fieldNode.put("inputFormat", "plain");
+                    if (fieldType.equalsIgnoreCase("INTEGER")) {
+                        fieldNode.put("decimalLimit", 0);
+                        fieldNode.put("requireDecimal", false);
+                        fieldNode.put("validate", "{integer: true}");
+                        fieldNode.put("type", "xnatInteger");
+                    }else {
+                        fieldNode.put("type", "xnatFloat");
+                    }
+                    fieldNode.put("inputFormat", "plain");
+                    fieldNode.put("truncateMultipleSpaces", false);
+                    fieldNode.put("input", true);
+                } else if (fieldType.equalsIgnoreCase("BOOLEAN")) {
+                    fieldNode.put("inline", true);
+                    ArrayNode dataValuesArrayNode = objectMapper.createArrayNode();
+                    ObjectNode valueNode = objectMapper.createObjectNode();
+                    valueNode.put("label", "True");
+                    valueNode.put("value", "true");
+                    dataValuesArrayNode.add(valueNode);
+                    valueNode = objectMapper.createObjectNode();
+                    valueNode.put("label", "False");
+                    valueNode.put("value", "false");
+                    dataValuesArrayNode.add(valueNode);
+                    fieldNode.set("values", dataValuesArrayNode);
+                    fieldNode.put("dataType", "boolean");
+                    fieldNode.put("type", "radio");
+                } else if (fieldType.equalsIgnoreCase("STRING")) {
+                    fieldNode.put("type", "textfield");
+                }
+            }
+        }
+        ObjectNode fieldValidateNode = objectMapper.createObjectNode();
+        fieldValidateNode.put("required", isRequired);
+        fieldValidateNode.put("onlyAvailableItems", true);
+        fieldNode.set("validate", fieldValidateNode);
+        fieldNode.put("input", true);
+        fieldNode.put("key", fieldLabel.toLowerCase());
+        return fieldNode;
     }
 
     /**
@@ -261,24 +429,21 @@ public class LegacyCustomVariableMigrator   {
     private String getFormIOJson(final XnatFielddefinitiongroupI fieldDefinitionGroup, final UUID formUUID){
         try {
             log.info("Constructing FormIO JSON");
-            CustomFormHelper customFormHelper = new CustomFormHelper();
             //Build the JSON
-            String form = customFormHelper.convertToFormJson(fieldDefinitionGroup, formUUID);
+            String form = convertToFormJson(fieldDefinitionGroup, formUUID);
             log.info("Completed  FormIO JSON construction");
             return form;
-        }catch(JsonProcessingException jpe) {
-            log.error("Could not construct form ", jpe);
+        } catch(JsonProcessingException jpe) {
+            log.error("Could not construct form", jpe);
             throw new CustomVariableMigrationException("Encountered " + jpe.getMessage() + " while migrating to custom form " + fieldDefinitionGroup.getId());
         }
     }
 
     private String associateFormIOForms(final UserI user,   final String dataType, final List<MigrationDataReviewer> projectsClearedToMigrate, final XnatFielddefinitiongroupI fieldDefinitionGroup) {
         try {
-            CustomFormHelper customFormHelper = new CustomFormHelper();
             CustomVariableForm form = new CustomVariableForm();
             final UUID formUUID = UUID.randomUUID();
             final String formioJsonContent = getFormIOJson(fieldDefinitionGroup, formUUID);
-            ObjectMapper objectMapper = new ObjectMapper();
             JsonNode proposed = objectMapper.readTree(formioJsonContent);
             form.setFormIOJsonDefinition(proposed);
             form.setFormUuid(formUUID);
@@ -297,7 +462,7 @@ public class LegacyCustomVariableMigrator   {
                     ComponentPojo projComponent = new ComponentPojo();
                     projComponent.setValue(projectId);
                     projComponent.setLabel(projectId);
-                    customFormHelper.saveConfiguration(user, userOptionsPojo, formioJsonContent, Collections.singletonList(projComponent), existingFormPrimaryKey);
+                    customFormManagerService.save(user, userOptionsPojo, Collections.singletonList(projComponent), proposed, existingFormPrimaryKey);
                     log.info("Associated form " + formId + " to project " + projectId);
                 }
             }
@@ -408,7 +573,6 @@ public class LegacyCustomVariableMigrator   {
         PGobject existing_custom_fields =  template.queryForObject(selectQuery, new Object[]{entityId}, PGobject.class);
         ObjectNode existingJsonNode = null;
         if (existing_custom_fields != null) {
-            ObjectMapper objectMapper = new ObjectMapper();
             existingJsonNode = (ObjectNode)objectMapper.readTree(existing_custom_fields.getValue());
         }
         log.info("Converting data to custom field json for " + entityId);
@@ -434,33 +598,31 @@ public class LegacyCustomVariableMigrator   {
 
     @Nullable
     private String buildJson(final List<CustomVariable> customVariables, Hashtable<String, String> fieldNameDatatype , final ObjectNode existingJsonNode, final String formUUIDStr) throws JsonProcessingException {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.getFactory().configure(JsonGenerator.Feature.ESCAPE_NON_ASCII, true);
-        ObjectNode rootNode = mapper.createObjectNode();
+        ObjectNode rootNode = objectMapperEscapeNonAscii.createObjectNode();
         if (existingJsonNode != null) {
             rootNode = existingJsonNode;
         }
-        ObjectNode legacyCustomVariableRootNode = mapper.createObjectNode();
+        ObjectNode legacyCustomVariableRootNode = objectMapperEscapeNonAscii.createObjectNode();
         boolean foundData = false;
         for (CustomVariable customVariable : customVariables) {
             final String variableDataType = fieldNameDatatype.get(customVariable.getName());
             if (null != customVariable.getField()) {
-                    if (variableDataType.equalsIgnoreCase("INTEGER")) {
-                        legacyCustomVariableRootNode.put(customVariable.getName(), Integer.parseInt(customVariable.getField()));
-                    } else if (variableDataType.equalsIgnoreCase("FLOAT")) {
-                        //We dont want to loose precision hence not using Float.valueOf
-                        legacyCustomVariableRootNode.put(customVariable.getName(), Double.valueOf(customVariable.getField()));
-                    } else if (variableDataType.equalsIgnoreCase("BOOLEAN")) {
-                        //Null value will be set to false
-                        legacyCustomVariableRootNode.put(customVariable.getName(), Boolean.parseBoolean(customVariable.getField()));
-                    } else { //date and string
-                        legacyCustomVariableRootNode.put(customVariable.getName(), customVariable.getField());
-                    }
-                    foundData = true;
+                if (variableDataType.equalsIgnoreCase("INTEGER")) {
+                    legacyCustomVariableRootNode.put(customVariable.getName(), Integer.parseInt(customVariable.getField()));
+                } else if (variableDataType.equalsIgnoreCase("FLOAT")) {
+                    //We dont want to loose precision hence not using Float.valueOf
+                    legacyCustomVariableRootNode.put(customVariable.getName(), Double.valueOf(customVariable.getField()));
+                } else if (variableDataType.equalsIgnoreCase("BOOLEAN")) {
+                    //Null value will be set to false
+                    legacyCustomVariableRootNode.put(customVariable.getName(), Boolean.parseBoolean(customVariable.getField()));
+                } else { //date and string
+                    legacyCustomVariableRootNode.put(customVariable.getName(), customVariable.getField());
+                }
+                foundData = true;
             }
         }
         rootNode.set(formUUIDStr, legacyCustomVariableRootNode);
-        return foundData?mapper.writeValueAsString(rootNode): null;
+        return foundData ? objectMapperEscapeNonAscii.writeValueAsString(rootNode) : null;
     }
 
     private void detachFieldDefinitionFromProject(final UserI user, final String dataType, final String projectId, final XnatFielddefinitiongroupI fieldDefinitionGroup) throws Exception{
@@ -717,11 +879,14 @@ public class LegacyCustomVariableMigrator   {
     private final JdbcTemplate template;
     private final CustomVariableFormService formService;
     private final CustomVariableAppliesToService customVariableAppliesToService;
+    private final CustomFormManagerService customFormManagerService;
     private final CustomFormPermissionsService customFormPermissionsService;
     private final XnatUserProvider primaryAdminUserProvider;
     private final NrgEventService eventService;
     private final ExecutorService executorService;
-
+    private final SiteConfigPreferences siteConfigPreferences;
+    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapperEscapeNonAscii;
 
 
 }

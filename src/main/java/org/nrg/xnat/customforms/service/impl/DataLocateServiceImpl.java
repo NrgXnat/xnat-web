@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class DataLocateServiceImpl implements DataLocateService {
@@ -74,12 +75,11 @@ public class DataLocateServiceImpl implements DataLocateService {
                 }
             }
         }
-        CustomFormHelper customFormHelper = new CustomFormHelper();
-        List<FormIOJsonToXnatCustomField> formIOJsonToXnatCustomField = customFormHelper.getFormObj(form, dataType);
-        List<String> fieldNames = new ArrayList<String>();
-        if (formIOJsonToXnatCustomField != null && formIOJsonToXnatCustomField.size() > 0) {
-            formIOJsonToXnatCustomField.forEach(customField -> fieldNames.add(customField.getFieldName()));
-        }
+
+        final List<String> fieldNames = CustomFormHelper.getFormObj(form)
+                .stream()
+                .map(FormIOJsonToXnatCustomField::getFieldName)
+                .collect(Collectors.toList());
         //No fields on the form
         if (fieldNames.isEmpty()) {
             return 0;

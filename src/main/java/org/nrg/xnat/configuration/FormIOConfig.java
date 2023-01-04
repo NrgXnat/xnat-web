@@ -10,9 +10,6 @@
  */
 package org.nrg.xnat.configuration;
 
-import org.nrg.xdat.forms.services.FormIOJsonService;
-import org.nrg.xnat.customforms.service.impl.FormIOJsonServiceImpl;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 

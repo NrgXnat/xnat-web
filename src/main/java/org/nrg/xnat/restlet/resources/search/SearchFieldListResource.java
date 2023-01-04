@@ -9,24 +9,15 @@
 
 package org.nrg.xnat.restlet.resources.search;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.List;
-
-import org.apache.ecs.wml.P;
 import org.apache.log4j.Logger;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.display.SQLQueryField;
-import org.nrg.xdat.forms.models.pojo.FormFieldPojo;
-import org.nrg.xdat.forms.services.FormIOJsonService;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.UserHelper;
-import org.nrg.xdat.XDAT;
 import org.nrg.xft.XFTItem;
 import org.nrg.xft.XFTTable;
 import org.nrg.xft.XFTTool;
@@ -41,7 +32,6 @@ import org.nrg.xft.utils.XftStringUtils;
 import org.nrg.xnat.customforms.exceptions.CustomFormFetcherNotFoundException;
 import org.nrg.xnat.customforms.helpers.CustomFormDisplayFieldHelper;
 import org.nrg.xnat.customforms.interfaces.CustomFormDisplayFieldsI;
-import org.nrg.xnat.customforms.interfaces.CustomFormFetcherI;
 import org.nrg.xnat.customforms.manager.DefaultCustomFormManager;
 import org.nrg.xnat.customforms.utils.CustomFormsConstants;
 import org.nrg.xnat.restlet.resources.SecureResource;
@@ -52,6 +42,12 @@ import org.restlet.data.Response;
 import org.restlet.data.Status;
 import org.restlet.resource.Representation;
 import org.restlet.resource.Variant;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
 
 public class SearchFieldListResource extends SecureResource{
 	static Logger logger = Logger.getLogger(SearchFieldListResource.class);
