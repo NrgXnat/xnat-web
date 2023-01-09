@@ -13,6 +13,8 @@ import org.hibernate.NonUniqueObjectException;
 import org.nrg.framework.constants.Scope;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.security.helpers.Permissions;
+import org.nrg.xdat.security.helpers.Roles;
 import org.nrg.xft.event.EventDetails;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -101,14 +103,19 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
     }
 
     /**
-     * Saves form assocation configuration passed through ClientPojo object.
+     * Saves form association configuration passed through ClientPojo object.
      *
-     * @param data - JSON into POJO which contains mulitple paths to which the form JSON is to be saved
+     * @param data - JSON into POJO which contains multiple paths to which the form JSON is to be saved
      * @param formDefinition
      * @param user       - User
      */
     @Override
-    public String save(final SubmissionPojo data, final JsonNode formDefinition, final UserI user) {
+    public String save(final SubmissionPojo data, final JsonNode formDefinition, final UserI user) throws InsufficientPermissionsException {
+        final String problem = validateSavePermission(data, user);
+        if (StringUtils.isNotBlank(problem)) {
+            throw new InsufficientPermissionsException(problem);
+        }
+
         String formId = null;
         String datatype = data.getXnatDatatype().getValue();
         String siteWideStr = data.getIsThisASiteWideConfiguration();
@@ -118,7 +125,7 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         if (null == rowId) {
             throw new IllegalArgumentException("Incorrect row id received");
         }
-        boolean isSiteWideForm = siteWideStr.equalsIgnoreCase("YES");
+        boolean isSiteWideForm = siteWideStr.equalsIgnoreCase(CustomFormsConstants.IS_SITEWIDE_YES);
         List<ComponentPojo> protocols = data.getXnatProtocol();
         List<ComponentPojo> visits = data.getXnatVisit();
         List<ComponentPojo> subTypes = data.getXnatSubtype();
@@ -234,6 +241,47 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
             formId = save(user, userOptionsPojo, projects, formDefinition, rowId);
         }
         return formId;
+    }
+
+    /**
+     * Check if user has permission to save form associations
+     * <p>
+     * User can save any form if they are a site admin or a form manager.
+     * Otherwise, they can only save forms on projects they own.
+     *
+     * @param submission Form submission to save
+     * @param user The user attempting to save
+     * @return A string explaining the problem, if there is one.
+     *         A null value means there is no problem and the user has permission to save.
+     */
+    private String validateSavePermission(final SubmissionPojo submission, final UserI user) {
+        // Check permissions. Is the user allowed to do what they intend to do?
+        if (Roles.isSiteAdmin(user.getUsername()) || Roles.checkRole(user, CustomFormsConstants.DATAFORM_MANAGER_ROLE)) {
+            // User is an admin or form manager, they can do whatever they want. No problems here.
+            return null;
+        }
+
+        // User is not an admin or form manager.
+        if (submission.getIsThisASiteWideConfiguration().equalsIgnoreCase(CustomFormsConstants.IS_SITEWIDE_YES)) {
+            // Only admins or form managers are allowed to add a site-wide form.
+            return "Insufficient user permissions to create a site wide form: Not Admin or Data Form Manager";
+        }
+
+        // Check that user is an owner of all projects they want to add the form to
+        final List<String> notOwnerProjects = submission
+                .getXnatProject()
+                .stream()
+                .map(ComponentPojo::getValue)
+                .filter(projectId -> !Permissions.isProjectOwner(user, projectId))
+                .collect(Collectors.toList());
+        if (notOwnerProjects.isEmpty()) {
+            return null;
+        }
+
+        final boolean singular = notOwnerProjects.size() == 1;
+        return "Insufficient user permissions: Not Admin, Data Form Manager or Project Owner of project" +
+                (singular ? " " : "s ") +
+                String.join(", ", notOwnerProjects);
     }
 
     private CustomFormFetcherI getCustomFormFetcher(final List<CustomFormFetcherI> formFetchers) {

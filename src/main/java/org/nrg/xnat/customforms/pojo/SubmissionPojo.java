@@ -13,8 +13,12 @@ package org.nrg.xnat.customforms.pojo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.xnat.customforms.pojo.formio.RowIdentifier;
+import org.nrg.xnat.customforms.utils.CustomFormsConstants;
 
+import javax.annotation.Nonnull;
+import java.util.Collections;
 import java.util.List;
 
 /*
@@ -127,8 +131,9 @@ public class SubmissionPojo {
         this.isThisASiteWideConfiguration = isThisASiteWideConfiguration;
     }
 
+    @Nonnull
     public List<ComponentPojo> getXnatProject() {
-        return xnatProject;
+        return xnatProject == null ? Collections.emptyList() : xnatProject;
     }
 
     public void setXnatProject(List<ComponentPojo> xnatProject) {
@@ -141,5 +146,21 @@ public class SubmissionPojo {
 
     public void setzIndex(int zIndex) {
         this.zIndex = zIndex;
+    }
+
+    public String validate() {
+        // Validate they have a value for isThisASiteWideConfiguration
+        if (StringUtils.isBlank(isThisASiteWideConfiguration)) {
+            return "Data missing required value \"isThisASiteWideConfiguration\"";
+        }
+
+        // Validate that isThisASiteWideConfiguration takes one of the allowed values
+        if (!CustomFormsConstants.IS_SITEWIDE_VALUES.contains(isThisASiteWideConfiguration.toUpperCase())) {
+            final String validSitewideValues = String.join(", ", CustomFormsConstants.IS_SITEWIDE_VALUES);
+            return "\"isThisASiteWideConfiguration\" value " + isThisASiteWideConfiguration +
+                    " must be one of {" + validSitewideValues + "}.";
+        }
+
+        return null;
     }
 }

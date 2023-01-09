@@ -11,7 +11,11 @@
 
 package org.nrg.xnat.customforms.utils;
 
+import java.util.Collections;
+import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CustomFormsConstants {
 
@@ -44,6 +48,8 @@ public class CustomFormsConstants {
 
     public final static String DOT_SEPARATOR = ".";
 
-
-
+    public static final String IS_SITEWIDE_YES = "YES";
+    public static final String IS_SITEWIDE_NO = "NO";
+    public static final Set<String> IS_SITEWIDE_VALUES = Stream.of(IS_SITEWIDE_YES, IS_SITEWIDE_NO)
+            .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
 }

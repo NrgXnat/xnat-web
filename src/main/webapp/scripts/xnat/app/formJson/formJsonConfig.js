@@ -139,48 +139,44 @@ var XNAT = getObject(XNAT || {});
         }
     };
 
+    function defaultFormBuilderSchema(form) {
+        return {
+            display: "form",
+            title: form.data.formTitle,
+            components: [],
+            settings: {}
+        };
+    }
+
     function initBuilder(form) {
-        let formType = "form";
-        let formTitle = form.data.formTitle;
         let formBuilderElement = document.getElementById("form-builder");
         let builderConfig = xnatFormManager.getBuilderConfiguration();
-        if (jQuery.isEmptyObject(addNewBuilderObj) || !addNewBuilderObj.hasOwnProperty('builderSchema')) {
-            Formio.builder(formBuilderElement, {
-                display: formType,
-                title: formTitle,
-                components: [],
-                settings: {}
-            }, {
-                noDefaultSubmitButton: true,
-                builder: builderConfig
-            }).then((builder) => {
-                setupBuilder(builder);
-            });
-        }else {
-            let builderSchema = addNewBuilderObj.builderSchema;
-            Formio.builder(formBuilderElement, builderSchema, {
-                noDefaultSubmitButton: true,
-                builder: builderConfig
-            }).then((builder) => {
-                setupBuilder(builder);
-            });
-        }
+        let builderSchema = !jQuery.isEmptyObject(addNewBuilderObj) && addNewBuilderObj.hasOwnProperty('builderSchema') ?
+            addNewBuilderObj.builderSchema :
+            defaultFormBuilderSchema(form);
+        Formio.builder(formBuilderElement, builderSchema, {
+            noDefaultSubmitButton: true,
+            builder: builderConfig
+        }).then((builder) => {
+            setupBuilder(builder);
+        });
     }
 
 
     function saveConfiguration() {
         let builder = Formio.Builders.getBuilder("addNew");
-        let builderJson = builder.schema;
-        let submissionJson = {};
-        submissionJson['submission'] = addNewBuilderObj.submission;
-        submissionJson['builder'] = builderJson;
+        let builderSchema = builder.schema;
+        let submission = {
+            'submission': addNewBuilderObj.submission,
+            'builder': builderSchema
+        };
 
         var url = restUrl('xapi/customforms/save', {}, false, true);
 
         XNAT.xhr.put({
             url: url,
             contentType: 'application/json',
-            data: JSON.stringify(submissionJson),
+            data: JSON.stringify(submission),
             success: function () {
                 xmodal.closeAll();
                 XNAT.ui.banner.top(2000, 'Configuration saved.', 'success');
@@ -274,7 +270,7 @@ var XNAT = getObject(XNAT || {});
     xnatFormManager.getWizard =  function (callback) {
         callback = isFunction(callback) ? callback : function () {};
         let url = XNAT.url.scriptUrl('/xnat/app/formJson/formManagerWizard.json');
-        if (xnatFormManager.siteHasProtocolsPluginDeployed == true) {
+        if (xnatFormManager.siteHasProtocolsPluginDeployed) {
             url = XNAT.url.scriptUrl('/xnat/app/formJson/formManagerWizard_protocol.json');
         }
         let formWizardJson = undefined;

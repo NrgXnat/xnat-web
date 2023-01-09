@@ -33,7 +33,7 @@ public interface CustomFormManagerService {
 
     boolean optOutOfForm(UserI user, String formAppliesToId, List<String> projectIds) throws InsufficientPermissionsException, IllegalArgumentException;
 
-    String save(SubmissionPojo data, final JsonNode formDefinition, final UserI user);
+    String save(SubmissionPojo data, final JsonNode formDefinition, final UserI user) throws InsufficientPermissionsException;
     String save(UserI user,
                 UserOptionsPojo userOptionsPojo,
                 List<ComponentPojo> entityIds,

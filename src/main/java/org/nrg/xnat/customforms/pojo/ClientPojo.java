@@ -14,13 +14,6 @@ import com.fasterxml.jackson.annotation.JsonRawValue;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Getter;
 import lombok.Setter;
-import org.nrg.xdat.security.helpers.Permissions;
-import org.nrg.xdat.security.helpers.Roles;
-import org.nrg.xft.security.UserI;
-import org.nrg.xnat.customforms.utils.CustomFormsConstants;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /*
  * A POJO to represent the submission from Client
@@ -48,38 +41,10 @@ public class ClientPojo {
 
     /**
      * Validates the submitted data from the UI
-     * @param user - the user who submits the data
-     * @return - List of validation error strings, if any
+     *
+     * @return - An error string, if any problems are found. Null value means form is valid.
      */
-    public List<String> validate(UserI user) {
-        List<String> problems = new ArrayList<String>();
-        boolean isUserAnAdminOrDataFormManager = true;
-        if (!Roles.isSiteAdmin(user.getUsername()) && !Roles.checkRole(user, CustomFormsConstants.DATAFORM_MANAGER_ROLE)) {
-            isUserAnAdminOrDataFormManager = false;
-        }
-        String isSiteWide = submission.getData().getIsThisASiteWideConfiguration();
-        if (isSiteWide == null) {
-            problems.add("Invalid json");
-        }else if (isSiteWide.equalsIgnoreCase("NO")) {
-            List<ComponentPojo> projects = submission.getData().getXnatProject();
-            if (projects == null) {
-                problems.add("Invalid JSON");
-                return problems;
-            }
-            for (ComponentPojo proj : projects) {
-                //Encoded as: PROTOCOL_NAME : PROJECT_ID
-                String projectId = proj.getValue();
-                if (!isUserAnAdminOrDataFormManager && !Permissions.isProjectOwner(user, projectId)) {
-                    problems.add("Insufficient user permissions (Not Admin, Data Form Manager or Project Owner of " + projectId);
-                }
-            }
-        } else if (isSiteWide.equalsIgnoreCase("YES") ) {
-            if (!isUserAnAdminOrDataFormManager) {
-                problems.add("Insufficient user permissions (Not Admin, Data Form Manager) to create a site wide form");
-            }
-        } else {
-            problems.add("Invalid JSON");
-        }
-        return problems;
+    public String validate() {
+        return submission == null ? "Missing required value \"submission\"" : submission.validate();
     }
 }

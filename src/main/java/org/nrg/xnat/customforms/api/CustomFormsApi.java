@@ -24,6 +24,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import javassist.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.beans.XnatPluginBean;
 import org.nrg.framework.beans.XnatPluginBeanManager;
@@ -108,13 +109,19 @@ public class CustomFormsApi extends AbstractXapiRestController {
             throws JsonProcessingException {
         final UserI user = XDAT.getUserDetails();
         ClientPojo clientPojo = objectMapperNoFailOnUnknown.readValue(jsonbody, ClientPojo.class);
-        List<String> problems = clientPojo.validate(user);
-        if (!problems.isEmpty()) {
-            return new ResponseEntity<>("Rejected: " + String.join(" ; ", problems), HttpStatus.BAD_REQUEST);
+        String problem = clientPojo.validate();
+        if (StringUtils.isNotBlank(problem)) {
+            return new ResponseEntity<>("Invalid form submission: " + problem, HttpStatus.BAD_REQUEST);
         }
         final SubmissionPojo submission = clientPojo.getSubmission().getData();
         final JsonNode proposedFormDefinition = objectMapper.readTree(clientPojo.getBuilder());
-        final String formId = formManagerService.save(submission, proposedFormDefinition, user);
+
+        final String formId;
+        try {
+            formId = formManagerService.save(submission, proposedFormDefinition, user);
+        } catch (InsufficientPermissionsException e) {
+            return new ResponseEntity<>(e.getLocalizedMessage(), HttpStatus.UNAUTHORIZED);
+        }
         if (formId != null) {
             return new ResponseEntity<>(formId, HttpStatus.CREATED);
         } else {

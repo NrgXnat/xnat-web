@@ -25,4 +25,8 @@ import lombok.Setter;
 public class SubmissionDataPojo {
 
     private SubmissionPojo data;
+
+    public String validate() {
+        return data == null ? "Submission missing required value \"data\"" : data.validate();
+    }
 }
