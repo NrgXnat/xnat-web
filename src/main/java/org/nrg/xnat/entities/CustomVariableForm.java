@@ -20,6 +20,7 @@ public class CustomVariableForm extends AbstractHibernateEntity{
 
     private JsonNode formIOJsonDefinition;
     private int zIndex = -1;
+    private String formCreator;
 
     @Type(type="pg-uuid")
     //Just in case imported UUID's clash
@@ -59,6 +60,14 @@ public class CustomVariableForm extends AbstractHibernateEntity{
 
     public void setzIndex(int zIndex) {
         this.zIndex = zIndex;
+    }
+
+    public String getFormCreator() {
+        return formCreator;
+    }
+
+    public void setFormCreator(String formCreator) {
+        this.formCreator = formCreator;
     }
 
     public String title() {

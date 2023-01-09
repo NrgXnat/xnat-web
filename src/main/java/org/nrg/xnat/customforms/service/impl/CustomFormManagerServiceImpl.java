@@ -728,6 +728,7 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
             form.setFormIOJsonDefinition(containerizedNode);
             form.setzIndex(userOptionsPojo.getZIndex());
             form.setFormUuid(formUUID);
+            form.setFormCreator(user.getUsername());
             if (entityIds != null && entityIds.size() > 0) {
                 entityIds.forEach(entityId -> {
                     String projectId = toProjectId(entityId);
@@ -901,6 +902,7 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         configuration.setPath(formAppliesTo.getCustomVariableAppliesTo().pathAsString());
         configuration.setDoProjectsShareForm(formAppliesTo.doProjectsShareForm());
         configuration.setDateCreated(form.getCreated());
+        configuration.setUsername(form.getFormCreator());
         return configuration;
     }
 

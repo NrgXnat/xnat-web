@@ -869,6 +869,7 @@ XNAT.plugin =
                 tableDataRow['visit'] = extractParts(item['path'], 5);
                 tableDataRow['subtype'] = extractParts(item['path'], 7);
             }
+            tableDataRow['formCreator'] = projectFormManager.prettyPrint(item['username']);
             tableDataRow['status'] = projectFormManager.prettyPrint(getStatus(item['appliesToList']));
             tableDataRow['actions'] = item;
             tableData.push(tableDataRow);
@@ -879,6 +880,10 @@ XNAT.plugin =
             },
             datatype: {
                 label: 'Datatype',
+                sortable: true
+            },
+            formCreator: {
+                label: 'Form Creator',
                 sortable: true
             }
         };
@@ -928,6 +933,17 @@ XNAT.plugin =
                 apply: function (datatype) {
                     return truncCell.call(this, datatype, '');
                 }
+            }
+        };
+        columnsInTable['formCreator']= {
+            label: 'Form Creator',
+                td: {
+                style: {
+                    verticalAlign: 'middle'
+                }
+            },
+            apply: function (formCreator) {
+                return truncCell.call(this, formCreator, '');
             }
         };
         if (projectFormManager.siteHasProtocolsPluginDeployed) {

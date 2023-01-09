@@ -447,6 +447,7 @@ public class LegacyCustomVariableMigrator   {
             JsonNode proposed = objectMapper.readTree(formioJsonContent);
             form.setFormIOJsonDefinition(proposed);
             form.setFormUuid(formUUID);
+            form.setFormCreator(user.getUsername());
             formService.saveOrUpdate(form);
 
             long formId = form.getId();
