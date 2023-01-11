@@ -51,6 +51,25 @@
                     },
                     "tableView": true,
                     "placeholder": "Select"
+                },
+                {
+                    "key": "isThisASiteWideConfiguration",
+                    "type": "hidden",
+                    "input": true,
+                    "label": "Is this a site wide configuration?",
+                    "inline": false,
+                    "values": [
+                        {
+                            "label": "Yes",
+                            "value": "yes",
+                            "shortcut": ""
+                        }
+                    ],
+                    "validate": {
+                        "required": true
+                    },
+                    "tableView": false,
+                    "defaultValue": "yes"
                 }
             ],
             "collapsible": false,
@@ -67,82 +86,11 @@
             }
         },
         {
-            "key": "projectForm",
-            "type": "panel",
-            "input": false,
-            "label": "Select context",
-            "title": "Step 2: Select Form Context",
-            "tableView": false,
-            "components": [
-                {
-                    "key": "isThisASiteWideConfiguration",
-                    "type": "radio",
-                    "input": true,
-                    "label": "Is this a site wide configuration?",
-                    "inline": false,
-                    "values": [
-                        {
-                            "label": "Yes",
-                            "value": "yes",
-                            "shortcut": ""
-                        },
-                        {
-                            "label": "No",
-                            "value": "no",
-                            "shortcut": ""
-                        }
-                    ],
-                    "validate": {
-                        "required": true
-                    },
-                    "tableView": false,
-                    "defaultValue": "yes",
-                    "optionsLabelPosition": "right"
-                },
-                {
-                    "key": "xnatProject",
-                    "data": {
-                        "custom": "function fetchProjects(){var myValues = XNAT.customFormManager.protocolManager.getProjects(data.xnatProtocol);  return myValues;} values=fetchProjects();"
-                    },
-                    "type": "select",
-                    "input": true,
-                    "label": "This form applies to the project(s)?",
-                    "widget": "choicesjs",
-                    "dataSrc": "custom",
-                    "lazyload": true,
-                    "multiple": true,
-                    "tableView": true,
-                    "customOptions": {
-                        "classNames": {
-                            "listItems": "chosen-choices"
-                        }
-                    },
-                    "conditional": {
-                        "eq": "no",
-                        "show": true,
-                        "when": "isThisASiteWideConfiguration"
-                    },
-                    "placeholder": "Select project(s) here"
-                }
-            ],
-            "collapsible": false,
-            "saveOnEnter": false,
-            "scrollToTop": false,
-            "buttonSettings": {
-                "next": true,
-                "previous": true
-            },
-            "navigateOnEnter": false,
-            "breadcrumbSettings": {
-                "clickable": false
-            }
-        },
-        {
             "key": "buildForm",
             "type": "panel",
             "input": false,
             "label": "Build Form",
-            "title": "Step 3: Build Form",
+            "title": "Step 2: Build Form",
             "tableView": false,
             "components": [
                 {

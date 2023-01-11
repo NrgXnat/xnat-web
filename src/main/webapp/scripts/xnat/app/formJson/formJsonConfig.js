@@ -292,23 +292,12 @@ var XNAT = getObject(XNAT || {});
             addNewBuilderObj.submission = wizard.submission;
             // Prevent the submission from going to the form.io server.
             wizard.nosubmit = true;
+
+            // Initialize actual form builder once they've completed our setup pages
             wizard.on('nextPage', function (page) {
-                if (xnatFormManager.siteHasProtocolsPluginDeployed == true) {
-                    if (page.page === 3) {
-                        if (wizard.data.isThisASiteWideConfiguration === 'no' && (wizard.data.xnatProject == undef || wizard.data.xnatProject.length == 0)) {
-                            XNAT.dialog.message('ERROR ', 'Please select atleast one project.');
-                            wizard.prevPage();
-                        }
-                        initBuilder(wizard);
-                    }
-                } else {
-                    if (page.page === 2) {
-                        if (wizard.data.isThisASiteWideConfiguration === 'no' && (wizard.data.xnatProject == undef || wizard.data.xnatProject.length == 0)) {
-                            XNAT.dialog.message('ERROR ', 'Please select atleast one project.');
-                            wizard.prevPage();
-                        }
-                        initBuilder(wizard);
-                    }
+                const formBuilderPage = xnatFormManager.siteHasProtocolsPluginDeployed === true ? 2 : 1;
+                if (page.page === formBuilderPage) {
+                    initBuilder(wizard);
                 }
             });
         });
