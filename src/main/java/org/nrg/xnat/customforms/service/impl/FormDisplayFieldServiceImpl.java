@@ -1,6 +1,7 @@
 package org.nrg.xnat.customforms.service.impl;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.nrg.xdat.display.DisplayField;
 import org.nrg.xdat.display.DisplayFieldElement;
 import org.nrg.xdat.display.DisplayManager;
@@ -17,8 +18,14 @@ import org.nrg.xnat.entities.CustomVariableForm;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Hashtable;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -38,15 +45,13 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
      * which are in enabled state. For each of these, generate the in-memory display fields.
      */
     public void refreshDisplayFields() {
-        final List<ElementSecurity> secureElements;
-        try{
-                secureElements = ElementSecurity.GetSecureElements();
-            }catch (Exception e){
-                log.error(e.getMessage(), e);
+        getSchemaElements().forEach(schemaElement -> {
+            final String dataType = schemaElement.getFullXMLName();
+            List<FormFieldPojo> formFields = formIOJsonService.getFormsForObject(dataType, null, null, null, null);
+            if (CollectionUtils.isNotEmpty(formFields)) {
                 return;
             }
-        secureElements.stream().map(this::getSchemaElement).filter(Objects::nonNull).forEach(schemaElement -> {
-            createDisplayFields(schemaElement);
+            formFields.forEach(field -> addDisplayField(schemaElement, field));
         });
     }
 
@@ -62,15 +67,8 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
      * @param formUUID - the form UUID
      */
     public void reloadDisplayFieldsForForm(final String dataType,  final String formUUID, final boolean deleteExistingFormDisplayFields) {
-        synchronized (this){
-            final List<ElementSecurity> secureElements;
-            try{
-                secureElements = ElementSecurity.GetSecureElements();
-            }catch (Exception e){
-                log.error(e.getMessage(), e);
-                return;
-            }
-            secureElements.stream().map(this::getSchemaElement).filter(Objects::nonNull).forEach(schemaElement -> {
+        synchronized (this) {
+            getSchemaElements().forEach(schemaElement -> {
                 if (schemaElement.getFullXMLName().equals(dataType)) {
                     resetDisplayField(schemaElement, formUUID, deleteExistingFormDisplayFields);
                 }
@@ -83,17 +81,9 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
      * @param dataType - the xsiType
      * @param formUUID - the form UUID
      */
-
     public void removeDisplayFieldsForForm(final String dataType,  final String formUUID) {
         synchronized (this) {
-            final List<ElementSecurity> secureElements;
-            try {
-                secureElements = ElementSecurity.GetSecureElements();
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                return;
-            }
-            secureElements.stream().map(this::getSchemaElement).filter(Objects::nonNull).forEach(schemaElement -> {
+            getSchemaElements().forEach(schemaElement -> {
                 if (schemaElement.getFullXMLName().equals(dataType)) {
                     removeDisplayFieldsThatBeginWith(schemaElement, formUUID);
                 }
@@ -101,21 +91,24 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
         }
     }
 
-    private void createDisplayFields(final SchemaElement schemaElement) {
-        final String dataType = schemaElement.getFullXMLName();
-        List<FormFieldPojo> formFields =  formIOJsonService.getFormsForObject(dataType, null,null, null, null);
-        if (null == formFields || formFields.isEmpty() ) {
-            return;
+    private Stream<SchemaElement> getSchemaElements() {
+        final List<ElementSecurity> secureElements;
+        try {
+            secureElements = ElementSecurity.GetSecureElements();
+        } catch (Exception e){
+            log.error("Could not obtain Secure Elements", e);
+            return Stream.empty();
         }
-        formFields.forEach(field -> addDisplayField(schemaElement, field));
-
+        return secureElements.stream()
+                .map(this::getSchemaElement)
+                .filter(Objects::nonNull);
     }
 
     private SchemaElement getSchemaElement(ElementSecurity elementSecurity){
         try {
             return elementSecurity.getSchemaElement();
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            log.warn("Could not retrieve schema element for \"{}\"", elementSecurity);
             return null;
         }
     }
@@ -145,9 +138,9 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
     }
 
 
-    private void removeDisplayField(final SchemaElement schemaElement, final String fieldId){
+    private void removeDisplayField(final SchemaElement schemaElement, final String fieldId) {
        synchronized (this) {
-           try{
+           try {
                final ElementDisplay elementDisplay  = schemaElement.getDisplay();
                elementDisplay.removeDisplayField(fieldId);
                displayManager.addElement(elementDisplay);
