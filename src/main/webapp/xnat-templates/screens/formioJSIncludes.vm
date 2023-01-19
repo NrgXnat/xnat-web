@@ -4,6 +4,7 @@
 
 <link rel="stylesheet" type="text/css"  href="$content.getURI('/style/xnat-bootstrap4/bootstrap.css')" >
 <link rel="stylesheet" type="text/css"  href="$content.getURI('/style/formiojs/formio.full.min.css')">
+<link rel="stylesheet" type="text/css"  href="$content.getURI('/style/bootstrap-shims.css')">
 <script src="$content.getURI('/scripts/xnat/app/formJson/formiojs/formio.full.min.js')" charset="utf-8"></script>
 
 

@@ -1451,7 +1451,8 @@ var XNAT = getObject(XNAT || {});
             for(let node of mutation.addedNodes) {
                 if(!(node instanceof HTMLElement)) continue;
                 // check the inserted element for being a code snippets
-                if(node.matches('div')) {
+                // only add the class if the generated element is part of the form builder
+                if(node.matches('div') && node.outerHTML.includes('formio')) {
                     node.classList.add("xnat-bootstrap");
                 }
             }
