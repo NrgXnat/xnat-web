@@ -211,16 +211,16 @@ public class LegacyCustomVariableMigrator   {
                     fieldNode.put("mask", false);
                     fieldNode.put("tableView", false);
                     fieldNode.put("delimiter", false);
+                    fieldNode.put("type", "xnatNumber");
                     //Setting this to true, sets the decimal precision to 2 by FormIO
                     //fieldNode.put("requireDecimal", fieldType.equalsIgnoreCase("FLOAT"));
                     fieldNode.put("inputFormat", "plain");
                     if (fieldType.equalsIgnoreCase("INTEGER")) {
                         fieldNode.put("decimalLimit", 0);
                         fieldNode.put("requireDecimal", false);
-                        fieldNode.put("validate", "{integer: true}");
-                        fieldNode.put("type", "xnatInteger");
+                        fieldNode.put("validate", "{integer: true, step:1}");
                     }else {
-                        fieldNode.put("type", "xnatFloat");
+                        fieldNode.put("decimalLimit", 20);
                     }
                     fieldNode.put("inputFormat", "plain");
                     fieldNode.put("truncateMultipleSpaces", false);
@@ -238,7 +238,7 @@ public class LegacyCustomVariableMigrator   {
                     dataValuesArrayNode.add(valueNode);
                     fieldNode.set("values", dataValuesArrayNode);
                     fieldNode.put("dataType", "boolean");
-                    fieldNode.put("type", "radio");
+                    fieldNode.put("type", "xnatRadio");
                 } else if (fieldType.equalsIgnoreCase("STRING")) {
                     fieldNode.put("type", "textfield");
                 }
