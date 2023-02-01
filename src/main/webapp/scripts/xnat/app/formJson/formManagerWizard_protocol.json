@@ -68,25 +68,6 @@
           },
           "type": "select",
           "input": true
-        },
-        {
-          "key": "isThisASiteWideConfiguration",
-          "type": "hidden",
-          "input": true,
-          "label": "Is this a site wide configuration?",
-          "inline": false,
-          "values": [
-            {
-              "label": "Yes",
-              "value": "yes",
-              "shortcut": ""
-            }
-          ],
-          "validate": {
-            "required": true
-          },
-          "tableView": false,
-          "defaultValue": "yes"
         }
       ],
       "input": false,
@@ -182,7 +163,77 @@
       ]
     },
     {
-      "title": "Step 3: Build Form",
+      "title": "Step 3: Select Context",
+      "breadcrumbClickable": false,
+      "buttonSettings": {
+        "previous": true,
+        "next": true
+      },
+      "navigateOnEnter": false,
+      "saveOnEnter": false,
+      "scrollToTop": false,
+      "collapsible": false,
+      "key": "projectForm",
+      "type": "panel",
+      "label": "Select Project",
+      "input": false,
+      "tableView": false,
+      "components": [
+        {
+          "label": "Is this a site wide configuration?",
+          "optionsLabelPosition": "right",
+          "inline": false,
+          "tableView": false,
+          "values": [
+            {
+              "label": "Yes",
+              "value": "yes",
+              "shortcut": ""
+            },
+            {
+              "label": "No",
+              "value": "no",
+              "shortcut": ""
+            }
+          ],
+          "key": "isThisASiteWideConfiguration",
+          "type": "radio",
+          "input": true,
+          "defaultValue": "yes"
+        },
+        {
+          "label": "This form applies to the project?",
+          "widget": "choicesjs",
+          "placeholder": "Select project here",
+          "tableView": true,
+          "dataSrc": "custom",
+          "data": {
+            "values": [
+              {
+                "label": "",
+                "value": ""
+              }
+            ],
+            "custom": "function fetchProjects(){var myValues = XNAT.customFormManager.protocolManager.getProjects(data.xnatProtocol);  return myValues;} values=fetchProjects();"
+
+          },
+          "selectThreshold": 0.3,
+          "key": "xnatProject",
+          "lazyload": true,
+          "multiple": true,
+          "conditional": {
+            "show": true,
+            "when": "isThisASiteWideConfiguration",
+            "eq": "no"
+          },
+          "type": "select",
+          "input": true
+        }
+
+      ]
+    },
+    {
+      "title": "Step 4: Build Form",
       "breadcrumbClickable": false,
       "buttonSettings": {
         "previous": true,
