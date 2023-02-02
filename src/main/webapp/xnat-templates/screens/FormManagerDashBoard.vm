@@ -12,8 +12,10 @@
 <script type="text/javascript" src="$content.getURI('/scripts/xnat/app/formJson/assignDialog.js')"></script>
 <script type="text/javascript" src="$content.getURI('/scripts/xnat/app/formJson/projectListModal.js')"></script>
 
-<div class="header"><b>Datatype specific custom forms </b>
-    <div id="form-json-container"></div>
+<div class="header">
+    <div id="form-json-container">
+        <h2 id = "headerTitle">Datatype specific custom forms </h2>
+    </div>
     <div  id="editForm" class="xnat-bootstrap html-template">
         <div class="xnat-bootstrap" id="formio-builder"></div>
     </div>

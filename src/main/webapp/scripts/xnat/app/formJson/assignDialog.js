@@ -81,6 +81,66 @@ var XNAT = getObject(XNAT || {});
         });
     }
 
+    function promoteFormUrl() {
+        return XNAT.customFormManager.xnatFormManager.customFormUrl('promote');
+    }
+
+    function promoteButton(itemObj, title) {
+        let projects = [];
+        itemObj['appliesToList'].forEach(function (item) {
+            projects.push(item['entityId']);
+        });
+        return spawn('button.btn.btn-sm.edit', {
+            style: {
+                padding: '6px 12px !important',
+                background: '#f8f8f8 linear-gradient( #ffffff, #f0f0f0 )',
+                border: '1px solid #a0a0a0'
+            },
+            onclick: function (e) {
+                e.preventDefault();
+                if (itemObj) {
+                    promote(itemObj, title);
+                }
+            }
+        }, 'Apply by default to all projects');
+    }
+
+    promote = function (configDefinition, title) {
+        let appliesTo = configDefinition['appliesToList'];
+        xmodal.open({
+            title: 'Confirm form promotion',
+            content: 'Are you sure you want to promote form to site? <br> <br> <p> Promoting a form would make it available to the entire site.</p>',
+            width: 300,
+            height: 400,
+            overflow: 'auto',
+            buttons: {
+                ok: {
+                    label: 'Ok',
+                    isDefault: true,
+                    action: function () {
+                        let url = promoteFormUrl();
+                        XNAT.xhr.post({
+                            url: url,
+                            contentType: 'application/json',
+                            data: JSON.stringify(appliesTo),
+                            success: function () {
+                                xmodal.closeAll();
+                                XNAT.ui.banner.top(2000, 'Form promoted to site', 'success');
+                                XNAT.customFormManager.xnatFormManager.refreshTable();
+                            },
+                            fail: function (e) {
+                                errorHandler(e, 'Could not promote form ' + title);
+                            }
+                        });
+                    }
+                },
+                close: {
+                    label: 'Close'
+                }
+            }
+        });
+    }
+
     launcher.populateForm = function($form, siteWide, projectsAlreadyAssigned = []) {
         if (typeof launcher.$table != 'undefined') {
             projectsList = [];
@@ -257,7 +317,7 @@ var XNAT = getObject(XNAT || {});
         ]);
         let selectedProjects = [];
 
-        XNAT.ui.dialog.open({
+        var modal = {
             title: 'Select ' + projectDataTypePluralName + ':',
             content: projectSelectorContent,
             width: 550,
@@ -363,6 +423,12 @@ var XNAT = getObject(XNAT || {});
                 close: true
             }
             ]
-        });
+        };
+
+        if (!siteWide) {
+            modal.footerContent = promoteButton(configDefinition, title);
+        }
+
+        XNAT.ui.dialog.open(modal);
     }
 }));

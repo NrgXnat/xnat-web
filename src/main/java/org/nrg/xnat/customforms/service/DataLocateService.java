@@ -4,5 +4,5 @@ import org.nrg.xnat.entities.CustomVariableFormAppliesTo;
 
 public interface DataLocateService {
 
-    boolean hasDataBeenAcquired(final CustomVariableFormAppliesTo customVariableFormAppliesTo) throws Exception;
+    boolean hasDataBeenAcquired(final CustomVariableFormAppliesTo customVariableFormAppliesTo);
 }

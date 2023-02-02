@@ -50,16 +50,42 @@ var XNAT = getObject(XNAT || {});
         if (typeof projectListLauncher.$table != 'undefined') {
             projectListLauncher.$table.remove();
         }
-        let columnIds = ["id"];
+        let projectsUrl = XNAT.url.restUrl('xapi/role/projectsById',{},false,false);
+        let columnIds = ["name", "id", "investigator"];
         let labelMap = {
+            name: {
+                label: "Project Name",
+                checkboxes: false,
+                id: "Project Name"
+            },
             id: {
                 label: "Project ID",
                 checkboxes: false,
                 id: "Project ID"
+            },
+            investigator: {
+                label: "Primary Investigator",
+                checkboxes: false,
+                id: "Primary Investigator"
             }
         };
 
-        if (projectsList.length === 0) {
+        var projectsFullData;
+
+        XNAT.xhr.post({
+            url: projectsUrl,
+            async: false,
+            contentType: 'text/plain;charset=UTF-8',
+            data: projectsList.toString(),
+            success: function (data) {
+                projectsFullData = data;
+            },
+            fail: function (e) {
+                errorHandler(e);
+            }
+        });
+
+        if (projectsFullData.length === 0) {
             return;
         }
 
@@ -147,11 +173,19 @@ var XNAT = getObject(XNAT || {});
             classes: 'table-body'
         });
 
-        $.each(projectsList, function(i, e) {
+        $.each(projectsFullData, function(i, e) {
             projectsTable.tr();
             projectsTable.td({
                 classes: columnIds[0]
-            }, e);
+            }, e.name);
+            projectsTable.td({
+                classes: columnIds[1]
+            }, e.id);
+            if (e.title){
+                projectsTable.td({
+                    classes: columnIds[2]
+                }, e.title);
+            }
         });
         $form.empty().prepend(projectsTable.table);
         projectListLauncher.container = $form;
@@ -174,7 +208,7 @@ var XNAT = getObject(XNAT || {});
         XNAT.ui.dialog.open({
             title: XNAT.app.displayNames.plural.project + ' ' + formtitle,
             content: projectSelectorContent,
-            width: 400,
+            width: 500,
             scroll: true,
             beforeShow: function(obj) {
                 var $panel = obj.$modal.find('.panel');

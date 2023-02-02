@@ -1069,7 +1069,7 @@ XNAT.plugin =
             if (isProjectSpecific && !isFormSharedBetweenProjects) {
                 actions = [editButton(item),spacer(4), displayOrderButton(item, title), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title)];
             } else {
-                actions = [disableButton(item, title), spacer(4), optOutButton(item, title)];
+                actions = [optOutButton(item, title)];
             }
 
         }

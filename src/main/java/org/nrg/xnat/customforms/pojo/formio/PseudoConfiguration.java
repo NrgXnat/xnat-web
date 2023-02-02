@@ -24,5 +24,6 @@ public class PseudoConfiguration implements Serializable {
     private boolean doProjectsShareForm;
     private String username;
     private Date dateCreated;
+    private boolean hasData;
 
 }

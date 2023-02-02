@@ -37,7 +37,7 @@ public class DataLocateServiceImpl implements DataLocateService {
         this.jdbcTemplate = new NamedParameterJdbcTemplate(jdbcTemplate);
     }
 
-    public boolean hasDataBeenAcquired(final CustomVariableFormAppliesTo customVariableFormAppliesTo) throws Exception {
+    public boolean hasDataBeenAcquired(final CustomVariableFormAppliesTo customVariableFormAppliesTo) {
         boolean dataHasBeenAcquired = false;
         if (customVariableFormAppliesTo == null) {
             return false;
@@ -52,7 +52,7 @@ public class DataLocateServiceImpl implements DataLocateService {
         return dataHasBeenAcquired;
     }
 
-    private Integer getFieldCountsSavedInDatabase(final CustomVariableFormAppliesTo customVariableFormAppliesTo) throws Exception {
+    private Integer getFieldCountsSavedInDatabase(final CustomVariableFormAppliesTo customVariableFormAppliesTo) {
         CustomVariableAppliesTo customVariableAppliesTo = customVariableFormAppliesTo.getCustomVariableAppliesTo();
         RowIdentifier rowIdentifier = customVariableFormAppliesTo.getRowIdentifier();
         CustomVariableForm form = customVariableFormAppliesTo.getCustomVariableForm();

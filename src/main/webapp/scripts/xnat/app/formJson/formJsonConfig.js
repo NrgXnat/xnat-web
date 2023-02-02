@@ -72,11 +72,6 @@ var XNAT = getObject(XNAT || {});
         return XNAT.url.restUrl('xapi/customforms/' + append, params, false, true);
     }
 
-    function promoteFormUrl(id) {
-        return xnatFormManager.customFormUrl('promote');
-    }
-
-
     function errorHandler(e, title, closeAll) {
         console.log(e);
         title = (title) ? 'Error Found: ' + title : 'Error';
@@ -625,7 +620,7 @@ var XNAT = getObject(XNAT || {});
     };
 
 
-    xnatFormManager.disable = function (configDefinition, title) {
+    xnatFormManager.disable = function (configDefinition, title, formElement) {
         let appliesTo = configDefinition['appliesToList'];
         xmodal.open({
             title: 'Disable?',
@@ -649,13 +644,17 @@ var XNAT = getObject(XNAT || {});
                                 xnatFormManager.refreshTable();
                             },
                             fail: function (e) {
+                                formElement.checked = !formElement.checked;
                                 errorHandler(e, 'Could not disable form for ' + title);
                             }
                         });
                     }
                 },
                 close: {
-                    label: 'Close'
+                    label: 'Close',
+                    action: function() {
+                        formElement.checked = !formElement.checked;
+                    }
                 }
             }
         });
@@ -734,7 +733,7 @@ var XNAT = getObject(XNAT || {});
         });
     }
 
-    xnatFormManager.enable = function (configDefinition, title) {
+    xnatFormManager.enable = function (configDefinition, title, formElement) {
         let appliesTo = configDefinition['appliesToList'];
         xmodal.open({
             title: 'Enable?',
@@ -758,13 +757,17 @@ var XNAT = getObject(XNAT || {});
                                 xnatFormManager.refreshTable();
                             },
                             fail: function (e) {
+                                formElement.checked = !formElement.checked;
                                 errorHandler(e, 'Could not enable configuration for ' + title);
                             }
                         });
                     }
                 },
                 close: {
-                    label: 'Close'
+                    label: 'Close',
+                    action: function() {
+                        formElement.checked = !formElement.checked;
+                    }
                 }
             }
         });
@@ -777,7 +780,7 @@ var XNAT = getObject(XNAT || {});
         const title = itemObj['title'] || '';
         const dateCreated = new Date(configDefinition['dateCreated']);
         const formId = configDefinition['formId'];
-        var info_button = '<div class="info">Relative form order is a preference set via integer values, where lower numbers reflect higher positions. If multiple forms have the same value, creation date is used as a tie breaker.</div>';
+        var info_button = '<div class="info">Relative form order is a preference set via integer values, where lower numbers reflect higher positions. If multiple forms have the same value, creation date is used as a tie breaker with more recently created forms shown first.</div>';
         xmodal.open({
             title: 'Change Form Order for ' + title,
             content: info_button + '<br><br>Current Form Order: ' + formOrder + '<br><br> Creation Date: ' + dateCreated + '<br><br> New Form Order: <input type="number" step="1"  id="formOrderTxt" value="'+ formOrder + '">',
@@ -815,43 +818,6 @@ var XNAT = getObject(XNAT || {});
                             },
                             fail: function (e) {
                                 errorHandler(e, 'Could not update Form Order ' + title);
-                            }
-                        });
-                    }
-                },
-                close: {
-                    label: 'Close'
-                }
-            }
-        });
-    }
-
-
-    xnatFormManager.promote = function (configDefinition, title) {
-        let appliesTo = configDefinition['appliesToList'];
-        xmodal.open({
-            title: 'Confirm form promotion',
-            content: 'Are you sure you want to promote form to site? <br> <br> <p> Promoting a form would make it available to the entire site.</p>',
-            width: 300,
-            height: 400,
-            overflow: 'auto',
-            buttons: {
-                ok: {
-                    label: 'Ok',
-                    isDefault: true,
-                    action: function () {
-                        let url = promoteFormUrl();
-                        XNAT.xhr.post({
-                            url: url,
-                            contentType: 'application/json',
-                            data: JSON.stringify(appliesTo),
-                            success: function () {
-                                xmodal.closeAll();
-                                XNAT.ui.banner.top(2000, 'Form promoted to site', 'success');
-                                xnatFormManager.refreshTable();
-                            },
-                            fail: function (e) {
-                                errorHandler(e, 'Could not promote form ' + title);
                             }
                         });
                     }
@@ -911,6 +877,9 @@ var XNAT = getObject(XNAT || {});
 
     xnatFormManager.addNewBtn = function (container, callback) {
         return spawn('button.btn1.btn-sm', {
+            style: {
+                float: "right"
+            },
             onclick: function (e) {
                 e.preventDefault();
                 xmodal.open({
@@ -1070,20 +1039,9 @@ var XNAT = getObject(XNAT || {});
             onclick: function (e) {
                 e.preventDefault();
                 editWindow(itemObj)
-            }
-        }, 'Edit');
-    }
-
-    function promoteButton(itemObj, title) {
-        let projectId = getProjects(itemObj);
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function (e) {
-                e.preventDefault();
-                if (itemObj) {
-                    xnatFormManager.promote(itemObj, title);
-                }
-            }
-        }, 'Promote');
+            },
+            title: "Edit the form definition"
+        }, [ spawn('i.fa.fa-pencil') ]);
     }
 
     function deleteButton(itemObj, title) {
@@ -1094,30 +1052,10 @@ var XNAT = getObject(XNAT || {});
                 if (itemObj) {
                     xnatFormManager.deleteForm(itemObj, title);
                 }
-            }
-        }, 'Delete');
+            },
+            title: "Delete the form"
+        }, [ spawn('i.fa.fa-trash') ]);
     }
-
-    function disableButton(itemObj, title) {
-        let status = itemObj['appliesToList'][0]['status'];
-        let btnLbl = 'Disable';
-        if (status === 'disabled') {
-            btnLbl = 'Enable';
-        }
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function (e) {
-                e.preventDefault();
-                if (itemObj) {
-                    if (status === 'disabled') {
-                        xnatFormManager.enable(itemObj, title);
-                    } else {
-                        xnatFormManager.disable(itemObj, title);
-                    }
-                }
-            }
-        }, btnLbl);
-    }
-
 
     function displayOrderButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
@@ -1126,8 +1064,9 @@ var XNAT = getObject(XNAT || {});
                 if (itemObj) {
                     xnatFormManager.modifyDisplayOrder(itemObj);
                 }
-            }
-        }, 'Display Order');
+            },
+            title: "Change the order of the form relative to others"
+        }, [ spawn('i.fa.fa-exchange') ]);
     }
 
     function manageProjectsButton(itemObj, title) {
@@ -1141,8 +1080,9 @@ var XNAT = getObject(XNAT || {});
                     let isSiteWide = itemObj.scope === "Site";
                     XNAT.customFormManager.assignDialog.assignProject(itemObj, title, rowId, isSiteWide, projects);
                 }
-            }
-        }, 'Manage ' + XNAT.app.displayNames.plural.project);
+            },
+            title: "Manage which projects are associated with this form"
+        }, [ spawn('i.fa.fa-list') ]);
     }
 
 
@@ -1172,13 +1112,36 @@ var XNAT = getObject(XNAT || {});
             return projectsArray.join(", ")
         } else {
             let title = item.title || '';
-            return spawn('button.btn.btn-sm.edit', {
+
+            returnItems.push(spawn('p', projectsArray.slice(0, 3).join(", ")));
+            returnItems.push(spawn('button.btn.btn-sm.edit', {
                 onclick: function (e) {
                     e.preventDefault();
                     XNAT.customFormManager.projectListModalManager.show(projectsArray, title);
                 }
-            }, 'View');
+            }, 'View All'));
+            return returnItems;
         }
+    }
+
+    function spawnStatusColumn(item) {
+
+        let title = item.title || '';
+
+        return(XNAT.ui.panel.input.switchbox({
+            name: 'enable_form_'+item.formId,
+            checked: item['appliesToList'][0]['status'] === "enabled",
+            onclick: function() {
+                var checkbox = this;
+                enabled = checkbox.checked;
+                if (enabled === true) {
+                    xnatFormManager.enable(item, title, this);
+                } else {
+                    xnatFormManager.disable(item, title, this);
+                }
+            }
+        }));
+
     }
 
     // table cell formatting
@@ -1196,7 +1159,7 @@ var XNAT = getObject(XNAT || {});
     xnatFormManager.table = function (container, callback) {
         let tableData = [];
         let definitions = xnatFormManager.sitedefinitions;
-        let DATA_FIELDS = 'title, datatype, status';
+        let DATA_FIELDS = 'title, datatype, status, formCreator, project';
         for (let k = 0; k < definitions.length; k++) {
             let item = definitions[k];
             let itemObj = JSON.parse(item['contents']);
@@ -1211,7 +1174,7 @@ var XNAT = getObject(XNAT || {});
                 tableDataRow['subtype'] = extractParts(item['path'], 7);
             }
             tableDataRow['formCreator'] = xnatFormManager.prettyPrint(item['username']);
-            tableDataRow['status'] = xnatFormManager.prettyPrint(item['appliesToList'][0]['status']);
+            tableDataRow['status'] = item;
             tableDataRow['actions'] = item;
             tableData.push(tableDataRow);
         }
@@ -1226,7 +1189,8 @@ var XNAT = getObject(XNAT || {});
             sortable: true
         },
         project: {
-            label: projectDataTypeSingularName
+            label: projectDataTypeSingularName,
+            sortable: true
         },
         formCreator: {
             label: 'Form Creator',
@@ -1346,18 +1310,20 @@ var XNAT = getObject(XNAT || {});
             label: 'Status',
                 td: {
                 style: {
-                    verticalAlign: 'middle'
+                    verticalAlign: 'middle',
+                    textAlign: 'center'
                 }
             },
             apply: function (status) {
-                return truncCell.call(this, status, '');
+                return spawnStatusColumn(status, '');
             }
         };
         columnsInTable['actions']= {
             label: 'Actions',
                 td: {
                 style: {
-                    verticalAlign: 'middle'
+                    verticalAlign: 'middle',
+                    width: '170px'
                 }
             },
             apply: function (actions) {
@@ -1404,15 +1370,21 @@ var XNAT = getObject(XNAT || {});
         if (status === 'enabled') {
             isEnabled = true;
         }
+        let hasData = false;
+        if (item['hasData']) {
+            hasData = true;
+        }
         let actions = [];
         if (isEnabled) {
-            actions = [editButton(item), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title), spacer(4), displayOrderButton(item), spacer(4), manageProjectsButton(item, title)];
-            if (isProjectSpecific) {
+            actions = [editButton(item), spacer(4), displayOrderButton(item), spacer(4), manageProjectsButton(item, title)];
+            if (!hasData) {
                 actions.push(spacer(4));
-                actions.push(promoteButton(item, title));
+                actions.push(deleteButton(item, title))
             }
         }else {
-            actions = [deleteButton(item, title),spacer(4), disableButton(item, title)];
+            if (!hasData) {
+                actions = [deleteButton(item, title)];
+            }
         }
         return actions;
     }
@@ -1429,8 +1401,10 @@ var XNAT = getObject(XNAT || {});
 
         xnatFormManager.$container = $manager;
 
+        let headerTitle = document.getElementById('headerTitle');
+        headerTitle.append(xnatFormManager.addNewBtn());
+
         $manager.append(xnatFormManager.table());
-        $manager.append(xnatFormManager.addNewBtn());
 
         return {
             element: $manager[0],

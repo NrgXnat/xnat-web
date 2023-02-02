@@ -951,6 +951,7 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         configuration.setDoProjectsShareForm(formAppliesTo.doProjectsShareForm());
         configuration.setDateCreated(form.getCreated());
         configuration.setUsername(form.getFormCreator());
+        configuration.setHasData(dataLocateService.hasDataBeenAcquired(formAppliesTo));
         return configuration;
     }
 
