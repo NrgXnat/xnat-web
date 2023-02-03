@@ -184,43 +184,6 @@ XNAT.plugin =
         });
     };
 
-    projectFormManager.disable = function (configDefinition, title) {
-        let appliesTo = configDefinition['appliesToList'];
-        xmodal.open({
-            title: 'Disable?',
-            content: 'Are you sure you want to disable the form?',
-            width: 200,
-            height: 200,
-            overflow: 'auto',
-            buttons: {
-                ok: {
-                    label: 'Ok',
-                    isDefault: true,
-                    action: function () {
-                        let url = customFormUrl('disable');
-                        XNAT.xhr.post({
-                            url: url,
-                            contentType: 'application/json',
-                            data: JSON.stringify(appliesTo),
-                            success: function () {
-                                xmodal.closeAll();
-                                XNAT.ui.banner.top(2000, 'Form disabled.', 'success');
-                                projectFormManager.refreshTable();
-                            },
-                            fail: function (e) {
-                                errorHandler(e, 'Could not disable form for ' + title);
-                            }
-                        });
-                    }
-                },
-                close: {
-                    label: 'Close'
-                }
-            }
-        });
-
-    }
-
     projectFormManager.warnUserDataExists = function () {
         XNAT.dialog.open({
             width: 450,
@@ -248,43 +211,6 @@ XNAT.plugin =
                 close: true
             }]
         });
-    }
-
-    projectFormManager.enable = function (configDefinition, title) {
-        let appliesTo = configDefinition['appliesToList'];
-        xmodal.open({
-            title: 'Enable?',
-            content: 'Are you sure you want to enable the form?',
-            width: 200,
-            height: 200,
-            overflow: 'auto',
-            buttons: {
-                ok: {
-                    label: 'Ok',
-                    isDefault: true,
-                    action: function () {
-                        let url = customFormUrl('enable');
-                        XNAT.xhr.post({
-                            url: url,
-                            contentType: 'application/json',
-                            data: JSON.stringify(appliesTo),
-                            success: function () {
-                                xmodal.closeAll();
-                                XNAT.ui.banner.top(2000, 'Configuration enabled.', 'success');
-                                projectFormManager.refreshTable();
-                            },
-                            fail: function (e) {
-                                errorHandler(e, 'Could not enable configuration for ' + title);
-                            }
-                        });
-                    }
-                },
-                close: {
-                    label: 'Close'
-                }
-            }
-        });
-
     }
 
     modifyDisplayOrder = function (configDefinition) {
@@ -655,8 +581,9 @@ XNAT.plugin =
                         }
                     }
                 });
-            }
-        }, 'Edit');
+            },
+            title: "Edit the form definition"
+        }, [ spawn('i.fa.fa-pencil') ]);
     }
 
     function deleteButton(itemObj) {
@@ -666,8 +593,9 @@ XNAT.plugin =
                 if (itemObj) {
                    projectFormManager.deleteForm(itemObj);
                 }
-            }
-        }, 'Delete');
+            },
+            title: "Delete the form"
+        }, [ spawn('i.fa.fa-trash') ]);
     }
 
     projectFormManager.deleteForm = function (configDefinition, title) {
@@ -712,27 +640,6 @@ XNAT.plugin =
         });
    }
 
-
-    function disableButton(itemObj, title) {
-        let status = getStatus(itemObj['appliesToList']);
-        let btnLbl = 'Disable';
-        if (status === 'disabled') {
-            btnLbl = 'Enable';
-        }
-        return spawn('button.btn.btn-sm.edit', {
-            onclick: function(e) {
-                e.preventDefault();
-                if (itemObj) {
-                    if (status === 'disabled') {
-                        projectFormManager.enable(itemObj, title);
-                    } else {
-                        projectFormManager.disable(itemObj, title);
-                    }
-                }
-            }
-        }, btnLbl);
-    }
-
     function displayOrderButton(itemObj) {
         return spawn('button.btn.btn-sm.edit', {
             onclick: function (e) {
@@ -740,8 +647,9 @@ XNAT.plugin =
                 if (itemObj) {
                     modifyDisplayOrder(itemObj);
                 }
-            }
-        }, 'Display Order');
+            },
+            title: "Change the order of the form relative to others"
+        }, [ spawn('i.fa.fa-exchange') ]);
     }
 
 
@@ -1059,15 +967,13 @@ XNAT.plugin =
         let actions = [];
         if (status === 'optedout') {
             actions = [optInButton(item, title)];
-        }else if (status === 'disabled') {
-            actions = [disableButton(item, title)];
+        }else {
             if (isProjectSpecific && !isFormSharedBetweenProjects) {
-                actions.push(spacer(4));
-                actions.push(deleteButton(item, title));
-            }
-        } else {
-            if (isProjectSpecific && !isFormSharedBetweenProjects) {
-                actions = [editButton(item),spacer(4), displayOrderButton(item, title), spacer(4), deleteButton(item, title),spacer(4), disableButton(item, title)];
+                actions = [editButton(item),spacer(4), displayOrderButton(item, title)];
+                if (!item['hasData']) {
+                    actions.push(spacer(4));
+                    actions.push(deleteButton(item, title));
+                }
             } else {
                 actions = [optOutButton(item, title)];
             }

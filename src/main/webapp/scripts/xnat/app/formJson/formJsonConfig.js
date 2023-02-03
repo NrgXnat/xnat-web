@@ -1423,7 +1423,7 @@ var XNAT = getObject(XNAT || {});
             xnatFormManager.$table.remove();
         }
         let $manager = $('div#form-json-container');
-        $manager.prepend(xnatFormManager.table());
+        $manager.append(xnatFormManager.table());
     };
 
 
