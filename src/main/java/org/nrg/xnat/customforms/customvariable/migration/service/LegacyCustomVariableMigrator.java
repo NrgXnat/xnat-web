@@ -41,6 +41,7 @@ import org.nrg.xnat.customforms.customvariable.migration.model.DataIntegrityFail
 import org.nrg.xnat.customforms.customvariable.migration.model.DataIntegrityItem;
 import org.nrg.xnat.customforms.customvariable.migration.model.FieldDefinition;
 import org.nrg.xnat.customforms.customvariable.migration.reviewer.MigrationDataReviewer;
+import org.nrg.xnat.features.CustomFormsFeatureFlags;
 import org.nrg.xnat.customforms.helpers.CustomVariableMigrationHelper;
 import org.nrg.xnat.customforms.pojo.CollatedLegacyCustomVariable;
 import org.nrg.xnat.customforms.pojo.ComponentPojo;
@@ -79,7 +80,7 @@ import static org.nrg.xnat.customforms.utils.CustomFormsConstants.NO_DATA_AVAILA
 
 @Service
 @Slf4j
-public class LegacyCustomVariableMigrator   {
+public class LegacyCustomVariableMigrator {
 
     @Autowired
     public LegacyCustomVariableMigrator(final JdbcTemplate template,
@@ -91,7 +92,8 @@ public class LegacyCustomVariableMigrator   {
                                         final NrgEventService eventService,
                                         final ExecutorService executorService,
                                         final ObjectMapper objectMapper,
-                                        final SiteConfigPreferences siteConfigPreferences
+                                        final SiteConfigPreferences siteConfigPreferences,
+                                        final CustomFormsFeatureFlags customFormsFeatureFlags
     ) {
         this.template = template;
         this.formService = formService;
@@ -102,6 +104,8 @@ public class LegacyCustomVariableMigrator   {
         this.eventService = eventService;
         this.executorService = executorService;
         this.siteConfigPreferences = siteConfigPreferences;
+        this.customFormsFeatureFlags = customFormsFeatureFlags;
+
         this.objectMapper = objectMapper;
         objectMapperEscapeNonAscii = objectMapper.copy();
         objectMapperEscapeNonAscii.enable(JsonGenerator.Feature.ESCAPE_NON_ASCII);
@@ -183,7 +187,7 @@ public class LegacyCustomVariableMigrator   {
         fieldNode.put("selectThreshold", 0.3);
         if (fieldType.equalsIgnoreCase("DATE")) {
             String preferredDateFormat = "MM/dd/yyyy";
-            String dateFormat = (String) siteConfigPreferences.get("UI.date-format");
+            String dateFormat = siteConfigPreferences.getUiDateFormat();
             if (null != dateFormat) {
                 preferredDateFormat = dateFormat;
             }
@@ -268,6 +272,9 @@ public class LegacyCustomVariableMigrator   {
 
     @Transactional(rollbackFor = CustomVariableMigrationException.class)
     public void migrateToFormIO(final String field_definition_id, @Nullable final String tracking_id, final UserI user) throws CustomVariableMigrationException {
+        if (!customFormsFeatureFlags.isCustomVariableMigrationEnabled()) {
+            throw new CustomVariableMigrationException("Migration not enabled");
+        }
         String queryStr = String.format(QUERY, field_definition_id, field_definition_id);
         CustomVariableMigrationHelper helper = new CustomVariableMigrationHelper(template);
         log.info("Request for custom variable migration received " + field_definition_id + " from user " + user.getUsername());
@@ -886,6 +893,7 @@ public class LegacyCustomVariableMigrator   {
     private final NrgEventService eventService;
     private final ExecutorService executorService;
     private final SiteConfigPreferences siteConfigPreferences;
+    private final CustomFormsFeatureFlags customFormsFeatureFlags;
     private final ObjectMapper objectMapper;
     private final ObjectMapper objectMapperEscapeNonAscii;
 

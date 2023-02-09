@@ -16,6 +16,7 @@ import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.customforms.customvariable.migration.service.CustomVariableMigrator;
 import org.nrg.xnat.customforms.customvariable.migration.service.LegacyCustomVariableMigrator;
+import org.nrg.xnat.features.CustomFormsFeatureFlags;
 import org.nrg.xnat.customforms.pojo.CollatedLegacyCustomVariable;
 import org.nrg.xnat.customforms.utils.CustomFormsConstants;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,16 +41,19 @@ public class LegacyCustomVariableApi extends AbstractXapiRestController {
 
     private final CustomVariableMigrator customVariableMigrator;
     private final LegacyCustomVariableMigrator legacyCustomVariableMigrator;
+    private final CustomFormsFeatureFlags customFormsFeatureFlags;
 
     @Autowired
     public LegacyCustomVariableApi(final UserManagementServiceI userManagementService,
-                          final RoleHolder roleHolder,
-                          final CustomVariableMigrator customVariableMigrator,
-                          final LegacyCustomVariableMigrator legacyCustomVariableMigrator
+                                   final RoleHolder roleHolder,
+                                   final CustomVariableMigrator customVariableMigrator,
+                                   final LegacyCustomVariableMigrator legacyCustomVariableMigrator,
+                                   final CustomFormsFeatureFlags customFormsFeatureFlags
     ) {
         super(userManagementService, roleHolder);
         this.customVariableMigrator = customVariableMigrator;
         this.legacyCustomVariableMigrator = legacyCustomVariableMigrator;
+        this.customFormsFeatureFlags = customFormsFeatureFlags;
     }
 
 
@@ -79,12 +83,16 @@ public class LegacyCustomVariableApi extends AbstractXapiRestController {
             @ApiResponse(code = 200, message = "Success"),
             @ApiResponse(code = 400, message = "Bad Request"),
             @ApiResponse(code = 401, message = "Unauthorized"),
+            @ApiResponse(code = 403, message = "Not enabled"),
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "/migratetoformio/{field_definition_id}",  method = RequestMethod.POST, restrictTo = Role)
     @AuthorizedRoles({CustomFormsConstants.ADMIN_ROLE_NAME, CustomFormsConstants.DATAFORM_MANAGER_ROLE})
     public ResponseEntity<Void> migrateCustomVariableToDynamicVariable(final @PathVariable String field_definition_id,
                                                                          final @RequestParam(required = false) String trackingId
     ) {
+        if (!customFormsFeatureFlags.isCustomVariableMigrationEnabled()) {
+            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+        }
         try {
             legacyCustomVariableMigrator.migrateToFormIO(field_definition_id, trackingId, getSessionUser());
             return new ResponseEntity<>(HttpStatus.OK);

@@ -26,8 +26,6 @@ import javassist.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.annotations.XapiRestController;
-import org.nrg.framework.beans.XnatPluginBean;
-import org.nrg.framework.beans.XnatPluginBeanManager;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.AuthorizedRoles;
 import org.nrg.xapi.rest.XapiRequestMapping;
@@ -59,9 +57,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.zip.DataFormatException;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Role;
@@ -74,7 +70,6 @@ public class CustomFormsApi extends AbstractXapiRestController {
 
     private final CustomFormManagerService formManagerService;
     private final CustomFormPermissionsService permissionsService;
-    private final Map<String, XnatPluginBean> plugins;
     private final ObjectMapper objectMapper;
     private final ObjectMapper objectMapperNoFailOnUnknown;
 
@@ -82,13 +77,11 @@ public class CustomFormsApi extends AbstractXapiRestController {
     public CustomFormsApi(final UserManagementServiceI userManagementService,
                           final CustomFormManagerService formManagerService,
                           final RoleHolder roleHolder,
-                          final XnatPluginBeanManager manager,
                           final CustomFormPermissionsService permissionsService,
                           final ObjectMapper objectMapper
     ) {
         super(userManagementService, roleHolder);
         this.formManagerService = formManagerService;
-        plugins = new HashMap<>(manager.getPluginBeans());
         this.permissionsService = permissionsService;
 
         this.objectMapper = objectMapper;
@@ -383,12 +376,8 @@ public class CustomFormsApi extends AbstractXapiRestController {
             if (!permissionsService.isUserAdminOrDataManager(user) && !permissionsService.isUserProjectOwner(user, projectId)) {
                 return new ResponseEntity<>(HttpStatus.FORBIDDEN);
             }
-            boolean protocolsPluginDeployed = false;
-            if (plugins.containsKey(CustomFormsConstants.PROTOCOLS_PLUGIN_IDENTIFIER)) {
-                protocolsPluginDeployed = true;
-            }
-            XnatFormsIOEnv env = new XnatFormsIOEnv(protocolsPluginDeployed);
-            return new ResponseEntity<>(env, HttpStatus.OK);
+
+            return new ResponseEntity<>(formManagerService.getFormsEnvironment(), HttpStatus.OK);
         } catch (Exception e) {
             return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
         }

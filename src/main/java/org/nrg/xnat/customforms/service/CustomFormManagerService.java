@@ -8,6 +8,7 @@ import org.nrg.xnat.customforms.exceptions.InsufficientPermissionsException;
 import org.nrg.xnat.customforms.pojo.ComponentPojo;
 import org.nrg.xnat.customforms.pojo.SubmissionPojo;
 import org.nrg.xnat.customforms.pojo.UserOptionsPojo;
+import org.nrg.xnat.customforms.pojo.XnatFormsIOEnv;
 import org.nrg.xnat.customforms.pojo.formio.FormAppliesToPoJo;
 import org.nrg.xnat.customforms.pojo.formio.PseudoConfiguration;
 import org.nrg.xnat.customforms.pojo.formio.RowIdentifier;
@@ -52,4 +53,6 @@ public interface CustomFormManagerService {
     void createNew(CustomVariableForm form, UserI user,
                    UserOptionsPojo userOptions,
                    String entityId, String status);
+
+    XnatFormsIOEnv getFormsEnvironment();
 }

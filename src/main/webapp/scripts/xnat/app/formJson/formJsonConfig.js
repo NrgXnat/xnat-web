@@ -54,6 +54,8 @@ var XNAT = getObject(XNAT || {});
     xnatFormManager.sitedefinitions = [];
 
     xnatFormManager.siteHasProtocolsPluginDeployed = false;
+    xnatFormManager.isProjectOwnerFormCreationEnabled = false;
+    xnatFormManager.isCustomVariableMigrationEnabled = false;
 
     const PRIMARY_KEY_FIELDNAME = "idCustomVariableFormAppliesTo";
 
@@ -117,7 +119,10 @@ var XNAT = getObject(XNAT || {});
             dataType: 'json',
             async: false,
             success: function (data) {
-                xnatFormManager.siteHasProtocolsPluginDeployed = data['siteHasProtocolsPluginDeployed'];
+                xnatFormManager.siteHasProtocolsPluginDeployed = data.siteHasProtocolsPluginDeployed;
+                let features = data.features || {};
+                xnatFormManager.isProjectOwnerFormCreationEnabled = features.isProjectOwnerFormCreationEnabled;
+                xnatFormManager.isCustomVariableMigrationEnabled = features.isCustomVariableMigrationEnabled;
                 callback.apply(this, arguments);
             }
         });

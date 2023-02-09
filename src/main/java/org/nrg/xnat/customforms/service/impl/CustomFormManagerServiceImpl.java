@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hibernate.NonUniqueObjectException;
+import org.nrg.framework.beans.XnatPluginBeanManager;
 import org.nrg.framework.constants.Scope;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -30,6 +31,7 @@ import org.nrg.xnat.customforms.interfaces.annotations.CustomFormFetcherAnnotati
 import org.nrg.xnat.customforms.pojo.ComponentPojo;
 import org.nrg.xnat.customforms.pojo.SubmissionPojo;
 import org.nrg.xnat.customforms.pojo.UserOptionsPojo;
+import org.nrg.xnat.customforms.pojo.XnatFormsIOEnv;
 import org.nrg.xnat.customforms.pojo.formio.FormAppliesToPoJo;
 import org.nrg.xnat.customforms.pojo.formio.PseudoConfiguration;
 import org.nrg.xnat.customforms.pojo.formio.RowIdentifier;
@@ -45,6 +47,7 @@ import org.nrg.xnat.customforms.utils.FormsIOJsonUtils;
 import org.nrg.xnat.entities.CustomVariableAppliesTo;
 import org.nrg.xnat.entities.CustomVariableForm;
 import org.nrg.xnat.entities.CustomVariableFormAppliesTo;
+import org.nrg.xnat.features.CustomFormsFeatureFlags;
 import org.nrg.xnat.utils.WorkflowUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -81,8 +84,11 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
     private final ObjectSaverService objectSaver;
     private final CustomFormPermissionsService customFormPermissionsService;
     private final DataLocateService dataLocateService;
+    private final CustomFormsFeatureFlags featureFlags;
+    private final XnatPluginBeanManager xnatPluginBeanManager;
 
     private final CustomFormFetcherI formFetcher;
+
 
     @Autowired
     public CustomFormManagerServiceImpl(final CustomVariableAppliesToService selectionService,
@@ -91,13 +97,17 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
                                         final ObjectSaverService objectSaver,
                                         final CustomFormPermissionsService customFormPermissionsService,
                                         final DataLocateService dataLocateService,
-                                        final List<CustomFormFetcherI> customFormFetchers) {
+                                        final List<CustomFormFetcherI> customFormFetchers,
+                                        final CustomFormsFeatureFlags featureFlags,
+                                        final XnatPluginBeanManager xnatPluginBeanManager) {
         this.selectionService = selectionService;
         this.formService = formService;
         this.customVariableFormAppliesToService = customVariableFormAppliesToService;
         this.objectSaver = objectSaver;
         this.customFormPermissionsService = customFormPermissionsService;
         this.dataLocateService = dataLocateService;
+        this.featureFlags = featureFlags;
+        this.xnatPluginBeanManager = xnatPluginBeanManager;
 
         formFetcher = getCustomFormFetcher(customFormFetchers);
     }
@@ -262,9 +272,14 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         }
 
         // User is not an admin or form manager.
+
+        if (!featureFlags.isProjectOwnerFormCreationEnabled()) {
+            return "User cannot create a project form";
+        }
+
         if (submission.getIsThisASiteWideConfiguration().equalsIgnoreCase(CustomFormsConstants.IS_SITEWIDE_YES)) {
             // Only admins or form managers are allowed to add a site-wide form.
-            return "Insufficient user permissions to create a site wide form: Not Admin or Data Form Manager";
+            return "User cannot create a site wide form";
         }
 
         // Check that user is an owner of all projects they want to add the form to
@@ -279,7 +294,7 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         }
 
         final boolean singular = notOwnerProjects.size() == 1;
-        return "Insufficient user permissions: Not Admin, Data Form Manager or Project Owner of project" +
+        return "User cannot create a project form in project" +
                 (singular ? " " : "s ") +
                 String.join(", ", notOwnerProjects);
     }
@@ -1044,6 +1059,14 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
                            final String entityId, final String status) {
         CustomVariableAppliesTo customVariableAppliesTo = getCustomVariableAppliesTo(userOptions, entityId);
         objectSaver.saveAll(customVariableAppliesTo, form, user, status);
+    }
+
+    @Override
+    public XnatFormsIOEnv getFormsEnvironment() {
+        return new XnatFormsIOEnv(
+                xnatPluginBeanManager.getPluginBeans().containsKey(CustomFormsConstants.PROTOCOLS_PLUGIN_IDENTIFIER),
+                featureFlags
+        );
     }
 
 

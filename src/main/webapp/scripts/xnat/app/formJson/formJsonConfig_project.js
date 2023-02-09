@@ -47,6 +47,8 @@ XNAT.plugin =
 
 
     projectFormManager.siteHasProtocolsPluginDeployed = false;
+    projectFormManager.isProjectOwnerFormCreationEnabled = false;
+    projectFormManager.isCustomVariableMigrationEnabled = false;
 
     const PRIMARY_KEY_FIELDNAME = "idCustomVariableFormAppliesTo";
 
@@ -991,7 +993,10 @@ XNAT.plugin =
             dataType: 'json',
             async: false,
             success: function(data) {
-                projectFormManager.siteHasProtocolsPluginDeployed = data['siteHasProtocolsPluginDeployed'];
+                projectFormManager.siteHasProtocolsPluginDeployed = data.siteHasProtocolsPluginDeployed;
+                let features = data.features || {};
+                projectFormManager.isProjectOwnerFormCreationEnabled = features.isProjectOwnerFormCreationEnabled;
+                projectFormManager.isCustomVariableMigrationEnabled = features.isCustomVariableMigrationEnabled;
                 callback.apply(this, arguments);
             }
         });
@@ -1012,7 +1017,9 @@ XNAT.plugin =
         projectFormManager.$container = $manager;
 
         $manager.append(projectFormManager.table());
-        $manager.append(projectFormManager.addNewBtn());
+        if (projectFormManager.isProjectOwnerFormCreationEnabled) {
+            $manager.append(projectFormManager.addNewBtn());
+        }
 
         return {
             element: $manager[0],

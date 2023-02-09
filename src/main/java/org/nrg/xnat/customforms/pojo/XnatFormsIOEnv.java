@@ -1,16 +1,12 @@
 package org.nrg.xnat.customforms.pojo;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import org.nrg.xnat.features.CustomFormsFeatureFlags;
 
-@Getter
-@Setter
+@Data
+@AllArgsConstructor
 public class XnatFormsIOEnv {
-
     private boolean siteHasProtocolsPluginDeployed;
-
-    public XnatFormsIOEnv(boolean protocolPluginDeployed) {
-        this.siteHasProtocolsPluginDeployed = protocolPluginDeployed;
-    }
-
+    private CustomFormsFeatureFlags features;
 }
