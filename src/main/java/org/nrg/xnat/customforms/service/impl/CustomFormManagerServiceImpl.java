@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import javassist.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.hibernate.NonUniqueObjectException;
@@ -59,6 +60,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.nrg.xnat.customforms.events.CustomFormEventI.CREATE;
 import static org.nrg.xnat.customforms.events.CustomFormEventI.DELETE;
@@ -510,15 +512,14 @@ public class CustomFormManagerServiceImpl implements CustomFormManagerService {
         final String subType = formAppliesTo.getCustomVariableAppliesTo().getSubType();
         UserOptionsPojo userOptionsPojo = new UserOptionsPojo(dataType, protocol, visit, subType);
         for (String project : projects) {
-            List<CustomVariableAppliesTo> appliesTos = selectionService.filterByStatusFindByScopeEntityIdDataTypeProtocolVisitSubtype(
-                    Scope.Project, project, dataType, protocol, visit, subType, null
-            );
-            if (appliesTos != null && appliesTos.size() > 0) {
-                CustomVariableAppliesTo appliesTo = appliesTos.get(0);
-                if (appliesTo.getCustomVariableFormAppliesTos().size() > 0) {
-                    CustomVariableFormAppliesTo removalRow = appliesTo.getCustomVariableFormAppliesTos().get(0);
-                    deleteSafely(removalRow.getRowIdentifier(), removalRow);
-                }
+            CustomVariableForm form = formAppliesTo.getCustomVariableForm();
+            List<CustomVariableFormAppliesTo> overlappingFormAppliesTos = customVariableFormAppliesToService.findByFormId(form.getId()).stream()
+                    .filter(apTo -> Objects.nonNull(apTo.getCustomVariableAppliesTo().getEntityId()))
+                    .filter(apTo -> apTo.getCustomVariableAppliesTo().getEntityId().equals(project))
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(overlappingFormAppliesTos)) {
+                CustomVariableFormAppliesTo overlappingAppliesTo = overlappingFormAppliesTos.get(0);
+                deleteSafely(overlappingAppliesTo.getRowIdentifier(), overlappingAppliesTo);
             } else {
                 CustomVariableAppliesTo customVariableAppliesTo = getCustomVariableAppliesTo(userOptionsPojo, project);
                 objectSaver.saveOnlyAppliesToAndAssign(customVariableAppliesTo, formAppliesTo.getCustomVariableForm(), user, formStatus);

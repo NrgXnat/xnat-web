@@ -222,7 +222,7 @@ var XNAT = getObject(XNAT || {});
         let projectList = getProjects(configItem);
         submissionDataObj.zIndex = zIndex;
         let rowProtocol = extractParts(configItem['path'], 3);
-        if (configItem.scope === "Project") {
+        if (configItem.scope === "Site") {
             // A site wide configuration
             submissionDataObj['isThisASiteWideConfiguration'] = 'yes';
         } else {
