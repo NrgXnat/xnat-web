@@ -15,6 +15,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import groovy.util.logging.Slf4j;
+import net.sf.json.JSON;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.xnat.customforms.exceptions.CustomVariableNameClashException;
 import org.nrg.xnat.entities.CustomVariableAppliesTo;
@@ -129,63 +130,75 @@ public class FormsIOJsonUtils {
      * @return - String - the concatenated form JSON
      * @throws JsonProcessingException
      */
-    public static String concatenate(final List<CustomVariableFormAppliesTo> forms, final String title, final boolean onlyEnabled, final boolean appendPreviousNextButtons) throws JsonProcessingException {
-        String concatenatedFormsJson = "{}";
-        if (forms == null || forms.size() < 1) {
-            return concatenatedFormsJson;
+    public static String concatenate(final List<CustomVariableFormAppliesTo> forms, final List<CustomVariableForm> appendForms, final String title, final boolean onlyEnabled, final boolean appendPreviousNextButtons) throws JsonProcessingException {
+        if (forms.isEmpty() && (null != appendForms) && appendForms.isEmpty()) {
+            return "{}";
         }
-        Comparator comparator = Comparator.comparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getzIndex())
-                .thenComparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getCreated()).reversed();
-        forms.sort(comparator);
+        List<CustomVariableForm> applicableForms = new ArrayList();
+        if (!forms.isEmpty()) {
+            Comparator comparator = Comparator.comparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getzIndex())
+                    .thenComparing((CustomVariableFormAppliesTo h) -> h.getCustomVariableForm().getCreated()).reversed();
+            forms.sort(comparator);
+            for (CustomVariableFormAppliesTo vfs : forms) {
+                if (!onlyEnabled || (onlyEnabled && vfs.getStatus().equals(CustomFormsConstants.ENABLED_STATUS_STRING))) {
+                    applicableForms.add(vfs.getCustomVariableForm());
+                }
+            }
+        }
+        if (appendForms != null && !appendForms.isEmpty()) {
+            applicableForms.addAll(appendForms);
+        }
+        return concatenate(applicableForms, title, appendPreviousNextButtons);
+    }
+
+    public static String concatenate(final List<CustomVariableForm> forms,  final String title, final boolean appendPreviousNextButtons) throws JsonProcessingException {
         ObjectMapper objectMapper = new ObjectMapper();
         ObjectNode concatenatedNode = objectMapper.createObjectNode();
         concatenatedNode.put("title", title);
         concatenatedNode.put("display", "wizard");
         concatenatedNode.put("settings", "{}");
         ArrayNode rootComponentsNode = objectMapper.createArrayNode();
-        int index = 0;
         LinkedHashMap<ObjectNode, JsonNode> wizardPages = new LinkedHashMap<ObjectNode, JsonNode>();
-        for (CustomVariableFormAppliesTo vfs : forms) {
-                if (!onlyEnabled || (onlyEnabled && vfs.getStatus().equals(CustomFormsConstants.ENABLED_STATUS_STRING))) {
-                    index = index + 1;
-                    CustomVariableForm form = vfs.getCustomVariableForm();
-                    JsonNode formDefinition = form.getFormIOJsonDefinition();
-                    JsonNode titleNode = formDefinition.path(TITLE_KEY);
-                    JsonNode displayType = formDefinition.path(DISPLAY_KEY);
-                    String pageTitle = "Custom Fields" + index;
-                    if (titleNode != null) {
-                        pageTitle = titleNode.asText();
-                    }
-                    JsonNode componentNode = formDefinition.at("/" + COMPONENTS_KEY);
-                    if (displayType.asText().equals("wizard")) {
-                        if (componentNode != null && componentNode.isArray()) {
-                            for (final JsonNode comp : componentNode) {
-                                JsonNode key = comp.get(COMPONENTS_KEY_FIELD);
-                                JsonNode type = comp.get(COMPONENTS_TYPE_FIELD);
-                                if (type.asText().equals(COMPONENT_CONTENT_TYPE)) {
-                                    continue;
-                                }
-                                JsonNode wizardPageTitle = comp.get(TITLE_KEY);
-                                JsonNode wizardPageLabel = comp.get(TITLE_KEY);
-                                String panelTitle = pageTitle;
-                                if (wizardPageTitle != null) {
-                                    panelTitle += " - " + wizardPageTitle.asText();
-                                }else if (wizardPageLabel != null) {
-                                    panelTitle += " - " + wizardPageLabel.asText();
-                                }
 
-                                if (type.asText().equals(COMPONENT_PANEL_TYPE)) {
-                                    ObjectNode panelNode   = getObjectnode(panelTitle, ++index);
-                                    JsonNode compNodes = comp.get(COMPONENTS_KEY);
-                                    wizardPages.put(panelNode, compNodes);
-                                }
-                            }
+        int index = 0;
+        for (CustomVariableForm form : forms) {
+            index++;
+            JsonNode formDefinition = form.getFormIOJsonDefinition();
+            JsonNode titleNode = formDefinition.path(TITLE_KEY);
+            JsonNode displayType = formDefinition.path(DISPLAY_KEY);
+            String pageTitle = "Custom Fields: " + index;
+            if (titleNode != null) {
+                pageTitle = titleNode.asText();
+            }
+            JsonNode componentNode = formDefinition.at("/" + COMPONENTS_KEY);
+            if (displayType.asText().equals("wizard")) {
+                if (componentNode != null && componentNode.isArray()) {
+                    for (final JsonNode comp : componentNode) {
+                        JsonNode key = comp.get(COMPONENTS_KEY_FIELD);
+                        JsonNode type = comp.get(COMPONENTS_TYPE_FIELD);
+                        if (type.asText().equals(COMPONENT_CONTENT_TYPE)) {
+                            continue;
                         }
-                    }else {
-                        ObjectNode panelNode   = getObjectnode(pageTitle, index);
-                        wizardPages.put(panelNode, componentNode);
+                        JsonNode wizardPageTitle = comp.get(TITLE_KEY);
+                        JsonNode wizardPageLabel = comp.get(TITLE_KEY);
+                        String panelTitle = pageTitle;
+                        if (wizardPageTitle != null) {
+                            panelTitle += " - " + wizardPageTitle.asText();
+                        }else if (wizardPageLabel != null) {
+                            panelTitle += " - " + wizardPageLabel.asText();
+                        }
+
+                        if (type.asText().equals(COMPONENT_PANEL_TYPE)) {
+                            ObjectNode panelNode   = getObjectnode(panelTitle, ++index);
+                            JsonNode compNodes = comp.get(COMPONENTS_KEY);
+                            wizardPages.put(panelNode, compNodes);
+                        }
                     }
                 }
+            }else {
+                ObjectNode panelNode   = getObjectnode(pageTitle, index);
+                wizardPages.put(panelNode, componentNode);
+            }
         }
         Set<ObjectNode> wizardPageSet = wizardPages.keySet();
         ObjectNode[] wizardPageArray = wizardPageSet.toArray(new ObjectNode[wizardPageSet.size()]);
@@ -219,7 +232,6 @@ public class FormsIOJsonUtils {
         if (rootComponentsNode.size() < 1) {
             return "{}";
         }
-
         concatenatedNode.set("components", rootComponentsNode);
         return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(concatenatedNode);
     }
