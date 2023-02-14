@@ -61,7 +61,7 @@ public class XDATScreen_uploadCSVWithCustomVariables1 extends XDATScreen_uploadC
 	    for (CustomVariableForm form : allEnabledFormsForDataType) {
 			String key =  String.format("%s (Form ID: %s)", form.title(), form.getFormUuid());
 
-			List<FormIOJsonToXnatCustomField> customFields = CustomFormHelper.getFormObj(form);
+			List<FormIOJsonToXnatCustomField> customFields = CustomFormHelper.GetFormObj(form);
 			List<FormIOJsonToXnatCustomField> appendedFormUUIDToKeys = appendFormUUIDToKey(customFields);
 			ArrayList<Object> formFields = formsById.get(key);
 			if (formFields == null || formFields.isEmpty()) {

@@ -47,11 +47,8 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
     public void refreshDisplayFields() {
         getSchemaElements().forEach(schemaElement -> {
             final String dataType = schemaElement.getFullXMLName();
-            List<FormFieldPojo> formFields = formIOJsonService.getFormsForObject(dataType, null, null, null, null);
-            if (CollectionUtils.isNotEmpty(formFields)) {
-                return;
-            }
-            formFields.forEach(field -> addDisplayField(schemaElement, field));
+            formIOJsonService.getFormsForObject(dataType, null, null, null, null)
+                             .forEach(field -> addDisplayField(schemaElement, field));
         });
     }
 
@@ -121,7 +118,7 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
         if (deleteExistingFormDisplayFields) {
             removeDisplayFieldsThatBeginWith(schemaElement, formUUID);
         }
-        CustomFormHelper.getFormObj(form)
+        CustomFormHelper.GetFormObj(form)
                 .forEach(f -> addDisplayField(schemaElement, f));
     }
 

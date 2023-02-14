@@ -15,10 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.customforms.pojo.FormIOJsonToXnatCustomField;
 import org.nrg.xnat.entities.CustomVariableForm;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * A Helper class to manage the Custom Form JSONs
@@ -27,17 +24,25 @@ import java.util.UUID;
 @Slf4j
 public class CustomFormHelper {
 
-    public static List<FormIOJsonToXnatCustomField> getFormObj(CustomVariableForm form) {
-        // Convert the configuration into a new FormJson Pojo
+    public static List<FormIOJsonToXnatCustomField> GetFormObj(CustomVariableForm form) {
+        if (null == form) {
+            return Collections.emptyList();
+        }
         final JsonNode components = form.getFormIOJsonDefinition().get("components");
+        final UUID formUUID = form.getFormUuid();
+        return GetFormObj(formUUID, components);
+    }
+
+    public static List<FormIOJsonToXnatCustomField> GetFormObj(final UUID formUUID, final JsonNode components) {
+        // Convert the configuration into a new FormJson Pojo
         if (components == null || !components.isArray()) {
             return Collections.emptyList();
         }
-
         final List<FormIOJsonToXnatCustomField> formIOJsonToXnatCustomFields = new ArrayList<>();
-        traverse(form.getFormUuid(), components, formIOJsonToXnatCustomFields);
+        traverse(formUUID, components, formIOJsonToXnatCustomFields);
         return formIOJsonToXnatCustomFields;
     }
+
 
     /**
      * Recursively traverse the FormIO JSON structure to find input components and skip layout components

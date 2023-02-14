@@ -52,4 +52,6 @@ public class CustomFormsConstants {
     public static final String IS_SITEWIDE_NO = "NO";
     public static final Set<String> IS_SITEWIDE_VALUES = Stream.of(IS_SITEWIDE_YES, IS_SITEWIDE_NO)
             .collect(Collectors.collectingAndThen(Collectors.toSet(), Collections::unmodifiableSet));
+
+
 }
