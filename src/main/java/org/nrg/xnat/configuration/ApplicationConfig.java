@@ -63,8 +63,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-@ComponentScan({"org.nrg.automation.daos", "org.nrg.automation.repositories", "org.nrg.config.daos",
-                "org.nrg.dcm.xnat", "org.nrg.dicomtools.filters", "org.nrg.framework.datacache.impl.hibernate",
+@Configuration
+@ComponentScan({"org.nrg.dcm.xnat", "org.nrg.dicomtools.filters", "org.nrg.framework.datacache.impl.hibernate",
                 "org.nrg.framework.services.impl", "org.nrg.resources", "org.nrg.xdat.daos", "org.nrg.xdat.security.validators", "org.nrg.xdat.security.aspects",
                 "org.nrg.xdat.services.cache.impl", "org.nrg.xdat.services.impl.hibernate", "org.nrg.xft.daos",
                 "org.nrg.xft.event.listeners", "org.nrg.xft.services", "org.nrg.xft.utils", "org.nrg.xnat.configuration",

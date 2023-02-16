@@ -46,7 +46,6 @@ apply plugin: "com.bmuschko.tomcat"
 apply plugin: "com.palantir.git-version"
 apply plugin: "io.franzbecker.gradle-lombok"
 apply plugin: "io.spring.dependency-management"
->>>>>>> Added Notification
 
 repositories {
     mavenLocal()
@@ -175,7 +174,8 @@ dependencies {
     implementation "org.nrg:automation"
     implementation "org.nrg:dicomtools"
     implementation "org.nrg.dicom:dicom-edit4"
-    implementation "org.nrg.dicom:dicom-edit6"
+    implementation "org.nrg.dicom:dicom-edit6:6.4.0-SNAPSHOT"
+
     implementation "org.nrg.dicom:pixelEditor"
     implementation "org.nrg:mail"
     implementation "org.nrg:notify"
@@ -230,7 +230,6 @@ dependencies {
     implementation "org.springframework.security:spring-security-taglibs"
     implementation "org.springframework.ldap:spring-ldap-core"
 
-    implementation "org.apache.activemq:activemq-core"
     implementation "org.hibernate:hibernate-core"
     implementation "org.hibernate:hibernate-ehcache"
     implementation "org.hibernate:hibernate-validator"
@@ -314,7 +313,7 @@ dependencies {
     providedCompile "org.jetbrains:annotations"
     providedCompile "org.kohsuke.metainf-services:metainf-services"
 
-    runtimeOnly "org.nrg.xnatx.plugins:ximgview-plugin"
+    //runtimeOnly "org.nrg.xnatx.plugins:ximgview-plugin"
     //runtimeOnly "org.apache.activemq:activemq-core"
 
     runtimeOnly "org.apache.ant:ant"

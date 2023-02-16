@@ -159,7 +159,7 @@ public class ProjectExportApi extends AbstractXapiProjectRestController {
 					boolean found = false;
 					if (configs != null && configs.size() > 0) {
 						for (Configuration c : configs) {
-							if (c.getPath().equals(label)) {
+							if (label.equals(c.getPath())) {
 								return  new ResponseEntity<>(c, HttpStatus.OK);
 							}
 						}

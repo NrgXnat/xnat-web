@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 
-import org.nrg.dicom.dicomedit.ScriptApplicator;
+import org.nrg.dicom.dicomedit.BaseScriptApplicator;
 import org.nrg.dicom.mizer.exceptions.MizerException;
 import org.nrg.xdat.model.XnatAbstractresourceI;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -33,7 +33,7 @@ public class DefaultExportAnonymizerImpl implements ExportAnonymizerI{
 	public boolean anonymize(XnatAbstractresourceI absRsc, final InputStream anonIs, File outDir) {
 		boolean anonymized = false;
 		try {
-			final ScriptApplicator applicator  = new ScriptApplicator(anonIs);
+			final BaseScriptApplicator applicator  = new BaseScriptApplicator(anonIs);
 			String uriAsStr = null;
 			if(absRsc instanceof XnatResource){
 				uriAsStr = ((XnatResource)absRsc).getUri();
@@ -57,7 +57,7 @@ public class DefaultExportAnonymizerImpl implements ExportAnonymizerI{
 		return anonymized;
 	}
 	
-	private void anonymizeFiles(ScriptApplicator applicator,File inFolder, File outDir) throws MizerException, FileNotFoundException, IOException{
+	private void anonymizeFiles(BaseScriptApplicator applicator,File inFolder, File outDir) throws MizerException, FileNotFoundException, IOException{
 		FilenameFilter filter = new FilenameFilter() {
 	        @Override
 	        public boolean accept(File f, String name) {

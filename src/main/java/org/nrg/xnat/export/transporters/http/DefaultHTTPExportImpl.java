@@ -212,9 +212,9 @@ public class DefaultHTTPExportImpl  implements Callable<String>  {
 					emails.add(e);
 				}
 			}
-			new NotifyProjectExportListeners(project, "email/Export_Success.vm", _transportManifest.getAuthorizedBy(), params, "export.lst", emails, "success").send();
-			final String projectId = _transportManifest.getProject().getId();
-			publish("Project " + projectId + " export complete. Total Number of Files exported: "+ fileCounter + ". Total data exported (b):" + fileSize );
+//			new NotifyProjectExportListeners(project, "email/Export_Success.vm", _transportManifest.getAuthorizedBy(), params, "export.lst", emails, "success").send();
+//			final String projectId = _transportManifest.getProject().getId();
+//			publish("Project " + projectId + " export complete. Total Number of Files exported: "+ fileCounter + ". Total data exported (b):" + fileSize );
 		} catch (Exception e1) {
 			log.error(e1.getMessage());
 		}
