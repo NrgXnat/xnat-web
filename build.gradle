@@ -230,6 +230,9 @@ dependencies {
     implementation "org.springframework.security:spring-security-taglibs"
     implementation "org.springframework.ldap:spring-ldap-core"
 
+/*
+    implementation "org.apache.activemq:activemq-core"
+*/
     implementation "org.hibernate:hibernate-core"
     implementation "org.hibernate:hibernate-ehcache"
     implementation "org.hibernate:hibernate-validator"

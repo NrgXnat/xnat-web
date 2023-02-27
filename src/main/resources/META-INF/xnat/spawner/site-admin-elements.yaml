@@ -2002,6 +2002,7 @@ dicomScpReceivers:
         dicomScpManagerScript:
             tag: script|src="~/scripts/xnat/admin/dicomScpManager.js"
 
+
 ## FILE SYSTEM
 
 fileSystemSettingsWarning:
