@@ -287,6 +287,8 @@ var XNAT = getObject(XNAT || {});
                 formWizardJson = data;
             }
         });
+        formWizardJson['components'][1]['components'][1]['label'] = "This form applies to the " + projectDataTypePluralName;
+        formWizardJson['components'][1]['components'][1]['placeholder'] = "Select " + projectDataTypePluralName +" here";
         Formio.createForm(document.getElementById('formio'), formWizardJson, {
             breadcrumbSettings: {clickable:false},
             buttonSettings: {
