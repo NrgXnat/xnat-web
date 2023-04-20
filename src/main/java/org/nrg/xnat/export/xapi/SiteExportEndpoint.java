@@ -53,9 +53,11 @@ import lombok.extern.slf4j.Slf4j;
 public class SiteExportEndpoint extends AbstractXapiRestController{
 
 	@Autowired
-	public SiteExportEndpoint(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ConfigService configService) {
+	public SiteExportEndpoint(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final ConfigService configService,
+							  final ObjectMapper objectMapper) {
 		super(userManagementService, roleHolder);
-		_configService = configService;
+		this.configService = configService;
+		this.objectMapper = objectMapper;
 	}
 
 	
@@ -70,16 +72,13 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
 		 //TODO: Is the JSON valid as per schema
 		 //Add to the Site
 		 try {
-				ObjectMapper objectMapper = new ObjectMapper();	
-				objectMapper.setSerializationInclusion(Include.NON_NULL);
-				
-			 	EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);  
+			 EndpointDefinition endPointDefinition = objectMapper.readValue(jsonbody, EndpointDefinition.class);
 		 	 //Save the json to the export tool
 			 boolean overwriteBool = Boolean.parseBoolean(overwrite);	
-		 	 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID, endPointDefinition.getLabel());
+		 	 Configuration configurationForToolAndExportHandler = configService.getConfig(ExportConstants.TOOL_ID, endPointDefinition.getLabel());
 		 	 
 		 	 if (configurationForToolAndExportHandler == null || overwriteBool) {
-		 		 _configService.replaceConfig(user.getUsername(), "User Added", ExportConstants.TOOL_ID, endPointDefinition.getLabel(), true,objectMapper.writeValueAsString(endPointDefinition), Scope.Site, null );
+		 		 configService.replaceConfig(user.getUsername(), "User Added", ExportConstants.TOOL_ID, endPointDefinition.getLabel(), true,objectMapper.writeValueAsString(endPointDefinition), Scope.Site, null );
 		 	 }else {
 		           return new ResponseEntity<>("Delete existing export handler or set overwrite=true",HttpStatus.BAD_REQUEST);
 		 	 }
@@ -100,10 +99,10 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "delete", method = DELETE, restrictTo = Admin)
     public ResponseEntity<String> delete(@RequestParam(value = "label", required=true) final String label) {
-		 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID, label);
+		 Configuration configurationForToolAndExportHandler = configService.getConfig(ExportConstants.TOOL_ID, label);
 		 if (configurationForToolAndExportHandler != null) {
 			 try {
-				 _configService.delete(configurationForToolAndExportHandler);
+				 configService.delete(configurationForToolAndExportHandler);
 				 return  new ResponseEntity<>("Endpoint disabled", HttpStatus.OK);
 			 }catch(Exception e) {
 				 return  new ResponseEntity<>("Endpoint could not be disabled", HttpStatus.BAD_REQUEST);
@@ -121,7 +120,7 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "get", method = GET,  restrictTo = Admin)
     public ResponseEntity<Configuration> getDefinitionByLabel(@RequestParam(value = "label", required=true) final String label) {
-		 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID,label, Scope.Site, null);
+		 Configuration configurationForToolAndExportHandler = configService.getConfig(ExportConstants.TOOL_ID,label, Scope.Site, null);
 		 if (configurationForToolAndExportHandler != null) {
 			 try {
 				 return  new ResponseEntity<>(configurationForToolAndExportHandler, HttpStatus.OK);
@@ -141,21 +140,21 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
     @XapiRequestMapping(value = "enable", method = POST,  restrictTo = Admin)
     public ResponseEntity<Configuration> enable(@RequestParam(value = "label", required=true) final String label, @RequestParam(value = "enabled", required=true) final String enabled) {
 		final UserI user = getSessionUser();
-		 Configuration configurationForToolAndExportHandler = _configService.getConfig(ExportConstants.TOOL_ID,label, Scope.Site, null);
+		 Configuration configurationForToolAndExportHandler = configService.getConfig(ExportConstants.TOOL_ID,label, Scope.Site, null);
 		 boolean enabledBool = Boolean.parseBoolean(enabled);
 		 if (configurationForToolAndExportHandler != null) {
 			 try {
 				 if (enabledBool)
-					 _configService.enable(user.getUsername(), "User enabled", ExportConstants.TOOL_ID, label, Scope.Site, null);
+					 configService.enable(user.getUsername(), "User enabled", ExportConstants.TOOL_ID, label, Scope.Site, null);
 				 else { 
-					 _configService.disable(user.getUsername(), "User disabled", ExportConstants.TOOL_ID, label, Scope.Site, null);
+					 configService.disable(user.getUsername(), "User disabled", ExportConstants.TOOL_ID, label, Scope.Site, null);
 					 //All projects which have this endpoint get disabled
-					 List<String> projectIds = _configService.getProjects(ExportConstants.TOOL_ID);
+					 List<String> projectIds = configService.getProjects(ExportConstants.TOOL_ID);
 					 if (projectIds != null && projectIds.size() > 0) {
 						 for (String p : projectIds) {
-							Configuration projConfig =  _configService.getConfig(ExportConstants.TOOL_ID, label, Scope.Project, p);
+							Configuration projConfig =  configService.getConfig(ExportConstants.TOOL_ID, label, Scope.Project, p);
 							if (projConfig != null) 
-								_configService.disable(user.getUsername(), "User disabled", ExportConstants.TOOL_ID, label, Scope.Project, p);
+								configService.disable(user.getUsername(), "User disabled", ExportConstants.TOOL_ID, label, Scope.Project, p);
 						 }
 					 }
 				 } 
@@ -178,7 +177,7 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "list", method = GET, produces = MediaType.APPLICATION_JSON_VALUE,  restrictTo = Admin)
     public ResponseEntity<List<Configuration>> list() {
-		List<Configuration> configs = _configService.getConfigsByTool(ExportConstants.TOOL_ID, Scope.Site, null);
+		List<Configuration> configs = configService.getConfigsByTool(ExportConstants.TOOL_ID, Scope.Site, null);
 		if (configs != null && configs.size() > 0)
 			return  new ResponseEntity<>(configs, HttpStatus.OK);
 		else {
@@ -187,9 +186,7 @@ public class SiteExportEndpoint extends AbstractXapiRestController{
 		}
     }
 
-    
-    
-
-	private final ConfigService              _configService;
+	private final ConfigService configService;
+	private final ObjectMapper	objectMapper;
 
 }

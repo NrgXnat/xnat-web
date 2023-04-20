@@ -19,7 +19,7 @@ public class EndpointDefinition implements Serializable {
 	  private String label;
 
 	  @JsonProperty("export-handler")
-	  private String export_handler;
+	  private String exportHandler;
 	  
 	  
 	  private String description;
@@ -59,13 +59,13 @@ public class EndpointDefinition implements Serializable {
 	 * @return the export_handler
 	 */
 	public String getExportHandler() {
-		return export_handler;
+		return exportHandler;
 	}
 	/**
 	 * @param export_handler the export_handler to set
 	 */
 	public void setExportHandler(String label) {
-		this.export_handler = label;
+		this.exportHandler = label;
 	}
 	/**
 	 * @return the description
