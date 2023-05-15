@@ -1,56 +1,94 @@
 package org.nrg.xnat.services.cache;
 
-import static lombok.AccessLevel.PRIVATE;
-
-import com.google.common.collect.*;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.CacheException;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
-import net.sf.ehcache.event.CacheEventListener;
-import net.sf.ehcache.event.CacheEventListenerAdapter;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.framework.generics.GenericUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.nrg.framework.jcache.DefaultGenericCacheEntryListener;
+import org.nrg.framework.jcache.GenericCacheEventListener;
+import org.nrg.framework.jcache.JCacheHelper;
+import org.nrg.xft.ItemI;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.methods.AbstractXftItemEventHandlerMethod;
 import org.nrg.xft.event.methods.XftItemEventCriteria;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
 
 import javax.annotation.Nullable;
+import javax.cache.Cache;
 import javax.inject.Provider;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
+import static lombok.AccessLevel.PROTECTED;
 
 /**
- * Provides both {@link AbstractXftItemEventHandlerMethod} implementation and the default implementations for <b>CacheEventListener</b> methods
- * from the <b>CacheEventListenerAdapter</b> class.
+ * Provides both {@link AbstractXftItemEventHandlerMethod} implementation and the functionality for managing multiple
+ * caches under a single namespace.
  */
 @SuppressWarnings("WeakerAccess")
-@Getter(PRIVATE)
+@Getter(PROTECTED)
 @Accessors(prefix = "_")
 @Slf4j
-public abstract class AbstractXftItemAndCacheEventHandlerMethod extends AbstractXftItemEventHandlerMethod implements CacheEventListener {
+public abstract class AbstractXftItemAndCacheEventHandlerMethod extends AbstractXftItemEventHandlerMethod {
+    private final JCacheHelper                                   _cacheHelper;
+    private final Map<String, Pair<Class<?>, Class<?>>>          _cacheMap;
+    private final List<GenericCacheEventListener<String, ItemI>> _cacheEventListeners;
+
     /**
      * Creates the super class using the default <b>CacheEventListenerAdapter</b> implementation for the underlying default functionality.
      */
-    protected AbstractXftItemAndCacheEventHandlerMethod(final CacheManager cacheManager, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
-        this(cacheManager, null, first, criteria);
+    protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
+        this(cacheHelper, Collections.emptyMap(), Collections.emptyList(), first, criteria);
+    }
+
+    protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final Map<String, Pair<Class<?>, Class<?>>> cacheMap, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
+        this(cacheHelper, cacheMap, Collections.emptyList(), first, criteria);
     }
 
     /**
      * Creates the super class using the submitted <b>CacheEventListener</b> instance for the underlying default functionality.
      */
-    protected AbstractXftItemAndCacheEventHandlerMethod(final CacheManager cacheManager, final CacheEventListener cacheEventListener, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
-        super(first, criteria);
-        _cache = cacheManager.getCache(getCacheName());
-        _cacheEventListener = ObjectUtils.defaultIfNull(cacheEventListener, new CacheEventListenerAdapter());
-        registerCacheEventListener();
-        log.debug("XFT item event handler method and cache event listener created with a cache event listener instance of type {}, {} criteria specified", getCacheEventListener().getClass().getName(), criteria.length + 1);
+    @SuppressWarnings("unused")
+    protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final GenericCacheEventListener<String, ItemI> cacheEventListener, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
+        this(cacheHelper, Collections.emptyMap(), Collections.singletonList(cacheEventListener), first, criteria);
     }
 
+    /**
+     * Creates the super class using the submitted <b>CacheEventListener</b> instance for the underlying default functionality.
+     */
+    protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final Map<String, Pair<Class<?>, Class<?>>> cacheMap, final List<GenericCacheEventListener<String, ItemI>> cacheEventListeners, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
+        super(first, criteria);
+        _cacheHelper         = cacheHelper;
+        _cacheMap            = cacheMap;
+        _cacheEventListeners = ObjectUtils.defaultIfNull(cacheEventListeners, Collections.singletonList(new DefaultGenericCacheEntryListener<>()));
+        initializeCaches();
+        registerCacheEventListener();
+        log.debug("XFT item event handler method and cache event listener created with {} cache event listener instances, {} criteria specified", getCacheEventListeners().size(), criteria.length + 1);
+    }
+
+    /**
+     * Defines the top-level name for the cache implementation. Note that this is used as a prefix for caches controlled
+     * by the implementation rather than the full name of a particular cache.
+     *
+     * @return The top-level cache name.
+     */
     abstract public String getCacheName();
 
     /**
@@ -81,69 +119,6 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
      * {@inheritDoc}
      */
     @Override
-    public void notifyElementPut(final Ehcache cache, final Element element) throws CacheException {
-        log.trace("Put element with cache ID '{}' into cache {}", element.getObjectKey(), cache.getName());
-        getCacheEventListener().notifyElementPut(cache, element);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementUpdated(final Ehcache cache, final Element element) throws CacheException {
-        log.trace("Updated element with cache ID '{}' in cache {}", element.getObjectKey(), cache.getName());
-        getCacheEventListener().notifyElementUpdated(cache, element);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementRemoved(final Ehcache cache, final Element element) throws CacheException {
-        log.trace("Removed element with cache ID '{}' from cache {}", element.getObjectKey(), cache.getName());
-        getCacheEventListener().notifyElementRemoved(cache, element);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementExpired(final Ehcache cache, final Element element) {
-        log.trace("Expired element with cache ID '{}' from cache {}", element.getObjectKey(), cache.getName());
-        getCacheEventListener().notifyElementExpired(cache, element);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementEvicted(final Ehcache cache, final Element element) {
-        log.trace("Evicted element with cache ID '{}' from cache {}", element.getObjectKey(), cache.getName());
-        getCacheEventListener().notifyElementEvicted(cache, element);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyRemoveAll(final Ehcache cache) {
-        log.trace("Removed all elements from cache {}", cache.getName());
-        getCacheEventListener().notifyRemoveAll(cache);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void dispose() {
-        log.debug("I'm being disposed of, how sad.");
-        getCacheEventListener().dispose();
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public Object clone() throws CloneNotSupportedException {
         throw new CloneNotSupportedException();
     }
@@ -152,20 +127,16 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return StringUtils.join(elements, ":");
     }
 
-    protected long getLatestOfCreationAndUpdateTime(final String cacheId) {
-        return getEhCache().get(cacheId).getLatestOfCreationAndUpdateTime();
+    protected <K, V> Cache<K, V> getCache(final String cacheName, final Class<K> keyType, final Class<V> valueType) {
+        return _cacheHelper.getCache(cacheName, keyType, valueType);
     }
 
-    protected net.sf.ehcache.Cache getEhCache() {
-        final Object nativeCache = getCache().getNativeCache();
-        if (nativeCache instanceof net.sf.ehcache.Cache) {
-            return ((net.sf.ehcache.Cache) nativeCache);
-        }
-        throw new RuntimeException("The native cache is not an ehcache instance, but instead is " + nativeCache.getClass().getName());
+    protected long getLatestOfCreationAndUpdateTime(final String cacheId) {
+        return 1L; // STASHED: getEhCache().get(cacheId).getLatestOfCreationAndUpdateTime();
     }
 
     protected List<String> getEhCacheKeys() {
-        return GenericUtils.convertToTypedList(getEhCache().getKeys(), String.class);
+        return Arrays.asList("foo", "bar"); // STASHED: GenericUtils.convertToTypedList(getEhCache().getKeys(), String.class);
     }
 
     protected void cacheObject(final String cacheId, final Object object) {
@@ -194,17 +165,17 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
             target = checkMapForNullKey(cacheId, (Map) candidate);
         } else if (candidate instanceof Multimap) {
             //noinspection rawtypes,unchecked
-            target = checkMultimapForNullKey(cacheId, (Multimap) candidate);
+            target = checkMultimapForNullKey(cacheId, (Multimap) candidate).asMap();
         } else {
             target = candidate;
         }
         log.trace("Storing cache entry '{}' with object of type: {}", cacheId, target.getClass().getName());
-        getCache().put(cacheId, target);
+        getCache().put(cacheId, (ItemI) target); // STASHED: getCache().put(cacheId, target);
     }
 
     protected <T> T getCachedObject(final String cacheId, final Class<? extends T> type) {
         try {
-            return getCache().get(cacheId, type);
+            return (T) getCache().get(cacheId); // STASHED: return getCache().get(cacheId, type);
         } catch (IllegalStateException e) {
             log.error("Got an IllegalStateException trying to retrieve cache ID '{}' as an object of type {}", cacheId, type.getName(), e);
             throw e;
@@ -248,11 +219,11 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
 
     @SuppressWarnings("unchecked")
     @Nullable
-    protected <K, V> ImmutableListMultimap<K, V> getCachedListMultimap(final String cacheId) {
-        final ListMultimap<K, V> map = getCachedObject(cacheId, ListMultimap.class);
+    protected <K, V> ListMultimap<K, V> getCachedListMultimap(final String cacheId) {
+        final ArrayListMultimap<K, V> map = getCachedObject(cacheId, ArrayListMultimap.class);
         if (map != null) {
             log.trace("Found cached map containing {} items for cache ID '{}'", map.size(), cacheId);
-            return ImmutableListMultimap.copyOf(map);
+            return map;
         }
         log.trace("Got a request for cached map '{}', but when I retrieved the entry it was null.", cacheId);
         return null;
@@ -298,7 +269,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
 
     protected void evict(final String cacheId) {
         log.debug("Evicting cache entry '{}'", cacheId);
-        getCache().evict(cacheId);
+        // STASHED: getCache().evict(cacheId);
     }
 
     /**
@@ -312,7 +283,13 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return getCache().get(cacheId) != null;
     }
 
+    private void initializeCaches() {
+        _cacheMap.forEach((cacheName, keyAndValueTypes) -> getCache(cacheName, keyAndValueTypes.getKey(), keyAndValueTypes.getValue()));
+    }
+
     private void registerCacheEventListener() {
+        // STASHED:
+        /*
         final Object nativeCache = getCache().getNativeCache();
         if (nativeCache instanceof net.sf.ehcache.Cache) {
             ((net.sf.ehcache.Cache) nativeCache).getCacheEventNotificationService().registerListener(this);
@@ -320,6 +297,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         } else {
             log.warn("I don't know how to handle the native cache type {}", nativeCache.getClass().getName());
         }
+        */
     }
 
     private static <K, V> Multimap<K, V> checkMultimapForNullKey(final String cacheId, final Multimap<K, V> map) {
@@ -345,7 +323,4 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
             return ImmutableMap.copyOf(Maps.filterKeys(map, Objects::nonNull));
         }
     }
-
-    private final CacheEventListener _cacheEventListener;
-    private final Cache              _cache;
 }

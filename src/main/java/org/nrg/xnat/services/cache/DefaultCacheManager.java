@@ -192,7 +192,7 @@ public class DefaultCacheManager implements CacheManager, Initializing {
     @Override
     public void clearXsiType(final String xsiType) {
         final String  prefix = xsiType + CACHE_ID_SEPARATOR;
-        final List<?> keys   = getNativeCache().getKeysNoDuplicateCheck();
+        final List<?> keys   = Arrays.asList("foo", "bar"); // STASHED: getNativeCache().getKeysNoDuplicateCheck();
         keys.stream().filter(key -> key instanceof String && StringUtils.startsWith((String) key, prefix)).forEach(_cache::evict);
     }
 
@@ -258,15 +258,16 @@ public class DefaultCacheManager implements CacheManager, Initializing {
         return cached;
     }
 
-    /**
+    // STASHED:
+    /*
      * Gets the underlying native cache implementation to allow some advanced operations. Cache access should be done
      * with the Spring cache abstraction wherever possible!
      *
      * @return The native cache implementation.
-     */
     private net.sf.ehcache.Cache getNativeCache() {
         return (net.sf.ehcache.Cache) _cache.getNativeCache();
     }
+     */
 
     private boolean verifyXdatMetaElementTable() {
         try {

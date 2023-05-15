@@ -12,17 +12,19 @@ package org.nrg.xnat.services.cache;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
-import net.sf.ehcache.CacheException;
-import net.sf.ehcache.Ehcache;
-import net.sf.ehcache.Element;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringSubstitutor;
+import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.framework.orm.DatabaseHelper;
-import org.nrg.xdat.om.*;
+import org.nrg.xdat.om.XdatUser;
+import org.nrg.xdat.om.XdatUsergroup;
+import org.nrg.xdat.om.XnatDatatypeprotocol;
+import org.nrg.xdat.om.XnatInvestigatordata;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.base.auto.AutoXnatProjectdata;
 import org.nrg.xdat.security.SecurityManager;
 import org.nrg.xdat.security.UserGroupI;
@@ -48,7 +50,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.DateUtils;
 import org.nrg.xft.utils.XftStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.CacheManager;
+import org.springframework.cache.Cache;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -62,7 +64,16 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.SQLException;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
@@ -70,18 +81,42 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.nrg.xdat.entities.UserRole.ROLE_ADMINISTRATOR;
-import static org.nrg.xdat.security.helpers.AccessLevel.*;
-import static org.nrg.xdat.security.helpers.Groups.*;
-import static org.nrg.xdat.security.helpers.Roles.*;
-import static org.nrg.xft.event.XftItemEventI.*;
+import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
+import static org.nrg.xdat.security.helpers.AccessLevel.Collaborator;
+import static org.nrg.xdat.security.helpers.AccessLevel.DataAccess;
+import static org.nrg.xdat.security.helpers.AccessLevel.DataAdmin;
+import static org.nrg.xdat.security.helpers.AccessLevel.Delete;
+import static org.nrg.xdat.security.helpers.AccessLevel.Edit;
+import static org.nrg.xdat.security.helpers.AccessLevel.Member;
+import static org.nrg.xdat.security.helpers.AccessLevel.Owner;
+import static org.nrg.xdat.security.helpers.AccessLevel.Read;
+import static org.nrg.xdat.security.helpers.Groups.COLLABORATOR_GROUP;
+import static org.nrg.xdat.security.helpers.Groups.MEMBER_GROUP;
+import static org.nrg.xdat.security.helpers.Groups.OPERATION_ADD_USERS;
+import static org.nrg.xdat.security.helpers.Groups.OPERATION_REMOVE_USERS;
+import static org.nrg.xdat.security.helpers.Groups.OWNER_GROUP;
+import static org.nrg.xdat.security.helpers.Groups.getGroup;
+import static org.nrg.xdat.security.helpers.Roles.ADDED_ROLES;
+import static org.nrg.xdat.security.helpers.Roles.DELETED_ROLES;
+import static org.nrg.xdat.security.helpers.Roles.OPERATION_ADD_ROLE;
+import static org.nrg.xdat.security.helpers.Roles.OPERATION_ADD_ROLES;
+import static org.nrg.xdat.security.helpers.Roles.OPERATION_DELETE_ROLE;
+import static org.nrg.xdat.security.helpers.Roles.OPERATION_DELETE_ROLES;
+import static org.nrg.xdat.security.helpers.Roles.OPERATION_MODIFIED_ROLES;
+import static org.nrg.xdat.security.helpers.Roles.ROLE;
+import static org.nrg.xdat.security.helpers.Roles.ROLES;
+import static org.nrg.xft.event.XftItemEventI.CREATE;
+import static org.nrg.xft.event.XftItemEventI.DELETE;
+import static org.nrg.xft.event.XftItemEventI.OPERATION;
+import static org.nrg.xft.event.XftItemEventI.UPDATE;
 
 @SuppressWarnings({"Duplicates", "deprecation"})
 @Service("userProjectCache")
 @Slf4j
 public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandlerMethod implements UserProjectCache, Initializing {
     @Autowired
-    public DefaultUserProjectCache(final CacheManager cacheManager, final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cacheManager,
+    public DefaultUserProjectCache(final JCacheHelper helper, final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+        super(helper,
               XftItemEventCriteria.getXsiTypeCriteria(XnatProjectdata.SCHEMA_ELEMENT_NAME),
               XftItemEventCriteria.getXsiTypeCriteria(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME),
               XftItemEventCriteria.getXsiTypeCriteria(XnatInvestigatordata.SCHEMA_ELEMENT_NAME),
@@ -128,44 +163,6 @@ public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandler
     @Override
     public Map<String, String> getInitializationStatus() {
         return ImmutableMap.of("count", Integer.toString(_aliasMapping.size()));
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementRemoved(final Ehcache cache, final Element element) throws CacheException {
-        log.debug("Cache {} had element '{}' with type '{}' removed", cache.getName(), element.getObjectKey(), element.getObjectValue().getClass());
-        handleCacheRemoveEvent(cache, element, "removed");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementExpired(final Ehcache cache, final Element element) {
-        log.debug("Cache {} had element '{}' with type '{}' expired", cache.getName(), element.getObjectKey(), element.getObjectValue().getClass());
-        handleCacheRemoveEvent(cache, element, "expired");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyElementEvicted(final Ehcache cache, final Element element) {
-        log.debug("Cache {} had element '{}' with type '{}' evicted", cache.getName(), element.getObjectKey(), element.getObjectValue().getClass());
-        handleCacheRemoveEvent(cache, element, "evicted");
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public void notifyRemoveAll(final Ehcache cache) {
-        log.debug("Cache {} had all elements removed", cache.getName());
-        if (isProjectCacheEvent(cache)) {
-            _aliasMapping.clear();
-        }
     }
 
     /**
@@ -801,10 +798,6 @@ public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandler
         return getCachedObject(cacheId, ProjectCache.class);
     }
 
-    private void handleCacheRemoveEvent(final Ehcache cache, final Element element, final String event) {
-        log.debug("Handling cache remove event in cache {} with element {} and event {}", cache.getName(), element.getObjectKey(), event);
-    }
-
     private void cacheProjectIdsAndAliases(final String projectId) {
         _aliasMapping.put(projectId, projectId);
         final List<String> aliases = getProjectAliases(projectId);
@@ -819,18 +812,13 @@ public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandler
         log.debug("Just cached ID and aliases for project {}: {}", projectId, aliases);
     }
 
-    @SuppressWarnings("unused")
-    private static XnatProjectdata getProjectCacheEventInstance(final Element element) {
-        return ((ProjectCache) element.getObjectValue()).getProject();
-    }
-
-    private static boolean isProjectCacheEvent(final Ehcache cache) {
+    private static boolean isProjectCacheEvent(final Cache cache) {
         return StringUtils.equals(CACHE_NAME, cache.getName());
     }
 
     @SuppressWarnings("unused")
-    private static boolean isProjectCacheEvent(final Ehcache cache, final Element element) {
-        return isProjectCacheEvent(cache) && (element == null || element.getObjectValue() instanceof ProjectCache);
+    private static boolean isProjectCacheEvent(final Cache cache, final Object element) {
+        return isProjectCacheEvent(cache) && (element == null || element instanceof ProjectCache);
     }
 
     private static List<AccessLevel> getUserProjectAccess(final UserI user, final String projectId) {

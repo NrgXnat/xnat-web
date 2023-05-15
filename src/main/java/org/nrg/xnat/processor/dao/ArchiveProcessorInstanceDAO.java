@@ -29,35 +29,31 @@ import java.util.List;
  */
 @Repository
 public class ArchiveProcessorInstanceDAO extends AbstractHibernateDAO<ArchiveProcessorInstance> {
+
+    public static final String SCOPE = "scope";
+    public static final String PROCESSOR_CLASS = "processorClass";
+    public static final String PRIORITY = "priority";
+
     @Transactional
     public List<ArchiveProcessorInstance> getSiteArchiveProcessors() {
-        final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
-        return GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
+        return findByProperty(SCOPE, Scope.Site.code());
     }
 
     @Transactional
     public List<ArchiveProcessorInstance> getSiteArchiveProcessorsForClass(final String processorClass) {
-        final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
-        criteria.add(Restrictions.eq("processorClass", processorClass));
-        criteria.addOrder(Order.asc("priority"));
-        return GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
+        return findByProperties(parameters(SCOPE, Scope.Site.code(), PROCESSOR_CLASS, processorClass), asc(PRIORITY));
     }
 
     @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessors() {
-        final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
-        criteria.add(Restrictions.eq("enabled", true));
-        return GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
+        return findByProperty(SCOPE, Scope.Site.code());
     }
 
 
     @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessorsForAe(String aeAndPort) {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
+        criteria.add(Restrictions.eq(SCOPE, Scope.Site.code()));
         criteria.add(Restrictions.eq("enabled", true));
         criteria.createAlias("scpWhitelist", "scpWhitelist", JoinType.LEFT_OUTER_JOIN);
         criteria.createAlias("scpBlacklist", "scpBlacklist", JoinType.LEFT_OUTER_JOIN);
@@ -77,19 +73,19 @@ public class ArchiveProcessorInstanceDAO extends AbstractHibernateDAO<ArchivePro
     @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessorsInOrder() {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
+        criteria.add(Restrictions.eq(SCOPE, Scope.Site.code()));
         criteria.add(Restrictions.eq("enabled", true));
-        criteria.addOrder(Order.asc("priority"));
+        criteria.addOrder(Order.asc(PRIORITY));
         return GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
     }
 
     @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessorsInOrderForLocation(final String location) {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
+        criteria.add(Restrictions.eq(SCOPE, Scope.Site.code()));
         criteria.add(Restrictions.eq("location", location));
         criteria.add(Restrictions.eq("enabled", true));
-        criteria.addOrder(Order.asc("priority"));
+        criteria.addOrder(Order.asc(PRIORITY));
         return GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
     }
 
@@ -97,7 +93,7 @@ public class ArchiveProcessorInstanceDAO extends AbstractHibernateDAO<ArchivePro
     public ArchiveProcessorInstance getSiteArchiveProcessorInstanceByProcessorId(final long processorId) {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
         criteria.add(Restrictions.eq("id", processorId));
-        criteria.add(Restrictions.eq("scope", Scope.Site.code()));
+        criteria.add(Restrictions.eq(SCOPE, Scope.Site.code()));
         final List<ArchiveProcessorInstance> processors = GenericUtils.convertToTypedList(criteria.list(), ArchiveProcessorInstance.class);
         return CollectionUtils.isNotEmpty(processors) ? processors.get(0) : null;
     }

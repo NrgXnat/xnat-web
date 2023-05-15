@@ -1,11 +1,8 @@
 package org.nrg.xnat.customforms.daos;
 
-import com.gs.collections.impl.block.factory.HashingStrategies;
-import com.gs.collections.impl.utility.ListIterate;
 import org.hibernate.Criteria;
 import org.hibernate.FetchMode;
 import org.hibernate.NonUniqueObjectException;
-import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.nrg.framework.constants.Scope;
 import org.nrg.framework.generics.GenericUtils;
