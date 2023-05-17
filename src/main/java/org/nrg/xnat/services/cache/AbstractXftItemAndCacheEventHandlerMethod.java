@@ -1,11 +1,8 @@
 package org.nrg.xnat.services.cache;
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -15,16 +12,21 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.nrg.framework.exceptions.NrgServiceRuntimeException;
+import org.nrg.framework.generics.GenericUtils;
 import org.nrg.framework.jcache.DefaultGenericCacheEntryListener;
 import org.nrg.framework.jcache.GenericCacheEventListener;
 import org.nrg.framework.jcache.JCacheHelper;
+import org.nrg.framework.utilities.StreamUtils;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.methods.AbstractXftItemEventHandlerMethod;
 import org.nrg.xft.event.methods.XftItemEventCriteria;
 
-import javax.annotation.Nullable;
 import javax.cache.Cache;
+import javax.cache.processor.EntryProcessor;
+import javax.cache.processor.EntryProcessorException;
+import javax.cache.processor.MutableEntry;
 import javax.inject.Provider;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PROTECTED;
 
@@ -92,24 +95,6 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
     abstract public String getCacheName();
 
     /**
-     * Returns the timestamp indicating when the specified cache entry was last updated. If the entry was only
-     * inserted and not updated, the insert time is returned.
-     *
-     * @param cacheId The ID of the cache entry to check.
-     *
-     * @return The date and time of the latest update to the specified cache entry.
-     */
-    public Date getCacheEntryLastUpdateTime(final String cacheId) {
-        if (!has(cacheId)) {
-            log.trace("Trying to check the last update time for cache entry '{}', but that is not in the cache.", cacheId);
-            return null;
-        }
-        final long lastUpdateTime = getLatestOfCreationAndUpdateTime(cacheId);
-        log.trace("Checked last update time for cache entry '{}' and found: {}", cacheId, lastUpdateTime);
-        return new Date(lastUpdateTime);
-    }
-
-    /**
      * {@inheritDoc}
      */
     @Override
@@ -131,12 +116,28 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return _cacheHelper.getCache(cacheName, keyType, valueType);
     }
 
-    protected long getLatestOfCreationAndUpdateTime(final String cacheId) {
-        return 1L; // STASHED: getEhCache().get(cacheId).getLatestOfCreationAndUpdateTime();
+    protected <K, V> Cache<K, V> getCache(final String cacheName) {
+        return _cacheHelper.getCache(cacheName);
     }
 
-    protected List<String> getEhCacheKeys() {
-        return Arrays.asList("foo", "bar"); // STASHED: GenericUtils.convertToTypedList(getEhCache().getKeys(), String.class);
+    protected <K, V> Cache<K, List<V>> getCacheOfLists(final String cacheName, final Class<K> keyType, final Class<V> valueType) {
+        return _cacheHelper.getCacheOfLists(cacheName, keyType, valueType);
+    }
+
+    protected <K, V, T> Cache<K, Map<V, T>> getCacheOfMaps(final String cacheName, final Class<K> keyType, final Class<V> mapKeyType, final Class<T> mapValueType) {
+        return _cacheHelper.getCacheOfMaps(cacheName, keyType, mapKeyType, mapValueType);
+    }
+
+    protected long getLatestOfCreationAndUpdateTime(final String cacheId) {
+        return 1L; // CACHING: getEhCache().get(cacheId).getLatestOfCreationAndUpdateTime();
+    }
+
+    protected List<String> getCacheKeys(final String cacheName) {
+        // CACHING: This is a workaround for now. This is a BAD thing to do in the distributed cache scenario!
+        Cache<Object, Object> cache = getCache(cacheName);
+        return cache == null
+               ? Collections.emptyList()
+               : StreamUtils.asStream(cache.iterator()).map(Cache.Entry::getKey).map(String.class::cast).collect(Collectors.toList());
     }
 
     protected void cacheObject(final String cacheId, final Object object) {
@@ -173,60 +174,13 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         getCache().put(cacheId, (ItemI) target); // STASHED: getCache().put(cacheId, target);
     }
 
-    protected <T> T getCachedObject(final String cacheId, final Class<? extends T> type) {
+    protected <T> T getCachedObject(final String cache, final String key, final Class<? extends T> type) {
         try {
-            return (T) getCache().get(cacheId); // STASHED: return getCache().get(cacheId, type);
+            return (T) getCache(cache, String.class, type).get(key); // STASHED: return getCache().get(cacheId, type);
         } catch (IllegalStateException e) {
-            log.error("Got an IllegalStateException trying to retrieve cache ID '{}' as an object of type {}", cacheId, type.getName(), e);
+            log.error("Got an IllegalStateException trying to retrieve object '{}' from cache {} as an object of type {}", key, cache, type.getName(), e);
             throw e;
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    protected <T> List<T> getCachedList(final String cacheId) {
-        final List<T> elements = getCachedObject(cacheId, List.class);
-        if (elements != null) {
-            log.trace("Found cached list containing {} items for cache ID '{}'", elements.size(), cacheId);
-            return ImmutableList.copyOf(elements);
-        }
-        log.trace("Got a request for cached list '{}', but when I retrieved the entry it was null.", cacheId);
-        return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    protected <T> Set<T> getCachedSet(final String cacheId) {
-        final Set<T> elements = getCachedObject(cacheId, Set.class);
-        if (elements != null) {
-            log.trace("Found cached set containing {} items for cache ID '{}'", elements.size(), cacheId);
-            return ImmutableSet.copyOf(elements);
-        }
-        log.trace("Got a request for cached set '{}', but when I retrieved the entry it was null.", cacheId);
-        return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    protected <K, V> Map<K, V> getCachedMap(final String cacheId) {
-        final Map<K, V> map = getCachedObject(cacheId, Map.class);
-        if (map != null) {
-            log.trace("Found cached map containing {} items for cache ID '{}'", map.size(), cacheId);
-            return ImmutableMap.copyOf(map);
-        }
-        log.trace("Got a request for cached map '{}', but when I retrieved the entry it was null.", cacheId);
-        return null;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    protected <K, V> ListMultimap<K, V> getCachedListMultimap(final String cacheId) {
-        final ArrayListMultimap<K, V> map = getCachedObject(cacheId, ArrayListMultimap.class);
-        if (map != null) {
-            log.trace("Found cached map containing {} items for cache ID '{}'", map.size(), cacheId);
-            return map;
-        }
-        log.trace("Got a request for cached map '{}', but when I retrieved the entry it was null.", cacheId);
-        return null;
     }
 
     /**
@@ -261,26 +215,13 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return builder.build();
     }
 
-    protected void evict(final List<String> cacheIds) {
-        for (final String cacheId : cacheIds) {
-            evict(cacheId);
-        }
+    protected List<Object> evict(final String cacheName, final List<String> cacheIds) {
+        return cacheIds.stream().map(cacheId -> evict(cacheName, cacheId)).collect(Collectors.toList());
     }
 
-    protected void evict(final String cacheId) {
-        log.debug("Evicting cache entry '{}'", cacheId);
-        // STASHED: getCache().evict(cacheId);
-    }
-
-    /**
-     * Indicates whether the specified project ID or alias is already cached.
-     *
-     * @param cacheId The ID or alias of the project to check.
-     *
-     * @return Returns true if the ID or alias is mapped to a project cache entry, false otherwise.
-     */
-    private boolean has(final String cacheId) {
-        return getCache().get(cacheId) != null;
+    protected Object evict(final String cacheName, final String cacheId) {
+        log.debug("Evicting cache entry '{}' from cache {}", cacheId, cacheName);
+        return getCache(cacheName).getAndRemove(cacheId);
     }
 
     private void initializeCaches() {
