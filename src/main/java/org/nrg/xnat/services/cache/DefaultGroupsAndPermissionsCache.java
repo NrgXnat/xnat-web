@@ -66,19 +66,15 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.cache.Cache;
 
 import static java.lang.Long.max;
 import static org.nrg.framework.exceptions.NrgServiceError.ConfigurationError;
-import static org.nrg.xapi.rest.users.DataAccessApi.*;
 import static org.nrg.xdat.security.PermissionCriteria.dumpCriteriaList;
 import static org.nrg.xdat.security.helpers.Groups.*;
 import static org.nrg.xdat.security.helpers.Users.DEFAULT_GUEST_USERNAME;
@@ -171,6 +167,17 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
             return Collections.emptyMap();
         }
         return getReadableCounts(user.getUsername());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, Long> getReadableCounts(final String username) {
+        if (StringUtils.isBlank(username)) {
+            return Collections.emptyMap();
+        }
+        return getCachedReadableCounts(username).orElseGet(() -> initializeUserCountsAndDisplays(username).getLeft());
     }
 
     /**
@@ -482,7 +489,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
     @Override
     public Date getUserLastUpdateTime(final String username) {
-        return getCache(USER_CACHE_LAST_MODIFIED, String.class, Date.class).get(username);
+        return getCache(CACHE_LAST_MODIFIED_CACHE, String.class, Date.class).get(username);
     }
 
     /**
@@ -713,8 +720,8 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
                 case DELETE:
                     log.debug("The {} {} was deleted, removing related instances from cache", xsiType, id);
-                    List<String> usernames = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_MEMBERS, id), String.class);
-                    List<String> groups = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_GROUPS, id), String.class);
+                    List<String> usernames = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_MEMBERS_CACHE, id), String.class);
+                    List<String> groups = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_GROUPS_CACHE, id), String.class);
                     /*
                     CACHING: Not clear what this stuff is doing. Certainly updating caches, but not sure which ones since they're based on the cache keys.
                     getCacheIdsForUserElements().stream().filter(current -> REGEX_USER_PROJECT_ACCESS_CACHE_ID.matcher(current).matches()).forEach(accessCacheId -> {
@@ -828,7 +835,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                         if (!hasOperation) {
                             usernames.addAll(group.getUsernames());
                         }
-                        evict(GROUPS_BY_ID, group.getId());
+                        evict(GROUPS_CACHE, group.getId());
                     }
                     if (hasOperation && properties.containsKey(USERS)) {
                         //noinspection unchecked
@@ -887,7 +894,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         for (final String dataType : event.getIds()) {
             final List<String> groupIds = getGroupIdsForDataType(dataType);
             log.debug("Found {} groups that reference the '{}' data type, updating cache entries for: {}", groupIds.size(), dataType, String.join(", ", groupIds));
-            groupIds.forEach(groupId -> evict(GROUPS_BY_ID, groupId));
+            groupIds.forEach(groupId -> evict(GROUPS_CACHE, groupId));
         }
 
         return true;
@@ -1108,13 +1115,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return Optional.empty();
     }
 
-    private Map<String, Long> getReadableCounts(final String username) {
-        if (StringUtils.isBlank(username)) {
-            return Collections.emptyMap();
-        }
-        return getCachedReadableCounts(username).orElseGet(() -> initializeUserCountsAndDisplays(username).getLeft());
-    }
-
     private Map<String, List<ElementDisplay>> getActionElementDisplays(final String username) {
         if (StringUtils.isBlank(username)) {
             return Collections.emptyMap();
@@ -1165,36 +1165,36 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     }
 
     private UserGroupI getGroupByIdEntry(final String groupId) {
-        return getCache(GROUPS_BY_ID, String.class, UserGroupI.class).get(groupId);
+        return getCache(GROUPS_CACHE, String.class, UserGroupI.class).get(groupId);
     }
 
     private Map<String, Long> getReadableCountsEntry(final String cacheId) {
-        return GenericUtils.convertToTypedMap(getCache(USER_READABLE_COUNTS, String.class, Map.class).get(cacheId), String.class, Long.class);
+        return GenericUtils.convertToTypedMap(getCache(READABLE_CACHE, String.class, Map.class).get(cacheId), String.class, Long.class);
     }
 
     private Set<String> getProjectUsersEntry(final String projectCacheId) {
-        return GenericUtils.convertToTypedSet(getCache(PROJECT_MEMBERS, String.class, Set.class).get(projectCacheId), String.class);
+        return GenericUtils.convertToTypedSet(getCache(PROJECT_MEMBERS_CACHE, String.class, Set.class).get(projectCacheId), String.class);
     }
 
     private List<String> getProjectGroupsEntry(final String cacheId) {
-        return GenericUtils.convertToTypedList(getCache(PROJECT_GROUPS, String.class, List.class).get(cacheId), String.class);
+        return GenericUtils.convertToTypedList(getCache(PROJECT_GROUPS_CACHE, String.class, List.class).get(cacheId), String.class);
     }
 
     private Map<String, ElementAccessManager> getUserElementAccessManagers(final String username) {
-        return GenericUtils.convertToTypedMap(getCache(USER_ELEMENT_ACCESS_MANAGERS, String.class, Map.class).get(username), String.class, ElementAccessManager.class);
+        return GenericUtils.convertToTypedMap(getCache(ACCESS_MANAGERS_CACHE, String.class, Map.class).get(username), String.class, ElementAccessManager.class);
     }
 
     private Map<String, ElementDisplay> getUserBrowseableElements(final String username) {
-        return GenericUtils.convertToTypedMap(getCache(USER_BROWSEABLE_ELEMENTS, String.class, Map.class).get(username), String.class, ElementDisplay.class);
+        return GenericUtils.convertToTypedMap(getCache(BROWSEABLE_CACHE, String.class, Map.class).get(username), String.class, ElementDisplay.class);
     }
 
     private List<String> getUserGroups(final String cacheId) {
-        return GenericUtils.convertToTypedList(getCache(USER_GROUP_IDS, String.class, List.class).get(cacheId), String.class);
+        return GenericUtils.convertToTypedList(getCache(USER_GROUPS_CACHE, String.class, List.class).get(cacheId), String.class);
     }
 
     private Optional<Map<String, List<ElementDisplay>>> getCachedUserActionElementDisplays(final String username) {
         Map<String, List<ElementDisplay>> displays = ACTIONS.stream()
-                                                            .map(action -> Pair.of(action, GenericUtils.convertToTypedList(getCache(USER_ACTION_ELEMENT_DISPLAYS, String.class, List.class).get(username + ":" + action), ElementDisplay.class)))
+                                                            .map(action -> Pair.of(action, GenericUtils.convertToTypedList(getCache(ACTIONS_CACHE, String.class, List.class).get(username + ":" + action), ElementDisplay.class)))
                                                             .filter(pair -> pair.getValue() != null)
                                                             .collect(Collectors.toMap(Pair::getKey, Pair::getValue));
         return displays.isEmpty() ? Optional.empty() : Optional.of(displays);
@@ -1633,36 +1633,36 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     }
 
     private void cacheGroupById(final String groupId, final UserGroupI group) {
-        getCache(GROUPS_BY_ID, String.class, UserGroupI.class).put(groupId, group);
+        getCache(GROUPS_CACHE, String.class, UserGroupI.class).put(groupId, group);
     }
 
     private void cacheReadableCounts(final String cacheId, final Map<String, Long> readableCounts) {
-        getCache(USER_READABLE_COUNTS, String.class, Map.class).put(cacheId, readableCounts);
+        getCache(READABLE_CACHE, String.class, Map.class).put(cacheId, readableCounts);
     }
 
     private void cacheProjectUsers(final String projectCacheId, final Set<String> projectUsers) {
-        getCache(PROJECT_MEMBERS, String.class, Set.class).put(projectCacheId, projectUsers);
+        getCache(PROJECT_MEMBERS_CACHE, String.class, Set.class).put(projectCacheId, projectUsers);
     }
 
     private void cacheProjectGroups(final String cacheId, final List<String> groups) {
-        getCache(PROJECT_GROUPS, String.class, List.class).put(cacheId, groups);
+        getCache(PROJECT_GROUPS_CACHE, String.class, List.class).put(cacheId, groups);
     }
 
     private void cacheUserElementAccessManagers(final String cacheId, final Map<String, ElementAccessManager> managers) {
-        getCache(USER_ELEMENT_ACCESS_MANAGERS, String.class, Map.class).put(cacheId, managers);
+        getCache(ACCESS_MANAGERS_CACHE, String.class, Map.class).put(cacheId, managers);
     }
 
     private void cacheUserBrowseableElements(final String username, final Map<String, ElementDisplay> browseableElements) {
-        getCache(USER_BROWSEABLE_ELEMENTS, String.class, Map.class).put(username, browseableElements);
+        getCache(BROWSEABLE_CACHE, String.class, Map.class).put(username, browseableElements);
     }
 
     private void cacheUserGroups(final String cacheId, final List<String> groupIds) {
-        getCache(USER_GROUP_IDS, String.class, List.class).put(cacheId, groupIds);
+        getCache(USER_GROUPS_CACHE, String.class, List.class).put(cacheId, groupIds);
     }
 
     private void cacheUserActionElementDisplays(final String username, final Map<String, List<ElementDisplay>> elementDisplays) {
         //noinspection rawtypes
-        Cache<String, List> cache = getCache(USER_ACTION_ELEMENT_DISPLAYS, String.class, List.class);
+        Cache<String, List> cache = getCache(ACTIONS_CACHE, String.class, List.class);
         ACTIONS.forEach(action -> cache.put(username + ":" + action, elementDisplays.get(action)));
     }
 
@@ -1672,7 +1672,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
             final List<String> groupUsernames = group.getUsernames();
             log.debug("Found group for ID '{}' with {} associated users", groupId, groupUsernames.size());
             usernames.addAll(groupUsernames);
-            evict(GROUPS_BY_ID, groupId);
+            evict(GROUPS_CACHE, groupId);
         } else {
             log.info("Requested to evict group with ID '{}', but I couldn't find that actual group", groupId);
         }
@@ -1727,39 +1727,39 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     }
 
     private UserGroupI getCachedUserGroup(final String groupId) {
-        return getCache(GROUPS_BY_ID, String.class, UserGroupI.class).get(groupId);
+        return getCache(GROUPS_CACHE, String.class, UserGroupI.class).get(groupId);
     }
 
     private Date getUserCacheLastModified(final String username) {
-        return getCache(USER_CACHE_LAST_MODIFIED, String.class, Date.class).get(username);
+        return getCache(CACHE_LAST_MODIFIED_CACHE, String.class, Date.class).get(username);
     }
 
     private Cache<String, Map> getUserReadableCountsCache() {
-        return getCache(USER_READABLE_COUNTS, String.class, Map.class);
+        return getCache(READABLE_CACHE, String.class, Map.class);
     }
 
     private Set<String> getCachedProjectMembers(final String projectId) {
-        return GenericUtils.convertToTypedSet(ObjectUtils.defaultIfNull(getCache(PROJECT_MEMBERS, String.class, Set.class).get(projectId), Collections.emptySet()), String.class);
+        return GenericUtils.convertToTypedSet(ObjectUtils.defaultIfNull(getCache(PROJECT_MEMBERS_CACHE, String.class, Set.class).get(projectId), Collections.emptySet()), String.class);
     }
 
     private List<String> getCachedProjectGroups(final String projectId) {
-        return GenericUtils.convertToTypedList(ObjectUtils.defaultIfNull(getCache(PROJECT_GROUPS, String.class, List.class).get(projectId), Collections.emptySet()), String.class);
+        return GenericUtils.convertToTypedList(ObjectUtils.defaultIfNull(getCache(PROJECT_GROUPS_CACHE, String.class, List.class).get(projectId), Collections.emptySet()), String.class);
     }
 
     private Cache<String, Map> getCachedElementAccessManagers() {
-        return getCache(USER_ELEMENT_ACCESS_MANAGERS, String.class, Map.class);
+        return getCache(ACCESS_MANAGERS_CACHE, String.class, Map.class);
     }
 
     private Cache<String, Map> getUserBrowseableElementsCache() {
-        return getCache(USER_BROWSEABLE_ELEMENTS, String.class, Map.class);
+        return getCache(BROWSEABLE_CACHE, String.class, Map.class);
     }
 
     private Cache<String, List> getUserGroupIdsCache() {
-        return getCache(GROUPS_BY_ID, String.class, List.class);
+        return getCache(GROUPS_CACHE, String.class, List.class);
     }
 
     private Cache<String, List> getUserActionElementDisplaysCache() {
-        return getCache(USER_ACTION_ELEMENT_DISPLAYS, String.class, List.class);
+        return getCache(ACTIONS_CACHE, String.class, List.class);
     }
 
     private static UserI getUser(final String username) {
@@ -1815,28 +1815,28 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return elementCounts;
     };
 
-    private static final DateFormat                            DATE_FORMAT                  = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
-    private static final NumberFormat                          NUMBER_FORMAT                = NumberFormat.getNumberInstance(Locale.getDefault());
-    private static final String                                GROUPS_BY_ID                 = "groupsById";
-    private static final String                                USER_READABLE_COUNTS         = "userReadableCounts";
-    private static final String                                USER_CACHE_LAST_MODIFIED     = "userCacheLastModified";
-    private static final String                                PROJECT_MEMBERS              = "projectMembers";
-    private static final String                                PROJECT_GROUPS               = "projectGroups";
-    private static final String                                USER_ELEMENT_ACCESS_MANAGERS = "userElementAccessManagers";
-    private static final String                                USER_BROWSEABLE_ELEMENTS     = "userBrowseableElements";
-    private static final String                                USER_GROUP_IDS               = "userGroupIds";
-    private static final String                                USER_ACTION_ELEMENT_DISPLAYS = "userActionElementDisplays";
-    private static final Map<String, Pair<Class<?>, Class<?>>> CACHE_MAP                    = ImmutableMap.<String, Pair<Class<?>, Class<?>>>builder()
-                                                                                                          .put(GROUPS_BY_ID, Pair.of(String.class, UserGroupI.class))
-                                                                                                          .put(PROJECT_GROUPS, Pair.of(String.class, List.class))
-                                                                                                          .put(PROJECT_MEMBERS, Pair.of(String.class, Set.class))
-                                                                                                          .put(USER_ACTION_ELEMENT_DISPLAYS, Pair.of(String.class, List.class))
-                                                                                                          .put(USER_BROWSEABLE_ELEMENTS, Pair.of(String.class, Map.class))
-                                                                                                          .put(USER_CACHE_LAST_MODIFIED, Pair.of(String.class, Date.class))
-                                                                                                          .put(USER_ELEMENT_ACCESS_MANAGERS, Pair.of(String.class, Map.class))
-                                                                                                          .put(USER_GROUP_IDS, Pair.of(String.class, List.class))
-                                                                                                          .put(USER_READABLE_COUNTS, Pair.of(String.class, Map.class)).build();
-    private static final List<String>                          USER_CACHES                  = Arrays.asList(USER_ACTION_ELEMENT_DISPLAYS, USER_BROWSEABLE_ELEMENTS, USER_CACHE_LAST_MODIFIED, USER_ELEMENT_ACCESS_MANAGERS, USER_GROUP_IDS, USER_READABLE_COUNTS);
+    private static final DateFormat                            DATE_FORMAT               = DateFormat.getDateInstance(DateFormat.SHORT, Locale.getDefault());
+    private static final NumberFormat                          NUMBER_FORMAT             = NumberFormat.getNumberInstance(Locale.getDefault());
+    private static final String                                GROUPS_CACHE              = "groups";
+    private static final String                                READABLE_CACHE            = "readableCounts";
+    private static final String                                CACHE_LAST_MODIFIED_CACHE = "cacheLastModified";
+    private static final String                                PROJECT_MEMBERS_CACHE     = "projectMembers";
+    private static final String                                PROJECT_GROUPS_CACHE      = "projectGroups";
+    private static final String                                ACCESS_MANAGERS_CACHE     = "accessManagers";
+    private static final String                                BROWSEABLE_CACHE          = "browseable";
+    private static final String                                USER_GROUPS_CACHE         = "userGroups";
+    private static final String                                ACTIONS_CACHE             = "actions";
+    private static final Map<String, Pair<Class<?>, Class<?>>> CACHE_MAP                 = ImmutableMap.<String, Pair<Class<?>, Class<?>>>builder()
+                                                                                                       .put(GROUPS_CACHE, Pair.of(String.class, UserGroupI.class))
+                                                                                                       .put(PROJECT_GROUPS_CACHE, Pair.of(String.class, List.class))
+                                                                                                       .put(PROJECT_MEMBERS_CACHE, Pair.of(String.class, Set.class))
+                                                                                                       .put(ACTIONS_CACHE, Pair.of(String.class, List.class))
+                                                                                                       .put(BROWSEABLE_CACHE, Pair.of(String.class, Map.class))
+                                                                                                       .put(CACHE_LAST_MODIFIED_CACHE, Pair.of(String.class, Date.class))
+                                                                                                       .put(ACCESS_MANAGERS_CACHE, Pair.of(String.class, Map.class))
+                                                                                                       .put(USER_GROUPS_CACHE, Pair.of(String.class, List.class))
+                                                                                                       .put(READABLE_CACHE, Pair.of(String.class, Map.class)).build();
+    private static final List<String>                          USER_CACHES               = Arrays.asList(ACTIONS_CACHE, BROWSEABLE_CACHE, CACHE_LAST_MODIFIED_CACHE, ACCESS_MANAGERS_CACHE, USER_GROUPS_CACHE, READABLE_CACHE);
 
     private static final String PARAM_DATA_TYPE                      = "dataType";
     private static final String PARAM_EXPERIMENT_ID                  = "experimentId";
