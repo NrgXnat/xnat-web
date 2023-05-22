@@ -6,10 +6,14 @@ import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 
-@CacheDefinition(value = "projectGroups", valueType = List.class)
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_USER_GROUPS;
+
+@Component
 @Slf4j
 public class UserGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, List<String>> {
     private static final String QUERY_GET_GROUPS_FOR_USER = "SELECT " +
@@ -25,12 +29,18 @@ public class UserGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataEx
 
     @Autowired
     public UserGroupsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_USER_GROUPS, template);
     }
 
     @Override
-    public List<String> extract(final String username) {
+    public List<String> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyList();
+        }
+
+        final String username = (String) parameters[0];
         log.info("Initializing user group IDs cache entry for user '{}'", username);
+
         final List<String> groupIds;
         try {
             groupIds = getTemplate().queryForList(QUERY_GET_GROUPS_FOR_USER, checkUser(username), String.class);

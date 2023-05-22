@@ -10,8 +10,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
-import org.nrg.framework.exceptions.NrgServiceError;
-import org.nrg.framework.exceptions.NrgServiceRuntimeException;
+import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.jcache.DefaultGenericCacheEntryListener;
 import org.nrg.framework.jcache.GenericCacheEventListener;
 import org.nrg.framework.jcache.JCacheHelper;
@@ -19,7 +18,6 @@ import org.nrg.xft.ItemI;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.methods.AbstractXftItemEventHandlerMethod;
 import org.nrg.xft.event.methods.XftItemEventCriteria;
-import org.nrg.xnat.services.cache.extractors.CacheDefinition;
 import org.nrg.xnat.services.cache.extractors.DataExtractor;
 
 import javax.cache.Cache;
@@ -74,7 +72,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
     protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final List<DataExtractor<?, ?>> extractors, final List<GenericCacheEventListener<String, ItemI>> cacheEventListeners, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
         super(first, criteria);
         _cacheHelper         = cacheHelper;
-        _extractors          = extractors.stream().collect(Collectors.toMap(EXTRACTOR_CACHE_NAME, Function.identity()));
+        _extractors          = extractors.stream().collect(Collectors.toMap(DataExtractor::getCacheGroup, Function.identity()));
         _cacheEventListeners = ObjectUtils.defaultIfNull(cacheEventListeners, Collections.singletonList(new DefaultGenericCacheEntryListener<>()));
 
         initializeCaches();
@@ -112,25 +110,83 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return _cacheHelper.getCache(cacheName);
     }
 
-    protected void cacheObject(final String cacheId, final Object object) {
+    protected <K, V> V getCacheItem(final String cacheId, final K itemId, final Class<V> itemClass) {
+        log.debug("Retrieving item with ID {} and class {} from cache {}", itemId, itemClass, cacheId);
+        //noinspection unchecked
+        DataExtractor<K, V> extractor = (DataExtractor<K, V>) getExtractors().get(cacheId);
+        Cache<K, V>         cache     = getCache(cacheId, extractor.getKeyType(), extractor.getValueType());
+        return ObjectUtils.getIfNull(cache.get(itemId), () -> {
+            log.debug("No item with ID {} and class {} found in cache {}, calling extractor", itemId, itemClass, cacheId);
+            final V item = extractor.extract(itemId);
+            cache.put(itemId, item);
+            return item;
+        });
+    }
+
+    protected <K, V> List<V> getCacheList(final String cacheId, final K itemId, final Class<V> listItemClass, final Object... parameters) {
+        log.debug("Retrieving list with ID {} and item class {} from cache {}", itemId, listItemClass, cacheId);
+        //noinspection unchecked
+        DataExtractor<K, List<V>> extractor = (DataExtractor<K, List<V>>) getExtractors().get(cacheId);
+        Cache<K, List<V>>         cache     = getCache(cacheId, extractor.getKeyType(), extractor.getValueType());
+        return ObjectUtils.getIfNull(cache.get(itemId), () -> {
+            log.debug("No list with ID {} and item class {} found in cache {}, calling extractor", itemId, listItemClass, cacheId);
+            final List<V> list = extractor.extract(parameters.length == 0 ? new Object[]{itemId} : parameters);
+            cache.put(itemId, list);
+            return list;
+        });
+    }
+
+    protected <K, L, R> Map<L, R> getCacheMap(final String cacheId, final K itemId, final Class<L> mapKeyClass, final Class<R> mapValueClass, final Object... parameters) {
+        log.debug("Retrieving map with ID {}, key class {}, and value class {} from cache {}", itemId, mapKeyClass, mapValueClass, cacheId);
+        //noinspection unchecked
+        DataExtractor<K, Map<L, R>> extractor = (DataExtractor<K, Map<L, R>>) getExtractors().get(cacheId);
+        Cache<K, Map<L, R>>         cache     = getCache(cacheId, extractor.getKeyType(), extractor.getValueType());
+        return ObjectUtils.getIfNull(cache.get(itemId), () -> {
+            log.debug("No map with ID {}, key class {}, and value class {} found in cache {}, calling extractor", itemId, mapKeyClass, mapValueClass, cacheId);
+            final Map<L, R> map = extractor.extract(parameters.length == 0 ? new Object[]{itemId} : parameters);
+            cache.put(itemId, map);
+            return map;
+        });
+    }
+
+    protected <R> R getCacheMapPartition(final String cacheId, final String itemId, final String mapKey, final Class<R> mapValueClass, final Object... parameters) {
+        final String cacheKey = createCacheIdFromElements(itemId, mapKey);
+        log.debug("Retrieving map partition with ID {} and value class {} from cache {}", cacheKey, mapValueClass, cacheId);
+        //noinspection unchecked
+        DataExtractor<String, Map<String, R>> extractor = (DataExtractor<String, Map<String, R>>) getExtractors().get(cacheId);
+        Cache<String, R>                      cache     = getCache(cacheId, String.class, mapValueClass);
+        return ObjectUtils.getIfNull(cache.get(cacheKey), () -> {
+            log.debug("No map partition with ID {} and value class {} found in cache {}, calling extractor", cacheKey, mapValueClass, cacheId);
+            final Map<String, R> map = extractor.extract(parameters.length == 0 ? new Object[]{itemId} : parameters);
+            map.forEach((key, value) -> cache.put(createCacheIdFromElements(itemId, key), value));
+            return map.get(mapKey);
+        });
+    }
+
+    protected void cacheObject(final String cacheId, final String itemId, final Object object) {
         if (object == null) {
             log.warn("I was asked to cache an object with ID '{}' but the object was null.", cacheId);
             return;
         }
-        log.trace("Request to cache entry '{}', evaluating", cacheId);
-        if (has(cacheId)) {
+        log.trace("Request to cache item '{}' in cache {}, evaluating", itemId, cacheId);
+        if (has(cacheId, itemId)) {
             log.trace("Cache entry '{}' exists and force update not specified, evaluating for change", cacheId);
-            final Object existing = getCachedObject(cacheId, Object.class);
+            final Object existing = getCache(cacheId).get(itemId);
             if (object.equals(existing)) {
                 log.trace("Existing and updated cached objects for entry '{}' are identical, returning without updating", cacheId);
                 return;
             }
             log.trace("Cache entry '{}' already exists but differs from updated cache item:\n\nExisting:\n{}\nUpdated:\n{}", cacheId, existing, object);
         }
-        forceCacheObject(cacheId, object);
+        forceCacheObject(cacheId, itemId, object);
     }
 
-    protected void forceCacheObject(final String cacheId, final Object object) {
+    private <T> boolean has(final String cacheId, final T itemId) {
+        log.debug("Checking if item with ID {} exists in cache {}", itemId, cacheId);
+        return getCache(cacheId).containsKey(itemId);
+    }
+
+    protected <T> void forceCacheObject(final String cacheId, final T itemId, final Object object) {
         final Object candidate = object instanceof Provider ? ((Provider<?>) object).get() : object;
         final Object target;
         if (candidate instanceof Map) {
@@ -143,7 +199,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
             target = candidate;
         }
         log.trace("Storing cache entry '{}' with object of type: {}", cacheId, target.getClass().getName());
-        getCache().put(cacheId, (ItemI) target); // STASHED: getCache().put(cacheId, target);
+        getCache(cacheId).put(itemId, target); // STASHED: getCache().put(cacheId, target);
     }
 
     protected <K, V> Map<K, V> buildImmutableMap(final List<Map<K, V>> maps) {
@@ -179,16 +235,19 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return getCache(cacheName).getAndRemove(cacheId);
     }
 
-    private void initializeCaches() {
-        _extractors.forEach((cacheName, extractor) -> {
-            final CacheDefinition annotation = extractor.getClass().getAnnotation(CacheDefinition.class);
-            getCache(cacheName, annotation.keyType(), annotation.valueType());
-        });
+    protected static String createCacheIdFromElements(final Object... elements) {
+        return StringUtils.join(elements, ":");
     }
 
-    private void initializeCache(final DataExtractor<?, ?> extractor) {
-        // CACHING: Implement this
-        // getCache(cacheName, keyAndValueTypes.getKey(), keyAndValueTypes.getValue())
+    private void initializeCaches() {
+        _extractors.forEach((cacheName, extractor) -> {
+            if (extractor.isPartitionedMap()) {
+                getCache(cacheName, String.class, extractor.getPartitionValueType());
+                getCache(cacheName + "_partitions", String.class, List.class);
+            } else {
+                getCache(cacheName, extractor.getKeyType(), extractor.getValueType());
+            }
+        });
     }
 
     private void registerCacheEventListener() {
@@ -227,12 +286,4 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
             return ImmutableMap.copyOf(Maps.filterKeys(map, Objects::nonNull));
         }
     }
-
-    private static final Function<DataExtractor<?, ?>, String> EXTRACTOR_CACHE_NAME = extractor -> {
-        final CacheDefinition cacheDefinition = extractor.getClass().getAnnotation(CacheDefinition.class);
-        if (cacheDefinition == null) {
-            throw new NrgServiceRuntimeException(NrgServiceError.Instantiation, "All extractors must be annotated with @CacheDefinition, but " + extractor.getClass().getName() + " is not");
-        }
-        return cacheDefinition.value();
-    };
 }

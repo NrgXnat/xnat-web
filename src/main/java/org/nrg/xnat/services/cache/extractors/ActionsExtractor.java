@@ -13,8 +13,10 @@ import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,17 +24,28 @@ import java.util.stream.Collectors;
 
 import static org.nrg.xdat.display.ElementDisplay.formatElementDisplays;
 import static org.nrg.xdat.services.cache.GroupsAndPermissionsCache.ACTIONS;
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_ACTIONS;
 
-@CacheDefinition(value = "groups", valueType = Map.class)
+@Component
 @Slf4j
 public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, List<ElementDisplay>>> {
     @Autowired
     public ActionsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_ACTIONS, template, List.class);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public Map<String, List<ElementDisplay>> extract(final String username) {
+    public Map<String, List<ElementDisplay>> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyMap();
+        }
+
+        final String username = (String) parameters[0];
+        log.debug("Extracting actions for user {}", username);
+
         final Map<String, List<ElementDisplay>> elementDisplays = new HashMap<>();
         try {
             final List<ElementSecurity> securities = ElementSecurity.GetSecureElements();

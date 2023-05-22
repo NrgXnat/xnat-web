@@ -13,6 +13,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -20,7 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@CacheDefinition(value = "browseables", valueType = Map.class)
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_READABLE_COUNTS;
+
+@Component
 @Slf4j
 public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, Long>> {
     private static final String QUERY_USER_READABLE_WORKFLOW_COUNT   = "SELECT reltuples::bigint AS COUNT FROM pg_class WHERE oid = 'public.wrk_workflowdata'::regclass";
@@ -84,12 +87,18 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
 
     @Autowired
     public ReadableCountsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_READABLE_COUNTS, template);
     }
 
     @Override
-    public Map<String, Long> extract(final String username) {
-        log.info("Initializing readable counts for user '{}'", username);
+    public Map<String, Long> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyMap();
+        }
+
+        final String username = (String) parameters[0];
+        log.info("Extracting readable counts for user '{}'", username);
+
         try {
             final Map<String, Long> readableCounts   = new HashMap<>();
             final List<String>      readableProjects = getUserReadableProjects(username);

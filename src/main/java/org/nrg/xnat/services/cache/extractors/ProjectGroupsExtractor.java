@@ -5,21 +5,32 @@ import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 
-@CacheDefinition(value = "projectGroups", valueType = List.class)
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_PROJECT_GROUPS;
+
+@Component
 @Slf4j
 public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, List<String>> {
     private static final String QUERY_PROJECT_GROUPS = "SELECT id AS groups FROM xdat_usergroup WHERE tag = :" + PARAM_PROJECT_ID;
 
     @Autowired
     public ProjectGroupsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_PROJECT_GROUPS, template);
     }
 
     @Override
-    public List<String> extract(final String projectId) {
+    public List<String> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyList();
+        }
+
+        final String projectId = (String) parameters[0];
+        log.debug("Extracting groups for project {}", projectId);
+
         return getTemplate().queryForList(QUERY_PROJECT_GROUPS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), String.class);
     }
 }

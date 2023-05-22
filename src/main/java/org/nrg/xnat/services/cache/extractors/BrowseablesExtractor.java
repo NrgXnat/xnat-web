@@ -9,6 +9,7 @@ import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -16,18 +17,25 @@ import java.util.List;
 import java.util.Map;
 
 import static org.nrg.xdat.display.ElementDisplay.formatElementDisplays;
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_BROWSEABLES;
 
-@CacheDefinition(value = "browseables", valueType = Map.class)
+@Component
 @Slf4j
 public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, ElementDisplay>> {
     @Autowired
     public BrowseablesExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_BROWSEABLES, template);
     }
 
     @Override
-    public Map<String, ElementDisplay> extract(final String username) {
+    public Map<String, ElementDisplay> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyMap();
+        }
+
+        final String username = (String) parameters[0];
         log.info("Extracting browseable element displays for user '{}'", username);
+
         final Map<String, Long> counts = getCache().getReadableCounts(username);
         log.debug("Found {} readable counts for user {}: {}", counts.size(), username, counts);
 

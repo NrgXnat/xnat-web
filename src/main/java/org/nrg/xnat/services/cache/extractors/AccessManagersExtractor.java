@@ -6,10 +6,14 @@ import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.Map;
 
-@CacheDefinition(value = "accessManagers", valueType = Map.class)
+import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_ACCESS_MANAGERS;
+
+@Component
 @Slf4j
 public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, ElementAccessManager>> {
     private static final String QUERY_USER_PERMISSIONS = "SELECT " +
@@ -36,11 +40,18 @@ public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDa
 
     @Autowired
     public AccessManagersExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
-        super(cache, template);
+        super(cache, CACHE_ACCESS_MANAGERS, template);
     }
 
     @Override
-    public Map<String, ElementAccessManager> extract(final String username) {
+    public Map<String, ElementAccessManager> extract(final Object... parameters) {
+        if (parameters.length == 0) {
+            return Collections.emptyMap();
+        }
+
+        final String username = (String) parameters[0];
+        log.debug("Extracting element access managers for user {}", username);
+
         final Map<String, ElementAccessManager> managers = ElementAccessManager.initialize(getTemplate(),
                                                                                            QUERY_USER_PERMISSIONS,
                                                                                            new MapSqlParameterSource(PARAM_USERNAME, username));

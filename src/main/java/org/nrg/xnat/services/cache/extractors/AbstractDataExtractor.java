@@ -3,19 +3,28 @@ package org.nrg.xnat.services.cache.extractors;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.cache.XnatCache;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
-@Getter(AccessLevel.PROTECTED)
+@Getter
 @Accessors(prefix = "_")
-public abstract class AbstractDataExtractor<C extends XnatCache, P, T> implements DataExtractor<P, T> {
+@Slf4j
+public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implements DataExtractor<K, V> {
+    private static final Function<Type, Class<?>> TYPE_TO_CLASS = type -> (Class<?>) (type instanceof ParameterizedType ? ((ParameterizedType) type).getRawType() : type);
+
     private static final String QUERY_ACCESSIBLE_DATA_PROJECTS = "SELECT  " +
                                                                  "  project  " +
                                                                  "FROM  " +
@@ -53,21 +62,63 @@ public abstract class AbstractDataExtractor<C extends XnatCache, P, T> implement
     private static final String QUERY_HAS_ALL_DATA_ADMIN       = String.format(QUERY_HAS_ALL_DATA_PRIVILEGES, "edit_element");
     private static final String QUERY_ALL_DATA_ACCESS_PROJECTS = "SELECT id AS project FROM xnat_projectdata ORDER BY project";
 
+    @Getter(AccessLevel.PROTECTED)
     private final C                          _cache;
+    @Getter(AccessLevel.PROTECTED)
     private final NamedParameterJdbcTemplate _template;
+    @Getter(AccessLevel.PROTECTED)
     private final Map<String, Boolean>       _userChecks;
 
-    protected AbstractDataExtractor(final C cache, final NamedParameterJdbcTemplate template) {
+    private final String   _cacheGroup;
+    private final String   _cacheName;
+    private final Class<K> _keyType;
+    private final Class<V> _valueType;
+    private final Class<?> _partitionValueType;
+    private final boolean  _partitionedMap;
+
+    protected <T> AbstractDataExtractor(final C cache, final String cacheName, final NamedParameterJdbcTemplate template) {
+        this(cache, cacheName, template, null);
+    }
+
+    protected <T> AbstractDataExtractor(final C cache, final String cacheName, final NamedParameterJdbcTemplate template, final Class<T> partitionValueType) {
+        _cacheGroup = StringUtils.uncapitalize(cache.getClass().getSimpleName());
+        _cacheName  = cacheName;
         _cache      = cache;
         _template   = template;
         _userChecks = new HashMap<>();
+
+        final Pair<Class<K>, Class<V>> pair = getKeyAndValueTypes();
+        _keyType            = pair.getKey();
+        _valueType          = pair.getValue();
+        _partitionValueType = partitionValueType;
+        _partitionedMap     = _partitionValueType != null;
+        if (_partitionValueType != null && (!String.class.isAssignableFrom(_keyType) || !Map.class.isAssignableFrom(_valueType))) {
+            throw new IllegalArgumentException("In order for a partitioned map to work properly, the cache key must be a string and the cache value must be a map.");
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public abstract String getCacheGroup();
+    public String getCacheGroup() {
+        return _cacheGroup;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getCacheName() {
+        return _cacheName;
+    }
+
+    @SuppressWarnings("unchecked")
+    protected Pair<Class<K>, Class<V>> getKeyAndValueTypes() {
+        log.info("Trying to get the key and value types here");
+        final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
+        return Pair.of((Class<K>) TYPE_TO_CLASS.apply(types[0]), (Class<V>) TYPE_TO_CLASS.apply(types[1]));
+    }
 
     /**
      * Checks whether the user exists. If not, this throws the {@link UserNotFoundException}. Otherwise, it returns

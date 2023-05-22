@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.guava.GuavaModule;
-import com.fasterxml.jackson.datatype.hibernate4.Hibernate4Module;
+import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 import org.mockito.Mockito;
 import org.nrg.framework.services.ContextService;
 import org.nrg.framework.services.NrgEventService;
@@ -130,6 +130,6 @@ public class TestCatalogServiceConfig {
                 .failOnEmptyBeans(false)
                 .featuresToEnable(JsonParser.Feature.ALLOW_SINGLE_QUOTES, JsonParser.Feature.ALLOW_YAML_COMMENTS)
                 .featuresToDisable(SerializationFeature.FAIL_ON_EMPTY_BEANS, SerializationFeature.WRITE_NULL_MAP_VALUES)
-                .modulesToInstall(new Hibernate4Module(), new GuavaModule());
+                .modulesToInstall(new Hibernate5Module(), new GuavaModule());
     }
 }
