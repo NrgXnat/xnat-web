@@ -12,6 +12,7 @@ import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.FieldNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -30,7 +31,7 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Slf4j
 public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, List<ElementDisplay>>> {
     @Autowired
-    public ActionsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public ActionsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_ACTIONS, template, List.class);
     }
 

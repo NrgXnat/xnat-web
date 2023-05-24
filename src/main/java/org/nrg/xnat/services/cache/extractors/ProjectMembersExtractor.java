@@ -3,6 +3,7 @@ package org.nrg.xnat.services.cache.extractors;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -25,7 +26,7 @@ public class ProjectMembersExtractor extends AbstractGroupsAndPermissionsCacheDa
                                                       "WHERE tag = :" + PARAM_PROJECT_ID + " OR tag IS NULL AND field_value = '*'";
 
     @Autowired
-    public ProjectMembersExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public ProjectMembersExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_PROJECT_MEMBERS, template);
     }
 

@@ -85,6 +85,10 @@ import java.util.concurrent.TimeUnit;
 @Accessors(prefix = "_")
 @Slf4j
 public class ApplicationConfig {
+    public ApplicationConfig() {
+        log.info("Creating ApplicationConfig");
+    }
+
     @Autowired
     public void setAsyncOperationsPreferences(final AsyncOperationsPreferences asyncOperationsPreferences) {
         _asyncOperationsPreferences = asyncOperationsPreferences;

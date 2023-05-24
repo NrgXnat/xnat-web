@@ -59,6 +59,7 @@ public class WebConfig extends WebMvcConfigurerAdapter {
     public WebConfig(final Jackson2ObjectMapperBuilder objectMapperBuilder,
                      @Qualifier("threadPoolExecutorFactoryBean") final ThreadPoolExecutorFactoryBean threadPoolExecutorFactoryBean,
                      final AsyncOperationsPreferences preferences) {
+        log.info("Creating WebConfig");
         _threadPoolFactory = threadPoolExecutorFactoryBean;
         _preferences = preferences;
         _objectMapper = objectMapperBuilder.build();

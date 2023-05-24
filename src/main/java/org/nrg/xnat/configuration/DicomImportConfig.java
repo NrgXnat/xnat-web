@@ -9,6 +9,7 @@
 
 package org.nrg.xnat.configuration;
 
+import lombok.extern.slf4j.Slf4j;
 import org.nrg.dcm.DicomFileNamer;
 import org.nrg.dcm.id.ClassicDicomObjectIdentifier;
 import org.nrg.dcm.id.TemplatizedDicomFileNamer;
@@ -32,7 +33,12 @@ import java.util.Locale;
 
 @Configuration
 @ComponentScan({"org.nrg.dcm.scp", "org.nrg.dcm.id", "org.nrg.dcm.edit.mizer", "org.nrg.dicom.dicomedit.mizer", "org.nrg.dicom.mizer.service.impl", "org.nrg.xnat.services.messaging.archive"})
+@Slf4j
 public class DicomImportConfig {
+    public DicomImportConfig() {
+        log.info("Creating DicomImportConfig");
+    }
+
     @Bean
     @Primary
     public DicomObjectIdentifier<XnatProjectdata> dicomObjectIdentifier(final MessageSource messageSource,

@@ -9,6 +9,7 @@ import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.ResultSetExtractor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -86,7 +87,7 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
     };
 
     @Autowired
-    public ReadableCountsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public ReadableCountsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_READABLE_COUNTS, template);
     }
 

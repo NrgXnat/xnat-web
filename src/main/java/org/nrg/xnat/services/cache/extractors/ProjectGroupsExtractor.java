@@ -3,6 +3,7 @@ package org.nrg.xnat.services.cache.extractors;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,7 @@ public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDat
     private static final String QUERY_PROJECT_GROUPS = "SELECT id AS groups FROM xdat_usergroup WHERE tag = :" + PARAM_PROJECT_ID;
 
     @Autowired
-    public ProjectGroupsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public ProjectGroupsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_PROJECT_GROUPS, template);
     }
 

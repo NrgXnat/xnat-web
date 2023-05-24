@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.jcache.DefaultGenericCacheEntryListener;
 import org.nrg.framework.jcache.GenericCacheEventListener;
 import org.nrg.framework.jcache.JCacheHelper;
+import org.nrg.xdat.security.ElementAccessManager;
 import org.nrg.xft.ItemI;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.methods.AbstractXftItemEventHandlerMethod;
@@ -72,7 +73,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
     protected AbstractXftItemAndCacheEventHandlerMethod(final JCacheHelper cacheHelper, final List<DataExtractor<?, ?>> extractors, final List<GenericCacheEventListener<String, ItemI>> cacheEventListeners, final XftItemEventCriteria first, final XftItemEventCriteria... criteria) {
         super(first, criteria);
         _cacheHelper         = cacheHelper;
-        _extractors          = extractors.stream().collect(Collectors.toMap(DataExtractor::getCacheGroup, Function.identity()));
+        _extractors          = extractors.stream().collect(Collectors.toMap(DataExtractor::getCacheName, Function.identity()));
         _cacheEventListeners = ObjectUtils.defaultIfNull(cacheEventListeners, Collections.singletonList(new DefaultGenericCacheEntryListener<>()));
 
         initializeCaches();
@@ -242,8 +243,12 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
     private void initializeCaches() {
         _extractors.forEach((cacheName, extractor) -> {
             if (extractor.isPartitionedMap()) {
+                // "username:read"
+                // "username:edit"
+                // "username:delete"
                 getCache(cacheName, String.class, extractor.getPartitionValueType());
                 getCache(cacheName + "_partitions", String.class, List.class);
+                // "thewags": ["xnat:mrSessionData", "ansir:d3update", "delete"]
             } else {
                 getCache(cacheName, extractor.getKeyType(), extractor.getValueType());
             }

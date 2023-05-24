@@ -16,7 +16,6 @@ import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.nrg.framework.beans.XnatPluginBeanManager;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.framework.jcache.DefaultHibernateEntityCacheKeyGenerator;
-import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.framework.orm.DatabaseHelper;
 import org.nrg.framework.orm.hibernate.AggregatedAnnotationSessionFactoryBean;
 import org.nrg.framework.orm.hibernate.HibernateEntityPackageList;
@@ -27,12 +26,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.PropertiesFactoryBean;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
-import org.springframework.cache.jcache.JCacheCacheManager;
-import org.springframework.cache.jcache.config.JCacheConfigurerSupport;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import org.springframework.orm.hibernate4.HibernateTransactionManager;
+import org.springframework.orm.hibernate5.HibernateTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -51,8 +49,9 @@ import static org.nrg.framework.jcache.JCacheHelper.JCACHE_URI_ENV;
 @Configuration
 @EnableTransactionManagement(proxyTargetClass = true)
 @EnableCaching
+@ComponentScan("org.nrg.framework.jcache")
 @Slf4j
-public class OrmConfig extends JCacheConfigurerSupport {
+public class OrmConfig {
     @Value("${hibernate.dialect:org.hibernate.dialect.PostgreSQL10Dialect}")
     private String  _dialect;
     @Value("${hibernate.hbm2ddl.auto:create-drop}")
@@ -69,13 +68,6 @@ public class OrmConfig extends JCacheConfigurerSupport {
     private String  _cacheProvider;
     @Value("${" + JCACHE_URI_ENV + ":" + JCACHE_URI_DEFAULT + "}")
     private String  _cacheUri;
-
-    @Bean
-    @Override
-    public org.springframework.cache.CacheManager cacheManager() {
-        // STASHED: return new JCacheCacheManager(JCacheHelper.getCachingProvider(_cacheProvider).getCacheManager());
-        return new JCacheCacheManager();
-    }
 
     @Bean
     public KeyGenerator defaultHibernateEntityCacheKeyGenerator() {

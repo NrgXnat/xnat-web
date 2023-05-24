@@ -5,6 +5,7 @@ import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,7 @@ public class UserGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataEx
                                                             "    g.groupid";
 
     @Autowired
-    public UserGroupsExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public UserGroupsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_USER_GROUPS, template);
     }
 

@@ -13,6 +13,7 @@ import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.cache.DefaultUserProjectCache;
 import org.nrg.xnat.services.cache.UserProjectCache;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 public class ProjectUserAccessExtractor extends AbstractDataExtractor<UserProjectCache, String, String> {
     private final SerializerService _serializer;
 
-    public ProjectUserAccessExtractor(final UserProjectCache cache, final NamedParameterJdbcTemplate template, final SerializerService serializer) {
+    public ProjectUserAccessExtractor(final @Lazy UserProjectCache cache, final NamedParameterJdbcTemplate template, final SerializerService serializer) {
         super(cache, DefaultUserProjectCache.CACHE_PROJECT_USER_ACCESS, template);
         _serializer = serializer;
     }

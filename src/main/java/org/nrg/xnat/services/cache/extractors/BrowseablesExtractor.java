@@ -8,6 +8,7 @@ import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -23,7 +24,7 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Slf4j
 public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, ElementDisplay>> {
     @Autowired
-    public BrowseablesExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public BrowseablesExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_BROWSEABLES, template);
     }
 

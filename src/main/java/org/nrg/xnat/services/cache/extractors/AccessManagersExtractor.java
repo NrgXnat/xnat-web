@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.security.ElementAccessManager;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
@@ -39,7 +40,7 @@ public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDa
                                                          "  u.login = :" + PARAM_USERNAME;
 
     @Autowired
-    public AccessManagersExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public AccessManagersExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_ACCESS_MANAGERS, template);
     }
 

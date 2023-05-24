@@ -3,6 +3,7 @@ package org.nrg.xnat.services.cache.extractors;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +15,7 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Slf4j
 public class UserLastUpdateExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Date> {
     @Autowired
-    public UserLastUpdateExtractor(final GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
+    public UserLastUpdateExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_USER_LAST_UPDATED, template);
     }
 

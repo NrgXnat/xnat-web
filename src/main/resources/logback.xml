@@ -383,7 +383,7 @@
     <logger name="org.springframework.context" additivity="false" level="ERROR">
         <appender-ref ref="spring"/>
     </logger>
-    <logger name="org.nrg.xnat.configuration" additivity="false" level="WARN">
+    <logger name="org.nrg.xnat.configuration" additivity="false" level="INFO">
         <appender-ref ref="configuration"/>
     </logger>
     <logger name="org.nrg.xnat.daos" additivity="false" level="WARN">
@@ -530,7 +530,7 @@
     <logger name="org.springframework.stereotype" additivity="false" level="ERROR">
         <appender-ref ref="spring"/>
     </logger>
-    <logger name="org.nrg.xnat.initialization" additivity="false" level="WARN">
+    <logger name="org.nrg.xnat.initialization" additivity="false" level="INFO">
         <appender-ref ref="configuration"/>
     </logger>
     <logger name="org.apache.fop" additivity="false" level="ERROR">

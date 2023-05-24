@@ -48,9 +48,9 @@ public class DatabaseConfig {
     private static final String DEFAULT_DATASOURCE_MAX_TOTAL    = "40";
     private static final String DEFAULT_DATASOURCE_MAX_IDLE     = "10";
 
-    @Value("${datasource.impl:" + DEFAULT_DATASOURCE_CLASS + "}")
+    @Value("${datasource.class:" + DEFAULT_DATASOURCE_CLASS + "}")
     private String _dataSourceImpl;
-    @Value("${datasource.class:" + DEFAULT_DATASOURCE_DRIVER + "}")
+    @Value("${datasource.driver:" + DEFAULT_DATASOURCE_DRIVER + "}")
     private String _dataSourceClass;
     @Value("${datasource.url:" + DEFAULT_DATASOURCE_URL + "}")
     private String _dataSourceUrl;
@@ -60,6 +60,10 @@ public class DatabaseConfig {
     private String _dataSourcePassword;
 
     private Environment _environment;
+
+    public DatabaseConfig() {
+        log.info("Creating DatabaseConfig");
+    }
 
     @Autowired
     public void setEnvironment(Environment environment) {
