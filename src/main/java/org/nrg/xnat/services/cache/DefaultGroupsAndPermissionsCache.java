@@ -17,6 +17,7 @@ import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.ElementAccessManager;
+import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xdat.security.PermissionCriteriaI;
 import org.nrg.xdat.security.SecurityManager;
 import org.nrg.xdat.security.UserGroup;
@@ -57,6 +58,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.nrg.xapi.rest.users.DataAccessApi.SEARCHABLE;
 import static org.nrg.xdat.security.PermissionCriteria.dumpCriteriaList;
 import static org.nrg.xdat.security.SecurityManager.EDIT;
 import static org.nrg.xdat.security.SecurityManager.READ;
@@ -101,12 +103,12 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private static final String       QUERY_SUBJECT_COUNTS                 = "SELECT COUNT(*) FROM xnat_subjectdata";
     private static final String       QUERY_SESSION_COUNTS                 = "SELECT COUNT(*) FROM xnat_experimentdata";
     private static final String       QUERY_GET_ALL_ROLE_GROUPS            = "SELECT " +
-                                                                             "  projectId AS project_id, " +
+                                                                             "  tag AS project_id, " +
                                                                              "  id AS group_id " +
                                                                              "FROM " +
                                                                              "  xdat_usergroup " +
                                                                              "WHERE " +
-                                                                             "  projectId IS NOT NULL AND " +
+                                                                             "  tag IS NOT NULL AND " +
                                                                              "  id LIKE '%%_%s' " +
                                                                              "ORDER BY project_id, group_id";
     private static final String       QUERY_GET_ALL_MEMBER_GROUPS          = String.format(QUERY_GET_ALL_ROLE_GROUPS, "member");
@@ -237,7 +239,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
     @Override
     public Map<String, Long> getReadableCounts(final String username) {
-        return getCacheMap(CACHE_GROUPS, username, String.class, Long.class);
+        return getCacheMap(CACHE_READABLE_COUNTS, username, String.class, Long.class);
     }
 
     @Override
@@ -247,7 +249,26 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
     @Override
     public List<ElementDisplay> getSearchableElementDisplays(final UserI user) {
-        return getCacheList(CACHE_BROWSEABLES, user.getUsername(), ElementDisplay.class);
+        final String username = user.getUsername();
+        log.debug("Retrieving searchable element displays for user {}", username);
+
+        final Map<String, Long> counts = getReadableCounts(user);
+        try {
+            return getActionElementDisplays(username, SecurityManager.READ).stream().filter(display -> {
+                if (display == null) {
+                    return false;
+                }
+                final String name = display.getElementName();
+                try {
+                    return ElementSecurity.IsSearchable(name) && counts.getOrDefault(name, 0L) > 0;
+                } catch (Exception e) {
+                    return false;
+                }
+            }).collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("An unknown error occurred", e);
+            return Collections.emptyList();
+        }
     }
 
     @Override

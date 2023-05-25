@@ -10,8 +10,6 @@
 package org.nrg.xnat.services.cache;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +51,7 @@ import org.nrg.xft.schema.XFTManager;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.DateUtils;
 import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xnat.services.cache.extractors.DataExtractor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -119,8 +118,9 @@ public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandler
     public static final String CACHE_PROJECT_USER_ACCESS = "projectUserAccess";
 
     @Autowired
-    public DefaultUserProjectCache(final JCacheHelper helper, final GroupsAndPermissionsCache cache, final SerializerService serializer, final NamedParameterJdbcTemplate template) {
+    public DefaultUserProjectCache(final JCacheHelper helper, final GroupsAndPermissionsCache cache, final SerializerService serializer, final NamedParameterJdbcTemplate template, final List<DataExtractor<?, ?>> extractors) {
         super(helper,
+              extractors.stream().filter(extractor -> StringUtils.equals(extractor.getCacheGroup(), UserProjectCache.CACHE_NAME)).collect(Collectors.toList()),
               XftItemEventCriteria.getXsiTypeCriteria(XnatProjectdata.SCHEMA_ELEMENT_NAME),
               XftItemEventCriteria.getXsiTypeCriteria(XnatDatatypeprotocol.SCHEMA_ELEMENT_NAME),
               XftItemEventCriteria.getXsiTypeCriteria(XnatInvestigatordata.SCHEMA_ELEMENT_NAME),
@@ -807,7 +807,6 @@ public class DefaultUserProjectCache extends AbstractXftItemAndCacheEventHandler
     private static final Map<String, List<AccessLevel>>      USER_GROUP_SUFFIXES              = ImmutableMap.of("owner", DELETABLE_ACCESS, "member", WRITABLE_ACCESS, "collaborator", READABLE_ACCESS);
     private static final String                              QUERY_KEY_PROJECT_ID             = "projectId";
     private static final String                              QUERY_KEY_ACCESS_LEVEL           = "accessLevel";
-    private static final String                              CACHE_NAME                       = "UserProjectCacheManagerCache";
     private static final String                              QUERY_GET_PROJECT_BY_ID_OR_ALIAS = "SELECT DISTINCT id " +
                                                                                                 "FROM xnat_projectdata " +
                                                                                                 "  LEFT JOIN xnat_projectdata_alias a on xnat_projectdata.id = a.aliases_alias_xnat_projectdata_id " +

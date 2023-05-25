@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class ProjectUserAccessExtractor extends AbstractDataExtractor<UserProjectCache, String, String> {
+public class ProjectUserAccessExtractor extends AbstractUserProjectCacheDataExtractor<String, String> {
     private final SerializerService _serializer;
 
     public ProjectUserAccessExtractor(final @Lazy UserProjectCache cache, final NamedParameterJdbcTemplate template, final SerializerService serializer) {

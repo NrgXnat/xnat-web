@@ -32,7 +32,8 @@ public class GroupsExtractor extends AbstractGroupsAndPermissionsCacheDataExtrac
         try {
             return new UserGroup(groupId, getTemplate());
         } catch (ItemNotFoundException e) {
-            throw new NrgServiceRuntimeException("An error occurred trying to get user group with ID " + groupId + ": it doesn't seem to exist", e);
+            log.info("Asked to get user group {}, but it doesn't seem to exist, returning null", groupId);
+            return null;
         }
     }
 }

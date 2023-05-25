@@ -119,8 +119,11 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         return ObjectUtils.getIfNull(cache.get(itemId), () -> {
             log.debug("No item with ID {} and class {} found in cache {}, calling extractor", itemId, itemClass, cacheId);
             final V item = extractor.extract(itemId);
-            cache.put(itemId, item);
-            return item;
+            if (item != null) {
+                cache.put(itemId, item);
+                return item;
+            }
+            return null;
         });
     }
 
