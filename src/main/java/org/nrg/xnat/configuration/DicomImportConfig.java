@@ -10,14 +10,10 @@
 package org.nrg.xnat.configuration;
 
 import lombok.extern.slf4j.Slf4j;
-import org.nrg.dcm.DicomFileNamer;
 import org.nrg.dcm.id.ClassicDicomObjectIdentifier;
-import org.nrg.dcm.id.TemplatizedDicomFileNamer;
-import org.nrg.dcm.scp.daos.DicomSCPInstanceService;
 import org.nrg.dicom.dicomedit.DE6ScriptFactory;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.preferences.HandlePetMr;
-import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.user.XnatUserProvider;
 import org.nrg.xnat.DicomObjectIdentifier;
 import org.nrg.xnat.services.cache.UserProjectCache;

@@ -190,8 +190,7 @@ public class AutomationEventScriptHandler implements Consumer<Event<AutomationEv
         }
         final List<AutomationEventIdsIds> autoIds = _idsIdsService.getEventIds(eventData.getExternalId(), eventData.getSrcEventClass(), eventData.getEventId(), true);
         if (autoIds.size() < 1) {
-            final AutomationEventIdsIds idsids = new AutomationEventIdsIds(eventData, _idsService);
-            _idsIdsService.saveOrUpdate(idsids);
+            _idsIdsService.newAutomationEventIdsIds(eventData);
         } else {
             for (final AutomationEventIdsIds ids : autoIds) {
                 if (ids.getEventId().equals(eventData.getEventId())) {

@@ -81,9 +81,8 @@ public class XnatNodeInfo extends AbstractHibernateEntity {
 	 *
 	 * @param nodeId the node id
 	 */
-	public XnatNodeInfo(final String nodeId) {
-		super();
-		this.nodeId = nodeId;
+	public XnatNodeInfo(final String nodeId, final String hostName) {
+		this(nodeId, hostName, null, null);
 	}
 	
 	/**

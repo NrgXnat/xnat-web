@@ -59,7 +59,7 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
         }
         builder.where(builder.and(predicates));
         builder.orderBy(desc(PROPERTY_TIMESTAMP));
-        return Optional.ofNullable(builder.getResult());
+        return builder.getResult();
     }
 
     public List<ResourceSurveyRequest> findAllByResourceIdAndStatus(final int resourceId, final ResourceSurveyRequest.Status status) {
@@ -107,10 +107,11 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
      * longs containing request IDs that were not found (i.e. that are invalid request IDs).
      *
      * @param requestIds The list of request IDs to resolve.
+     *
      * @return A pair with a list of distinct project IDs and a list of any invalid request IDs.
      */
     public Pair<List<String>, List<Long>> findRequestProjects(final List<Long> requestIds) {
-        final Map<Long, String> resources = GenericUtils.convertToTypedList(getSession().getNamedQuery("findRequestIdAndProject").setParameter("requestIds", requestIds).list(), Object.class)
+        final Map<Long, String> resources = GenericUtils.convertToTypedList(createNamedQuery("findRequestIdAndProject").setParameter("requestIds", requestIds).list(), Object.class)
                                                         .stream()
                                                         .collect(Collectors.toMap(object -> (Long) ((Object[]) object)[0], object -> (String) ((Object[]) object)[1]));
         return Pair.of(resources.values().stream().distinct().sorted().collect(Collectors.toList()), requestIds.stream().distinct().filter(requestId -> !resources.containsKey(requestId)).collect(Collectors.toList()));
@@ -121,10 +122,11 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
      * resource IDs that were not found (i.e. that are invalid resource IDs).
      *
      * @param resourceIds The list of resource IDs to resolve.
+     *
      * @return A pair with a list of request IDs and a list of any invalid resource IDs.
      */
     public Pair<Map<Long, Integer>, List<Integer>> findResourceRequestIds(final List<Integer> resourceIds) {
-        final Map<Long, Integer> resources = GenericUtils.convertToTypedList(getSession().getNamedQuery("findRequestAndResourceId").setParameterList("resourceIds", resourceIds).list(), Object.class)
+        final Map<Long, Integer> resources = GenericUtils.convertToTypedList(createNamedQuery("findRequestAndResourceId").setParameterList("resourceIds", resourceIds).list(), Object.class)
                                                          .stream()
                                                          .collect(Collectors.toMap(object -> (Long) ((Object[]) object)[0], object -> (Integer) ((Object[]) object)[1]));
         return Pair.of(resources, resourceIds.stream().distinct().filter(resourceId -> !resources.containsValue(resourceId)).collect(Collectors.toList()));
@@ -134,10 +136,11 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
      * Returns a list of IDs for open requests in the specified project.
      *
      * @param projectId The ID of the project.
+     *
      * @return A list of IDs for open requests in the specified project.
      */
     public List<Long> findResourceRequestIds(final String projectId) {
-        return GenericUtils.convertToTypedList(getSession().getNamedQuery("findRequestsForProject").setParameter("projectId", projectId).list(), Long.class);
+        return GenericUtils.convertToTypedList(createNamedQuery("findRequestsForProject").setParameter("projectId", projectId).list(), Long.class);
     }
 
     private List<ResourceSurveyRequest> findByObjectIdAndStatusAndOpen(final String property, final String objectId, final boolean openOnly, final List<ResourceSurveyRequest.Status> statuses) {

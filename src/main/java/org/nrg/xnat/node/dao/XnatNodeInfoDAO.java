@@ -28,6 +28,7 @@ public class XnatNodeInfoDAO extends AbstractHibernateDAO<XnatNodeInfo> {
      * Gets the xnat node info list by node id.
      *
      * @param nodeId the node id
+     *
      * @return the xnat node info list by node id
      */
     @Transactional
@@ -40,11 +41,11 @@ public class XnatNodeInfoDAO extends AbstractHibernateDAO<XnatNodeInfo> {
      *
      * @param nodeId   the node id
      * @param hostName the host name
+     *
      * @return the xnat node info by node id and hostname
      */
     @Transactional
     public XnatNodeInfo getXnatNodeInfoByNodeIdAndHostname(final String nodeId, final String hostName) {
         return findByUniqueProperties(parameters(NODE_ID, nodeId, HOST_NAME, hostName));
     }
-
 }

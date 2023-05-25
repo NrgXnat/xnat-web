@@ -783,8 +783,7 @@ public class AutomationBasedImporter extends ImporterHandlerA implements Callabl
         AutomationEventIdsService _idsService = XDAT.getContextService().getBean(AutomationEventIdsService.class);
 		final List<AutomationEventIdsIds> autoIds = _idsIdsService.getEventIds(proj.getId(), canonicalName, eventText, true);
         if (autoIds.size() < 1) {
-            final AutomationEventIdsIds idsids = new AutomationEventIdsIds(proj.getId(), canonicalName, eventText, _idsService);
-            _idsIdsService.saveOrUpdate(idsids);
+			_idsIdsService.newAutomationEventIdsIds(proj.getId(), canonicalName, eventText);
         } else {
             for (final AutomationEventIdsIds ids : autoIds) {
                 if (ids.getEventId().equals(eventText)) {
