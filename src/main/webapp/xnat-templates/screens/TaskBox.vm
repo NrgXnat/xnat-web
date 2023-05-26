@@ -26,6 +26,10 @@
 </DIV>
 <DIV class="containerItem"><A HREF="$link.setPage("XDATScreen_UpdateUser.vm")">My XNAT</A></DIV>
 <DIV class="containerItem">
-    Upload: <A HREF="$link.setPage("ImageUpload.vm")">images</A> <A HREF="$link.setPage("XMLUpload.vm")">xml</A> <A HREF="$link.setPage("XDATScreen_uploadCSV.vm")">spreadsheet</A>
+    Upload: <A HREF="$link.setPage("ImageUpload.vm")">images</A>
+#if ($user.checkFeatureForAnyTag("xml_upload"))
+  <A HREF="$link.setPage("XMLUpload.vm")">xml</A>
+#end
+  <A HREF="$link.setPage("XDATScreen_uploadCSV.vm")">spreadsheet</A>
 </DIV>
 <!-- END xnat-templates/screens/TaskBox.vm -->

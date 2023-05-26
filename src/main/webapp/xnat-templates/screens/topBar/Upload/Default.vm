@@ -14,6 +14,8 @@
             #end
         </ul>
     </li>
+#if ($user.checkFeatureForAnyTag("xml_upload"))
     <li><a href="$link.setPage("XMLUpload.vm")">XML</a></li>
+#end
     <li><a href="$link.setPage("XDATScreen_uploadCSV.vm")">Spreadsheet</a></li>
     <li><a href="$link.setPage("XDATScreen_prearchives.vm")">Go to prearchive</a></li>

@@ -21,6 +21,7 @@ import org.apache.velocity.context.Context;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.schema.SchemaElement;
 import org.nrg.xdat.security.ElementSecurity;
+import org.nrg.xdat.security.helpers.Features;
 import org.nrg.xdat.turbine.modules.actions.DisplayItemAction;
 import org.nrg.xdat.turbine.modules.actions.SecureAction;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
@@ -51,6 +52,11 @@ public class XMLUpload extends SecureAction {
         final UserI user = getUser();
         if (user.isGuest()) {
             handleInvalidPermissions(data, null, MESSAGE_NO_GUEST_PERMISSIONS);
+            return;
+        }
+
+        if(!Features.checkFeatureForAnyTag(user,Features.XML_UPLOAD)){
+            handleInvalidPermissions(data, null, org.nrg.xdat.turbine.modules.screens.XMLUpload.MESSAGE_FEATURE_BLOCKED);
             return;
         }
 
