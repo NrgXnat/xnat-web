@@ -68,6 +68,7 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
             DicomImageObject dobj = dicomFrames.get(0).getDicomObject();
 
             String inputTsuid = dobj.getTransferSyntaxUID();
+            getAcceptableTransferSyntax( inputTsuid);
             final String tsuid = getAcceptableTransferSyntax( inputTsuid).orElseThrow( () -> {
                 String msg = String.format("Error finding acceptable transfer syntax for data in: %s", inputTsuid);
                 _log.error(msg);
@@ -96,28 +97,42 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
             // DICOM Part 18 seems to ignore this.
             // outputMessage.getBody().write( "\r\n".getBytes());
 
+            OutputStream outputStream = outputMessage.getBody();
+            byte delimiter[] = ("--" + boundary + "\r\n").getBytes();
+            boolean firstFrame = true;
             for (DicomFrame dicomFrame : dicomFrames) {
 
-                outputMessage.getBody().write(("--" + boundary + "\r\n").getBytes());
+                outputMessage.getBody().write(delimiter);
+                if (firstFrame) {
+                    delimiter = ("\r\n--" + boundary + "\r\n").getBytes();
+                    firstFrame = false;
+                }
                 outputMessage.getBody().write(("Content-Location: " + contentLocation + "\r\n").getBytes());
-                outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n").getBytes());
+                outputMessage.getBody().write(("Content-Type: " + partContentType + "\r\n\r\n").getBytes());
+
 
                 int frameNumber = dicomFrame.getFrameNumber();
+                /* Worked 10/18/2022
                 dicomImageObject.seekToFrame(frameNumber);
                 int jx = dicomImageObject.getCurrentFrame();
                 int pixelDataLength = dicomImageObject.getCurrentFrameLength();
+                 */
 
-                OutputStream outputStream = outputMessage.getBody();
+                int pixelDataLength = dicomImageObject.getFrameLength(frameNumber);
+
+
                 dicomImageObject.writePixelDataRandomFrame(frameNumber, outputStream);
                 //InputStream  inputStream  = dicomImageObject.getInputStream();
 
-                outputStream.write(("Content-Length: " + pixelDataLength + "\r\n\r\n").getBytes());
+//                outputStream.write(("Content-Length: " + pixelDataLength + "\r\n\r\n").getBytes());
                 // TODO we could still move the pixel IO back into dicomImageObject
 //                dicomImageObject.writePixelData( frameNumber, outputStream);
 //                StreamUtils.copy(inputStream, outputStream, pixelDataLength);
 
-                outputStream.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
+//                outputStream.write(("\r\n--" + boundary + "--").getBytes());
+//                outputStream.write(("\r\n--" + boundary + "--\r\n\r\n").getBytes());
             }
+            outputStream.write(("\r\n--" + boundary + "--").getBytes());
 
         } catch (IOException | TransCoderException e) {
             String msg = "Error streaming dicom: " + e.getMessage();
@@ -139,9 +154,12 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
         boolean canWrite = false;
+        boolean a = supports(clazz);
+        boolean b = MULTIPART_RELATED.isCompatibleWith(mediaType);
         if( supports( clazz) && MULTIPART_RELATED.isCompatibleWith( mediaType)) {
             MediaType partMediaType = getPartType( mediaType);
             String tx = getTransferSyntax( mediaType);
+            // TODO fix this
             canWrite = canWrite( partMediaType, tx);
         }
         return canWrite;
@@ -155,6 +173,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 case "1.2.840.10008.1.2.1":
                 case "*":
                     canWrite = true;
+                    break;
+                default:
+                    break;
             }
         }
         else if( IMAGE_JPG.isCompatibleWith( partMediaType)) {
@@ -162,7 +183,11 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 case "1.2.840.10008.1.2.4.70":
                 case "1.2.840.10008.1.2.4.50":
                 case "1.2.840.10008.1.2.4.51":
+                case "*":
                     canWrite = true;
+                    break;
+                default:
+                    break;
             }
         }
         else if( IMAGE_JLS.isCompatibleWith( partMediaType)) {
@@ -170,6 +195,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 case "1.2.840.10008.1.2.4.80":
                 case "1.2.840.10008.1.2.4.81":
                     canWrite = true;
+                    break;
+                default:
+                    break;
             }
         }
         else if( IMAGE_JP2.isCompatibleWith( partMediaType)) {
@@ -177,6 +205,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 case "1.2.840.10008.1.2.4.90":
                 case "1.2.840.10008.1.2.4.91":
                     canWrite = true;
+                    break;
+                default:
+                    break;
             }
         }
         else if( IMAGE_JPX.isCompatibleWith( partMediaType)) {
@@ -184,6 +215,9 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
                 case "1.2.840.10008.1.2.4.92":
                 case "1.2.840.10008.1.2.4.93":
                     canWrite = true;
+                    break;
+                default:
+                    break;
             }
         }
         return canWrite;
@@ -227,21 +261,24 @@ public class MultiparDicomFrameMessageConverter extends AbstractHttpMessageConve
     private Optional<MimeType> getContentType( String transferSyntax) {
         MimeType mt = new MimeType();
         try {
+            //TODO Revisit
             switch (transferSyntax) {
                 case "1.2.840.10008.1.2.1":
+//                    mt.setPrimaryType("application");
+//                    mt.setSubType("dicom");
                     mt.setPrimaryType("application");
-                    mt.setSubType("dicom");
+                    mt.setSubType("octet-stream");
                     mt.setParameter("transfer-syntax", transferSyntax);
                     break;
                 case "1.2.840.10008.1.2.4.70":
                 case "1.2.840.10008.1.2.4.50":
                 case "1.2.840.10008.1.2.4.51":
                     //TODO Fix This
-                    //mt.setPrimaryType("image");
-                    //mt.setSubType("jpeg");
-                    //mt.setParameter("transfer-syntax", transferSyntax);
-                    mt.setPrimaryType("application");
-                    mt.setSubType("octet-stream");
+                    mt.setPrimaryType("image");
+                    mt.setSubType("jpeg");
+                    mt.setParameter("transfer-syntax", transferSyntax);
+//                    mt.setPrimaryType("application");
+//                    mt.setSubType("octet-stream");
                     break;
                 case "1.2.840.10008.1.2.4.80":
                 case "1.2.840.10008.1.2.4.81":

@@ -29,12 +29,12 @@ public class DicomFrameMessageConverter extends AbstractHttpMessageConverter< Di
     @Autowired
     SiteConfigPreferences preferences;
 
-    private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
+//    private final static MediaType MULTIPART_RELATED = new MediaType("multipart", "related");
     private final static MediaType APPLICATION_OCTETSTREAM = new MediaType("application", "octet-stream");
-    private final static MediaType IMAGE_JPG = new MediaType("image", "jpeg");
-    private final static MediaType IMAGE_JLS = new MediaType("image", "jls");
-    private final static MediaType IMAGE_JP2 = new MediaType("image", "jp2");
-    private final static MediaType IMAGE_JPX = new MediaType("image", "jpx");
+//    private final static MediaType IMAGE_JPG = new MediaType("image", "jpeg");
+//    private final static MediaType IMAGE_JLS = new MediaType("image", "jls");
+//    private final static MediaType IMAGE_JP2 = new MediaType("image", "jp2");
+//    private final static MediaType IMAGE_JPX = new MediaType("image", "jpx");
     private static final Logger _log = LoggerFactory.getLogger(DicomFrameMessageConverter.class);
 
     public DicomFrameMessageConverter() {
@@ -79,6 +79,7 @@ public class DicomFrameMessageConverter extends AbstractHttpMessageConverter< Di
 
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        boolean b = supports( clazz) && canWrite( mediaType);
         return supports( clazz) && canWrite( mediaType);
     }
 

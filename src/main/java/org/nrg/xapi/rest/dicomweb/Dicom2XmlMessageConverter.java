@@ -36,4 +36,9 @@ public class Dicom2XmlMessageConverter extends AbstractHttpMessageConverter<Dico
             throw new HttpMessageNotWritableException("Error writing dicom object as XML", e);
         }
     }
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        boolean canWrite = super.canWrite(clazz, mediaType);
+        return canWrite;
+    }
 }

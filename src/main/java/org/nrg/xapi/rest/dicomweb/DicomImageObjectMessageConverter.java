@@ -35,5 +35,9 @@ public class DicomImageObjectMessageConverter extends AbstractHttpMessageConvert
 
         dicomObject.writeFile( httpOutputMessage.getBody());
     }
-
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        boolean canWrite = super.canWrite(clazz, mediaType);
+        return canWrite;
+    }
 }

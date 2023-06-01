@@ -165,6 +165,7 @@ public class SinglepartDicomFrameMessageConverter extends AbstractHttpMessageCon
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
         boolean canWrite = false;
+	// TODO Review
         if( supports( clazz) && IMAGE_JPG.isCompatibleWith( mediaType)) {
             MediaType partMediaType = getPartType( mediaType);
 //            String tx = getTransferSyntax( mediaType);

@@ -130,6 +130,7 @@ public class MultipartDicomFileMessageConverter extends AbstractHttpMessageConve
 
         //TODO
         // Review to see if this is the right converter for APPLICATION_DICOM
+        boolean b  = APPLICATION_DICOM_XML.isCompatibleWith( partMediaType) || APPLICATION_DICOM.isCompatibleWith(partMediaType);
         return (APPLICATION_DICOM_XML.isCompatibleWith( partMediaType) || APPLICATION_DICOM.isCompatibleWith(partMediaType));
     }
 

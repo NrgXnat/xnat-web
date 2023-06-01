@@ -33,12 +33,15 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
     //    protected Attributes attributes;
     private final File file;
     private RandomAccessFile randomAccessFile = null;
+    private File frameIndexFile = null;
+
     Long[] frameOffsets = null;
     Long[] frameLengths = null;
     DicomInputStream dis = null;
     int currentFrameNumber=1;
     private boolean isTemporary;
     private final static int PIXEL_DATA = 0x7FE00010;
+    private final static int OPTICAL_PATH_SEQUENCE = 0x00480105;
     private TransformerHandler transformerHandler;
 
     private final FrameGrabber frameGrabber;
@@ -161,10 +164,16 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
 
     @Override
     public void writePixelDataRandomFrame(int frame, OutputStream os) throws IOException {
-        Long length = frameLengths[frame-1];
-        byte[] pixelData = new byte[length.intValue()];
+        int length = getFrameLength(frame);
+        byte[] pixelData = new byte[length];
+        seekToFrame(frame);
         randomAccessFile.read(pixelData);
         os.write(pixelData);
+
+//        Long length = frameLengths[frame-1];
+//        byte[] pixelData = new byte[length.intValue()];
+//        randomAccessFile.read(pixelData);
+//        os.write(pixelData);
     }
 
     public byte[] getPixels() throws IOException {
@@ -211,31 +220,9 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
             frameOffsets = offsetList.toArray(new Long[0]);
             frameLengths = lengthList.toArray(new Long[0]);
         }
+        currentFrameNumber = frameNumber;
         long position = frameOffsets[frameNumber-1];
         randomAccessFile.seek(position);
-        /*
-        if (dis == null) {
-            dis = new DicomInputStream(file);
-            int j = dis.length();
-            dis.readDataset(-1, Tag.PixelData);
-            int k = dis.length();
-            if (dis.tag() != Tag.PixelData || dis.length() != -1 || !dis.readItemHeader()) {
-                throw new IOException("No or incorrect encapsulated compressed pixel data in requested object");
-            }
-            dis.skipFully(dis.length());
-            int l = dis.length();
-        }
-
-        int m = dis.length();
-
-        while (currentFrameNumber < frameNumber) {
-            skipFrame(dis);
-            currentFrameNumber++;
-        }
-        dis.readItemHeader();
-        int n = dis.length();
-
-         */
     }
 
     public int getCurrentFrame() {
@@ -244,6 +231,42 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
     public int getCurrentFrameLength() {
 //        return (dis == null) ? 0 : dis.length();
         return (frameLengths == null) ? 0 : Math.toIntExact(frameLengths[currentFrameNumber-1]);
+    }
+
+    public int getFrameLength(int frame) {
+        try {
+            readFrameIndexFile();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return 0;
+        }
+        /*
+        if (randomAccessFile == null) {
+            try {
+                randomAccessFile = new RandomAccessFile(file.getAbsolutePath(), "r");
+
+                List<Long> offsetList = new ArrayList<>();
+                List<Long> lengthList = new ArrayList<>();
+
+                File indexFile = new File(file.getAbsolutePath() + ".txt");
+                try (BufferedReader br = new BufferedReader(new FileReader(indexFile))) {
+                    for (String line; (line = br.readLine()) != null; ) {
+                        String[] tokens = line.split("\t");
+                        Long offset = Long.parseLong(tokens[0]);
+                        Long length = Long.parseLong(tokens[1]);
+                        offsetList.add(offset);
+                        lengthList.add(length);
+                    }
+                }
+                frameOffsets = offsetList.toArray(new Long[0]);
+                frameLengths = lengthList.toArray(new Long[0]);
+            } catch (Exception e) {
+                // TODO: Fix this
+            }
+        }
+
+         */
+        return (frameLengths == null) ? 0 : Math.toIntExact(frameLengths[frame-1]);
     }
 
 
@@ -260,25 +283,20 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
         String x = p;
     }
 
-//    private void readHeader() throws IOException {
-//        DicomInputStream dis = new DicomInputStream( file);
-//        attributes = dis.getFileMetaInformation();
-//        attributes.addAll( dis.readDataset( -1, Tag.PixelData));
-//    }
-
     private void readAll() throws IOException {
         DicomInputStream dis = new DicomInputStream( file);
         attributes = dis.getFileMetaInformation();
         attributes.addAll( dis.readDataset( -1, -1));
     }
 
-    protected final int[] skipTags = { PIXEL_DATA};
+    protected final int[] skipTags = { OPTICAL_PATH_SEQUENCE, PIXEL_DATA };
 
     @Override
     public void writeAsJSON(javax.json.stream.JsonGenerator jsonGenerator) throws IOException {
         JSONWriter jsonWriter = new JSONWriter( jsonGenerator);
         Attributes tmpAttributes = new Attributes();
         tmpAttributes.addNotSelected( attributes, skipTags);
+//        tmpAttributes.remove(OPTICAL_PATH_SEQUENCE);
 
         jsonWriter.write( tmpAttributes);
         jsonGenerator.flush();
@@ -343,5 +361,53 @@ public class DicomImageObjectChe3 extends DicomObjectChe3 implements DicomImageO
 
     @Override
     public String getModality() { return attributes.getString( 0x00080060); }
+
+    private void readFrameIndexFile() throws Exception {
+        if (frameIndexFile == null) {
+            createFrameIndexFile();
+            // TODO Check for error
+        }
+        List<Long> offsetList = new ArrayList<>();
+        List<Long> lengthList = new ArrayList<>();
+
+        frameIndexFile = new File(file.getAbsolutePath() + ".txt");
+        try (BufferedReader br = new BufferedReader(new FileReader(frameIndexFile))) {
+            for (String line; (line = br.readLine()) != null; ) {
+                String[] tokens = line.split("\t");
+                Long offset = Long.parseLong(tokens[0]);
+                Long length = Long.parseLong(tokens[1]);
+                offsetList.add(offset);
+                lengthList.add(length);
+            }
+        }
+        frameOffsets = offsetList.toArray(new Long[0]);
+        frameLengths = lengthList.toArray(new Long[0]);
+
+    }
+
+    private void createFrameIndexFile() throws Exception {
+        frameIndexFile = new File(file.getAbsolutePath() + ".txt");
+        if (frameIndexFile.exists()) {
+            return;
+        }
+        DicomInputStream dis = new DicomInputStream(file);
+        Attributes attributes = dis.readDataset(-1, Tag.PixelData);
+        int frameCount = attributes.getInt(Tag.NumberOfFrames, 0);
+        if (dis.tag() != Tag.PixelData || dis.length() != -1 || !dis.readItemHeader()) {
+            throw new IOException("Do not understand image file: " + file.getAbsolutePath());
+        }
+        dis.skipFully(dis.length());
+        StringBuffer frameOffsetsAndLengths = new StringBuffer(frameCount*40);
+
+        for (int frame = 1; frame <= frameCount; frame++) {
+            if (!dis.readItemHeader()) {
+                throw new IOException("Cannot read fragment: " + file.getAbsolutePath());
+            }
+            frameOffsetsAndLengths.append("" + dis.getPosition() + "\t" + dis.length() + "\n");
+            dis.skipFully(dis.length());
+        }
+        Path p = Paths.get(frameIndexFile.getAbsolutePath());
+        Files.write(p, frameOffsetsAndLengths.toString().getBytes());
+    }
 
 }

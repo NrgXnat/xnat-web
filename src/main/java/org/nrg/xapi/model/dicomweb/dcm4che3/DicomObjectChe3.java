@@ -29,8 +29,13 @@ import java.io.OutputStream;
  * Implements Dcm4che3 version of DicomObject.
  *
  */
+
 @JsonSerialize(using= JsonDicomObjectSerializer.class)
 public class DicomObjectChe3 implements DicomObject {
+    private final static int PIXEL_DATA = 0x7FE00010;
+    private final static int OPTICAL_PATH_SEQUENCE = 0x00480105;
+    protected final int[] skipTags = { OPTICAL_PATH_SEQUENCE, PIXEL_DATA };
+
 
     protected Attributes attributes;
     private TransformerHandler transformerHandler;
@@ -61,7 +66,9 @@ public class DicomObjectChe3 implements DicomObject {
 
             SAXWriter writer = new SAXWriter( th);
             th.setResult( new StreamResult( os));
-            writer.write( attributes);
+            Attributes tmpAttributes = new Attributes();
+            tmpAttributes.addNotSelected( attributes, skipTags);
+            writer.write( tmpAttributes);
 
         } catch (TransformerConfigurationException | SAXException e) {
             throw new IOException( "Error writing dicom object as XML.", e);

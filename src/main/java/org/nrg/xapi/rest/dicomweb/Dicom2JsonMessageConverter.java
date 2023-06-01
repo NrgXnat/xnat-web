@@ -28,12 +28,17 @@ public class Dicom2JsonMessageConverter extends AbstractHttpMessageConverter<Dic
 
     @Override
     protected void writeInternal(DicomObject dicomObject, HttpOutputMessage httpOutputMessage) throws IOException, HttpMessageNotWritableException {
-
         try {
             dicomObject.writeAsJSON( httpOutputMessage.getBody());
 
         } catch (IOException e) {
             throw new HttpMessageNotWritableException("Error writing dicom object as JSON.", e);
         }
+    }
+
+    @Override
+    public boolean canWrite(Class<?> clazz, MediaType mediaType) {
+        boolean canWrite = super.canWrite(clazz, mediaType);
+        return canWrite;
     }
 }

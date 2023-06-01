@@ -134,6 +134,8 @@ public class MultipartCompressedDicomFileMessageConverter extends AbstractHttpMe
     @Override
     public boolean canWrite(Class<?> clazz, MediaType mediaType) {
         boolean canWrite = false;
+        boolean a = supports(clazz);
+        boolean b = MULTIPART_RELATED.isCompatibleWith(mediaType);
         if( supports( clazz) && MULTIPART_RELATED.isCompatibleWith( mediaType)) {
             MediaType partMediaType = getPartType( mediaType);
             String tx = getTransferSyntax( mediaType);

@@ -96,6 +96,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             "projects/{projectID}/studies"},
             produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<? extends QIDOResponse>> doSearchForStudies( @PathVariable final Optional<String> projectID,
                                                                             @PathVariable final Optional<String> sessionID,
                                                                             @RequestParam final MultiValueMap<String,String> allRequestParams)
@@ -183,6 +184,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             "sessions/{sessionID}/series"},
             produces = {"application/dicom+json","multipart/related;type=\"application/dicom+xml\""}, method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<? extends QIDOResponse>> doSearchForSeries( @PathVariable Optional<String> sessionID,
                                                                            @PathVariable Optional<String> projectID,
                                                                            @RequestParam final MultiValueMap<String,String> allRequestParams)
@@ -206,9 +208,10 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"studies/{studyInstanceUID}/metadata",
             "projects/{projectID}/studies/{studyInstanceUID}/metadata",
             "sessions/{sessionID}/studies/{studyInstanceUID}/metadata"},
-            produces = {"application/dicom+json"},
+            produces = {"application/dicom+json","multipart/related; type=\"application/dicom+xml\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<DicomObject>> doRetrieveStudyMetadata(@PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                      @PathVariable Optional<String> sessionID,
                                                                      @PathVariable Optional<String> projectID)
@@ -230,9 +233,10 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/metadata",
             "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/metadata",
             "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/metadata"},
-            produces = {"application/dicom+json"},
+            produces = {"application/dicom+json","multipart/related; type=\"application/dicom+xml\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<DicomObject>> doRetrieveSeriesMetadata(@PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                       @PathVariable("seriesInstanceUID") String seriesInstanceUID,
                                                                       @PathVariable("sessionID") Optional<String> sessionID,
@@ -255,9 +259,10 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/metadata",
             "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/metadata",
             "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{instanceUID}/metadata"},
-            produces = {"application/dicom+json"},
+            produces = {"application/dicom+json","multipart/related; type=\"application/dicom+xml\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<DicomObject>> doRetrieveInstanceMetadata(@PathVariable("studyInstanceUID") String studyInstanceUID,
                                                                         @PathVariable("seriesInstanceUID") String seriesInstanceUID,
                                                                         @PathVariable("instanceUID") String instanceUID,
@@ -280,9 +285,7 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
             "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
             "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}"},
-            produces = { "application/dicom",
-                    "application/dicom+json",
-                    "application/dicom+xml"},
+            produces = { "application/dicom"},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
     public ResponseEntity<DicomObject> doRetrieveInstanceSinglePart(@PathVariable("studyInstanceUID") String studyInstanceUID,
@@ -307,8 +310,6 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}",
             "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}"},
             produces = {"multipart/related;type=\"application/dicom\"",
-                    "multipart/related;type=\"application/dicom+json\"",
-                    "multipart/related;type=\"application/dicom+xml\"",
                     "multipart/related;type=\"application/octet-stream\""},
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
@@ -335,10 +336,13 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
     @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}",
             "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}",
             "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/frames/{frameNumbers}" },
-            produces = {"multipart/related; type=\"application/octet-stream\"",
-                        "multipart/related; type=\"image/jpeg\""},
+            produces = {
+                    "multipart/related; type=\"image/jpeg\"",
+                    "multipart/related; type=\"application/octet-stream\""
+                        },
             method = RequestMethod.GET, restrictTo = Read)
     @ResponseBody
+    @CrossOrigin(origins="*")
     public ResponseEntity<List<DicomFrame>> doRetrieveFramesList( @PathVariable("sessionID") Optional<String> sessionID,
                                                                   @PathVariable("projectID") Optional<String> projectID,
                                                                   @PathVariable("studyInstanceUID") String studyInstanceUID,
@@ -393,6 +397,45 @@ public class DicomWebApi extends AbstractXapiProjectRestController {
             return new ResponseEntity<>(frames, HttpStatus.OK );
         }
     }
+
+
+    @ApiOperation(value = "WADO-RS Retrieve Instance Rendered.", response = DicomObject.class)
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully performed WADO-RS retrieve instance rendered."),
+            @ApiResponse(code = 403, message = "Insufficient permissions to perform the request."),
+            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
+    @XapiRequestMapping(value = {"studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/rendered",
+            "sessions/{sessionID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/rendered",
+            "projects/{projectID}/studies/{studyInstanceUID}/series/{seriesInstanceUID}/instances/{sopInstanceUID}/rendered" },
+            produces = {
+                    "image/png"
+            },
+            method = RequestMethod.GET, restrictTo = Read)
+    @ResponseBody
+    @CrossOrigin(origins="*")
+    public ResponseEntity<DicomFrame> doRetrieveInstanceRendered( @PathVariable("sessionID") Optional<String> sessionID,
+                                                                          @PathVariable("projectID") Optional<String> projectID,
+                                                                          @PathVariable("studyInstanceUID") String studyInstanceUID,
+                                                                          @PathVariable("seriesInstanceUID") String seriesInstanceUID,
+                                                                          @PathVariable("sopInstanceUID") String sopInstanceUID)
+            throws UserNotFoundException, UserInitException, SearchException, NoContentException {
+        UserI user = getUser();
+        /*
+        List<Integer> frameList = Arrays.stream(frameNumbers.split(",")).map(Integer::parseInt).collect(Collectors.toList());
+        DicomFrames frames = _searchEngine.retrieveFrames( projectID.orElse(null), sessionID.orElse(null), studyInstanceUID, seriesInstanceUID, sopInstanceUID, frameList, user);
+        if( frames == null || frames.isEmpty()) {
+            return new ResponseEntity<>( HttpStatus.NO_CONTENT);
+        }
+        else if( frames.size() < frameList.size()) {
+            return new ResponseEntity<>( frames, HttpStatus.NOT_FOUND);
+        }
+        else {
+            return new ResponseEntity<>(frames, HttpStatus.OK );
+        }
+
+         */
+        return null;
+    }
+
 
 
 //    @ApiOperation(value = "WADO-RS Retrieve Frame with session ID.", response = DicomObject.class)
