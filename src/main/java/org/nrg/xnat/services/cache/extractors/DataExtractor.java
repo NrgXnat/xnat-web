@@ -1,5 +1,14 @@
 package org.nrg.xnat.services.cache.extractors;
 
+import org.apache.commons.collections.CollectionUtils;
+
+import javax.cache.Cache;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Future;
+import java.util.stream.Stream;
+
 public interface DataExtractor<K, V> {
     String PARAM_DATA_TYPE     = "dataType";
     String PARAM_EXPERIMENT_ID = "experimentId";
@@ -33,10 +42,52 @@ public interface DataExtractor<K, V> {
     <T> Class<T> getPartitionValueType();
 
     /**
-     * Indicates whether the
-     * @return
+     * Indicates whether the value type is a map partitioned by the primary cache key and the map key. Refer to {@link
+     * #getPartitionValueType()} for more information on how partitioned maps work.
+     *
+     * @return Returns <pre>true</pre> if this cache uses a partitioned map value, <pre>false</pre> otherwise.
      */
     boolean isPartitionedMap();
 
+    /**
+     * Extracts a value for the submitted parameters.
+     *
+     * @param parameters The parameters to be used to extract a value
+     *
+     * @return The extracted value.
+     */
     V extract(Object... parameters);
+
+    /**
+     * Gets all keys for the target data, useful when initializing a cache. Note that this method does <i>not</i>
+     * provide the list of keys currently in the cache, but a list of potential keys based on system data.
+     * <p>
+     * The default implementation of this method returns an empty list.
+     *
+     * @return A list of keys for the target data.
+     */
+    default List<K> getKeys() {
+        return Collections.emptyList();
+    }
+
+    /**
+     * Initializes its values based on the keys it expects to find. For example, an extractor for user groups would get
+     * a list of groups on the system, then iterate through the list, initializing and caching each group.
+     * <p>
+     * The default implementation of this method returns calls the {@link #getKeys()} method, calls the {@link
+     * #extract(Object...)} method for each key, and caches the result using the specified key.
+     *
+     * @return The total number of items that were initialized.
+     */
+    // CACHING: It might make sense to make this return Future<Integer> but current usage expects int.
+    default int initialize(Cache<K, V> cache) {
+        final List<K> keys = getKeys();
+        if (CollectionUtils.isEmpty(keys)) {
+            return 0;
+        }
+        keys.forEach(key -> {
+            cache.put(key, extract(key));
+        });
+        return keys.size();
+    }
 }

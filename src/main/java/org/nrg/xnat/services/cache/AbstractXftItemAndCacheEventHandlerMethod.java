@@ -203,7 +203,7 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
             target = candidate;
         }
         log.trace("Storing cache entry '{}' with object of type: {}", cacheId, target.getClass().getName());
-        getCache(cacheId).put(itemId, target); // STASHED: getCache().put(cacheId, target);
+        getCache(cacheId).put(itemId, target); // CACHING: getCache().put(cacheId, target);
     }
 
     protected <K, V> Map<K, V> buildImmutableMap(final List<Map<K, V>> maps) {

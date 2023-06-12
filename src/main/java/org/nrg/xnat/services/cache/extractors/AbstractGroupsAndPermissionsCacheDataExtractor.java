@@ -12,6 +12,10 @@ public abstract class AbstractGroupsAndPermissionsCacheDataExtractor<K, V> exten
         super(cache, cacheName, template, partitionValueType);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public String getCacheGroup() {
         return GroupsAndPermissionsCache.CACHE_NAME;
     }

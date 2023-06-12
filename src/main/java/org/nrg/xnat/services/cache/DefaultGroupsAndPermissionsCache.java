@@ -9,6 +9,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.nrg.framework.generics.GenericUtils;
 import org.nrg.framework.jcache.JCacheHelper;
+import org.nrg.framework.orm.DatabaseHelper;
+import org.nrg.framework.utilities.LapStopWatch;
+import org.nrg.xdat.XDAT;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.om.XdatElementSecurity;
 import org.nrg.xdat.om.XdatUsergroup;
@@ -29,25 +32,34 @@ import org.nrg.xdat.security.user.exceptions.UserInitException;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.Initializing;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
+import org.nrg.xdat.servlet.XDATServlet;
 import org.nrg.xft.db.PoolDBUtils;
 import org.nrg.xft.event.XftItemEventI;
 import org.nrg.xft.event.methods.XftItemEventCriteria;
 import org.nrg.xft.exception.ItemNotFoundException;
+import org.nrg.xft.schema.XFTManager;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.services.cache.extractors.DataExtractor;
+import org.nrg.xnat.services.cache.jms.InitializeGroupRequest;
+import org.slf4j.event.Level;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Nonnull;
+import javax.cache.Cache;
+import java.sql.SQLException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,7 +70,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.nrg.xapi.rest.users.DataAccessApi.SEARCHABLE;
 import static org.nrg.xdat.security.PermissionCriteria.dumpCriteriaList;
 import static org.nrg.xdat.security.SecurityManager.EDIT;
 import static org.nrg.xdat.security.SecurityManager.READ;
@@ -102,6 +113,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private static final String       QUERY_PROJECT_COUNTS                 = "SELECT COUNT(*) FROM xnat_projectdata";
     private static final String       QUERY_SUBJECT_COUNTS                 = "SELECT COUNT(*) FROM xnat_subjectdata";
     private static final String       QUERY_SESSION_COUNTS                 = "SELECT COUNT(*) FROM xnat_experimentdata";
+    private static final String       QUERY_ALL_GROUPS                     = "SELECT id FROM xdat_usergroup";
     private static final String       QUERY_GET_ALL_ROLE_GROUPS            = "SELECT " +
                                                                              "  tag AS project_id, " +
                                                                              "  id AS group_id " +
@@ -166,17 +178,22 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                                                                              "  LEFT JOIN xdat_user xu ON xugid.groups_groupid_xdat_user_xdat_user_id = xu.xdat_user_id " +
                                                                              "WHERE xu.login = :" + PARAM_USERNAME + " AND tag = :" + PARAM_PROJECT_ID + " " +
                                                                              "ORDER BY groupid";
+    private static final NumberFormat NUMBER_FORMAT                        = NumberFormat.getNumberInstance(Locale.getDefault());
 
 
     private final NamedParameterJdbcTemplate _template;
+    private final JmsTemplate                _jmsTemplate;
+    private final DatabaseHelper             _helper;
     private final Map<String, Long>          _totalCounts;
     private final Map<String, Boolean>       _userChecks;
     private final AtomicBoolean              _initialized;
-    private       XDATUser                   _guest;
+
+    private Listener _listener;
+    private XDATUser _guest;
 
 
     @Autowired
-    public DefaultGroupsAndPermissionsCache(final JCacheHelper cacheHelper, final NamedParameterJdbcTemplate template, final List<DataExtractor<?, ?>> extractors) {
+    public DefaultGroupsAndPermissionsCache(final JCacheHelper cacheHelper, final NamedParameterJdbcTemplate template, final List<DataExtractor<?, ?>> extractors, final JmsTemplate jmsTemplate) {
         super(cacheHelper,
               extractors.stream().filter(extractor -> StringUtils.equals(extractor.getCacheGroup(), GroupsAndPermissionsCache.CACHE_NAME)).collect(Collectors.toList()),
               XftItemEventCriteria.builder().xsiType(XnatProjectdata.SCHEMA_ELEMENT_NAME).actions(CREATE, UPDATE, DELETE).build(),
@@ -184,20 +201,86 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
               XftItemEventCriteria.getXsiTypeCriteria(XdatUsergroup.SCHEMA_ELEMENT_NAME),
               XftItemEventCriteria.getXsiTypeCriteria(XdatElementSecurity.SCHEMA_ELEMENT_NAME));
         _template    = template;
+        _jmsTemplate = jmsTemplate;
+        _helper      = new DatabaseHelper(_template);
         _totalCounts = new ConcurrentHashMap<>();
         _userChecks  = new ConcurrentHashMap<>();
         _initialized = new AtomicBoolean(false);
     }
 
     @Override
+    public String getCacheName() {
+        return GroupsAndPermissionsCache.CACHE_NAME;
+    }
+
+    @Override
     public boolean canInitialize() {
-        return !_initialized.get();
+        // If it's already initialized, you can't re-initialize.
+        if (_initialized.get()) {
+            return false;
+        }
+        try {
+            if (_listener == null) {
+                return false;
+            }
+            final boolean doesUserGroupTableExists            = _helper.tableExists("xdat_usergroup");
+            final boolean isXftManagerComplete                = XFTManager.isComplete();
+            final boolean isDatabasePopulateOrUpdateCompleted = XDATServlet.isDatabasePopulateOrUpdateCompleted();
+            log.info("User group table {}, XFTManager initialization completed {}, database populate or updated completed {}", doesUserGroupTableExists, isXftManagerComplete, isDatabasePopulateOrUpdateCompleted);
+            return doesUserGroupTableExists && isXftManagerComplete && isDatabasePopulateOrUpdateCompleted;
+        } catch (SQLException e) {
+            log.info("Got an SQL exception checking for xdat_usergroup table", e);
+            return false;
+        }
     }
 
     @Override
     public Future<Boolean> initialize() {
+        final LapStopWatch stopWatch = LapStopWatch.createStarted(log, Level.INFO);
+
+        final int tags = getProjectGroupsExtractor().initialize(getProjectGroupsCache());
+        stopWatch.lap("Processed {} tags", tags);
+
+        final List<String> groupIds = _template.queryForList(QUERY_ALL_GROUPS, EmptySqlParameterSource.INSTANCE, String.class);
+        _listener.setGroupIds(groupIds);
+        stopWatch.lap("Initialized listener of type {} with {} tags", _listener.getClass().getName(), tags);
+
+        try {
+            final UserI adminUser = Users.getAdminUser();
+            assert adminUser != null;
+
+            stopWatch.lap("Found {} group IDs to run through, initializing cache with these as user {}", groupIds.size(), adminUser.getUsername());
+            for (final String groupId : groupIds) {
+                stopWatch.lap(Level.DEBUG, "Creating queue entry for group {}", groupId);
+                XDAT.sendJmsRequest(_jmsTemplate, new InitializeGroupRequest(groupId));
+            }
+        } finally {
+            if (stopWatch.isStarted()) {
+                stopWatch.stop();
+            }
+            log.info("Total time to queue {} groups was {} ms", groupIds.size(), NUMBER_FORMAT.format(stopWatch.getTime()));
+            if (log.isInfoEnabled()) {
+                log.info(stopWatch.toTable());
+            }
+        }
+
+        resetGuestBrowseableElementDisplays();
         _initialized.set(true);
         return new AsyncResult<>(true);
+    }
+
+    private Map<String, ElementDisplay> resetGuestBrowseableElementDisplays() {
+        return resetBrowseableElementDisplays(getGuest());
+    }
+
+    private Map<String, ElementDisplay> resetBrowseableElementDisplays(final XDATUser user) {
+        final String username = user.getUsername();
+        log.debug("Updating browseable element displays for user {}", username);
+
+        user.clearLocalCache();
+        final Map<String, ElementDisplay> browseables = getBrowseablesExtractor().extract(username);
+        getBrowseablesCache().put(username, browseables);
+        return browseables;
     }
 
     @Override
@@ -212,12 +295,12 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
     @Override
     public void registerListener(final Listener listener) {
-
+        _listener = listener;
     }
 
     @Override
     public Listener getListener() {
-        return null;
+        return _listener;
     }
 
     @Nullable
@@ -425,7 +508,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
     @Override
     public void refreshGroupsForUser(final String username) throws UserNotFoundException {
-        checkUser(username);
         evict(CACHE_USER_GROUPS, username);
         getCacheList(CACHE_USER_GROUPS, username, String.class);
     }
@@ -473,11 +555,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     @Override
     public void clearUserCache(final String username) {
         USER_CACHES.forEach(cacheName -> evict(cacheName, username));
-    }
-
-    @Override
-    public String getCacheName() {
-        return GroupsAndPermissionsCache.CACHE_NAME;
     }
 
     @Override
@@ -730,31 +807,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return true;
     }
 
-    /**
-     * Checks whether the user exists. If not, this throws the {@link UserNotFoundException}. Otherwise, it returns
-     * a parameter source containing the username that can be used in subsequent queries.
-     *
-     * @param username The user to test.
-     *
-     * @return A parameter source containing the username parameter.
-     *
-     * @throws UserNotFoundException If the user doesn't exist.
-     */
-    private MapSqlParameterSource checkUser(final String username) throws UserNotFoundException {
-        final MapSqlParameterSource parameters = new MapSqlParameterSource(PARAM_USERNAME, username);
-
-        // If the user isn't in the check map OR the user is in the check map but is set as not existing...
-        if (!_userChecks.containsKey(username) || !_userChecks.get(username)) {
-            // See if the user exists now. The non-existent user existing should be updated with the add user event,
-            // but we don't have a clearly defined handler for that yet.
-            _userChecks.put(username, _template.queryForObject(UserManagementServiceI.QUERY_CHECK_USER_EXISTS, parameters, Boolean.class));
-        }
-        if (!_userChecks.get(username)) {
-            throw new UserNotFoundException(username);
-        }
-        return parameters;
-    }
-
     private Map<String, ElementAccessManager> getElementAccessManagers(final String username) {
         return getCacheMap(CACHE_ACCESS_MANAGERS, username, String.class, ElementAccessManager.class);
     }
@@ -898,4 +950,88 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private boolean isGuest(final String username) {
         return getGuest() != null ? StringUtils.equalsIgnoreCase(getGuest().getUsername(), username) : StringUtils.equalsIgnoreCase(DEFAULT_GUEST_USERNAME, username);
     }
+
+    private DataExtractor<String, Map<String, ElementAccessManager>> getAccessManagersExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, Map<String, ElementAccessManager>>) getExtractors().get(CACHE_ACCESS_MANAGERS);
+    }
+
+    private DataExtractor<String, Map<String, List<ElementDisplay>>> getActionsExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, Map<String, List<ElementDisplay>>>) getExtractors().get(CACHE_ACTIONS);
+
+    }
+
+    private DataExtractor<String, Map<String, ElementDisplay>> getBrowseablesExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, Map<String, ElementDisplay>>) getExtractors().get(CACHE_BROWSEABLES);
+    }
+
+    private DataExtractor<String, UserGroup> getGroupsExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, UserGroup>) getExtractors().get(CACHE_GROUPS);
+    }
+
+    private DataExtractor<String, List<String>> getProjectGroupsExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, List<String>>) getExtractors().get(CACHE_PROJECT_GROUPS);
+    }
+
+    private DataExtractor<String, List<String>> getProjectMembersExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, List<String>>) getExtractors().get(CACHE_PROJECT_MEMBERS);
+    }
+
+    private DataExtractor<String, Map<String, Long>> getReadableCountsExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, Map<String, Long>>) getExtractors().get(CACHE_READABLE_COUNTS);
+    }
+
+    private DataExtractor<String, List<String>> getUserGroupsExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, List<String>>) getExtractors().get(CACHE_USER_GROUPS);
+    }
+
+    private DataExtractor<String, Date> getUserLastUpdateExtractor() {
+        //noinspection unchecked
+        return (DataExtractor<String, Date>) getExtractors().get(CACHE_USER_LAST_UPDATED);
+    }
+
+    private Cache<String, Map<String, ElementAccessManager>> getAccessManagersCache() {
+        return getCache(CACHE_ACCESS_MANAGERS, String.class, getAccessManagersExtractor().getValueType());
+    }
+
+    private Cache<String, Map<String, List<ElementDisplay>>> getActionsCache() {
+        return getCache(CACHE_ACTIONS, String.class, getActionsExtractor().getValueType());
+
+    }
+
+    private Cache<String, Map<String, ElementDisplay>> getBrowseablesCache() {
+        return getCache(CACHE_BROWSEABLES, String.class, getBrowseablesExtractor().getValueType());
+    }
+
+    private Cache<String, UserGroup> getGroupsCache() {
+        return getCache(CACHE_GROUPS, String.class, getGroupsExtractor().getValueType());
+    }
+
+    private Cache<String, List<String>> getProjectGroupsCache() {
+        return getCache(CACHE_PROJECT_GROUPS, String.class, getProjectGroupsExtractor().getValueType());
+    }
+
+    private Cache<String, List<String>> getProjectMembersCache() {
+        return getCache(CACHE_PROJECT_MEMBERS, String.class, getProjectMembersExtractor().getValueType());
+    }
+
+    private Cache<String, Map<String, Long>> getReadableCountsCache() {
+        return getCache(CACHE_READABLE_COUNTS, String.class, getReadableCountsExtractor().getValueType());
+    }
+
+    private Cache<String, List<String>> getUserGroupsCache() {
+        return getCache(CACHE_USER_GROUPS, String.class, getUserGroupsExtractor().getValueType());
+    }
+
+    private Cache<String, Date> getUserLastUpdateCache() {
+        return getCache(CACHE_USER_LAST_UPDATED, String.class, getUserLastUpdateExtractor().getValueType());
+    }
 }
+

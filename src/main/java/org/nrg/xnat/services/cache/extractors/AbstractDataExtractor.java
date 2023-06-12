@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.cache.XnatCache;
+import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
@@ -25,6 +26,8 @@ import java.util.function.Function;
 public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implements DataExtractor<K, V> {
     private static final Function<Type, Class<?>> TYPE_TO_CLASS = type -> (Class<?>) (type instanceof ParameterizedType ? ((ParameterizedType) type).getRawType() : type);
 
+    private static final String QUERY_ALL_PROJECTS             = "SELECT id FROM xnat_projectdata";
+    private static final String QUERY_ALL_USERNAMES            = "SELECT login FROM xdat_user WHERE enabled = 1";
     private static final String QUERY_ACCESSIBLE_DATA_PROJECTS = "SELECT  " +
                                                                  "  project  " +
                                                                  "FROM  " +
@@ -76,6 +79,7 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
     private final Class<?> _partitionValueType;
     private final boolean  _partitionedMap;
 
+    @SuppressWarnings("unused")
     protected <T> AbstractDataExtractor(final C cache, final String cacheName, final NamedParameterJdbcTemplate template) {
         this(cache, cacheName, template, null);
     }
@@ -146,7 +150,27 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
     }
 
     /**
-     * Retrieves a list of projects where the specified user has read access. This differs from {@link #getUserProjects(String)} in that it
+     * Gets a list of project IDs on the system.
+     *
+     * @return A list of project IDs.
+     */
+    protected List<String> getAllProjectIds() {
+        return getTemplate().queryForList(QUERY_ALL_PROJECTS, EmptySqlParameterSource.INSTANCE, String.class);
+    }
+
+    /**
+     * Gets a list of all usernames on the system.
+     *
+     * @return A list of usernames.
+     */
+    protected List<String> getAllUsernames() {
+        return getTemplate().queryForList(QUERY_ALL_USERNAMES, EmptySqlParameterSource.INSTANCE, String.class);
+    }
+
+    // CACHING: The "{ @ link" below needs to have spaces removed, but still need the getUserProjects() method.
+
+    /**
+     * Retrieves a list of projects where the specified user has read access. This differs from { @ link #getUserProjects(String)} in that it
      * includes protected and public projects and projects to which the user has read access due to all data access privileges.
      *
      * @param username The username to retrieve projects for.
@@ -164,6 +188,7 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
      *
      * @return A list of projects to which the specified user has edit access.
      */
+    @SuppressWarnings("unused")
     protected List<String> getUserEditableProjects(final String username) {
         return getProjectsByAccessQuery(username, QUERY_EDITABLE_PROJECTS, true);
     }
@@ -175,6 +200,7 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
      *
      * @return A list of projects to which the specified user has delete access.
      */
+    @SuppressWarnings("unused")
     protected List<String> getUserOwnedProjects(final String username) {
         return getProjectsByAccessQuery(username, QUERY_OWNED_PROJECTS, true);
     }

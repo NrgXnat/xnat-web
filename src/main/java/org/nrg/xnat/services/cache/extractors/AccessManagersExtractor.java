@@ -5,11 +5,13 @@ import org.nrg.xdat.security.ElementAccessManager;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_ACCESS_MANAGERS;
@@ -17,6 +19,7 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Component
 @Slf4j
 public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, ElementAccessManager>> {
+    private static final String QUERY_GET_ALL_USERNAMES = "SELECT login FROM xdat_user WHERE enabled = 1 AND login != 'guest'";
     private static final String QUERY_USER_PERMISSIONS = "SELECT " +
                                                          "  xea.element_name    AS element_name, " +
                                                          "  xeamd.status        AS active_status, " +
@@ -44,6 +47,9 @@ public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDa
         super(cache, CACHE_ACCESS_MANAGERS, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<String, ElementAccessManager> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -58,5 +64,13 @@ public class AccessManagersExtractor extends AbstractGroupsAndPermissionsCacheDa
                                                                                            new MapSqlParameterSource(PARAM_USERNAME, username));
         log.info("Extracted {} element access managers for user '{}'", managers.size(), username);
         return managers;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getTemplate().queryForList(QUERY_GET_ALL_USERNAMES, EmptySqlParameterSource.INSTANCE, String.class);
     }
 }

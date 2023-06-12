@@ -91,6 +91,9 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
         super(cache, CACHE_READABLE_COUNTS, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<String, Long> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -115,6 +118,14 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
             log.error("An error occurred in the SQL for retrieving readable counts for the  user {}", username, e);
             return Collections.emptyMap();
         }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllUsernames();
     }
 
     private Long getUserReadableWorkflowCount(final String username) {

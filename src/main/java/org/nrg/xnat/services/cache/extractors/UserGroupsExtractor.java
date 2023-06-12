@@ -33,6 +33,9 @@ public class UserGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataEx
         super(cache, CACHE_USER_GROUPS, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<String> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -50,5 +53,13 @@ public class UserGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataEx
         }
         log.debug("Found {} user group IDs cache entry for user '{}'", groupIds.size(), username);
         return groupIds;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllUsernames();
     }
 }

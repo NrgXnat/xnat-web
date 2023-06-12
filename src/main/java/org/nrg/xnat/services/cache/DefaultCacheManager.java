@@ -193,7 +193,7 @@ public class DefaultCacheManager implements CacheManager, Initializing {
     @Override
     public void clearXsiType(final String xsiType) {
         final String  prefix = xsiType + CACHE_ID_SEPARATOR;
-        final List<?> keys   = Arrays.asList("foo", "bar"); // STASHED: getNativeCache().getKeysNoDuplicateCheck();
+        final List<?> keys   = Arrays.asList("foo", "bar"); // CACHING: getNativeCache().getKeysNoDuplicateCheck();
         keys.stream().filter(key -> key instanceof String && StringUtils.startsWith((String) key, prefix)).map(String.class::cast).forEach(_cache::remove);
     }
 
@@ -250,7 +250,7 @@ public class DefaultCacheManager implements CacheManager, Initializing {
         return _cache.getAndRemove(cacheId);
     }
 
-    // STASHED:
+    // CACHING:
     /*
      * Gets the underlying native cache implementation to allow some advanced operations. Cache access should be done
      * with the Spring cache abstraction wherever possible!

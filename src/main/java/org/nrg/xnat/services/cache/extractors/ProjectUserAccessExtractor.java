@@ -62,6 +62,14 @@ public class ProjectUserAccessExtractor extends AbstractUserProjectCacheDataExtr
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllProjectIds();
+    }
+
     private static UserI getSafeUser(final String username) {
         try {
             return new XDATUser(username);

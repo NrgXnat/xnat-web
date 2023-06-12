@@ -28,6 +28,9 @@ public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataE
         super(cache, CACHE_BROWSEABLES, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public Map<String, ElementDisplay> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -72,5 +75,13 @@ public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataE
 
         log.info("No browseable element displays found for user {} due to errors", username);
         return Collections.emptyMap();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllUsernames();
     }
 }

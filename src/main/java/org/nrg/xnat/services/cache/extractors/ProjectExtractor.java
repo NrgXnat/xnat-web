@@ -5,17 +5,26 @@ import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.base.auto.AutoXnatProjectdata;
 import org.nrg.xnat.services.cache.DefaultUserProjectCache;
 import org.nrg.xnat.services.cache.UserProjectCache;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 @Slf4j
 public class ProjectExtractor extends AbstractUserProjectCacheDataExtractor<String, XnatProjectdata> {
+
+    @Autowired
     public ProjectExtractor(final @Lazy UserProjectCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, DefaultUserProjectCache.CACHE_PROJECTS, template, null);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public XnatProjectdata extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -28,5 +37,13 @@ public class ProjectExtractor extends AbstractUserProjectCacheDataExtractor<Stri
         // Calling XnatProjectdata.getXnatProjectdatasById() or BaseXnatProjectdata.getXnatProjectdatasById() will lead
         // to stack overflow errors from circular recursive calls.
         return AutoXnatProjectdata.getXnatProjectdatasById(projectId, null, false);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllProjectIds();
     }
 }

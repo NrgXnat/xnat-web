@@ -16,13 +16,16 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Component
 @Slf4j
 public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, List<String>> {
-    private static final String QUERY_PROJECT_GROUPS = "SELECT id AS groups FROM xdat_usergroup WHERE tag = :" + PARAM_PROJECT_ID;
+    private static final String QUERY_PROJECT_GROUPS = "SELECT id AS glroups FROM xdat_usergroup WHERE tag = :" + PARAM_PROJECT_ID;
 
     @Autowired
     public ProjectGroupsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_PROJECT_GROUPS, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<String> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -33,5 +36,13 @@ public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDat
         log.debug("Extracting groups for project {}", projectId);
 
         return getTemplate().queryForList(QUERY_PROJECT_GROUPS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), String.class);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllProjectIds();
     }
 }

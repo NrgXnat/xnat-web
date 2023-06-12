@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
+import java.util.List;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_USER_LAST_UPDATED;
 
@@ -19,8 +20,23 @@ public class UserLastUpdateExtractor extends AbstractGroupsAndPermissionsCacheDa
         super(cache, CACHE_USER_LAST_UPDATED, template);
     }
 
+    /**
+     * This method implementation returns a new date with each call to track the latest cache update for each user.
+     *
+     * @param parameters Should be limited to a single username.
+     *
+     * @return A new date object
+     */
     @Override
     public Date extract(final Object... parameters) {
         return new Date();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllUsernames();
     }
 }

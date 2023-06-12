@@ -30,6 +30,9 @@ public class ProjectMembersExtractor extends AbstractGroupsAndPermissionsCacheDa
         super(cache, CACHE_PROJECT_MEMBERS, template);
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public List<String> extract(final Object... parameters) {
         if (parameters.length == 0) {
@@ -40,4 +43,13 @@ public class ProjectMembersExtractor extends AbstractGroupsAndPermissionsCacheDa
         log.debug("Extracting members for project {}", projectId);
         return getTemplate().queryForList(QUERY_PROJECT_USERS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), String.class);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public List<String> getKeys() {
+        return getAllProjectIds();
+    }
 }
+
