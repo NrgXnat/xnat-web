@@ -191,7 +191,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private Listener _listener;
     private XDATUser _guest;
 
-
     @Autowired
     public DefaultGroupsAndPermissionsCache(final JCacheHelper cacheHelper, final NamedParameterJdbcTemplate template, final List<DataExtractor<?, ?>> extractors, final JmsTemplate jmsTemplate) {
         super(cacheHelper,
@@ -267,20 +266,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         resetGuestBrowseableElementDisplays();
         _initialized.set(true);
         return new AsyncResult<>(true);
-    }
-
-    private Map<String, ElementDisplay> resetGuestBrowseableElementDisplays() {
-        return resetBrowseableElementDisplays(getGuest());
-    }
-
-    private Map<String, ElementDisplay> resetBrowseableElementDisplays(final XDATUser user) {
-        final String username = user.getUsername();
-        log.debug("Updating browseable element displays for user {}", username);
-
-        user.clearLocalCache();
-        final Map<String, ElementDisplay> browseables = getBrowseablesExtractor().extract(username);
-        getBrowseablesCache().put(username, browseables);
-        return browseables;
     }
 
     @Override
@@ -807,6 +792,21 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return true;
     }
 
+    @SuppressWarnings("UnusedReturnValue")
+    private Map<String, ElementDisplay> resetGuestBrowseableElementDisplays() {
+        return resetBrowseableElementDisplays(getGuest());
+    }
+
+    private Map<String, ElementDisplay> resetBrowseableElementDisplays(final XDATUser user) {
+        final String username = user.getUsername();
+        log.debug("Updating browseable element displays for user {}", username);
+
+        user.clearLocalCache();
+        final Map<String, ElementDisplay> browseables = getBrowseablesExtractor().extract(username);
+        getBrowseablesCache().put(username, browseables);
+        return browseables;
+    }
+
     private Map<String, ElementAccessManager> getElementAccessManagers(final String username) {
         return getCacheMap(CACHE_ACCESS_MANAGERS, username, String.class, ElementAccessManager.class);
     }
@@ -997,19 +997,21 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return (DataExtractor<String, Date>) getExtractors().get(CACHE_USER_LAST_UPDATED);
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, Map<String, ElementAccessManager>> getAccessManagersCache() {
         return getCache(CACHE_ACCESS_MANAGERS, String.class, getAccessManagersExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, Map<String, List<ElementDisplay>>> getActionsCache() {
         return getCache(CACHE_ACTIONS, String.class, getActionsExtractor().getValueType());
-
     }
 
     private Cache<String, Map<String, ElementDisplay>> getBrowseablesCache() {
         return getCache(CACHE_BROWSEABLES, String.class, getBrowseablesExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, UserGroup> getGroupsCache() {
         return getCache(CACHE_GROUPS, String.class, getGroupsExtractor().getValueType());
     }
@@ -1018,18 +1020,22 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         return getCache(CACHE_PROJECT_GROUPS, String.class, getProjectGroupsExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, List<String>> getProjectMembersCache() {
         return getCache(CACHE_PROJECT_MEMBERS, String.class, getProjectMembersExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, Map<String, Long>> getReadableCountsCache() {
         return getCache(CACHE_READABLE_COUNTS, String.class, getReadableCountsExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, List<String>> getUserGroupsCache() {
         return getCache(CACHE_USER_GROUPS, String.class, getUserGroupsExtractor().getValueType());
     }
 
+    @SuppressWarnings("unused")
     private Cache<String, Date> getUserLastUpdateCache() {
         return getCache(CACHE_USER_LAST_UPDATED, String.class, getUserLastUpdateExtractor().getValueType());
     }

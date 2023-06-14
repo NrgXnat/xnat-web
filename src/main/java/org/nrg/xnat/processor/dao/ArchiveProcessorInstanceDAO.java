@@ -29,28 +29,22 @@ import java.util.List;
  */
 @Repository
 public class ArchiveProcessorInstanceDAO extends AbstractHibernateDAO<ArchiveProcessorInstance> {
-
     public static final String SCOPE = "scope";
     public static final String PROCESSOR_CLASS = "processorClass";
     public static final String PRIORITY = "priority";
 
-    @Transactional
     public List<ArchiveProcessorInstance> getSiteArchiveProcessors() {
         return findByProperty(SCOPE, Scope.Site.code());
     }
 
-    @Transactional
     public List<ArchiveProcessorInstance> getSiteArchiveProcessorsForClass(final String processorClass) {
         return findByProperties(parameters(SCOPE, Scope.Site.code(), PROCESSOR_CLASS, processorClass), asc(PRIORITY));
     }
 
-    @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessors() {
         return findByProperty(SCOPE, Scope.Site.code());
     }
 
-
-    @Transactional
     public List<ArchiveProcessorInstance> getEnabledSiteArchiveProcessorsForAe(String aeAndPort) {
         final Criteria criteria = getSession().createCriteria(getParameterizedType());
         criteria.add(Restrictions.eq(SCOPE, Scope.Site.code()));
