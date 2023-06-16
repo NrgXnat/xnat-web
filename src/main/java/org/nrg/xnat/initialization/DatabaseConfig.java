@@ -52,7 +52,7 @@ public class DatabaseConfig {
     private String _dataSourceImpl;
     @Value("${datasource.driver:" + DEFAULT_DATASOURCE_DRIVER + "}")
     private String _dataSourceClass;
-    @Value("${datasource.url:" + DEFAULT_DATASOURCE_URL + "}")
+    @Value("${datasource.url:${datasource.jdbcUrl:" + DEFAULT_DATASOURCE_URL + "}}")
     private String _dataSourceUrl;
     @Value("${datasource.username:" + DEFAULT_DATASOURCE_USERNAME + "}")
     private String _dataSourceUsername;
@@ -152,7 +152,8 @@ public class DatabaseConfig {
             properties.setProperty("password", _dataSourcePassword);
         }
 
-        convertDataSourceConfigProperty(properties, "url", "jdbcUrl", _dataSourceUrl);
+        properties.putIfAbsent("url", _dataSourceUrl);
+        properties.putIfAbsent("jdbcUrl", _dataSourceUrl);
 
         final String dataSourceClass = properties.getProperty("class");
 

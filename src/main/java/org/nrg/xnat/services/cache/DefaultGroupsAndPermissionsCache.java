@@ -563,143 +563,36 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         }
     }
 
-    private boolean isImageSession(String xsiType){
-        try {
-            return SchemaElement.GetElement(xsiType).instanceOf(XnatImagesessiondata.SCHEMA_ELEMENT_NAME);
-        } catch (XFTInitException|ElementNotFoundException e) {
-            log.error("Failed to parse passed xsiType in event handler",e);
-            return false;
-        }
-    }
+    /**
+     * Checks whether the user exists. If not, this throws the {@link UserNotFoundException}. Otherwise, it returns
+     * a parameter source containing the username that can be used in subsequent queries.
+     *
+     * @param username The user to test.
+     *
+     * @return A parameter source containing the username parameter.
+     *
+     * @throws UserNotFoundException If the user doesn't exist.
+     */
+    protected MapSqlParameterSource checkUser(final String username) throws UserNotFoundException {
+        // CACHING: The checkUser() method is duplicated between here and AbstractDataExtractor, whereas optimally... it wouldn't be.
+        //noinspection DuplicatedCode
+        final MapSqlParameterSource parameters = new MapSqlParameterSource(PARAM_USERNAME, username);
 
-    private void incrementCount(final String xsiType) {
-        if(isImageSession(xsiType)){
-            _totalCounts.merge(XnatImagesessiondata.SCHEMA_ELEMENT_NAME, 1L, Long::sum);
-        }else{
-            _totalCounts.merge(xsiType, 1L, Long::sum);
+        // If the user isn't in the check map OR the user is in the check map but is set as not existing...
+        if (!_userChecks.containsKey(username) || !_userChecks.get(username)) {
+            // See if the user exists now. The non-existent user existing should be updated with the add user event,
+            // but we don't have a clearly defined handler for that yet.
+            _userChecks.put(username, _template.queryForObject(UserManagementServiceI.QUERY_CHECK_USER_EXISTS, parameters, Boolean.class));
         }
-    }
-
-    private void decrementCount(final String xsiType) {
-        // decrement, but don't go below zero
-        if(isImageSession(xsiType)){
-            _totalCounts.merge(XnatImagesessiondata.SCHEMA_ELEMENT_NAME, 1L, (a, b) -> max(a - b,0L));
-        }else{
-            _totalCounts.merge(xsiType, 1L, (a, b) -> max(a - b,0L));
+        if (!_userChecks.get(username)) {
+            throw new UserNotFoundException(username);
         }
+        return parameters;
     }
 
     private boolean handleProjectEvents(final XftItemEventI event) {
-        final String         xsiType    = event.getXsiType();
-        final String         id         = event.getId();
-        final String         action     = event.getAction();
-        final Map<String, ?> properties = event.getProperties();
-
-        try {
-            switch (action) {
-                case CREATE:
-                    log.debug("New project created with ID {}, caching new instance", id);
-                    for (final String owner : getProjectOwners(id)) {
-                        if (getActionElementDisplays(owner).get(SecurityManager.CREATE).stream().noneMatch(CONTAINS_MR_SESSION)) {
-                            initializeActionElementDisplays(owner, true);
-                        }
-                    }
-
-                    final boolean created = !initializeGroups(getGroups(xsiType, id)).isEmpty();
-                    final String access = Permissions.getProjectAccess(_template, id);
-                    if (StringUtils.isNotBlank(access)) {
-                        switch (access) {
-                            case "private":
-                                break;
-
-                            case "public":
-                                if (getActionElementDisplays(DEFAULT_GUEST_USERNAME).get(SecurityManager.CREATE).stream().noneMatch(CONTAINS_MR_SESSION)) {
-                                    initializeActionElementDisplays(DEFAULT_GUEST_USERNAME, true);
-                                }
-
-                            case "protected":
-                                updateProjectRelatedCaches(xsiType, id, false);
-                                break;
-                        }
-                    }
-                    resetProjectCount();
-                    return created;
-
-                case UPDATE:
-                    log.debug("The {} object {} was updated, caching updated instance", xsiType, id);
-                    if (properties.containsKey("accessibility")) {
-                        final String accessibility = (String) properties.get("accessibility");
-                        switch (accessibility) {
-                            case "private":
-                                return updateProjectRelatedCaches(xsiType, id, true);
-
-                            case "public":
-                                if (getActionElementDisplays(DEFAULT_GUEST_USERNAME).get(SecurityManager.CREATE).stream().noneMatch(CONTAINS_MR_SESSION)) {
-                                    initializeActionElementDisplays(DEFAULT_GUEST_USERNAME, true);
-                                }
-
-                            case "protected":
-                                return updateProjectRelatedCaches(xsiType, id, true);
-
-                            default:
-                                log.warn("The project {}'s accessibility setting was updated to an invalid value: {}. Must be one of private, protected, or public.", id, accessibility);
-                        }
-                    }
-                    break;
-
-                case DELETE:
-                    log.debug("The {} {} was deleted, removing related instances from cache", xsiType, id);
-                    List<String> usernames = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_MEMBERS_CACHE, id), String.class);
-                    List<String> groups = GenericUtils.convertToTypedList((List<?>) evict(PROJECT_GROUPS_CACHE, id), String.class);
-                    /*
-                    CACHING: Not clear what this stuff is doing. Certainly updating caches, but not sure which ones since they're based on the cache keys.
-                    getCacheIdsForUserElements().stream().filter(current -> REGEX_USER_PROJECT_ACCESS_CACHE_ID.matcher(current).matches()).forEach(accessCacheId -> {
-                        final List<String> projectIds = getCachedList(accessCacheId);
-                        if (projectIds != null && projectIds.contains(id)) {
-                            final List<String> updated = new ArrayList<>(projectIds);
-                            updated.remove(id);
-                            forceCacheObject(accessCacheId, updated);
-                        }
-                    });
-                    initializeUserReadableCounts(getCachedSet(cacheId));
-                    */
-                    resetGuestBrowseableElementDisplays();
-                    decrementCount(xsiType);
-                    return true;
-
-                default:
-                    log.warn("I was informed that the '{}' action happened to the project with ID '{}'. I don't know what to do with this action.", action, id);
-                    break;
-            }
-        } catch (ItemNotFoundException e) {
-            log.warn("While handling action {}, I couldn't find a group for type {} ID {}.", action, xsiType, id);
-        }
-
-        return false;
-    }
-
-    private boolean updateProjectRelatedCaches(final String xsiType, final String id, final boolean affectsOtherDataTypes) throws ItemNotFoundException {
-        final boolean cachedRelatedGroups = !initGroups(getGroups(xsiType, id)).isEmpty();
-
-        evict(GUEST_CACHE_ID);
-        evict(GUEST_ACTION_READ);
-        resetGuestBrowseableElementDisplays();
-        initActionElementDisplays(DEFAULT_GUEST_USERNAME, true);
-
-        final Set<String> readableCountCacheIds = new HashSet<>(getCacheIdsForUserReadableCounts());
-        if (affectsOtherDataTypes) {
-            for (final String cacheId : readableCountCacheIds) {
-                evict(cacheId);
-            }
-        } else {
-            // Update existing user element displays
-            final List<String> cacheIds = getCacheIdsForActions();
-            cacheIds.addAll(getCacheIdsForUserElements());
-            clearAllUserProjectAccess();
-            initReadableCountsForUsers(cacheIds.stream().map(DefaultGroupsAndPermissionsCache::getUsernameFromCacheId).filter(StringUtils::isNotBlank).collect(Collectors.toSet()));
-        }
-
-        return cachedRelatedGroups;
+        log.debug("Got a project event: {}", event);
+        return true;
     }
 
     private boolean handleSubjectEvents(final XftItemEventI event) {
@@ -718,77 +611,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     }
 
     private boolean handleExperimentEvents(final XftItemEventI event) {
-        final String action  = event.getAction();
-        final String xsiType = event.getXsiType();
-        log.debug("Handling experiment {} event for {} {}", XftItemEventI.ACTIONS.get(action), xsiType, event.getId());
-        final String      target, origin;
-        final Set<String> projectIds = new HashSet<>();
-        switch (action) {
-            case CREATE:
-                target = _template.queryForObject(QUERY_GET_EXPERIMENT_PROJECT, new MapSqlParameterSource(PARAM_EXPERIMENT_ID, event.getId()), String.class);
-                origin = null;
-                projectIds.add(target);
-                incrementCount(xsiType);
-                break;
-
-            case SHARE:
-                target = (String) event.getProperties().get("target");
-                origin = null;
-                projectIds.add(target);
-                break;
-
-            case DELETE:
-                target = (String) event.getProperties().get("target");
-                origin = null;
-                projectIds.add(target);
-                decrementCount(xsiType);
-                break;
-
-            case MOVE:
-                origin = (String) event.getProperties().get("origin");
-                target = (String) event.getProperties().get("target");
-                projectIds.add(target);
-                projectIds.add(origin);
-                break;
-
-            default:
-                log.warn("I was informed that the '{}' action happened to experiment '{}' with ID '{}'. I don't know what to do with this action.", action, xsiType, event.getId());
-                return false;
-        }
-
-        final Map<String, ElementDisplay> displays = getGuestBrowseableElementDisplays();
-        log.debug("Found {} elements for guest user: {}", displays.size(), StringUtils.join(displays.keySet(), ", "));
-
-        // If the data type of the experiment isn't in the guest list AND the target project is public,
-        // OR if the origin project is both specified and public (meaning the data type might be REMOVED
-        // from the guest browseable element displays), then we update the guest browseable element displays.
-        final boolean hasEventXsiType        = displays.containsKey(xsiType);
-        final boolean isTargetProjectPublic  = Permissions.isProjectPublic(_template, target);
-        final boolean hasOriginProject       = StringUtils.isNotBlank(origin);
-        final boolean isMovedFromPublicToNon = !isTargetProjectPublic && hasOriginProject && Permissions.isProjectPublic(_template, origin);
-
-        // We need to add the XSI type if guest doesn't already have it and the target project is public.
-        final boolean needsPublicXsiTypeAdded = !hasEventXsiType && isTargetProjectPublic;
-
-        // We need to check if the XSI type should be removed if guest has XSI type and item was moved from public to non-public.
-        final boolean needsXsiTypeChecked = hasEventXsiType && isMovedFromPublicToNon;
-
-        if (needsPublicXsiTypeAdded || needsXsiTypeChecked) {
-            if (needsPublicXsiTypeAdded) {
-                log.debug("Updating guest browseable element displays: guest doesn't have the event XSI type '{}' and the target project {} is public.", xsiType, target);
-            } else {
-                log.debug("Updating guest browseable element displays: guest has the event XSI type '{}' and item was moved from public project {} to non-public project {}.", xsiType, origin, target);
-            }
-            resetGuestBrowseableElementDisplays();
-        } else {
-            log.debug("Not updating guest browseable element displays: guest {} '{}' and {}",
-                      hasEventXsiType ? "already has the event XSI type " : "doesn't have the event XSI type",
-                      xsiType,
-                      isTargetProjectPublic ? "target project is public" : "target project is not public");
-        }
-
-        updateProjectUsersReadableCounts(projectIds, action, event.getXsiType());
-
+        log.debug("Got an experiment event: {}", event);
         return true;
     }
 
