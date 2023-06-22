@@ -63,4 +63,26 @@
         <persistence strategy="none"/>
     </cache>
 
+    <cache name="CommonBooleans"
+      maxEntriesLocalHeap="10000"
+      clearOnFlush="true"
+      timeToLiveSeconds="10">
+        <persistence strategy="none"/>
+    </cache>
+
+    <cache name="xft-cache"
+      maxEntriesLocalHeap="1000"
+      clearOnFlush="true"
+      timeToLiveSeconds="10">
+        <persistence strategy="none"/>
+    </cache>
+
+    <cache name="user-perms"
+      maxEntriesLocalHeap="5000"
+      clearOnFlush="true"
+      timeToLiveSeconds="10">
+        <persistence strategy="none"/>
+    </cache>
+
+
 </ehcache>
