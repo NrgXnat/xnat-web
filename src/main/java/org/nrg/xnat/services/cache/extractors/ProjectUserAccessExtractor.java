@@ -34,12 +34,11 @@ public class ProjectUserAccessExtractor extends AbstractUserProjectCacheDataExtr
     }
 
     @Override
-    public String extract(final Object... parameters) {
-        if (parameters.length == 0) {
+    public String extract(final String projectId, final Object... parameters) {
+        if (isInvalidExtractRequest(projectId, parameters)) {
             return null;
         }
 
-        final String projectId = (String) parameters[0];
         log.info("Extracting users and access levels for project '{}'", projectId);
         final XnatProjectdata  project = getCache().get(null, projectId);
         final List<UserGroupI> groups;

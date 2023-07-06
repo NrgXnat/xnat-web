@@ -27,12 +27,11 @@ public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDat
      * {@inheritDoc}
      */
     @Override
-    public List<String> extract(final Object... parameters) {
-        if (parameters.length == 0) {
+    public List<String> extract(final String projectId, final Object... parameters) {
+        if (isInvalidExtractRequest(projectId, parameters)) {
             return Collections.emptyList();
         }
 
-        final String projectId = (String) parameters[0];
         log.debug("Extracting groups for project {}", projectId);
 
         return getTemplate().queryForList(QUERY_PROJECT_GROUPS, new MapSqlParameterSource(PARAM_PROJECT_ID, projectId), String.class);

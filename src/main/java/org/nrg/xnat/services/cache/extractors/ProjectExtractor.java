@@ -7,7 +7,6 @@ import org.nrg.xnat.services.cache.DefaultUserProjectCache;
 import org.nrg.xnat.services.cache.UserProjectCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
@@ -26,12 +25,11 @@ public class ProjectExtractor extends AbstractUserProjectCacheDataExtractor<Stri
      * {@inheritDoc}
      */
     @Override
-    public XnatProjectdata extract(final Object... parameters) {
-        if (parameters.length == 0) {
+    public XnatProjectdata extract(final String projectId, final Object... parameters) {
+        if (isInvalidExtractRequest(projectId, parameters)) {
             return null;
         }
 
-        final String projectId = (String) parameters[0];
         log.info("Extracting project for ID '{}'", projectId);
         // Note: this uses AutoXnatProjectdata.getXnatProjectdatasById() because that doesn't try to access the cache.
         // Calling XnatProjectdata.getXnatProjectdatasById() or BaseXnatProjectdata.getXnatProjectdatasById() will lead

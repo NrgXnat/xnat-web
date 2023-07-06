@@ -1,6 +1,7 @@
 package org.nrg.xnat.services.cache.extractors;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -23,12 +24,13 @@ public class UserLastUpdateExtractor extends AbstractGroupsAndPermissionsCacheDa
     /**
      * This method implementation returns a new date with each call to track the latest cache update for each user.
      *
-     * @param parameters Should be limited to a single username.
+     * @param username   The name of the user
+     * @param parameters No parameters required
      *
-     * @return A new date object
+     * @return A new date object.
      */
     @Override
-    public Date extract(final Object... parameters) {
+    public Date extract(final String username, final Object... parameters) {
         return new Date();
     }
 
@@ -37,6 +39,6 @@ public class UserLastUpdateExtractor extends AbstractGroupsAndPermissionsCacheDa
      */
     @Override
     public List<String> getKeys() {
-        return getAllUsernames();
+        return Users.getUsernames(getTemplate());
     }
 }

@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.nrg.xdat.display.ElementDisplay.formatElementDisplays;
@@ -30,6 +31,8 @@ import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE
 @Component
 @Slf4j
 public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, List<ElementDisplay>>> {
+    private static final Function<String, List<ElementDisplay>> NEW_ARRAY_LIST_FUNCTION = key -> new ArrayList<>();
+
     @Autowired
     public ActionsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_ACTIONS, template, List.class);
@@ -39,12 +42,11 @@ public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtra
      * {@inheritDoc}
      */
     @Override
-    public Map<String, List<ElementDisplay>> extract(final Object... parameters) {
-        if (parameters.length == 0) {
+    public Map<String, List<ElementDisplay>> extract(final String username, final Object... parameters) {
+        if (isInvalidExtractRequest(username, parameters)) {
             return Collections.emptyMap();
         }
 
-        final String username = (String) parameters[0];
         log.debug("Extracting actions for user {}", username);
 
         final Map<String, List<ElementDisplay>> elementDisplays = new HashMap<>();
@@ -68,14 +70,14 @@ public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtra
                         log.debug("Evaluating schema element {}", fullXMLName);
                         if (schemaElement.hasDisplay()) {
                             log.debug("Schema element {} has a display", fullXMLName);
-                            for (final String action : ACTIONS) {
+                            for (final String action : getPartitionKeys()) {
                                 log.debug("Check user {} permission for action {} on schema element {}", username, action, fullXMLName);
                                 if (Permissions.canAny(username, elementSecurity.getElementName(), action)) {
                                     log.debug("User {} can {} schema element {}", username, action, fullXMLName);
                                     final ElementDisplay elementDisplay = schemaElement.getDisplay();
                                     if (elementDisplay != null) {
                                         log.debug("Adding element display {} to action {} for user {}", elementDisplay.getElementName(), action, username);
-                                        elementDisplays.computeIfAbsent(action, key -> new ArrayList<>()).add(elementDisplay);
+                                        elementDisplays.computeIfAbsent(action, NEW_ARRAY_LIST_FUNCTION).add(elementDisplay);
                                     }
                                 } else {
                                     log.debug("User {} can not {} schema element {}", username, action, fullXMLName);
@@ -104,8 +106,8 @@ public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtra
                     if (schemaElement.hasDisplay()) {
                         final ElementDisplay elementDisplay = schemaElement.getDisplay();
                         log.debug("Adding all actions for insecure schema element {} to user {} permissions", elementDisplay.getElementName(), username);
-                        for (final String action : ACTIONS) {
-                            elementDisplays.computeIfAbsent(action, key -> new ArrayList<>()).add(elementDisplay);
+                        for (final String action : getPartitionKeys()) {
+                            elementDisplays.computeIfAbsent(action, NEW_ARRAY_LIST_FUNCTION).add(elementDisplay);
                         }
                     }
                 } catch (ElementNotFoundException e) {
@@ -128,5 +130,10 @@ public class ActionsExtractor extends AbstractGroupsAndPermissionsCacheDataExtra
         }
 
         return elementDisplays;
+    }
+
+    @Override
+    public List<String> getPartitionKeys() {
+        return ACTIONS;
     }
 }

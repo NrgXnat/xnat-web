@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nrg.xdat.display.ElementDisplay;
 import org.nrg.xdat.security.ElementSecurity;
 import org.nrg.xdat.security.SecurityManager;
+import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.nrg.xft.exception.ElementNotFoundException;
 import org.nrg.xft.exception.XFTInitException;
@@ -32,12 +33,11 @@ public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataE
      * {@inheritDoc}
      */
     @Override
-    public Map<String, ElementDisplay> extract(final Object... parameters) {
-        if (parameters.length == 0) {
+    public Map<String, ElementDisplay> extract(final String username, final Object... parameters) {
+        if (isInvalidExtractRequest(username, parameters)) {
             return Collections.emptyMap();
         }
 
-        final String username = (String) parameters[0];
         log.info("Extracting browseable element displays for user '{}'", username);
 
         final Map<String, Long> counts = getCache().getReadableCounts(username);
@@ -82,6 +82,6 @@ public class BrowseablesExtractor extends AbstractGroupsAndPermissionsCacheDataE
      */
     @Override
     public List<String> getKeys() {
-        return getAllUsernames();
+        return Users.getUsernames(getTemplate());
     }
 }

@@ -5,9 +5,6 @@ import org.apache.commons.collections.CollectionUtils;
 import javax.cache.Cache;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Future;
-import java.util.stream.Stream;
 
 public interface DataExtractor<K, V> {
     String PARAM_DATA_TYPE     = "dataType";
@@ -50,13 +47,16 @@ public interface DataExtractor<K, V> {
     boolean isPartitionedMap();
 
     /**
-     * Extracts a value for the submitted parameters.
+     * Extracts a value for the submitted key and parameters. If the key itself is sufficient for retrieving the value,
+     * e.g. a project ID, you don't need to provide any extra parameters. The type, order, and necessity of the extra
+     * parameters is strictly dependent on the extractor implementation.
      *
-     * @param parameters The parameters to be used to extract a value
+     * @param key        The item cache key
+     * @param parameters Any extra parameters necessary to extract the value
      *
      * @return The extracted value.
      */
-    V extract(Object... parameters);
+    V extract(K key, Object... parameters);
 
     /**
      * Gets all keys for the target data, useful when initializing a cache. Note that this method does <i>not</i>
@@ -71,11 +71,22 @@ public interface DataExtractor<K, V> {
     }
 
     /**
+     * Gets all keys for item partitions, which can be used to create compound cache keys for partitioned maps.
+     * <p>
+     * The default implementation of this method returns an empty list.
+     *
+     * @return A list of keys for item partitions.
+     */
+    default List<String> getPartitionKeys() {
+        return Collections.emptyList();
+    }
+
+    /**
      * Initializes its values based on the keys it expects to find. For example, an extractor for user groups would get
      * a list of groups on the system, then iterate through the list, initializing and caching each group.
      * <p>
      * The default implementation of this method returns calls the {@link #getKeys()} method, calls the {@link
-     * #extract(Object...)} method for each key, and caches the result using the specified key.
+     * #extract(Object, Object...)} method for each key, and caches the result using the specified key.
      *
      * @return The total number of items that were initialized.
      */
@@ -85,9 +96,7 @@ public interface DataExtractor<K, V> {
         if (CollectionUtils.isEmpty(keys)) {
             return 0;
         }
-        keys.forEach(key -> {
-            cache.put(key, extract(key));
-        });
+        keys.forEach(key -> cache.put(key, extract(key)));
         return keys.size();
     }
 }

@@ -4,10 +4,9 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.nrg.xdat.security.services.UserManagementServiceI;
-import org.nrg.xdat.security.user.exceptions.UserNotFoundException;
 import org.nrg.xdat.services.cache.XnatCache;
 import org.springframework.jdbc.core.namedparam.EmptySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -125,46 +124,12 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
     }
 
     /**
-     * Checks whether the user exists. If not, this throws the {@link UserNotFoundException}. Otherwise, it returns
-     * a parameter source containing the username that can be used in subsequent queries.
-     *
-     * @param username The user to test.
-     *
-     * @return A parameter source containing the username parameter.
-     *
-     * @throws UserNotFoundException If the user doesn't exist.
-     */
-    protected MapSqlParameterSource checkUser(final String username) throws UserNotFoundException {
-        final MapSqlParameterSource parameters = new MapSqlParameterSource(PARAM_USERNAME, username);
-
-        // If the user isn't in the check map OR the user is in the check map but is set as not existing...
-        if (!_userChecks.containsKey(username) || !_userChecks.get(username)) {
-            // See if the user exists now. The non-existent user existing should be updated with the add user event,
-            // but we don't have a clearly defined handler for that yet.
-            _userChecks.put(username, _template.queryForObject(UserManagementServiceI.QUERY_CHECK_USER_EXISTS, parameters, Boolean.class));
-        }
-        if (!_userChecks.get(username)) {
-            throw new UserNotFoundException(username);
-        }
-        return parameters;
-    }
-
-    /**
      * Gets a list of project IDs on the system.
      *
      * @return A list of project IDs.
      */
     protected List<String> getAllProjectIds() {
         return getTemplate().queryForList(QUERY_ALL_PROJECTS, EmptySqlParameterSource.INSTANCE, String.class);
-    }
-
-    /**
-     * Gets a list of all usernames on the system.
-     *
-     * @return A list of usernames.
-     */
-    protected List<String> getAllUsernames() {
-        return getTemplate().queryForList(QUERY_ALL_USERNAMES, EmptySqlParameterSource.INSTANCE, String.class);
     }
 
     // CACHING: The "{ @ link" below needs to have spaces removed, but still need the getUserProjects() method.
@@ -203,6 +168,22 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
     @SuppressWarnings("unused")
     protected List<String> getUserOwnedProjects(final String username) {
         return getProjectsByAccessQuery(username, QUERY_OWNED_PROJECTS, true);
+    }
+
+    /**
+     * <p>Checks if the cache key and parameters passed to {@link #extract(Object, Object...)} are valid. Invalid indicates
+     * that the key is "empty" (determined by calling <a href="https://commons.apache.org/proper/commons-lang/javadocs/api-release/org/apache/commons/lang3/ObjectUtils.html#isEmpty-java.lang.Object-">ObjectUtils.isEmpty()</code>
+     * and testing whether the extra parameters array is empty.</p>
+     *
+     * <p>This method can be overridden if a particular extractor has more complex validation requirements.</p>
+     *
+     * @param key        The cache key
+     * @param parameters Any extra or optional parameters
+     *
+     * @return Returns <code>true</code> if <code>key</code> is not empty or one or more parameters are specified.
+     */
+    protected boolean isInvalidExtractRequest(final K key, final Object... parameters) {
+        return ObjectUtils.isEmpty(key) && parameters.length == 0;
     }
 
     private List<String> getProjectsByAccessQuery(final String username, final String query, final boolean requireAdminAccess) {
