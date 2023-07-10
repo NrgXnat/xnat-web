@@ -206,38 +206,6 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
         });
     }
 
-    /**
-     * Evicts all entries in the specified cache partition.
-     *
-     * @param cacheId       The ID of the cache
-     * @param partitionId   The ID of the partition
-     * @param mapValueClass The value type
-     * @param <R>           The value type
-     */
-    protected <R> void evictCacheMapPartition(final String cacheId, final String partitionId, final Class<R> mapValueClass) {
-        if (!_keysCache.containsKey(cacheId)) {
-            log.info("I was asked to evict all items from partition {} from cache {}, but I have no keys stored for that", partitionId, cacheId);
-            return;
-        }
-        Cache<String, R>                 cache     = getCache(cacheId, String.class, mapValueClass);
-        String                           regex     = "^" + partitionId + ":.*$";
-        final Map<Boolean, List<String>> splitKeys = _keysCache.get(cacheId).stream().collect(Collectors.partitioningBy(key -> key.matches(regex)));
-
-        // Keys that don't match the pattern are retained, so replace the keys cache for the cache ID with these remaining keys.
-        _keysCache.put(cacheId, splitKeys.get(false));
-
-        // Keys that match the pattern are to be removed from the cache.
-        splitKeys.get(true).forEach(cache::remove);
-    }
-
-    protected <R> void evictCacheMapPartition(final String cacheId, final String partitionId, final String itemId, final Class<R> mapValueClass) {
-        if (!_keysCache.containsKey(cacheId)) {
-            log.info("I was asked to evict item {} from partition {} from cache {}, but I have no keys stored for that", itemId, partitionId, cacheId);
-            return;
-        }
-        getCache(cacheId, String.class, mapValueClass).remove(createCompoundCacheKeyFromElements(partitionId, itemId));
-    }
-
     protected void cacheObject(final String cacheId, final String itemId, final Object object) {
         if (object == null) {
             log.warn("I was asked to cache an object with ID '{}' but the object was null.", cacheId);
@@ -308,6 +276,38 @@ public abstract class AbstractXftItemAndCacheEventHandlerMethod extends Abstract
     protected Object evict(final String cacheName, final String cacheId) {
         log.debug("Evicting cache entry '{}' from cache {}", cacheId, cacheName);
         return getCache(cacheName).getAndRemove(cacheId);
+    }
+
+    /**
+     * Evicts all entries in the specified cache partition.
+     *
+     * @param cacheId       The ID of the cache
+     * @param partitionId   The ID of the partition
+     * @param mapValueClass The value type
+     * @param <R>           The value type
+     */
+    protected <R> void evictCacheMapPartition(final String cacheId, final String partitionId, final Class<R> mapValueClass) {
+        if (!_keysCache.containsKey(cacheId)) {
+            log.info("I was asked to evict all items from partition {} from cache {}, but I have no keys stored for that", partitionId, cacheId);
+            return;
+        }
+        Cache<String, R>                 cache     = getCache(cacheId, String.class, mapValueClass);
+        String                           regex     = "^" + partitionId + ":.*$";
+        final Map<Boolean, List<String>> splitKeys = _keysCache.get(cacheId).stream().collect(Collectors.partitioningBy(key -> key.matches(regex)));
+
+        // Keys that don't match the pattern are retained, so replace the keys cache for the cache ID with these remaining keys.
+        _keysCache.put(cacheId, splitKeys.get(false));
+
+        // Keys that match the pattern are to be removed from the cache.
+        splitKeys.get(true).forEach(cache::remove);
+    }
+
+    protected <R> void evictCacheMapPartition(final String cacheId, final String partitionId, final String itemId) {
+        if (!_keysCache.containsKey(cacheId)) {
+            log.info("I was asked to evict item {} from partition {} from cache {}, but I have no keys stored for that", itemId, partitionId, cacheId);
+            return;
+        }
+        getCache(cacheId, String.class, List.class).remove(createCompoundCacheKeyFromElements(partitionId, itemId));
     }
 
     protected static String createCompoundCacheKeyFromElements(final Object... elements) {

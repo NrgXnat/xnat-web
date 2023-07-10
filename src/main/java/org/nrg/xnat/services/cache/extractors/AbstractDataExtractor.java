@@ -118,9 +118,14 @@ public abstract class AbstractDataExtractor<C extends XnatCache, K, V> implement
 
     @SuppressWarnings("unchecked")
     protected Pair<Class<K>, Class<V>> getKeyAndValueTypes() {
-        log.info("Trying to get the key and value types here");
-        final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
-        return Pair.of((Class<K>) TYPE_TO_CLASS.apply(types[0]), (Class<V>) TYPE_TO_CLASS.apply(types[1]));
+        if (log.isTraceEnabled()) {
+            log.trace("Trying to get the key and value types for extractor {} here", getClass());
+        }
+        final Type[]   types      = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
+        final Class<K> keyClass   = (Class<K>) TYPE_TO_CLASS.apply(types[0]);
+        final Class<V> valueClass = (Class<V>) TYPE_TO_CLASS.apply(types[1]);
+        log.debug("Extractor {} has key type {} and value type {}", getClass(), keyClass, valueClass);
+        return Pair.of(keyClass, valueClass);
     }
 
     /**

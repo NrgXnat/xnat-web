@@ -425,20 +425,32 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         log.debug("Retrieving searchable element displays for user {}", username);
 
         final Map<String, Long> counts = getReadableCounts(username);
+        // CACHING: Extended logging
+        if (log.isDebugEnabled()) {
+            log.debug("Retrieved {} readable counts for user {}:\n{}", counts.size(), username, counts.entrySet().stream().map(entry -> " * " + entry.getKey() + ": " + entry.getValue()).collect(Collectors.joining("\n")));
+        } else {
+            log.info("Retrieved {} readable counts for user {}", counts.size(), username);
+        }
         try {
             return getActionElementDisplays(username, ACTION_READ).stream().filter(display -> {
                 if (display == null) {
+                    log.info("Null display found for user {} action read", username);
                     return false;
                 }
                 final String name = display.getElementName();
                 try {
-                    return ElementSecurity.IsSearchable(name) && counts.getOrDefault(name, 0L) > 0;
+                    final boolean isDisplaySearchable = ElementSecurity.IsSearchable(name);
+                    final long    displayCount        = counts.getOrDefault(name, 0L);
+                    // CACHING: Extended logging
+                    log.debug("User {} action read display {} {} searchable: current display count is {}, {} be included", username, name, isDisplaySearchable ? "is" : "is not", displayCount, isDisplaySearchable && displayCount > 0 ? "will" : "won't");
+                    return isDisplaySearchable && displayCount > 0;
                 } catch (Exception e) {
+                    log.error("An error occurred trying to test if display {} is searchable", name, e);
                     return false;
                 }
             }).collect(Collectors.toList());
         } catch (Exception e) {
-            log.error("An unknown error occurred", e);
+            log.error("An unknown error occurred while trying to retrieve action element displays for user {}", username, e);
             return Collections.emptyList();
         }
     }
@@ -467,7 +479,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         try {
             PoolDBUtils.CheckSpecialSQLChars(dataType);
         } catch (Exception e) {
-            throw new IllegalArgumentException("The specified data type \"" + dataType + "\" includes one or more reserved characters");
+            throw new IllegalArgumentException("The specified data type \"" + dataType + "\" includes one or more reserved characters", e);
         }
 
         try {
@@ -555,7 +567,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
             return ImmutableList.copyOf(criteria);
         } catch (UserNotFoundException e) {
-            log.error("Couldn't find the indicated user");
+            log.error("Couldn't find the indicated user {}", username, e);
             return Collections.emptyList();
         }
     }
@@ -631,8 +643,9 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                 if (!getGroupIdsForUser(username).contains(groupId)) {
                     refreshGroupsForUser(username);
                 }
-            } catch (UserNotFoundException ignored) {
-                //
+            } catch (UserNotFoundException e) {
+                // CACHING: Extended logging
+                log.debug("Retrieving users for group {}, couldn't find user {}; this isn't necessarily bad but is curious", groupId, username);
             }
         }
     }
@@ -747,7 +760,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
 
                 case EVENT_DELETE:
                     log.debug("The {} {} was deleted, removing related instances from cache", xsiType, id);
-                    List<String> members = GenericUtils.convertToTypedList((List<?>) evict(CACHE_PROJECT_MEMBERS, id), String.class);
+                    List<String> members = GenericUtils.convertToTypedList(ObjectUtils.getIfNull((List<?>) evict(CACHE_PROJECT_MEMBERS, id), Collections::emptyList), String.class);
                     evict(CACHE_PROJECT_GROUPS, id);
                     resetGuestBrowseableElementDisplays();
                     members.forEach(this::getReadableCounts);
@@ -759,7 +772,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                     break;
             }
         } catch (ItemNotFoundException e) {
-            log.warn("While handling action {}, I couldn't find a group for type {} ID {}.", action, xsiType, id);
+            log.warn("While handling action {}, I couldn't find a group for type {} ID {}.", action, xsiType, id, e);
         }
 
         return false;
@@ -848,18 +861,18 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                     } else {
                         usernames.addAll(evictGroup(id));
                     }
-                    break;
+                    return true;
 
                 default:
                     log.warn("I was informed that the '{}' action happened to the {} object with ID '{}'. I don't know what to do with this action.", action, xsiType, id);
             }
         } catch (ItemNotFoundException e) {
-            log.warn("While handling action {}, I couldn't find a group for type {} ID {}.", action, xsiType, id);
+            log.warn("While handling action {}, I couldn't find a group for type {} ID {}.", action, xsiType, id, e);
         } finally {
             USER_CACHES.forEach(a -> evict(a, usernames));
             for (final String username : usernames) {
                 clearUserCache(username);
-                ACTIONS.forEach(a -> evictCacheMapPartition(CACHE_ACTIONS, a, username, ElementDisplay.class));
+                ACTIONS.forEach(a -> evictCacheMapPartition(CACHE_ACTIONS, a, username));
                 log.info("Initializing user group IDs cache entry for user '{}'", username);
                 final List<String> groupIds = getCacheList(CACHE_USER_GROUPS, username, String.class);
                 log.debug("Found {} user group IDs cache entry for user '{}'", groupIds.size(), username);
@@ -1071,7 +1084,15 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                 return getGroupsForProject(id);
 
             case XdatUsergroup.SCHEMA_ELEMENT_NAME:
-                return Collections.singletonList(new UserGroup(id, _template));
+                final UserGroupI group = ObjectUtils.getIfNull(getCachedGroup(id), () -> {
+                    try {
+                        return new UserGroup(id, _template);
+                    } catch (ItemNotFoundException e) {
+                        log.warn("User group with ID {} was not found in the cache nor does it seem to exist on the system", id);
+                        return null;
+                    }
+                });
+                return group != null ? Collections.singletonList(group) : Collections.emptyList();
 
             case XdatElementSecurity.SCHEMA_ELEMENT_NAME:
                 return getGroupIdsForDataType(id).stream()

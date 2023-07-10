@@ -368,9 +368,6 @@
     <logger name="org.apache.xalan" additivity="false" level="ERROR">
         <appender-ref ref="xdat"/>
     </logger>
-    <logger name="net.sf.ehcache" additivity="false" level="WARN">
-        <appender-ref ref="cache"/>
-    </logger>
     <logger name="org.nrg.xnat.event" additivity="false" level="WARN">
         <appender-ref ref="events"/>
     </logger>
@@ -445,9 +442,6 @@
     </logger>
     <logger name="org.nrg.pipeline.launch" additivity="false" level="INFO">
         <appender-ref ref="launch"/>
-    </logger>
-    <logger name="org.springframework.cache" additivity="false" level="ERROR">
-        <appender-ref ref="cache"/>
     </logger>
     <logger name="org.nrg.xft" additivity="false" level="ERROR">
         <appender-ref ref="xdat"/>
@@ -560,9 +554,6 @@
     <logger name="org.springframework.scheduling" additivity="false" level="ERROR">
         <appender-ref ref="scheduler"/>
     </logger>
-    <logger name="org.nrg.xnat.services.cache" additivity="false" level="WARN">
-        <appender-ref ref="cache"/>
-    </logger>
     <logger name="org.springframework.orm" additivity="false" level="ERROR">
         <appender-ref ref="orm"/>
     </logger>
@@ -607,5 +598,20 @@
     </logger>
     <logger name="org.nrg.xnat.customforms.customvariable.migration" additivity="false" level="INFO">
         <appender-ref ref="customvariablemigration"/>
+    </logger>
+    <logger name="javax.cache" additivity="false" level="WARN">
+        <appender-ref ref="cache"/>
+    </logger>
+    <logger name="org.springframework.cache" additivity="false" level="WARN">
+        <appender-ref ref="cache"/>
+    </logger>
+    <logger name="org.ehcache" additivity="false" level="WARN">
+        <appender-ref ref="cache"/>
+    </logger>
+    <logger name="org.nrg.xdat.services.cache" additivity="false" level="INFO">
+        <appender-ref ref="cache"/>
+    </logger>
+    <logger name="org.nrg.xnat.services.cache" additivity="false" level="INFO">
+        <appender-ref ref="cache"/>
     </logger>
 </configuration>
