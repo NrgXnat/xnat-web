@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_PROJECT_GROUPS;
 
@@ -21,6 +22,14 @@ public class ProjectGroupsExtractor extends AbstractGroupsAndPermissionsCacheDat
     @Autowired
     public ProjectGroupsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_PROJECT_GROUPS, template);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, Object> getCacheProperties() {
+        return NON_EXPIRING_TTL;
     }
 
     /**

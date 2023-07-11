@@ -114,7 +114,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private static final String ACTION_EDIT     = SecurityManager.EDIT;
     private static final String ACTION_CREATE   = SecurityManager.CREATE;
     private static final String ACTION_DELETE   = SecurityManager.DELETE;
-    private static final String EVENT_READ      = XftItemEventI.READ;
     private static final String EVENT_UPDATE    = XftItemEventI.UPDATE;
     private static final String EVENT_CREATE    = XftItemEventI.CREATE;
     private static final String EVENT_DELETE    = XftItemEventI.DELETE;
@@ -1335,7 +1334,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     }
 
     private Map<String, List<ElementDisplay>> getCachedActions(final String username) {
-        return getActionsExtractor().getPartitionKeys().stream().collect(Collectors.toMap(Function.identity(), key -> getActionsCache().get(createCompoundCacheKeyFromElements(key, username))));
+        return getActionsExtractor().getPartitionKeys().stream().collect(Collectors.toMap(Function.identity(), key -> getActionsCache().get(createActionElementsDisplaySubkey(username, key))));
     }
 
     private Map<String, ElementDisplay> getCachedBrowseables(final String username) {

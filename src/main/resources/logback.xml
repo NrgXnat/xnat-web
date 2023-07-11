@@ -45,6 +45,15 @@
             <fileNamePattern>${xnat.home}/logs/cache.log.%d{yyyy-MM-dd}</fileNamePattern>
         </rollingPolicy>
     </appender>
+    <appender name="cache-events" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${xnat.home}/logs/cache-events.log</File>
+        <encoder>
+            <pattern>%d [%t] %-5p %c - %m%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${xnat.home}/logs/cache-events.log.%d{yyyy-MM-dd}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
     <appender name="events" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <append>false</append>
         <file>${xnat.home}/logs/events.log</file>
@@ -613,5 +622,8 @@
     </logger>
     <logger name="org.nrg.xnat.services.cache" additivity="false" level="INFO">
         <appender-ref ref="cache"/>
+    </logger>
+    <logger name="org.nrg.framework.jcache.DefaultGenericCacheEntryListener" additivity="false" level="INFO">
+        <appender-ref ref="cache-events"/>
     </logger>
 </configuration>

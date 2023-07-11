@@ -1,6 +1,5 @@
 package org.nrg.xnat.services.cache.extractors;
 
-import org.nrg.xdat.services.cache.GroupsAndPermissionsCache;
 import org.nrg.xnat.services.cache.UserProjectCache;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 

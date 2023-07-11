@@ -10,12 +10,14 @@
 package org.nrg.xnat.configuration;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.hibernate.SessionFactory;
 import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyHbmImpl;
 import org.hibernate.boot.model.naming.PhysicalNamingStrategy;
 import org.nrg.framework.beans.XnatPluginBeanManager;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.framework.jcache.DefaultHibernateEntityCacheKeyGenerator;
+import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.framework.orm.DatabaseHelper;
 import org.nrg.framework.orm.hibernate.AggregatedAnnotationSessionFactoryBean;
 import org.nrg.framework.orm.hibernate.HibernateEntityPackageList;
@@ -45,6 +47,7 @@ import static org.nrg.framework.jcache.JCacheHelper.JCACHE_PROVIDER_DEFAULT;
 import static org.nrg.framework.jcache.JCacheHelper.JCACHE_PROVIDER_ENV;
 import static org.nrg.framework.jcache.JCacheHelper.JCACHE_URI_DEFAULT;
 import static org.nrg.framework.jcache.JCacheHelper.JCACHE_URI_ENV;
+import static org.nrg.framework.jcache.JCacheHelper.REDISSON_URI_DEFAULT;
 
 @Configuration
 @EnableTransactionManagement(proxyTargetClass = true)
@@ -83,8 +86,8 @@ public class OrmConfig {
         properties.setProperty("hibernate.cache.use_second_level_cache", Boolean.toString(_useSecondLevelCache));
         properties.setProperty("hibernate.cache.use_query_cache", Boolean.toString(_useQueryCache));
         properties.setProperty("hibernate.cache.region.factory_class", _regionFactoryClass);
-        properties.setProperty("hibernate.javax.cache.provider", _cacheProvider);
-        properties.setProperty("hibernate.javax.cache.uri", _cacheUri);
+        properties.setProperty(JCACHE_PROVIDER_ENV, _cacheProvider);
+        properties.setProperty(JCACHE_URI_ENV, JCacheHelper.IS_REDISSON.test(_cacheProvider) && StringUtils.equals(JCACHE_URI_DEFAULT, _cacheUri) ? REDISSON_URI_DEFAULT : _cacheUri);
         properties.setProperty("hibernate.javax.cache.missing_cache_strategy", "create");
 
         final PropertiesFactoryBean bean = new PropertiesFactoryBean();

@@ -11,6 +11,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_GROUPS;
 
@@ -20,6 +21,14 @@ public class GroupsExtractor extends AbstractGroupsAndPermissionsCacheDataExtrac
     @Autowired
     public GroupsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_GROUPS, template);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, Object> getCacheProperties() {
+        return NON_EXPIRING_TTL;
     }
 
     /**

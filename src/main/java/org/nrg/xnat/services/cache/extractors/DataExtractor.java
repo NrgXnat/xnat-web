@@ -1,10 +1,14 @@
 package org.nrg.xnat.services.cache.extractors;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.collections.CollectionUtils;
+import org.nrg.framework.jcache.JCacheHelper;
 
 import javax.cache.Cache;
+import javax.cache.expiry.Duration;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public interface DataExtractor<K, V> {
     String PARAM_DATA_TYPE     = "dataType";
@@ -14,6 +18,8 @@ public interface DataExtractor<K, V> {
     String PARAM_SUBJECT_ID    = "subjectId";
     String PARAM_USERNAME      = "username";
     String PARAM_USER_IDS      = "userIds";
+
+    Map<String, Object> NON_EXPIRING_TTL = ImmutableMap.of(JCacheHelper.CONFIG_EXPIRY, Duration.ETERNAL);
 
     String getCacheGroup();
 
@@ -45,6 +51,24 @@ public interface DataExtractor<K, V> {
      * @return Returns <pre>true</pre> if this cache uses a partitioned map value, <pre>false</pre> otherwise.
      */
     boolean isPartitionedMap();
+
+    /**
+     * Defines the properties for the cache configuration. These may include:
+     *
+     * <ul>
+     *     <li>{@link org.nrg.framework.jcache.JCacheHelper#CONFIG_EXPIRY}: a <code>Duration</code> instance for the cache time-to-live configuration (defaults to 10 minutes)</li>
+     *     <li>{@link org.nrg.framework.jcache.JCacheHelper#CONFIG_MANAGEMENT}: Indicates whether JMX management should be enabled for the cache (defaults to <code>true</code>)</li>
+     *     <li>{@link org.nrg.framework.jcache.JCacheHelper#CONFIG_STATISTICS}: Indicates whether statistics should be enabled for the cache (defaults to <code>true</code>)</li>
+     *     <li>{@link org.nrg.framework.jcache.JCacheHelper#CONFIG_STORE_BY_VALUE}: Indicates whether store-by-value should be enabled for the cache (defaults to <code>false</code>)</li>
+     * </ul>
+     * <p>
+     * The default implementation for this method returns an empty map.
+     *
+     * @return A map containing any configuration options that should be set to a non-default value.
+     */
+    default Map<String, Object> getCacheProperties() {
+        return Collections.emptyMap();
+    }
 
     /**
      * Extracts a value for the submitted key and parameters. If the key itself is sufficient for retrieving the value,
