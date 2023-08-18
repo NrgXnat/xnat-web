@@ -18,6 +18,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.data.Tag;
+import org.dcm4che2.io.DicomInputStream;
+import org.dcm4che2.io.StopTagInputHandler;
+import org.dcm4che2.util.TagUtils;
 import org.jetbrains.annotations.NotNull;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
@@ -33,7 +38,6 @@ import org.nrg.xdat.security.helpers.Groups;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xft.XFTItem;
-import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.db.ViewManager;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
@@ -45,6 +49,7 @@ import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.FileUtils;
 import org.nrg.xft.utils.SaveItemHelper;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
+import org.nrg.xnat.DicomObjectIdentifier;
 import org.nrg.xnat.event.archive.ArchiveStatusProducer;
 import org.nrg.xnat.exceptions.InvalidArchiveStructure;
 import org.nrg.xnat.helpers.SessionMergingConfigMapper;
@@ -544,6 +549,11 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
                         validateDicomFiles();
                     }
 
+
+                    for (final XnatImagescandataI scan : src.getScans_scan()) {
+                        verifyCompliance();
+                    }
+
                     if (XDAT.getBoolSiteConfigurationProperty("verifyComplianceInPrearcSessionReview", false)) {
                         verifyCompliance();
                     }
@@ -726,15 +736,40 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         final SeriesImportFilter projectSpecific = StringUtils.isNotEmpty(project)
                                                    ? getDicomFilterService().getSeriesImportFilter(project)
                                                    : null;
-
-        for (final XnatImagescandataI scan : src.getScans_scan()) {
-            if (siteWide != null && siteWide.isEnabled() && !siteWide.shouldIncludeDicomObject(convertScanToMap(scan))) {
-                fail(22, String.format("Scan %1$s is non-compliant with this server's DICOM whitelist/blacklist.", scan.getId()));
-            }
-            if (projectSpecific != null && projectSpecific.isEnabled() && !projectSpecific.shouldIncludeDicomObject(convertScanToMap(scan))) {
-                fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
+        boolean siteEnabled =siteWide != null && siteWide.isEnabled();
+        boolean projectEnabled = projectSpecific != null && projectSpecific.isEnabled();
+        if (siteEnabled || projectEnabled) {
+//            final DicomObjectIdentifier identifier = XDAT.getContextService().getBean("dicomObjectIdentifier", DicomObjectIdentifier.class);
+            for (final XnatImagescandataI scan : src.getScans_scan()) {
+                for (File file: getAllDicomFile(scan)) {
+                    try (DicomInputStream dis = new DicomInputStream(file)) {
+//                        final int lastTag = Math.max(identifier.getTags().last(), Tag.SeriesDescription) + 1;
+//                        log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
+//                        dis.setHandler(new StopTagInputHandler(lastTag));
+                        DicomObject dio = dis.readDicomObject();
+                        if (siteEnabled && !siteWide.shouldIncludeDicomObject(dio)) {
+                            fail(22, String.format("Scan %1$s is non-compliant with this server's DICOM whitelist/blacklist.", scan.getId()));
+                        }
+                        if (projectEnabled && !projectSpecific.shouldIncludeDicomObject(dio)) {
+                            fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
+                        }
+                    } catch (IOException e) {
+                        log.warn("Can't create DicomObject for file {}", file.getAbsolutePath());
+                    }
+                }
             }
         }
+    }
+
+    private List<File> getAllDicomFile(final XnatImagescandataI scan ) {
+        List<File> dicomFiles = new ArrayList<>();
+        for(final XnatAbstractresourceI res: scan.getFile()){
+            if(((XnatAbstractresource)res).getFormat()!=null && ((XnatAbstractresource)res).getFormat().equals("DICOM")){
+                List<File> files= ((XnatAbstractresource)res).getCorrespondingFiles(src.getPrearchivepath());
+                dicomFiles.addAll(files);
+            }
+        }
+        return dicomFiles;
     }
 
     private Map<String, String> convertScanToMap(final XnatImagescandataI scan) {
