@@ -730,8 +730,7 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         final SeriesImportFilter projectSpecific = StringUtils.isNotEmpty(project)
                                                    ? getDicomFilterService().getSeriesImportFilter(project)
                                                    : null;
-        boolean projectEnabled = projectSpecific != null && projectSpecific.isEnabled();
-        if (!projectEnabled) {
+        if (projectSpecific == null || !projectSpecific.isEnabled()) {
             return;
         }
         final DicomObjectIdentifier<XnatProjectdata> identifier = XDAT.getContextService().getBean("dicomObjectIdentifier", DicomObjectIdentifier.class);
