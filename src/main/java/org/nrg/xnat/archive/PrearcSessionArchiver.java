@@ -733,8 +733,11 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         if (projectSpecific == null || !projectSpecific.isEnabled()) {
             return;
         }
-        final DicomObjectIdentifier<XnatProjectdata> identifier = XDAT.getContextService().getBean("dicomObjectIdentifier", DicomObjectIdentifier.class);
-        final int lastTag = Math.max(identifier.getTags().last(), Tag.SeriesDescription) + 1;
+        final List<Integer> filterTags = projectSpecific.getFilterTags();
+        if (filterTags.isEmpty()) {
+            return;
+        }
+        final int lastTag = Math.max(filterTags.get(filterTags.size() - 1), Tag.SeriesDescription) + 1;
         log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
         for (final XnatImagescandataI scan : src.getScans_scan()) {
             for (File file: getAllDicomFile(scan)) {
