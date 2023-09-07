@@ -609,6 +609,11 @@ public class GradualDicomImporter extends ImporterHandlerA {
     }
 
     private PrearchiveCode shouldAutoArchive(final XnatProjectdata project, final DicomObject o) {
+        if (_parameters.containsKey("AA")) {
+            if ("true".equalsIgnoreCase((String) _parameters.get("AA"))) {
+                return PrearchiveCode.AutoArchive;
+            }
+        }
         if (_parameters.containsKey("auto-archive")) {
             if ("true".equalsIgnoreCase((String) _parameters.get("auto-archive"))) {
                 return PrearchiveCode.AutoArchive;

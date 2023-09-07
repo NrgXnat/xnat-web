@@ -16,6 +16,7 @@ import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.dcm4che2.io.DicomCodingException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.xdat.XDAT;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.fileExtraction.Format;
@@ -23,18 +24,21 @@ import org.nrg.xnat.helpers.ArchiveEntryFileWriterWrapper;
 import org.nrg.xnat.helpers.TarEntryFileWriterWrapper;
 import org.nrg.xnat.helpers.ZipEntryFileWriterWrapper;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
+import org.nrg.xnat.helpers.prearchive.PrearcSession;
 import org.nrg.xnat.helpers.prearchive.PrearcUtils;
 import org.nrg.xnat.helpers.prearchive.SessionData;
+import org.nrg.xnat.helpers.prearchive.handlers.PrearchiveOperationHandlerResolver;
+import org.nrg.xnat.helpers.prearchive.handlers.PrearchiveRebuildHandler;
 import org.nrg.xnat.restlet.actions.importer.ImporterHandler;
 import org.nrg.xnat.restlet.actions.importer.ImporterHandlerA;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
-import org.springframework.jms.core.JmsTemplate;
 
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +71,7 @@ public final class DicomZipImporter extends ImporterHandlerA {
         ClientException nonDcmException = null;
         boolean ignoreUnparsable = PrearcUtils.parseParam(params, IGNORE_UNPARSABLE_PARAM, false);
         final Set<String> uris = Sets.newLinkedHashSet();
+        processing("Importing sessions to the prearchive");
         try {
             switch (format) {
                 case ZIP:
@@ -120,10 +125,16 @@ public final class DicomZipImporter extends ImporterHandlerA {
         if (uris.isEmpty() && nonDcmException != null) {
             throw nonDcmException;
         }
-        if (params.containsKey("isCompressedUploader")) {
-            this.processing("Successfully uploaded "+uris.size()+"  sessions to the prearchive.");
-            xmlBuild(uris);
-            updateStatus(uris);
+        this.processing("Successfully uploaded "+uris.size()+"  sessions to the prearchive.");
+        if (params.containsKey("action") && "commit".equals(params.get("action"))) {
+            try {
+                Set<String> urls = xmlBuild(uris);
+                updateStatus(urls);
+                return Lists.newArrayList(urls);
+            } catch (ClientException e) {
+                failed(e.getMessage(), true);
+                throw e;
+            }
         }
         return Lists.newArrayList(uris);
     }
@@ -138,17 +149,44 @@ public final class DicomZipImporter extends ImporterHandlerA {
         this.completed(message, true);
     }
 
-    private void xmlBuild(Set<String> uris) throws ClientException {
+    private Set<String> xmlBuild(Set<String> uris) throws ClientException {
+        Set<String> archiveUrls = new HashSet<>();
+        final boolean override = isBooleanParameter(PrearchiveOperationRequest.PARAM_OVERRIDE_EXCEPTIONS);
+        final boolean append = isBooleanParameter(PrearchiveOperationRequest.PARAM_ALLOW_SESSION_MERGE);
+        PrearchiveOperationHandlerResolver resolver = XDAT.getContextService().getBean(PrearchiveOperationHandlerResolver.class);
         for (String session : uris) {
             String[] elements = session.split("/");
             final SessionData sessionData;
             try {
                 sessionData = PrearcDatabase.getSession(elements[5], elements[4], elements[3]);
-                XDAT.sendJmsRequest(XDAT.getContextService().getBean(JmsTemplate.class), new PrearchiveOperationRequest(u, Rebuild, sessionData, new File(sessionData.getUrl())));
+                PrearchiveOperationRequest request = new PrearchiveOperationRequest(u, Rebuild, sessionData, new File(sessionData.getUrl()));
+                PrearchiveRebuildHandler handler = (PrearchiveRebuildHandler) resolver.getHandler(request);
+                handler.rebuild();
+                PrearcSession prearcSession = new PrearcSession(request, this.u);
+                if (prearcSession.isAutoArchive()) {
+                    if (PrearcDatabase.setStatus(prearcSession.getFolderName(), prearcSession.getTimestamp(), prearcSession.getProject(), PrearcUtils.PrearcStatus.ARCHIVING)) {
+                        String url = PrearcDatabase.archive(listenerControl, prearcSession, override, append, prearcSession.isOverwriteFiles(), this.u, null);
+                        archiveUrls.add(url);
+                    } else {
+                        throw new ServerException("Unable to lock session for archiving.");
+                    }
+                }
             } catch (Exception e) {
-                throw new ClientException("unable to send JMS request for Prearchive session", e);
+                throw new ClientException("unable to archive for the Prearchive session", e);
             }
         }
+        return archiveUrls;
+    }
+
+    private Boolean isBooleanParameter(final String key) {
+        final Object value = params.get(key);
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        return Boolean.parseBoolean(value.toString());
     }
 
     private void importEntry(ArchiveEntryFileWriterWrapper entryFileWriter, Set<String> uris)

@@ -86,17 +86,6 @@ public class PrearcSession {
             return setArchiveReason(false);
         }
 
-        final SessionData sessionData = getSessionData();
-        if (sessionData != null) {
-            final PrearchiveCode sessionAutoArcSetting = sessionData.getAutoArchive();
-            if (sessionAutoArcSetting == PrearchiveCode.AutoArchive || sessionAutoArcSetting == PrearchiveCode.AutoArchiveOverwrite) {
-                return setArchiveReason(true);
-            }
-            if (sessionAutoArcSetting == PrearchiveCode.Manual) {
-                return setArchiveReason(false);
-            }
-        }
-
         if (destination instanceof URIManager.ArchiveURI) {
             setArchiveReason(false);
             return true;
@@ -106,6 +95,17 @@ public class PrearcSession {
         final Boolean userArchiveSetting = hasAutoArchiveProperty();
         if (null != userArchiveSetting) {
             return setArchiveReason(userArchiveSetting);
+        }
+
+        final SessionData sessionData = getSessionData();
+        if (sessionData != null) {
+            final PrearchiveCode sessionAutoArcSetting = sessionData.getAutoArchive();
+            if (sessionAutoArcSetting == PrearchiveCode.AutoArchive || sessionAutoArcSetting == PrearchiveCode.AutoArchiveOverwrite) {
+                return setArchiveReason(true);
+            }
+            if (sessionAutoArcSetting == PrearchiveCode.Manual) {
+                return setArchiveReason(false);
+            }
         }
 
         final Integer code = ArcSpecManager.GetInstance().getPrearchiveCodeForProject(getProject());
