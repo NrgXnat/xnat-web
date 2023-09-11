@@ -10,6 +10,7 @@
 package org.nrg.xnat.restlet.services;
 
 import com.google.common.collect.Lists;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
@@ -32,6 +33,7 @@ import org.nrg.xnat.restlet.actions.importer.ImporterNotFoundException;
 import org.nrg.xnat.restlet.resources.SecureResource;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.restlet.util.XNATRestConstants;
+import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 import org.nrg.xnat.status.StatusList;
 import org.restlet.Context;
 import org.restlet.data.*;
@@ -131,6 +133,7 @@ public class Importer extends SecureResource {
                 params.put(key, value);
                 break;
         }
+//        parseOverrideValue();
     }
 
     @Override
@@ -182,7 +185,7 @@ public class Importer extends SecureResource {
                     }
                 }
             }
-
+            parseOverrideValue();
             ImporterHandlerA importer;
             if (fw.size() == 0 && handler != null && !HANDLERS_ALLOWING_CALLS_WITHOUT_FILES.contains(handler)) {
 
@@ -436,5 +439,31 @@ public class Importer extends SecureResource {
         }
 
         return sb.toString();
+    }
+
+    private void parseOverrideValue() {
+        String overwriteV = (String) params.remove("overwrite");
+        Boolean overrideExceptions;
+        Boolean allowSessionMerge;
+        if (overwriteV == null) {
+            overrideExceptions = false;
+            allowSessionMerge = false;
+        } else {
+            if (overwriteV.equalsIgnoreCase(PrearcUtils.APPEND)) {
+                overrideExceptions = false;
+                allowSessionMerge = true;
+            } else if (overwriteV.equalsIgnoreCase(PrearcUtils.DELETE)) {//leaving this for backwards compatibility... deprecated by 'override' setting
+                overrideExceptions = true;
+                allowSessionMerge = true;
+            } else if (overwriteV.equalsIgnoreCase("override")) {
+                overrideExceptions = true;
+                allowSessionMerge = true;
+            } else {
+                overrideExceptions = false;
+                allowSessionMerge = true;
+            }
+        }
+        params.put(PrearchiveOperationRequest.PARAM_OVERRIDE_EXCEPTIONS, overrideExceptions);
+        params.put(PrearchiveOperationRequest.PARAM_ALLOW_SESSION_MERGE, allowSessionMerge);
     }
 }

@@ -9,6 +9,7 @@
 
 package org.nrg.xnat.archive;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
@@ -71,7 +72,7 @@ public final class DicomZipImporter extends ImporterHandlerA {
         ClientException nonDcmException = null;
         boolean ignoreUnparsable = PrearcUtils.parseParam(params, IGNORE_UNPARSABLE_PARAM, false);
         final Set<String> uris = Sets.newLinkedHashSet();
-        processing("Importing sessions to the prearchive");
+        this.processing("Importing sessions to the prearchive");
         try {
             switch (format) {
                 case ZIP:
@@ -129,8 +130,12 @@ public final class DicomZipImporter extends ImporterHandlerA {
         if (params.containsKey("action") && "commit".equals(params.get("action"))) {
             try {
                 Set<String> urls = xmlBuild(uris);
-                updateStatus(urls);
-                return Lists.newArrayList(urls);
+                if (isAutoArchive()) {
+                    updateStatus(urls);
+                    return Lists.newArrayList(urls);
+                } else {
+                    updateStatus(uris);
+                }
             } catch (ClientException e) {
                 failed(e.getMessage(), true);
                 throw e;
@@ -140,11 +145,9 @@ public final class DicomZipImporter extends ImporterHandlerA {
     }
 
     private void updateStatus(Set<String> uris) {
-        String message = "DicomZip:"+uris.size()+":prearchive";
-        if (params.containsKey(PREARCHIVE_CODE)) {
-            if ("1".equals((String)params.get(PREARCHIVE_CODE))) {
-                message = "DicomZip:"+uris.size()+":archive:"+(String)params.get("project");
-            }
+        String message = "Prearchive:" + Joiner.on(";").join(uris);
+        if (isAutoArchive()) {
+            message = "Archive:" + Joiner.on(";").join(uris);
         }
         this.completed(message, true);
     }
@@ -152,7 +155,8 @@ public final class DicomZipImporter extends ImporterHandlerA {
     private Set<String> xmlBuild(Set<String> uris) throws ClientException {
         Set<String> archiveUrls = new HashSet<>();
         final boolean override = isBooleanParameter(PrearchiveOperationRequest.PARAM_OVERRIDE_EXCEPTIONS);
-        final boolean append = isBooleanParameter(PrearchiveOperationRequest.PARAM_ALLOW_SESSION_MERGE);
+        final boolean append_merge = isBooleanParameter(PrearchiveOperationRequest.PARAM_ALLOW_SESSION_MERGE);
+
         PrearchiveOperationHandlerResolver resolver = XDAT.getContextService().getBean(PrearchiveOperationHandlerResolver.class);
         for (String session : uris) {
             String[] elements = session.split("/");
@@ -163,8 +167,9 @@ public final class DicomZipImporter extends ImporterHandlerA {
                 PrearchiveRebuildHandler handler = (PrearchiveRebuildHandler) resolver.getHandler(request);
                 handler.rebuild();
                 PrearcSession prearcSession = new PrearcSession(request, this.u);
-                if (prearcSession.isAutoArchive()) {
+                if (isAutoArchive()) {
                     if (PrearcDatabase.setStatus(prearcSession.getFolderName(), prearcSession.getTimestamp(), prearcSession.getProject(), PrearcUtils.PrearcStatus.ARCHIVING)) {
+                        final boolean append = append_merge ? append_merge : prearcSession.getSessionData() != null && prearcSession.getSessionData().getAutoArchive() != null && prearcSession.getSessionData().getAutoArchive() != PrearchiveCode.Manual;
                         String url = PrearcDatabase.archive(listenerControl, prearcSession, override, append, prearcSession.isOverwriteFiles(), this.u, null);
                         archiveUrls.add(url);
                     } else {
@@ -187,6 +192,16 @@ public final class DicomZipImporter extends ImporterHandlerA {
             return (Boolean) value;
         }
         return Boolean.parseBoolean(value.toString());
+    }
+
+    private boolean isAutoArchive() {
+        if (params.containsKey("AA") && ("true".equalsIgnoreCase((String) params.get("AA")))) {
+            return true;
+        }
+        if (params.containsKey("auto-archive") && ("true".equalsIgnoreCase((String) params.get("auto-archive")))) {
+            return true;
+        }
+        return false;
     }
 
     private void importEntry(ArchiveEntryFileWriterWrapper entryFileWriter, Set<String> uris)
