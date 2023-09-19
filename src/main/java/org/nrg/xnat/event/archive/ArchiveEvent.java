@@ -13,15 +13,13 @@ import lombok.*;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.nrg.xdat.XDAT;
 import org.nrg.xnat.archive.Operation;
 import org.nrg.xnat.helpers.prearchive.SessionData;
-import org.nrg.xnat.tracking.model.ArchiveEventTrackingLog;
+import org.nrg.xnat.tracking.model.EventLog;
+import org.nrg.xnat.tracking.model.StatusEventLog;
 import org.nrg.xnat.utils.XnatHttpUtils;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.io.IOException;
 
 /**
  * The Class XftItemEvent.
@@ -128,22 +126,6 @@ public class ArchiveEvent implements ArchiveEventI {
         return builder().operation(operation).status(Status.InProgress).progress(progress).project(project).timestamp(timestamp).session(session).archiveEventId(listenerId).message(message).eventTime(System.currentTimeMillis()).userId(userId).build();
     }
 
-    @Override
-    public String toString() {
-        return getArchiveEventId() + ":" + _operation.toString() + ":" + _status.toString() + " (" + _progress + ")";
-    }
-
-    private final          Integer   _userId;
-    private final          String    _project;
-    private final          String    _timestamp;
-    private final @NonNull String    _session;
-    private final @NonNull Operation _operation;
-    private final @NonNull Status    _status;
-    private final          int       _progress;
-    private final          String    _message;
-    private final          String    _archiveEventId;
-    private final          long      _eventTime;
-
     public String getArchiveEventId() {
         return StringUtils.defaultIfBlank(_archiveEventId, XnatHttpUtils.buildArchiveEventId(_project, _timestamp, _session));
     }
@@ -165,16 +147,23 @@ public class ArchiveEvent implements ArchiveEventI {
     }
 
     @Override
-    public String updateTrackingPayload(@Nullable String currentPayload) throws IOException {
-        ArchiveEventTrackingLog statusLog;
-        if (currentPayload != null) {
-            statusLog = XDAT.getSerializerService().getObjectMapper()
-                    .readValue(currentPayload, ArchiveEventTrackingLog.class);
-        } else {
-            statusLog = new ArchiveEventTrackingLog();
-        }
-        statusLog.addToEntryList(new ArchiveEventTrackingLog.MessageEntry(_status, _eventTime, _message));
-        statusLog.sortEntryList();
-        return XDAT.getSerializerService().getObjectMapper().writeValueAsString(statusLog);
+    public EventLog getEventLog() {
+        return new StatusEventLog(_status.toString(), _eventTime, _message);
     }
+
+    @Override
+    public String toString() {
+        return getArchiveEventId() + ":" + _operation + ":" + _status + " (" + _progress + ")";
+    }
+
+    private final          Integer   _userId;
+    private final          String    _project;
+    private final          String    _timestamp;
+    private final @NonNull String    _session;
+    private final @NonNull Operation _operation;
+    private final @NonNull Status    _status;
+    private final          int       _progress;
+    private final          String    _message;
+    private final          String    _archiveEventId;
+    private final          long      _eventTime;
 }

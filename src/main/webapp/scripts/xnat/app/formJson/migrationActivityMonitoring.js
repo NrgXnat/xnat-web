@@ -14,7 +14,7 @@ var XNAT = getObject(XNAT || {});
 }(function() {
     XNAT = getObject(XNAT || {});
     XNAT.customVariableMigrator= getObject(XNAT.customVariableMigrator || {});
-    XNAT.customVariableMigrator.updateMigrationProgress = function (itemDivId, detailsTag, jsonobj, lastProgressIdx) {
+    XNAT.customVariableMigrator.updateMigrationProgress = function (itemDivId, detailsTag, jsonobj, lastProgressIdx = -1) {
         const succeeded = jsonobj['succeeded'];
         const payload = JSON.parse(jsonobj['payload']);
         let messages = "";

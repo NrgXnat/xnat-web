@@ -14,15 +14,16 @@ import org.nrg.framework.status.StatusMessage;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class StatusList implements StatusListenerI, Serializable {
     @Override
-    public synchronized void notify(StatusMessage message) {
+    public void notify(StatusMessage message) {
         messages.add(message);
     }
 
-    public synchronized List<StatusMessage> getMessages() {
+    public List<StatusMessage> getMessages() {
         return messages;
     }
 
@@ -31,7 +32,7 @@ public class StatusList implements StatusListenerI, Serializable {
      * @see java.lang.Object#toString()
      */
     @Override
-    public synchronized String toString() {
+    public String toString() {
         final StringBuilder sb = new StringBuilder("StatusLog");
         if (!messages.isEmpty()) {
             for (final StatusMessage m : messages) {
@@ -42,7 +43,7 @@ public class StatusList implements StatusListenerI, Serializable {
         return sb.toString();
     }
 
-    private List<StatusMessage> messages = new ArrayList<>();
+    private final List<StatusMessage> messages = Collections.synchronizedList(new ArrayList<>());
     private final static String LINE_SEPARATOR = System.getProperty("line.separator");
     private static final long serialVersionUID = 7022501869703068172L;
 }

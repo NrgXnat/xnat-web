@@ -5,7 +5,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.framework.services.NrgEventService;
 import org.nrg.xft.event.entities.WorkflowStatusEvent;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
-import org.nrg.xnat.event.model.BulkLaunchEvent;
+import org.nrg.xnat.tracking.model.BulkLaunchEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.bus.Event;

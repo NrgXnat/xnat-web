@@ -1,7 +1,7 @@
 package org.nrg.xnat.customforms.customvariable.migration.event;
 
-import org.nrg.xdat.XDAT;
-import org.nrg.xnat.customforms.customvariable.migration.model.CustomVariableMigrationEventTrackingLog;
+import org.nrg.xnat.tracking.model.EventLog;
+import org.nrg.xnat.tracking.model.StatusEventLog;
 import org.nrg.xnat.tracking.model.TrackableEvent;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,9 +9,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
-
-import java.io.IOException;
 
 @Data
 @AllArgsConstructor
@@ -46,18 +43,10 @@ public class CustomVariableMigrationEvent implements TrackableEvent {
         return message;
     }
 
+    @Nullable
     @Override
-    public String updateTrackingPayload(@Nullable String currentPayload) throws IOException {
-        CustomVariableMigrationEventTrackingLog statusLog;
-        if (currentPayload != null) {
-            statusLog = XDAT.getSerializerService().getObjectMapper()
-                    .readValue(currentPayload, CustomVariableMigrationEventTrackingLog.class);
-        } else {
-            statusLog = new CustomVariableMigrationEventTrackingLog();
-        }
-        statusLog.addToEntryList(new CustomVariableMigrationEventTrackingLog.MessageEntry(status, eventTime, message));
-        statusLog.sortEntryList();
-        return XDAT.getSerializerService().getObjectMapper().writeValueAsString(statusLog);
+    public EventLog getEventLog() {
+        return new StatusEventLog(status.toString(), eventTime, message);
     }
 
     @Override

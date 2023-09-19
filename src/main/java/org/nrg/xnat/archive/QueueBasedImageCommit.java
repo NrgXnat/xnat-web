@@ -31,8 +31,8 @@ import org.nrg.xnat.helpers.prearchive.SessionData;
 import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 import org.nrg.xnat.status.ListenerUtils;
-import org.nrg.xnat.tracking.entities.EventTrackingDataPojo;
-import org.nrg.xnat.tracking.services.EventTrackingDataService;
+import org.nrg.xnat.tracking.model.EventLogSummary;
+import org.nrg.xnat.tracking.services.EventTrackingService;
 import org.nrg.xnat.utils.XnatHttpUtils;
 import org.restlet.data.Status;
 
@@ -113,12 +113,10 @@ public class QueueBasedImageCommit extends ArchiveStatusProducer implements Call
         }
 
         try {
-            final EventTrackingDataService eventTrackingDataService;
-            EventTrackingDataPojo eventTrackingData = null;
+            final EventTrackingService eventTrackingService;
             try {
-                eventTrackingDataService = XDAT.getContextService()
-                    .getBean(EventTrackingDataService.class);
-                eventTrackingDataService.createOrRestartWithKey(_archiveOperationId, _user);
+                eventTrackingService = XDAT.getContextService()
+                    .getBean(EventTrackingService.class);
 
                 log.debug("Queuing archive operation to auto-archive session {} to {}", getPrearcSession(), getDestination());
                 final PrearchiveOperationRequest request = new PrearchiveOperationRequest(getUser(), Archive,
@@ -139,7 +137,8 @@ public class QueueBasedImageCommit extends ArchiveStatusProducer implements Call
             // to update the status listeners and to prepare a response for whatever called us
             final int timeout = XDAT.getIntSiteConfigurationProperty("sessionArchiveTimeoutInterval", 600);
             final StopWatch stopWatch = StopWatch.createStarted();
-            while (eventTrackingData == null || eventTrackingData.getSucceeded() == null) {
+            EventLogSummary eventLogSummary = null;
+            do {
                 if (stopWatch.getTime(TimeUnit.SECONDS) > timeout) {
                     String msg = "The session " + getPrearcSession().toString() +
                             " did not return a valid data URI within the timeout interval of " + timeout + " seconds.";
@@ -148,14 +147,14 @@ public class QueueBasedImageCommit extends ArchiveStatusProducer implements Call
                 log.debug("Checked for message with final status but didn't find it, sleeping for a bit...");
                 Thread.sleep(500);
                 try {
-                    eventTrackingData = eventTrackingDataService.getPojoByKey(_archiveOperationId, _user);
+                    eventLogSummary = eventTrackingService.getSummaryForKey(_archiveOperationId, _user);
                 } catch (NotFoundException e) {
                     // Ignore, eventTrackingData will be null until timeout exception or JMS starts working
                 }
-            }
+            } while (eventLogSummary == null || eventLogSummary.getSucceeded() == null);
 
-            String uriOrMessage = eventTrackingData.getFinalMessage();
-            StatusMessage.Status status = eventTrackingData.getSucceeded() ? COMPLETED : FAILED;
+            String uriOrMessage = eventLogSummary.getFinalMessage();
+            StatusMessage.Status status = eventLogSummary.getSucceeded() ? COMPLETED : FAILED;
             log.debug("Found event tracking data with status {}: {}", status, uriOrMessage);
             notify(new StatusMessage(this, status, uriOrMessage, true));
             if (status == COMPLETED) {

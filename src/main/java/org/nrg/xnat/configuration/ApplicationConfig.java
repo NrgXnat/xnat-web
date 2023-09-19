@@ -39,7 +39,7 @@ import org.nrg.xnat.restlet.XnatRestletExtensionsBean;
 import org.nrg.xnat.restlet.actions.importer.ImporterHandlerPackages;
 import org.nrg.xnat.services.PETTracerUtils;
 import org.nrg.xnat.services.archive.DicomInboxImportRequestService;
-import org.nrg.xnat.tracking.services.EventTrackingDataService;
+import org.nrg.xnat.tracking.services.EventTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.CacheManager;
@@ -237,8 +237,8 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public TriggerTask cleanupEventTracking(final EventTrackingDataService eventTrackingDataService) {
-        return new TriggerTask(eventTrackingDataService::cleanupOldEntries,
+    public TriggerTask cleanupEventTracking(final EventTrackingService eventTrackingService) {
+        return new TriggerTask(eventTrackingService::cleanupOldEntries,
                                new PeriodicTrigger(1, TimeUnit.DAYS));
     }
 

@@ -4,7 +4,6 @@ import org.nrg.framework.event.EventI;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 
 public interface TrackableEvent extends EventI {
     /**
@@ -41,10 +40,15 @@ public interface TrackableEvent extends EventI {
     String getMessage();
 
     /**
-     * Update tracking payload with info from this event
-     * @param currentPayload the current payload or null
-     * @return the updated payload
-     * @throws IOException parsing/stringification issues
+     * Return the event log. Extend the event log class to add custom information to this object.
+     * @return the event log
      */
-    String updateTrackingPayload(@Nullable String currentPayload) throws IOException;
+    @Nullable
+    EventLog getEventLog();
+
+    /**
+     * Return the time the event was triggered
+     * @return the time the event was triggered
+     */
+    long getEventTime();
 }

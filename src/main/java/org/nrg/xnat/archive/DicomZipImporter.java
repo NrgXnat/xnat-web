@@ -75,7 +75,7 @@ public final class DicomZipImporter extends ImporterHandlerA {
         boolean ignoreUnparsable = PrearcUtils.parseParam(params, IGNORE_UNPARSABLE_PARAM, false);
         final Set<String> uris = Sets.newLinkedHashSet();
         this.processing("Importing sessions to the prearchive");
-        this.processing("Importing file ("+fw.getName()+" )");
+        this.processing("Importing file (" + fw.getName() + ")");
         try {
             switch (format) {
                 case ZIP:

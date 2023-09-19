@@ -146,10 +146,7 @@ var XNAT = getObject(XNAT);
         });
     }
 
-    function checkProgress(item, key, errCnt, lastProgressIdx) {
-        if (!lastProgressIdx) {
-            lastProgressIdx = -1;
-        }
+    function checkProgress(item, key, errCnt, lastProgressIdx = -1) {
         if (! (activityTab.pollers.hasOwnProperty(key) && activityTab.pollers[key])) {
             return;
         }
@@ -171,7 +168,7 @@ var XNAT = getObject(XNAT);
                     return;
                 }
 
-                if (succeeded !== null) {
+                if (succeeded != null) {
                     activityTab.stopPoll(key, succeeded);
                 } else {
                     window.setTimeout(function() {
@@ -212,9 +209,8 @@ var XNAT = getObject(XNAT);
 
     activityTab.populateArchivalDetails = function(itemDivId, detailsTag, jsonobj, lastProgressIdx) {
         const succeeded = jsonobj['succeeded'];
-        const payload = JSON.parse(jsonobj['payload']);
         let messages = "";
-        let entryList = payload ? (payload['entryList'] || []) : [];
+        let entryList = jsonobj['payload'] || [];
         if (entryList.length === 0 && succeeded == null) {
             return [null, lastProgressIdx];
         }
