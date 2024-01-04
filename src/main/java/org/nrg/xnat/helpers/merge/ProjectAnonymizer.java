@@ -22,9 +22,8 @@ import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 
-public class ProjectAnonymizer extends AnonymizerA implements Callable<Boolean> {
+public class ProjectAnonymizer extends AnonymizerA {
     final String                projectId;
     final String                sessionPath;
     final String                label;

@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.dicom.mizer.objects.AnonymizationResult;
+import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatImagesessiondata;
@@ -155,9 +157,17 @@ public class MergePrearcToArchiveSession extends MergeSessionsA<XnatImagesession
     }
 
     @Override
+
     protected XnatImagesessiondata getPostAnonSession() throws Exception {
         // Now that we're at the project level, let's re-anonymize.
-        final boolean wasAnonymized = !_prearcSession.getSessionData().getPreventAnon() && anonymizer.call();
+        boolean wasAnonymized = false;
+        if (!_prearcSession.getSessionData().getPreventAnon()) {
+            final List<AnonymizationResult> anonResults = anonymizer.call();
+            if (anonResults.stream().anyMatch(ar -> ar instanceof AnonymizationResultError)) {
+                throw new Exception("Anon failed.");
+            }
+            wasAnonymized = true;
+        }
 
         final File sessionXml = new File(srcDIR.getPath() + XML_EXTENSION);
 

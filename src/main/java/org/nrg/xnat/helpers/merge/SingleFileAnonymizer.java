@@ -10,6 +10,7 @@
 package org.nrg.xnat.helpers.merge;
 
 import org.nrg.config.entities.Configuration;
+import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.xnat.helpers.editscript.DicomEdit;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 
@@ -76,7 +77,7 @@ public class SingleFileAnonymizer extends AnonymizerA {
 	}
 
 	@Override
-	public Boolean call () throws Exception {
-		return reanonymize ? super.call() : false;
+	public List<AnonymizationResult> call () throws Exception {
+		return reanonymize ? super.call() : new ArrayList<>();
 	}
 }

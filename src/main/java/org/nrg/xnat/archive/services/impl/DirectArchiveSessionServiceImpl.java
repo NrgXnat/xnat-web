@@ -5,6 +5,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.dicom.mizer.objects.AnonymizationResult;
+import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.framework.ajax.Filter;
 import org.nrg.framework.ajax.hibernate.HibernateFilter;
 import org.nrg.framework.constants.PrearchiveCode;
@@ -181,7 +183,12 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
         try {
             session = populateSession(user, location, project);
             if(!target.getPreventAnon()) {
-                anonymized = new ProjectAnonymizer(session, project, location).call();
+                List<AnonymizationResult>  anonResults = new ProjectAnonymizer(session, project, location).call();
+                if (anonResults.stream().anyMatch(ar -> ar instanceof AnonymizationResultError)) {
+                    // handle error
+                }
+                // TODO handle rejection.
+                anonymized = true;
                 if(anonymized) {
                     // rebuild XML and update session
                     PrearcUtils.buildSession(target);
