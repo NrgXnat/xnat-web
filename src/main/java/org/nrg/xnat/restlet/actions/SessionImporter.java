@@ -265,7 +265,7 @@ public class SessionImporter extends ImporterHandlerA implements Callable<List<S
 
                 this.processing("Performing anonymization");
                 final SiteWideAnonymizer   siteWideAnonymizer = new SiteWideAnonymizer(imageSession, true);
-                if (siteWideAnonymizer.call()) {
+                if (!siteWideAnonymizer.call().isEmpty()){
                     // rebuild XML
                     XnatSubjectdata s = imageSession.getSubjectData();
                     String subject = s != null ? s.getLabel() : imageSession.getSubjectId();
