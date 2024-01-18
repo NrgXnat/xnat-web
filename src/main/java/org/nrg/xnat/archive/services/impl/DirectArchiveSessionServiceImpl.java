@@ -38,6 +38,7 @@ import org.nrg.xnat.archive.entities.DirectArchiveSession;
 import org.nrg.xnat.archive.services.DirectArchiveSessionHibernateService;
 import org.nrg.xnat.archive.services.DirectArchiveSessionService;
 import org.nrg.xnat.archive.xapi.DirectArchiveSessionPaginatedRequest;
+import org.nrg.xnat.helpers.merge.MergeUtils;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.helpers.prearchive.PrearcDatabase;
 import org.nrg.xnat.helpers.prearchive.PrearcTableBuilder;
@@ -65,7 +66,6 @@ import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.jms.Destination;
 
 import static org.nrg.xft.event.XftItemEventI.CREATE;
 import static org.nrg.xnat.archive.Operation.Rebuild;
@@ -182,19 +182,19 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
         XnatImagesessiondata session;
         try {
             session = populateSession(user, location, project);
-            if(!target.getPreventAnon()) {
+            if(Boolean.FALSE.equals(target.getPreventAnon())) {
                 List<AnonymizationResult>  anonResults = new ProjectAnonymizer(session, project, location).call();
-                if (anonResults.stream().anyMatch(ar -> ar instanceof AnonymizationResultError)) {
-                    // handle error
+                if (anonResults.stream().anyMatch(AnonymizationResultError.class::isInstance)) {
+                    log.error("Anonymization failed for DirectArchiveSession id={} at {} ", id, location);
+                    throw new ArchivingException("Anonymization failed for DirectArchiveSession id="+id+ "at "+location);
                 }
-                // TODO handle rejection.
+                MergeUtils.deleteRejectedFiles(log, anonResults);
                 anonymized = true;
-                if(anonymized) {
-                    // rebuild XML and update session
-                    PrearcUtils.buildSession(target);
-                    session = populateSession(user, location, project);
-                }
+                // rebuild XML and update session
+                PrearcUtils.buildSession(target);
+                session = populateSession(user, location, project);
             }
+
             setSessionId(session);
             // TODO get rid of this check once XNAT-6889 is fixed
             if(!permissionsService.canCreate(user, session)) {

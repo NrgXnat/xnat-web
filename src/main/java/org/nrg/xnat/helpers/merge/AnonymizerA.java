@@ -11,6 +11,7 @@ package org.nrg.xnat.helpers.merge;
 
 import org.nrg.config.entities.Configuration;
 import org.nrg.dicom.mizer.exceptions.MizerException;
+import org.nrg.dicom.mizer.exceptions.RejectedInstanceException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
 import org.nrg.dicom.mizer.service.MizerService;
