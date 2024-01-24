@@ -55,6 +55,16 @@ public abstract class AnonymizerA implements Callable<List<AnonymizationResult>>
     abstract String getProjectName();
 
     /**
+     * Check if reject statements should be ignored (on pre-existing data).
+     *
+     * @return Returns true if reject statements should be ignored.
+     */
+    public boolean ignoreRejections(){
+        return _ignoreRejections;
+    }
+
+
+    /**
      * Get the list of files that need to be anonymized.
      *
      * @return The list of files to be anonymized.
@@ -67,7 +77,7 @@ public abstract class AnonymizerA implements Callable<List<AnonymizationResult>>
         if (script != null) {
             if (isEnabled()) {
                 final MizerService service = XDAT.getContextService().getBeanSafely(MizerService.class);
-                return service.anonymize(files, getProjectName(), getSubject(), getLabel(), id, script, record);
+                return service.anonymize(files, getProjectName(), getSubject(), getLabel(), id, script, record, ignoreRejections());
             } else {
                 // anonymization is disabled.
                 if (_log.isDebugEnabled()) {
@@ -105,4 +115,8 @@ public abstract class AnonymizerA implements Callable<List<AnonymizationResult>>
     }
 
     private static final Logger _log = LoggerFactory.getLogger(AnonymizerA.class);
+
+    protected boolean _ignoreRejections;
+
+
 }

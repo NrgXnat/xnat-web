@@ -37,7 +37,7 @@ public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
                     subj = sessionData.getSubject();
                     folder = sessionData.getFolderName();
                 }
-                AnonymizationResult result = mizer.anonymize(dicomData, proj, subj, folder, script);
+                AnonymizationResult result = mizer.anonymize(dicomData, proj, subj, folder, script, true);
                 if (result instanceof AnonymizationResultError) {
                     String msg = result.getMessage();
                     log.debug("Dicom anonymization failed: {}: {}", dicomData, msg);

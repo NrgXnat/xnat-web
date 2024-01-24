@@ -23,6 +23,7 @@ import org.nrg.xft.XFTItem;
 import org.nrg.xft.db.MaterializedView;
 import org.nrg.xft.event.EventMetaI;
 import org.nrg.xft.event.EventUtils;
+import org.nrg.xft.event.EventUtils.CATEGORY;
 import org.nrg.xft.event.persist.PersistentWorkflowI;
 import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.InvalidValueException;
@@ -339,12 +340,14 @@ public class SubjectResource extends ItemResource {
 
                             if(applyAnonScript){
                                for(final XnatSubjectassessordata expt : sub.getExperiments_experiment("xnat:imageSessionData")){
-                                    try{
+                                   PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post Rename"));
+                                   try{
                                         String prId = expt.getProject();
                                         try {
                                             if (DefaultAnonUtils.getService().isProjectScriptEnabled(prId)) {
                                                 // re-apply this project's edit script
-                                                expt.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) expt, sub.getLabel(), prId, expt.getArchiveRootPath()));
+                                                expt.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) expt, sub.getLabel(), prId, expt.getArchiveRootPath(),true));
+                                                WorkflowUtils.complete(anonWrk,anonWrk.buildEvent());
                                             }
                                         }
                                         catch(NullPointerException e){
@@ -352,6 +355,7 @@ public class SubjectResource extends ItemResource {
                                         }
                                     }
                                     catch (TransactionException e) {
+                                       WorkflowUtils.fail(anonWrk,anonWrk.buildEvent());
                                        this.getResponse().setStatus(Status.SERVER_ERROR_INTERNAL, e);
                                     }
                                }
