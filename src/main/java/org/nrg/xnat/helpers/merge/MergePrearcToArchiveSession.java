@@ -51,7 +51,7 @@ public class MergePrearcToArchiveSession extends MergeSessionsA<XnatImagesession
 
     public MergePrearcToArchiveSession(Object control, final PrearcSession prearcSession, final XnatImagesessiondata src, final String srcRootPath, final File destDIR, final XnatImagesessiondata existing, final String destRootPath, boolean addFilesToExisting, boolean overwrite_files, SaveHandlerI<XnatImagesessiondata> saver, final UserI u, final EventMetaI now) {
         super(control, prearcSession.getSessionDir(), src, srcRootPath, destDIR, existing, destRootPath, addFilesToExisting, overwrite_files, saver, u, now);
-        setAnonymizer(new PrearcSessionAnonymizer(src, src.getProject(), srcDIR.getAbsolutePath()));
+        setAnonymizer(new PrearcSessionAnonymizer(src, src.getProject(), srcDIR.getAbsolutePath(), false));
         _prearcSession = prearcSession;
     }
 

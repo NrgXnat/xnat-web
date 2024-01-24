@@ -393,7 +393,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                         if (c != null && c.getStatus().equals(Configuration.ENABLED_STRING)) {
                             final MizerService service = XDAT.getContextService().getBeanSafely(MizerService.class);
                             final AnonymizationResult anonResult = service.anonymize(outputFile, session.getProject(), session.getSubject(),
-                                    session.getFolderName(), true, c.getId(), c.getContents());
+                                    session.getFolderName(), true, false, c.getId(), c.getContents());
                             if (anonResult instanceof AnonymizationResultReject) {
                                 handleRejectedInstance();
                             }
