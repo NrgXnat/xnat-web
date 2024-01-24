@@ -183,7 +183,7 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
         try {
             session = populateSession(user, location, project);
             if(Boolean.FALSE.equals(target.getPreventAnon())) {
-                List<AnonymizationResult>  anonResults = new ProjectAnonymizer(session, project, location).call();
+                List<AnonymizationResult>  anonResults = new ProjectAnonymizer(session, project, location, false).call();
                 if (anonResults.stream().anyMatch(AnonymizationResultError.class::isInstance)) {
                     log.error("Anonymization failed for DirectArchiveSession id={} at {} ", id, location);
                     throw new ArchivingException("Anonymization failed for DirectArchiveSession id="+id+ "at "+location);

@@ -28,7 +28,7 @@ public class SingleFileAnonymizer extends AnonymizerA {
 	private final boolean reanonymize;
 	final String path;
 	
-	public SingleFileAnonymizer(File f, String project, String subject, String label, String anonProject, boolean reanonymize) {
+	public SingleFileAnonymizer(File f, String project, String subject, String label, String anonProject, boolean reanonymize, boolean ignoreRejections) {
 		this.f = f;
 		this.project = project;
 		this.subject = subject;
@@ -41,7 +41,7 @@ public class SingleFileAnonymizer extends AnonymizerA {
 		else {
 			this.path = DicomEdit.buildScriptPath(DicomEdit.ResourceScope.SITE_WIDE, null);	
 		}
-		
+		_ignoreRejections=ignoreRejections;
 	}
 	
 	@Override
