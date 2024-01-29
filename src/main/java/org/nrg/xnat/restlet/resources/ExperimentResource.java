@@ -491,7 +491,7 @@ public class ExperimentResource extends ItemResource {
     }
 
     private void anonymize(final XnatImagesessiondata session, final XnatImagesessiondata previous) throws BaseXnatExperimentdata.UnknownPrimaryProjectException {
-        if (StringUtils.isNotBlank(session.getSubjectId()) && !StringUtils.equalsIgnoreCase(session.getSubjectId(), previous.getSubjectId())) {
+        if (XDAT.getBoolSiteConfigurationProperty("rerunProjectAnonOnRename", false) && StringUtils.isNotBlank(session.getSubjectId()) && !StringUtils.equalsIgnoreCase(session.getSubjectId(), previous.getSubjectId())) {
             PersistentWorkflowI anonWrk = null;
             try {
                 // re-apply this project's edit script

@@ -186,7 +186,7 @@ public class Rename implements Callable<File>{
 			try {
 				//Apply anonymization. If an anonymization script exists, this will pull all files into local filesystem,
 				//where they'll be updated and later pushed to remote on cleanup.
-				if (DefaultAnonUtils.getService().isProjectScriptEnabled(projectId)) {
+				if (DefaultAnonUtils.getService().isProjectScriptEnabled(projectId) && XDAT.getBoolSiteConfigurationProperty("rerunProjectAnonOnRename", false)) {
 					eventMeta = updateStep(workflow, setStep(STEP.ANONYMIZE));
 					if (item instanceof XnatImagesessiondata) {
 						PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, "Anonymization post Rename"));

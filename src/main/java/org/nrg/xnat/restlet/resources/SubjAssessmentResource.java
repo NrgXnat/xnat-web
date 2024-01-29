@@ -490,7 +490,8 @@ public class SubjAssessmentResource extends SubjAssessmentAbst {
                         }
 
                         final String subjectId = expt.getSubjectId();
-                        if (previous != null && expt instanceof XnatImagesessiondata && subjectId != null && !subjectId.equals(previous.getSubjectId())) {
+
+                        if (XDAT.getBoolSiteConfigurationProperty("rerunProjectAnonOnRename", false) && previous != null && expt instanceof XnatImagesessiondata && subjectId != null && !subjectId.equals(previous.getSubjectId())) {
                             PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post subject change"));
                             anonWrk.setPipelineName("Anonymization post subject change");
                             try {
