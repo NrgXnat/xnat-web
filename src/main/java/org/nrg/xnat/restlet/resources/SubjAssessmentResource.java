@@ -491,7 +491,8 @@ public class SubjAssessmentResource extends SubjAssessmentAbst {
 
                         final String subjectId = expt.getSubjectId();
                         if (previous != null && expt instanceof XnatImagesessiondata && subjectId != null && !subjectId.equals(previous.getSubjectId())) {
-                            PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post Rename"));
+                            PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post subject change"));
+                            anonWrk.setPipelineName("Anonymization post subject change");
                             try {
                                 // re-apply this project's edit script
                                 expt.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) expt, currentProjectId, expt.getArchiveRootPath(), true));
