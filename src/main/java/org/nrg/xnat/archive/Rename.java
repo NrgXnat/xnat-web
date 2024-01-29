@@ -189,7 +189,7 @@ public class Rename implements Callable<File>{
 				if (DefaultAnonUtils.getService().isProjectScriptEnabled(projectId)) {
 					eventMeta = updateStep(workflow, setStep(STEP.ANONYMIZE));
 					if (item instanceof XnatImagesessiondata) {
-						PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, "Anon post Rename"));
+						PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, "Anonymization post Rename"));
 
 						try {
 							new ProjectAnonymizer(newLabel, (XnatImagesessiondata) item, projectId, ((XnatImagesessiondata) item).getArchivePath(item.getArchiveRootPath()), true).call();
