@@ -340,7 +340,7 @@ public class SubjectResource extends ItemResource {
 
                             if(applyAnonScript){
                                for(final XnatSubjectassessordata expt : sub.getExperiments_experiment("xnat:imageSessionData")){
-                                   PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post Rename"));
+                                   PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post subject change"));
                                    try{
                                         String prId = expt.getProject();
                                         try {
