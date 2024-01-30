@@ -15,6 +15,7 @@ import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
+import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatAbstractresource;
 import org.nrg.xdat.om.XnatImagesessiondata;
@@ -209,6 +210,9 @@ public class MergePrearcToArchiveSession extends MergeSessionsA<XnatImagesession
         if (anonResults.stream().anyMatch(AnonymizationResultError.class::isInstance)) {
             log.error("Anonymization failed for prearcSession at {} ", _prearcSession.getSessionDir().getAbsolutePath());
             throw new ArchivingException("Anonymization failed for prearcSession at " + _prearcSession.getSessionDir().getAbsolutePath());
+        }
+        if (anonResults.stream().allMatch(AnonymizationResultNoOp.class::isInstance)) {
+            return false;
         }
         MergeUtils.deleteRejectedFiles(log, anonResults);
         return true;

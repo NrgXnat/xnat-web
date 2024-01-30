@@ -7,6 +7,7 @@ import org.dcm4che2.data.Tag;
 import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
+import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
 import org.nrg.dicom.mizer.objects.AnonymizationResultReject;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.xnat.entities.ArchiveProcessorInstance;
@@ -43,7 +44,7 @@ public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
                     log.debug("Dicom anonymization failed: {}: {}", dicomData, msg);
                     throw new ServerException(Status.SERVER_ERROR_INTERNAL,msg);
                 }
-                if ( result instanceof AnonymizationResultReject) {
+                if ( result instanceof AnonymizationResultReject || result instanceof AnonymizationResultNoOp) {
                     return false;
                 }
             }

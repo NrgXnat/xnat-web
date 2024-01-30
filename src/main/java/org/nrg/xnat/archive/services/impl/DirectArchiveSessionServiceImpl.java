@@ -7,6 +7,7 @@ import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
+import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
 import org.nrg.framework.ajax.Filter;
 import org.nrg.framework.ajax.hibernate.HibernateFilter;
 import org.nrg.framework.constants.PrearchiveCode;
@@ -188,11 +189,15 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
                     log.error("Anonymization failed for DirectArchiveSession id={} at {} ", id, location);
                     throw new ArchivingException("Anonymization failed for DirectArchiveSession id="+id+ "at "+location);
                 }
-                MergeUtils.deleteRejectedFiles(log, anonResults);
-                anonymized = true;
-                // rebuild XML and update session
-                PrearcUtils.buildSession(target);
-                session = populateSession(user, location, project);
+                if (anonResults.stream().allMatch(AnonymizationResultNoOp.class::isInstance)) {
+                    anonymized = false;
+                }else {
+                    MergeUtils.deleteRejectedFiles(log, anonResults);
+                    anonymized = true;
+                    // rebuild XML and update session
+                    PrearcUtils.buildSession(target);
+                    session = populateSession(user, location, project);
+                }
             }
 
             setSessionId(session);
