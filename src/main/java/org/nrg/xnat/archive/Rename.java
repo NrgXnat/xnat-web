@@ -59,6 +59,7 @@ public class Rename implements Callable<File>{
     public static final String NEW_LABEL = "newLabel";
     public static final String NEW_PATH  = "newPath";
 	public static final String ANONYMIZATION_POST_MODIFICATION = "Anonymization post modification";
+	public static final String ANONYMIZATION_POST_SUBJECT_CHANGE = "Anonymization post subject change";
 
 	enum STEP {PREPARING, PREPARE_SQL, COPY_DIR, ANONYMIZE, EXECUTE_SQL, DELETE_OLD_DIR, COMPLETE}
 	private static final String    SUCCESSFUL_RENAMES = "successful_renames";
@@ -200,7 +201,7 @@ public class Rename implements Callable<File>{
 						}
 					} else if (isSubject) {
 						for (final XnatSubjectassessordata expt : ((XnatSubjectdata) item).getExperiments_experiment("xnat:imageSessionData")) {
-							PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, ANONYMIZATION_POST_MODIFICATION));
+							PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, ANONYMIZATION_POST_SUBJECT_CHANGE));
 							try {
 								// re-apply this project's edit script
 								expt.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) expt, newLabel, expt.getProject(), expt.getArchiveRootPath(), true));

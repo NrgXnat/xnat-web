@@ -29,6 +29,7 @@ import org.nrg.xft.event.persist.PersistentWorkflowUtils;
 import org.nrg.xft.exception.InvalidValueException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.SaveItemHelper;
+import org.nrg.xnat.archive.Rename;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
@@ -340,7 +341,7 @@ public class SubjectResource extends ItemResource {
 
                             if(applyAnonScript){
                                for(final XnatSubjectassessordata expt : sub.getExperiments_experiment("xnat:imageSessionData")){
-                                   PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post subject change"));
+                                   PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, Rename.ANONYMIZATION_POST_SUBJECT_CHANGE));
                                    try{
                                         String prId = expt.getProject();
                                         try {
