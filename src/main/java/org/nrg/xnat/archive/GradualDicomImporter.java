@@ -444,7 +444,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
     }
 
     private void handleAnonymizationError(AtomicBoolean isNew, SessionData session,File outputFile, Throwable e) throws ServerException {
-        log.debug("Dicom anonymization failed: " + outputFile, e);
+        log.debug("Dicom anonymization failed: {}", outputFile, e);
         try {
             // if we created a row in the database table for this session
             // delete it.
