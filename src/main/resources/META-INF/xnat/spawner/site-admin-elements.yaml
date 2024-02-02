@@ -1664,7 +1664,7 @@ anonymization:
 rerunProjectAnon:
     kind: panel.form
     name: ProjectAnon
-    label: "Project level anonymization"
+    label: "Re-running project level anonymization"
     method: POST
     contentType: json
     url: /xapi/siteConfig

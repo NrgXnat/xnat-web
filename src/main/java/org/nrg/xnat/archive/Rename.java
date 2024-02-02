@@ -58,6 +58,7 @@ public class Rename implements Callable<File>{
     public static final String OLD_PATH  = "oldPath";
     public static final String NEW_LABEL = "newLabel";
     public static final String NEW_PATH  = "newPath";
+	public static final String ANONYMIZATION_POST_MODIFICATION = "Anonymization post modification";
 
 	enum STEP {PREPARING, PREPARE_SQL, COPY_DIR, ANONYMIZE, EXECUTE_SQL, DELETE_OLD_DIR, COMPLETE}
 	private static final String    SUCCESSFUL_RENAMES = "successful_renames";
@@ -189,7 +190,7 @@ public class Rename implements Callable<File>{
 				if (DefaultAnonUtils.getService().isProjectScriptEnabled(projectId) && XDAT.getBoolSiteConfigurationProperty("rerunProjectAnonOnRename", false)) {
 					eventMeta = updateStep(workflow, setStep(STEP.ANONYMIZE));
 					if (item instanceof XnatImagesessiondata) {
-						PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, "Anonymization post Rename"));
+						PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, item.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, ANONYMIZATION_POST_MODIFICATION));
 
 						try {
 							new ProjectAnonymizer(newLabel, (XnatImagesessiondata) item, projectId, ((XnatImagesessiondata) item).getArchivePath(item.getArchiveRootPath()), true).call();
@@ -199,7 +200,7 @@ public class Rename implements Callable<File>{
 						}
 					} else if (isSubject) {
 						for (final XnatSubjectassessordata expt : ((XnatSubjectdata) item).getExperiments_experiment("xnat:imageSessionData")) {
-							PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, "Anonymization post Rename"));
+							PersistentWorkflowI wrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), EventUtils.newEventInstance(CATEGORY.DATA, TYPE.WEB_SERVICE, ANONYMIZATION_POST_MODIFICATION));
 							try {
 								// re-apply this project's edit script
 								expt.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) expt, newLabel, expt.getProject(), expt.getArchiveRootPath(), true));

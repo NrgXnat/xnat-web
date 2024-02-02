@@ -44,7 +44,7 @@ public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
                     log.debug("Dicom anonymization failed: {}: {}", dicomData, msg);
                     throw new ServerException(Status.SERVER_ERROR_INTERNAL,msg);
                 }
-                if ( result instanceof AnonymizationResultReject || result instanceof AnonymizationResultNoOp) {
+                if ( result instanceof AnonymizationResultNoOp) {
                     return false;
                 }
             }

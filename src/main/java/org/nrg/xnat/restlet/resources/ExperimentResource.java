@@ -33,6 +33,7 @@ import org.nrg.xft.exception.InvalidValueException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xnat.archive.Rename;
 import org.nrg.xnat.archive.ValidationException;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.restlet.actions.FixScanTypes;
@@ -495,7 +496,7 @@ public class ExperimentResource extends ItemResource {
             PersistentWorkflowI anonWrk = null;
             try {
                 // re-apply this project's edit script
-                anonWrk = WorkflowUtils.buildOpenWorkflow(this.getUser(), session.getItem(), this.newEventInstance(CATEGORY.DATA, "Anonymization post modification"));
+                anonWrk = WorkflowUtils.buildOpenWorkflow(this.getUser(), session.getItem(), this.newEventInstance(CATEGORY.DATA, Rename.ANONYMIZATION_POST_MODIFICATION));
                 session.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) _experiment, _experiment.getProject(), session.getArchiveRootPath(), true));
                 WorkflowUtils.complete(anonWrk, anonWrk.buildEvent());
             } catch (TransactionException e) {
