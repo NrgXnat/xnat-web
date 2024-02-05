@@ -500,7 +500,7 @@ public class ExperimentResource extends ItemResource {
                 session.applyAnonymizationScript(new ProjectAnonymizer((XnatImagesessiondata) _experiment, _experiment.getProject(), session.getArchiveRootPath(), true));
                 WorkflowUtils.complete(anonWrk, anonWrk.buildEvent());
             } catch (TransactionException e) {
-                if(anonWrk!=null) {
+                if (anonWrk!=null) {
                     try {
                         WorkflowUtils.fail(anonWrk, anonWrk.buildEvent());
                     } catch (Exception ex) {

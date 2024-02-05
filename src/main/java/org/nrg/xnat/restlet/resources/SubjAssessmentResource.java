@@ -33,6 +33,7 @@ import org.nrg.xft.exception.InvalidValueException;
 import org.nrg.xft.security.UserI;
 import org.nrg.xft.utils.ValidationUtils.ValidationResults;
 import org.nrg.xft.utils.XftStringUtils;
+import org.nrg.xnat.archive.Rename;
 import org.nrg.xnat.archive.ValidationException;
 import org.nrg.xnat.helpers.merge.ProjectAnonymizer;
 import org.nrg.xnat.helpers.xmlpath.XMLPathShortcuts;
@@ -492,7 +493,7 @@ public class SubjAssessmentResource extends SubjAssessmentAbst {
                         final String subjectId = expt.getSubjectId();
 
                         if (XDAT.getBoolSiteConfigurationProperty("rerunProjectAnonOnRename", false) && previous != null && expt instanceof XnatImagesessiondata && subjectId != null && !subjectId.equals(previous.getSubjectId())) {
-                            PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, "Anonymization post subject change"));
+                            PersistentWorkflowI anonWrk = WorkflowUtils.buildOpenWorkflow(user, expt.getItem(), newEventInstance(CATEGORY.DATA, Rename.ANONYMIZATION_POST_SUBJECT_CHANGE));
                             anonWrk.setPipelineName("Anonymization post subject change");
                             try {
                                 // re-apply this project's edit script

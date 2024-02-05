@@ -154,13 +154,12 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
                                     try {
                                         AnonymizationResult anonResult = mizerService.anonymize( di, context);
                                         if (anonResult instanceof AnonymizationResultError) {
-                                            logger.error("Error or rejected DICOM object when anonymizing " + fileSetDir.getAbsolutePath() + ": " + anonResult.getMessage());
-                                            throw new RuntimeException("Error on DICOM object when anonymizing " + fileSetDir.getAbsolutePath() + ": " + anonResult.getMessage());
+                                            throw new RuntimeException(String.join(" ","Error on DICOM object when anonymizing", fileSetDir.getAbsolutePath(),":",anonResult.getMessage());
                                         }
-                                        if(anonResult instanceof AnonymizationResultReject){
+                                        if (anonResult instanceof AnonymizationResultReject) {
                                             final File f = new File(anonResult.getAbsolutePath());
                                             FileUtils.deleteQuietly(f);
-                                            throw new RuntimeException("Rejected DICOM object when anonymizing " + fileSetDir.getAbsolutePath() + ": " + anonResult.getMessage());
+                                            throw new RuntimeException(String.join(" ","Rejected DICOM object when anonymizing",fileSetDir.getAbsolutePath(),":",anonResult.getMessage());
                                         }
                                     }
                                     catch ( MizerException e) {

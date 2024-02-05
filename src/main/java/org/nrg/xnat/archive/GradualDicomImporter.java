@@ -440,7 +440,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
      * @return empty list of Strings
      */
     private List<String> handleRejectedInstance() {
-        return new ArrayList<>();
+        return Collections.emptyList();
     }
 
     private void handleAnonymizationError(AtomicBoolean isNew, SessionData session,File outputFile, Throwable e) throws ServerException {

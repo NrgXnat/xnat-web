@@ -41,7 +41,7 @@ public class SingleFileAnonymizer extends AnonymizerA {
 		else {
 			this.path = DicomEdit.buildScriptPath(DicomEdit.ResourceScope.SITE_WIDE, null);	
 		}
-		_ignoreRejections=ignoreRejections;
+		_ignoreRejections = ignoreRejections;
 	}
 	
 	@Override

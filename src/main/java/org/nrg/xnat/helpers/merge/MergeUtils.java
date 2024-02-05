@@ -86,11 +86,10 @@ public class MergeUtils {
     public static void deleteRejectedFiles(Logger log, List<AnonymizationResult> anonResults) throws ArchivingException {
         List<AnonymizationResult> rejectedList = anonResults.stream().filter(AnonymizationResultReject.class::isInstance).collect(Collectors.toList());
         for (AnonymizationResult result : rejectedList) {
-            log.error("The rejected file {} will be deleted", result.getAbsolutePath());
             try {
                 Files.delete(Paths.get(result.getAbsolutePath()));
             } catch (IOException e) {
-                log.error("Failed to delete rejected file: " + result.getAbsolutePath(), e);
+                log.error("Failed to delete rejected file", e);
                 throw new ArchivingException("Failed to delete rejected file: " + result.getAbsolutePath(), e);
             }
         }

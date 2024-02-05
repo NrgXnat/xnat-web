@@ -183,7 +183,7 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
         XnatImagesessiondata session;
         try {
             session = populateSession(user, location, project);
-            if(Boolean.FALSE.equals(target.getPreventAnon())) {
+            if (Boolean.FALSE.equals(target.getPreventAnon())) {
                 List<AnonymizationResult>  anonResults = new ProjectAnonymizer(session, project, location, false).call();
                 if (anonResults.stream().anyMatch(AnonymizationResultError.class::isInstance)) {
                     log.error("Anonymization failed for DirectArchiveSession id={} at {} ", id, location);
@@ -191,7 +191,7 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
                 }
                 if (anonResults.stream().allMatch(AnonymizationResultNoOp.class::isInstance)) {
                     anonymized = false;
-                }else {
+                } else {
                     MergeUtils.deleteRejectedFiles(log, anonResults);
                     anonymized = true;
                     // rebuild XML and update session
@@ -202,7 +202,7 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
 
             setSessionId(session);
             // TODO get rid of this check once XNAT-6889 is fixed
-            if(!permissionsService.canCreate(user, session)) {
+            if (!permissionsService.canCreate(user, session)) {
                 groupsAndPermissionsCache.clearUserCache(user.getUsername());
             }
             PrearcSessionArchiver.preArchive(user, session, EMPTY_MAP, null);
@@ -214,10 +214,10 @@ public class DirectArchiveSessionServiceImpl implements DirectArchiveSessionServ
             Files.delete(Paths.get(location + ".xml"));
         } catch (Exception e) {
             log.error("Unable to archive DirectArchiveSession id={}, attempting to move to prearchive", id, e);
-            if(workflow != null) {
+            if (workflow != null) {
                 failWorkflow(workflow, e);
             }
-            if(anonymized) {
+            if (anonymized) {
                 // keep from anonymizing again
                 target.setPreventAnon(true);
             }
