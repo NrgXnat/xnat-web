@@ -23,6 +23,8 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
     private static final String PROPERTY_PROJECT_ID    = "projectId";
     private static final String PROPERTY_EXPERIMENT_ID = "experimentId";
     private static final String PROPERTY_REQUEST_TIME  = "requestTime";
+    public static final  String PROPERTY_STATUS        = "rsnStatus";
+
 
     public ResourceSurveyRequestRepository() {
         super();
@@ -54,7 +56,7 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
         final Criteria criteria = getCriteriaForType();
         criteria.add(Restrictions.eq("resourceId", resourceId));
         if (status != null) {
-            criteria.add(Restrictions.eq("rsn_status", status));
+            criteria.add(Restrictions.eq(PROPERTY_STATUS, status));
         }
         criteria.addOrder(Order.desc("timestamp")).setMaxResults(1);
         return Optional.ofNullable((ResourceSurveyRequest) criteria.uniqueResult());
@@ -64,7 +66,7 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
         final Criteria criteria = getCriteriaForType();
         criteria.add(Restrictions.eq("resourceId", resourceId));
         if (status != null) {
-            criteria.add(Restrictions.eq("rsn_status", status));
+            criteria.add(Restrictions.eq(PROPERTY_STATUS, status));
         }
         criteria.addOrder(Order.desc("timestamp"));
         return GenericUtils.convertToTypedList(criteria.list(), ResourceSurveyRequest.class);
@@ -160,13 +162,13 @@ public class ResourceSurveyRequestRepository extends AbstractHibernateDAO<Resour
                 if (log.isDebugEnabled()) {
                     log.debug("Returning {} requests with status {}  where {} == {}", openOnly ? "all open" : "all", statuses.get(0), property, objectId);
                 }
-                criteria.add(Restrictions.eq("rsnStatus", statuses.get(0)));
+                criteria.add(Restrictions.eq(PROPERTY_STATUS, statuses.get(0)));
                 break;
             default:
                 if (log.isDebugEnabled()) {
                     log.debug("Returning {} requests with statuses {}  where {} == {}", openOnly ? "all open" : "all", statuses.stream().map(Objects::toString).collect(Collectors.joining(", ")), property, objectId);
                 }
-                criteria.add(Restrictions.in("rsnStatus", statuses));
+                criteria.add(Restrictions.in(PROPERTY_STATUS, statuses));
         }
         return GenericUtils.convertToTypedList(criteria.list(), getParameterizedType());
     }
