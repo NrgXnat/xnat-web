@@ -173,18 +173,6 @@ dependencies {
     implementation "org.nrg:PrearcImporter"
     implementation "org.nrg:SessionBuilders"
 
-    implementation("org.nrg.xnat:plexiviewer") {
-        transitive = false
-    }
-
-    implementation "org.nrg:pipelineBase"
-    implementation "org.nrg:pipelineBuild"
-    implementation "org.nrg:pipelineWorkflow"
-    implementation "org.nrg:pipelineXNAT"
-    implementation "org.nrg.xnat.pipeline:pipeline-client"
-    implementation "org.nrg.xnat.pipeline:xnat-pipeline"
-    implementation "org.nrg.xnat.pipeline:xnat-tools"
-
     implementation "dcm4che:dcm4che-core"
     implementation "dcm4che:dcm4che-image"
     implementation "dcm4che:dcm4che-imageio"
@@ -229,6 +217,7 @@ dependencies {
     implementation "org.restlet:org.restlet.ext.fileupload"
 
     implementation "com.fasterxml.jackson.core:jackson-annotations"
+
     implementation "com.fasterxml.jackson.core:jackson-core"
     implementation "com.fasterxml.jackson.core:jackson-databind"
     implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml"
@@ -263,13 +252,10 @@ dependencies {
     implementation "eu.bitwalker:UserAgentUtils"
     implementation "com.twmacinta:fast-md5"
     implementation "com.h2database:h2"
-    implementation "com.lowagie:itext"
     implementation "net.java.dev.msv:msv-core"
     implementation "gnu.getopt:java-getopt"
     implementation "org.quartz-scheduler:quartz"
     implementation "org.reflections:reflections"
-    implementation "org.apache.xmlbeans:xmlbeans"
-    implementation "org.apache.xmlbeans:xmlbeans-xpath"
     implementation "org.apache.xbean:xbean-spring"
     implementation "net.java.dev.msv:xsdlib"
     implementation "javax.servlet:jstl"

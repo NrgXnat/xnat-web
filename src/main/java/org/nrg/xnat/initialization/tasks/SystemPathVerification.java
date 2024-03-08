@@ -15,7 +15,6 @@ import org.nrg.xdat.XDAT;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.helpers.Users;
 import org.nrg.xft.security.UserI;
-import org.nrg.xnat.preferences.PipelinePreferences;
 import org.nrg.xnat.services.XnatAppInfo;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
 import org.slf4j.Logger;
@@ -32,13 +31,12 @@ import java.util.List;
 @Component
 public class SystemPathVerification extends AbstractInitializingTask {
     @Autowired
-    public SystemPathVerification(final JdbcTemplate template, final MailService mailService, final SiteConfigPreferences config, final XnatAppInfo appInfo, final PipelinePreferences pipelinePreferences) {
+    public SystemPathVerification(final JdbcTemplate template, final MailService mailService, final SiteConfigPreferences config, final XnatAppInfo appInfo) {
         _template = template;
         _helper = new DatabaseHelper(_template);
         _mailService = mailService;
         _config = config;
         _appInfo = appInfo;
-        _pipelinePreferences = pipelinePreferences;
     }
 
     @Override
@@ -79,10 +77,6 @@ public class SystemPathVerification extends AbstractInitializingTask {
         errors.addAll(validatePath(_config.getCachePath(), "Cache", false));
         errors.addAll(validatePath(_config.getBuildPath(), "Build", false));
         errors.addAll(validatePath(_config.getPrearchivePath(), "Prearchive", false));
-
-        if (_pipelinePreferences.isAutoRunEnabled() || _pipelinePreferences.isAllowAutoRunProjectOverride()) {
-            errors.addAll(validatePath(_config.getPipelinePath(), "Pipeline", false));
-        }
 
         if (errors.size() > 0) {
             // Send warning email to admin and issue browser notification
@@ -153,5 +147,4 @@ public class SystemPathVerification extends AbstractInitializingTask {
     private final MailService           _mailService;
     private final SiteConfigPreferences _config;
     private final XnatAppInfo           _appInfo;
-    private final PipelinePreferences   _pipelinePreferences;
 }
