@@ -20,10 +20,10 @@ public class XnatPipelineLauncher {
 
     public XnatPipelineLauncher(UserI user) {
         this.pipelineLaunchParameters = PipelineLaunchParameters.builder()
-               .user(user)
-               .build();
-       pipelineLaunchParameters.notificationEmailId(user.getEmail(), XDAT.getSiteConfigPreferences().getAdminEmail());
-       initParameters();
+                .user(user)
+                .build();
+        pipelineLaunchParameters.notificationEmailId(user.getEmail(), XDAT.getSiteConfigPreferences().getAdminEmail());
+        initParameters();
     }
 
     public XnatPipelineLauncher(final PipelineLaunchParameters pipelineLaunchParameters) {
@@ -56,4 +56,5 @@ public class XnatPipelineLauncher {
     @Autowired
     private PipelineLauncherService launcher;
     private PipelineLaunchParameters pipelineLaunchParameters;
+
 }

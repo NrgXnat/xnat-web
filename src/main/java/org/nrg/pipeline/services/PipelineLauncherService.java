@@ -5,7 +5,7 @@ import org.nrg.pipeline.PipelineLaunchParameters;
 
 public interface PipelineLauncherService {
 
-     void setPipelineLaunchParameters(final PipelineLaunchParameters pipelineLaunchParameters);
-     boolean launch();
-     boolean launch(final String cmdPrefix);
+    void setPipelineLaunchParameters(final PipelineLaunchParameters pipelineLaunchParameters);
+    boolean launch();
+    boolean launch(final String cmdPrefix);
 }
