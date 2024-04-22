@@ -7,9 +7,11 @@ import org.apache.commons.lang3.StringUtils;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.security.UserI;
+import org.springframework.stereotype.Component;
 
 
 @Data
+@Component
 public class PipelineLaunchParameters {
 
     @NonNull
@@ -32,7 +34,8 @@ public class PipelineLaunchParameters {
     @Builder.Default
     private boolean needsBuildDir = true;
 
-    private Set<String> notificationEmailIds;
+    @Builder.Default
+    private Set<String> notificationEmailIds  = new HashSet<>();;
 
     @Builder.Default
     private Map<String, List<String>> parameters = new Hashtable<>();

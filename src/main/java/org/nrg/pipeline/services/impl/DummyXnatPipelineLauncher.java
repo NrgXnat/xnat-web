@@ -10,7 +10,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class DummyXnatPipelineLauncher implements PipelineLauncherService {
 
-    public DummyXnatPipelineLauncher(final PipelineLaunchParameters pipelineLaunchParameters) {
+    @Override
+    public void setPipelineLaunchParameters(final PipelineLaunchParameters pipelineLaunchParameters) {
         this.pipelineLaunchParameters = pipelineLaunchParameters;
     }
 
@@ -21,7 +22,7 @@ public class DummyXnatPipelineLauncher implements PipelineLauncherService {
     }
 
     @Override
-    public boolean launch(String cmdPrefix) {
+    public boolean launch(final String cmdPrefix) {
         log.error("XnatPipelineLauncher invoked without the Pipeline Engine Plugin");
         return true;
     }
