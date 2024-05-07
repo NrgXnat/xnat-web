@@ -10,6 +10,7 @@
 buildscript {
     ext {
         vXnat = "1.8.11-SNAPSHOT"
+        vParent = "1.9.1-SNAPSHOT"
     }
 }
 
@@ -119,7 +120,7 @@ configurations {
 
 dependencyManagement {
     imports {
-        mavenBom "org.nrg:parent:${vXnat}"
+        mavenBom "org.nrg:parent:${vParent}"
     }
     generatedPomCustomization {
         enabled = false
@@ -283,8 +284,6 @@ dependencies {
     providedCompile "org.kohsuke.metainf-services:metainf-services"
 
     runtimeOnly "org.apache.ant:ant"
-    runtimeOnly "axis:axis-ant"
-    runtimeOnly "axis:axis-schema"
     runtimeOnly "cglib:cglib"
     runtimeOnly "com.zaxxer:HikariCP"
     runtimeOnly "org.hsqldb:hsqldb"
