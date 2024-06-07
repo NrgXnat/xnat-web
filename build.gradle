@@ -10,7 +10,6 @@
 buildscript {
     ext {
         vXnat = "1.8.11-SNAPSHOT"
-        vParent = "1.9.1-SNAPSHOT"
     }
 }
 
@@ -120,7 +119,7 @@ configurations {
 
 dependencyManagement {
     imports {
-        mavenBom "org.nrg:parent:${vParent}"
+        mavenBom "org.nrg:parent:${vXnat}"
     }
     generatedPomCustomization {
         enabled = false
