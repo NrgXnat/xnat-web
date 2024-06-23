@@ -21,6 +21,7 @@ import org.nrg.xdat.servlet.XDATServlet;
 import org.nrg.xnat.restlet.servlet.XNATRestletServlet;
 import org.nrg.xnat.security.XnatSessionEventPublisher;
 import org.nrg.xnat.servlet.ArchiveServlet;
+import org.nrg.xnat.servlet.XnatMetricsServlet;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.web.servlet.support.AbstractAnnotationConfigDispatcherServletInitializer;
@@ -38,6 +39,11 @@ import static org.apache.commons.lang3.ArrayUtils.EMPTY_CLASS_ARRAY;
 @SuppressWarnings("unused")
 @Slf4j
 public class XnatWebAppInitializer extends AbstractAnnotationConfigDispatcherServletInitializer {
+    public XnatWebAppInitializer() {
+        super();
+        log.info("Creating XnatWebAppInitializer");
+    }
+
     public static ServletContext getServletContext() {
         return SERVLET_CONTEXT;
     }
@@ -68,6 +74,7 @@ public class XnatWebAppInitializer extends AbstractAnnotationConfigDispatcherSer
         addServlet(XNATRestletServlet.class, 2, "/REST/*", "/data/*");
         addServlet(XDATAjaxServlet.class, 4, "/ajax/*", "/servlet/XDATAjaxServlet", "/servlet/AjaxServlet");
         addServlet(ArchiveServlet.class, 7, "/archive/*");
+        addServlet(XnatMetricsServlet.class, 8, "/metrics");
     }
 
     @Override

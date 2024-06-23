@@ -9,9 +9,6 @@
 
 package org.nrg.xnat.services;
 
-import static org.nrg.xdat.preferences.SiteConfigPreferences.SITE_URL;
-import static org.nrg.xnat.utils.FileUtils.nodeToList;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -32,6 +29,7 @@ import org.nrg.xdat.turbine.utils.AccessLogger;
 import org.nrg.xnat.node.entities.XnatNodeInfo;
 import org.nrg.xnat.node.services.XnatNodeInfoService;
 import org.nrg.xnat.preferences.PluginOpenUrlsPreference;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
@@ -45,7 +43,6 @@ import org.springframework.util.AntPathMatcher;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -60,16 +57,27 @@ import java.sql.Types;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.nrg.xdat.preferences.SiteConfigPreferences.SITE_URL;
+import static org.nrg.xnat.utils.FileUtils.nodeToList;
+
 @Component
 @Slf4j
 public class XnatAppInfo {
-    @Inject
+    @Autowired
     public XnatAppInfo(final SiteConfigPreferences preferences, final ServletContext context, final Environment environment, final SerializerService serializerService, final JdbcTemplate template, final PluginOpenUrlsPreference openUrlsPref, final XnatNode node, final XnatNodeInfoService nodeInfoService) throws IOException {
         _preferences = preferences;
         _template = template;
@@ -77,6 +85,7 @@ public class XnatAppInfo {
         _openUrlsPref = openUrlsPref;
         _serializerService = serializerService;
         _primaryNode = Boolean.parseBoolean(_environment.getProperty(PROPERTY_XNAT_PRIMARY_NODE, "true"));
+        _metricsEnabled = Boolean.parseBoolean(_environment.getProperty(PROPERTY_XNAT_METRICS_ENABLED, "false"));
         _node = node;
         _siteAddress = getSiteAddress();
         _hostName = getXnatNodeHostName(nodeInfoService);
@@ -276,7 +285,7 @@ public class XnatAppInfo {
                                 log.error("Error getting site config preferences.", e);
                             }
                         } else {
-                            log.warn("Preference " + preference + " was null.");
+                            log.warn("Preference {} was null.", preference);
                         }
                     }
                 }
@@ -625,6 +634,17 @@ public class XnatAppInfo {
         return checkUrls(request, _nonAdminErrorPathPatterns);
     }
 
+    /**
+     * Indicates whether micrometer based metrics should be gathered or not.
+     * The return value for this method is determined by the value set for the
+     * <b>xnat.metrics_enabled</b> property. If no value is set for this property, it defaults to <b>false</b>.
+     *
+     * @return Returns true if  metrics are to be gathered.
+     */
+    public boolean isMetricsEnabled() {
+        return _metricsEnabled;
+    }
+
     private static boolean needsManifestKey(final String key) {
         return !PRIMARY_MANIFEST_ATTRIBUTES.contains(key) && !MANIFEST_ATTRIBUTE_EXCLUSIONS.contains(key);
     }
@@ -775,7 +795,7 @@ public class XnatAppInfo {
 
             return refererUri;
         } catch (URISyntaxException e) {
-            log.info("Couldn't check referer URI because of a syntax exception: " + request.getRequestURL().toString(), e);
+            log.info("Couldn't check referer URI because of a syntax exception: {}", request.getRequestURL().toString(), e);
             return null;
         }
     }
@@ -789,7 +809,9 @@ public class XnatAppInfo {
         return false;
     }
 
+
     public static final String PROPERTY_XNAT_PRIMARY_NODE = "xnat.is_primary_node";
+    public static final String PROPERTY_XNAT_METRICS_ENABLED = "xnat.metrics_enabled";
     private static final String MANIFEST_BUILD_NUMBER      = "Build-Number";
     private static final String MANIFEST_BUILD_DATE        = "Build-Date";
     private static final String MANIFEST_VERSION           = "Implementation-Version";
@@ -850,6 +872,7 @@ public class XnatAppInfo {
     private final XnatNode                 _node;
     private final String                   _siteAddress;
     private final boolean                  _hasMultipleActiveNodes;
+    private final boolean                  _metricsEnabled;
 
     private final List<String>                     _initUrls         = new ArrayList<>();
     private final List<String>                     _openUrls         = new ArrayList<>();
