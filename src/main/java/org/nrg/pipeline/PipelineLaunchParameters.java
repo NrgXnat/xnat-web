@@ -82,5 +82,13 @@ public class PipelineLaunchParameters {
         notificationEmailIds.addAll(Arrays.asList(emailId));
     }
 
+    public static String getUserName(UserI user) {
+        String rtn = "";
+        try {
+            if (user.getFirstname() != null && user.getLastname() != null) rtn = user.getFirstname().substring(0, 1) + "." + user.getLastname();
+        } catch (Exception ignored) {
+        }
+        return rtn;
+    }
 
 }
