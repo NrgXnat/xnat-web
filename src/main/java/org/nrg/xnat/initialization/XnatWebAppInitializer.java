@@ -64,7 +64,6 @@ public class XnatWebAppInitializer extends AbstractAnnotationConfigDispatcherSer
 
         context.addListener(XnatSessionEventPublisher.class);
 
-
         Turbine.setTurbineServletConfig(new XnatTurbineConfig(context));
 
         SERVLET_CONTEXT = context;
