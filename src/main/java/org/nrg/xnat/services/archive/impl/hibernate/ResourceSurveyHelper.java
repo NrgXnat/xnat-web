@@ -83,7 +83,7 @@ public class ResourceSurveyHelper implements Callable<ResourceSurveyReport> {
             final Map<Boolean, Map<Pair<String, String>, List<DcmCatEntry>>> splitOnListSize = groupedByClassAndInstanceUid.entrySet().stream()
                                                                                                                            .collect(Collectors.partitioningBy(entry -> entry.getValue().size() > 1,
                                                                                                                                                               Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
-            builder.mismatchedFiles(splitOnListSize.get(false).values().stream().map(list -> list.get(0)).filter(MISMATCHED_ENTRY).collect(Collectors.toMap(DcmCatEntry::getFile, DcmCatEntry::getCalculatedFileName)));
+            builder.mismatchedFiles(splitOnListSize.get(false).values().stream().map(list -> list.getFirst()).filter(MISMATCHED_ENTRY).collect(Collectors.toMap(DcmCatEntry::getFile, DcmCatEntry::getCalculatedFileName)));
 
             final Map<Pair<String, String>, Map<File, String>> duplicates = splitOnListSize.get(true).entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().collect(Collectors.toMap(DcmCatEntry::getFile, DcmCatEntry::getCalculatedFileName))));
 

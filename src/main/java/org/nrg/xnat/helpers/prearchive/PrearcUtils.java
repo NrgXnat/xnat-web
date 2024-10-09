@@ -60,7 +60,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -163,7 +163,7 @@ public class PrearcUtils {
         } else {
             final UserHelperServiceI userHelperService = UserHelper.getUserHelperService(user);
             for (final List<String> row : userHelperService.getQueryResults("xnat:projectData/ID", "xnat:projectData")) {
-                final String id = row.get(0);
+                final String id = row.getFirst();
                 if (projects.contains(id)) {
                     continue;
                 }
@@ -253,7 +253,7 @@ public class PrearcUtils {
                 final String arcSpecPathForProject = ArcSpecManager.GetInstance().getPrearchivePathForProject(project);
                 final String newPathForProject     = RegExUtils.replaceFirst(arcSpecPathForProject, "^/data/xnat/prearchive/", "");
                 if (!StringUtils.equals(arcSpecPathForProject, newPathForProject)) {
-                    prearcPath = Paths.get(prearcRootPref, newPathForProject).toString();
+                    prearcPath = Path.of(prearcRootPref, newPathForProject).toString();
                 } else {
                     prearcPath = arcSpecPathForProject;
                 }
@@ -271,11 +271,11 @@ public class PrearcUtils {
                     String arcSpecPathForProject = proj.getPrearchivePath();
                     String newPathForProject     = arcSpecPathForProject.replaceFirst("^/data/xnat/prearchive/", "");
                     if (!StringUtils.equals(arcSpecPathForProject, newPathForProject)) {
-                        prearcPath = Paths.get(prearcRootPref, newPathForProject).toString();
+                        prearcPath = Path.of(prearcRootPref, newPathForProject).toString();
                     } else {
                         prearcPath = arcSpecPathForProject;
                     }
-                    proj.setProperty("arc:project/paths/prearchivePath", Paths.get(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), proj.getId()).toString());
+                    proj.setProperty("arc:project/paths/prearchivePath", Path.of(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), proj.getId()).toString());
                 } else {
                     throw new IOException("No project named " + project);
                 }
@@ -453,8 +453,8 @@ public class PrearcUtils {
 
     public static File getPrearcSessionDir(final UserI user, final String project, final String timestamp, final String session, final boolean allowUnassigned) throws Exception {
         if (user == null || timestamp == null || session == null) {
-            throw new IllegalArgumentException(String.format("Invalid prearchive session: user %s; timestamp %s; session %s",
-                                                             user, timestamp, session));
+            throw new IllegalArgumentException("Invalid prearchive session: user %s; timestamp %s; session %s".formatted(
+                    user, timestamp, session));
         }
         return new File(new File(getPrearcDir(user, project, allowUnassigned), timestamp), session);
     }
@@ -594,8 +594,8 @@ public class PrearcUtils {
 
     private static File getLogDir(final String project, final String timestamp, final String session) throws Exception {
         if (timestamp == null || session == null) {
-            throw new IllegalArgumentException(String.format("Invalid prearchive session: timestamp %s; session %s",
-                                                             timestamp, session));
+            throw new IllegalArgumentException("Invalid prearchive session: timestamp %s; session %s".formatted(
+                    timestamp, session));
         }
         final XnatUserProvider provider         = XDAT.getContextService().getBeanSafely("receivedFileUserProvider", XnatUserProvider.class);
         final UserI            receivedFileUser = provider != null ? provider.get() : Users.getUser(XDAT.getSiteConfigurationProperty("receivedFileUser"));
@@ -892,8 +892,8 @@ public class PrearcUtils {
         if (setContentToRawIfMissing && StringUtils.isBlank(resource.getContent())) {
             ((XnatResource) resource).setContent("RAW");
         }
-        if (resource instanceof XnatResourcecatalog) {
-            ((XnatResourcecatalog) resource).clearFiles();
+        if (resource instanceof XnatResourcecatalog resourcecatalog) {
+            resourcecatalog.clearFiles();
         }
         CatalogUtils.populateStats(resource, root);
     }
@@ -1080,7 +1080,7 @@ public class PrearcUtils {
         }
 
         public SessionFileLockException(SessionDataTriple session, String fileName, Exception e) {
-            super(String.format("Unable to obtain lock on %4$s within %1$s/%2$s/%3$s", session.getProject(), session.getTimestamp(), session.getFolderName(), fileName), e);
+            super("Unable to obtain lock on %4$s within %1$s/%2$s/%3$s".formatted(session.getProject(), session.getTimestamp(), session.getFolderName(), fileName), e);
         }
     }
 
@@ -1089,10 +1089,10 @@ public class PrearcUtils {
             return defaultValue;
         }
         Object value = parameters.get(paramName);
-        if (value instanceof String) {
-            return Boolean.parseBoolean((String) value);
-        } else if (value instanceof Boolean) {
-            return (Boolean) value;
+        if (value instanceof String string) {
+            return Boolean.parseBoolean(string);
+        } else if (value instanceof Boolean boolean1) {
+            return boolean1;
         } else {
             log.error("{} is not a valid value for {}, using default {}", value, paramName, defaultValue);
             return defaultValue;

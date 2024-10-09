@@ -9,7 +9,7 @@
 
 buildscript {
     ext {
-        vXnat = "1.9.1-SNAPSHOT"
+        vXnat = "1.10.0-SNAPSHOT"
     }
 }
 
@@ -28,6 +28,7 @@ plugins {
     id "io.franzbecker.gradle-lombok" version "4.0.0"
     id "io.spring.dependency-management" version "1.0.11.RELEASE"
     id "net.linguica.maven-settings" version "0.5"
+    id("org.openrewrite.rewrite") version("6.24.0")
 }
 
 group "org.nrg.xnat"
@@ -41,8 +42,8 @@ repositories {
     mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 21
+targetCompatibility = 21
 
 war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web"
 
@@ -131,6 +132,7 @@ configurations.all {
 }
 
 dependencies {
+    rewrite("org.openrewrite.recipe:rewrite-migrate-java:2.26.0")
     annotationProcessor "org.nrg:framework"
     annotationProcessor "com.google.auto.value:auto-value"
 
@@ -314,6 +316,11 @@ dependencies {
     javadocCoverage "com.manoelcampos:javadoc-coverage"
 }
 
+rewrite {
+    activeRecipe("org.openrewrite.java.migrate.UpgradeToJava21")
+    exportDatatables = true
+}
+
 idea {
     module {
         inheritOutputDirs = false
@@ -458,31 +465,17 @@ task javadocCoverageReport(type: Javadoc, dependsOn: javadoc) {
     options.doclet = "com.manoelcampos.javadoc.coverage.CoverageDoclet"
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
-    manifest {
-        from gitManifest
-    }
-    from sourceSets.main.allSource
+java {
+   // withJavadocJar()
+    withSourcesJar()
 }
 
-task javadocJar(type: Jar) {
-    classifier "javadoc"
-    manifest {
-        from gitManifest
-    }
-    from javadoc.destinationDir
-}
+
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-
-            artifacts {
-                artifact sourceJar
-                artifact javadocJar
-            }
 
             pom.withXml {
                 def root = asNode()

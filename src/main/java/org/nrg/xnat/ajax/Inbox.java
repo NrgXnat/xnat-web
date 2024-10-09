@@ -318,7 +318,7 @@ public final class Inbox {
 		final List<File> subdirs = new LinkedList<File>();
 		subdirs.add(f);
 		while (!subdirs.isEmpty()) {
-		    final File dir = subdirs.remove(0);
+		    final File dir = subdirs.removeFirst();
 		    for (final File file : dir.listFiles()) {
 			if (file.isDirectory()) {
 			    subdirs.add(file);

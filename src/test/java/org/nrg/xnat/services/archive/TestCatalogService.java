@@ -33,7 +33,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 import java.io.File;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Collections;
 
@@ -77,7 +77,7 @@ public class TestCatalogService {
     public void setup() throws Exception {
         catalogServiceNoRemote.setRemoteFilesService(null);
 
-        Files.createDirectories(Paths.get(writableArchivePath));
+        Files.createDirectories(Path.of(writableArchivePath));
 
         mockUser = Mockito.mock(UserI.class);
         when(mockUser.getLogin()).thenReturn("mockUser");
@@ -145,8 +145,8 @@ public class TestCatalogService {
     @Test
     @Ignore("The mock framework seems to break loading the resource files here.")
     public void testPullResourceCatalogsToDestinationFile() throws Exception {
-        File permFile = ResourceManager.getInstance().getTestResourceFile(Paths.get("catalogs", "DEBUG_OUTPUT_catalog.xml").toString());
-        File catFile = Paths.get(writableArchivePath, "RESOURCES", catRes.getLabel(), catRes.getLabel() + "_catalog.xml").toFile();
+        File permFile = ResourceManager.getInstance().getTestResourceFile(Path.of("catalogs", "DEBUG_OUTPUT_catalog.xml").toString());
+        File catFile = Path.of(writableArchivePath, "RESOURCES", catRes.getLabel(), catRes.getLabel() + "_catalog.xml").toFile();
         Mockito.when(catRes.getUri()).thenReturn(catFile.getAbsolutePath());
         Mockito.when(session.getArchiveRootPath()).thenReturn(writableArchivePath);
         catFile.getParentFile().mkdirs();

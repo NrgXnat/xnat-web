@@ -54,7 +54,7 @@ public class XnatHttpUtils {
     public static String getServerRoot(final HttpServletRequest request) {
         final String port        = request.getServerPort() == 80 ? "" : ":" + request.getServerPort();
         final String servletPath = StringUtils.defaultIfBlank(request.getContextPath(), "");
-        return String.format("%s://%s%s%s", request.getScheme(), request.getServerName(), port, servletPath);
+        return "%s://%s%s%s".formatted(request.getScheme(), request.getServerName(), port, servletPath);
     }
 
     /**
@@ -248,7 +248,7 @@ public class XnatHttpUtils {
                     } else {
                         log.info("I upgraded password encoding for user {}", username);
                     }
-                    final int deleted = template.update(String.format(QUERY_CLEAR_CACHE_ENTRY, username), EmptySqlParameterSource.INSTANCE);
+                    final int deleted = template.update(QUERY_CLEAR_CACHE_ENTRY.formatted(username), EmptySqlParameterSource.INSTANCE);
                     log.debug("Deleted {} cache entries for user {}", deleted, username);
                 }
             }

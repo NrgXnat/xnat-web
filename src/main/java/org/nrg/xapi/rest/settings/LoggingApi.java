@@ -37,7 +37,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -138,7 +137,7 @@ public class LoggingApi extends AbstractXapiRestController {
         final String  logFileSpec       = parameters.get("logFileSpec");
         final boolean includeEmptyFiles = BooleanUtils.toBooleanDefaultIfNull(BooleanUtils.toBooleanObject(parameters.get("includeEmptyFiles")), false);
 
-        final Path                       path        = StringUtils.isBlank(pathSpec) ? _xnatHome.resolve("logs") : Paths.get(pathSpec);
+        final Path                       path        = StringUtils.isBlank(pathSpec) ? _xnatHome.resolve("logs") : Path.of(pathSpec);
         final FileVisitorPathResourceMap resourceMap = StringUtils.isBlank(logFileSpec) ? new FileVisitorPathResourceMap(path) : (new FileVisitorPathResourceMap(path, logFileSpec));
         if (includeEmptyFiles) {
             resourceMap.setIncludeEmptyFiles(true);

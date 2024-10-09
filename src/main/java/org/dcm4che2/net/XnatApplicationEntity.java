@@ -41,7 +41,7 @@ public class XnatApplicationEntity extends NetworkApplicationEntity {
         for(String whitelistedItems : whitelist){
             final List<String> whitelistedItem = Arrays.asList(whitelistedItems.split("@"));
             if(whitelistedItem.size() == 2){
-                final String whitelistedAe = whitelistedItem.get(0);
+                final String whitelistedAe = whitelistedItem.getFirst();
                 final String whitelistedIp = whitelistedItem.get(1);
                 try {
                     if (remoteAe.equals(whitelistedAe) && new IpAddressMatcher(whitelistedIp).matches(remoteIp)) {
@@ -52,11 +52,11 @@ public class XnatApplicationEntity extends NetworkApplicationEntity {
                 }
             }else if(whitelistedItem.size() == 1){
                 try{
-                    if(new IpAddressMatcher(whitelistedItem.get(0)).matches(remoteIp)){
+                    if(new IpAddressMatcher(whitelistedItem.getFirst()).matches(remoteIp)){
                         return true;
                     }
                 }catch(IllegalArgumentException e){
-                    if(remoteAe.equals(whitelistedItem.get(0))){
+                    if(remoteAe.equals(whitelistedItem.getFirst())){
                         return true;
                     }
                 }

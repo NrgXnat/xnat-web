@@ -55,7 +55,7 @@ public abstract class PrearchiveSessionScreen extends SecureScreen {
 		context.put("folder",folder);
 		context.put("status", PrearcDatabase.getSession(folder, timestamp, project).getStatus().toString());
 		context.put("session",sessionBean);
-		context.put("url", String.format("/prearchive/projects/%s/%s/%s", (project == null) ? UNASSIGNED : project, timestamp, folder));
+		context.put("url", "/prearchive/projects/%s/%s/%s".formatted((project == null) ? UNASSIGNED : project, timestamp, folder));
 		
 		finalProcessing(sessionBean, data,context);
 	}

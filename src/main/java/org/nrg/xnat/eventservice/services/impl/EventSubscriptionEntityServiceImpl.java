@@ -225,7 +225,7 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                 throw new SubscriptionValidationException("Invalid cron expression. Expected 6 fields but found: " + cronExpression.size());
             }
 
-            final String secondField = cronExpression.get(0);
+            final String secondField = cronExpression.getFirst();
             if(secondField.contains("*") || secondField.contains("/") || secondField.contains("-") || secondField.contains(",")){
                 throw new SubscriptionValidationException("Cron expression must not have a wildcard(*), range(-), step value(/), or list(,) in second field.");
             }
@@ -439,7 +439,7 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
             String eventName = componentManager.getEvent(eventFilter.eventType()).getDisplayName();
             String status = eventFilter.status();
             String forProject = eventFilter.projectIds() == null || eventFilter.projectIds().isEmpty() ? "Site" :
-                    eventFilter.projectIds().size() == 1 ? eventFilter.projectIds().get(0) : "Multiple Projects";
+                    eventFilter.projectIds().size() == 1 ? eventFilter.projectIds().getFirst() : "Multiple Projects";
             uniqueName += Strings.isNullOrEmpty(actionName) ? "Action" : actionName;
             uniqueName += " on ";
             uniqueName += Strings.isNullOrEmpty(eventName) ? "Event" : eventName;
@@ -552,8 +552,8 @@ public class EventSubscriptionEntityServiceImpl extends AbstractHibernateEntityS
                     return false;
                 }
 
-                if(event instanceof ScheduledEvent && event.getCurrentStatus() == ScheduledEvent.Status.CRON){
-                    String eventSchedule = ((ScheduledEvent)event).getSchedule();
+                if(event instanceof ScheduledEvent scheduledEvent && event.getCurrentStatus() == ScheduledEvent.Status.CRON){
+                    String eventSchedule = scheduledEvent.getSchedule();
                     if(StringUtils.isNotEmpty(eventSchedule) && StringUtils.isNotEmpty(filter.schedule()) && !eventSchedule.equals(filter.schedule())){
                         return false;
                     }

@@ -26,7 +26,9 @@ import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,13 +59,13 @@ public class TestThreadAndProcessFileLock {
         final String subdir = "catalogs";
 
         File permFile = ResourceManager.getInstance().getTestResourceFile(
-                Paths.get(subdir, catFilename).toString());
+                Path.of(subdir, catFilename).toString());
         TEST_CATALOG_FILE = new File(TMPDIR, catFilename);
         rewriteFileWithCatalogUtils(permFile);
         copyCatalog(TEST_CATALOG_FILE, permFile);
 
         TEST_DCMCATALOG_PERM = ResourceManager.getInstance().getTestResourceFile(
-                Paths.get(subdir, dcmFilename).toString());
+                Path.of(subdir, dcmFilename).toString());
         TEST_DCMCATALOG = new File(TMPDIR, dcmFilename);
 
         rewriteFileWithCatalogUtils(TEST_DCMCATALOG_PERM);

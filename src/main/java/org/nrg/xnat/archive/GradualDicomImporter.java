@@ -74,7 +74,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -117,7 +117,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
        if (tags.isEmpty()) {
            return 0;
        }
-       return tags.get(tags.size()-1);
+       return tags.getLast();
     }
 
     public static boolean isAutoArchive(Map<String, Object> params) {
@@ -138,7 +138,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         final XnatProjectdata project;
         final DicomObjectIdentifier<XnatProjectdata> dicomObjectIdentifier = getIdentifier();
         final SeriesImportFilter siteFilter = getDicomFilterService().getSeriesImportFilter();
-        final int lastTag = Math.max(getMaxFilterTag(siteFilter), Math.max(dicomObjectIdentifier.getTags().last(), Tag.SeriesDescription))+ 1;
+        final int lastTag = Math.max(getMaxFilterTag(siteFilter), Math.max(dicomObjectIdentifier.getTags().getLast(), Tag.SeriesDescription))+ 1;
         try (final BufferedInputStream bis = new BufferedInputStream(_fileWriter.getInputStream());
              final DicomInputStream dis = null == _transferSyntax ? new DicomInputStream(bis) : new DicomInputStream(bis, _transferSyntax)) {
             log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
@@ -270,7 +270,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 prearchiveRoot = new File(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), timestamp);
                 _directArchive = false;
             } else {
-                prearchiveRoot = Paths.get(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), project.getId(),
+                prearchiveRoot = Path.of(ArcSpecManager.GetInstance().getGlobalPrearchivePath(), project.getId(),
                         timestamp).toFile();
             }
             root = _directArchive
@@ -425,7 +425,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             // There is no direct archive commit (yet) so just return the session triple
             return _directArchive ?
                     Collections.singletonList(
-                            String.format("/xapi/direct-archive/%s/%s/%s",
+                            "/xapi/direct-archive/%s/%s/%s".formatted(
                                     session.getProject(), session.getTag(), session.getName())) :
                     Collections.singletonList(session.getExternalUrl());
         } catch (ClientException e) {
@@ -765,8 +765,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
                                 dos.writeFileMetaInformation(fmi);
                                 dos.writeDataset(d.dataset(), dtsdui);
                             } catch (Throwable t) {
-                                if (t instanceof IOException) {
-                                    ioexception = (IOException) t;
+                                if (t instanceof IOException exception) {
+                                    ioexception = exception;
                                 } else {
                                     log.error("Unable to write decompressed dataset", t);
                                 }

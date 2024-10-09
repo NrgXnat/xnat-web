@@ -93,11 +93,11 @@ public class PullScanDataFromHeaders implements Callable<Boolean> {
     	if(newmr.getScans_scan().size()>1){
     		throw new MultipleScanException();
     	}else{
-    		newscan=(XnatImagescandata)newmr.getScans_scan().get(0);
+    		newscan=(XnatImagescandata)newmr.getScans_scan().getFirst();
     	}
              
     	if(!tempMR.getXSIType().equals(newscan.getXSIType())){
-			throw new Exception(String.format("Modification of scan modality ({} to {}) not supported.",tempMR.getXSIType(),newscan.getXSIType()));
+			throw new Exception("Modification of scan modality ({} to {}) not supported.".formatted(tempMR.getXSIType(), newscan.getXSIType()));
 		}
     	
         newscan.copyValuesFrom(tempMR);
@@ -108,14 +108,14 @@ public class PullScanDataFromHeaders implements Callable<Boolean> {
 		List<String> filesToRemove = new ArrayList<>();
 	    if(allowDataDeletion) {
 			for (XnatAbstractresourceI cat : tempMR.getFile()) {
-				if (cat instanceof XnatResourcecatalog) {
-					filesToRemove.add(((XnatResourcecatalog) cat).getUri());
+				if (cat instanceof XnatResourcecatalog resourcecatalog) {
+					filesToRemove.add(resourcecatalog.getUri());
 				}
 			}
 		} else {
-			XnatAbstractresourceI res = newscan.getFile().get(0);
-			if (res instanceof XnatResourcecatalog) {
-				filesToRemove.add(((XnatResourcecatalog) res).getUri());
+			XnatAbstractresourceI res = newscan.getFile().getFirst();
+			if (res instanceof XnatResourcecatalog resourcecatalog) {
+				filesToRemove.add(resourcecatalog.getUri());
 			}
 			newscan.removeFile(0);
 		}

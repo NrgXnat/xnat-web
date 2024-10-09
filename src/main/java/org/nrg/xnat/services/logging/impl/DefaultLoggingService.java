@@ -353,7 +353,7 @@ public class DefaultLoggingService implements LoggingService {
         final Element loggerElement = document.createElement("logger");
         loggerElement.setAttribute("name", logger);
         loggerElement.setAttribute("additivity", additivity);
-        loggerElement.setAttribute("level", atoms.get(0));
+        loggerElement.setAttribute("level", atoms.getFirst());
         for (final String appender : atoms.subList(1, atoms.size())) {
             final Element appenderElement = document.createElement("appender-ref");
             appenderElement.setAttribute("ref", appender);
