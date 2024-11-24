@@ -54,7 +54,7 @@ import java.util.Map;
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @Slf4j
 @ComponentScan({"org.nrg.xapi.rest.aspects", "org.nrg.xapi.authorization", "org.nrg.xapi.pages"})
-public class WebConfig extends WebMvcConfigurerAdapter {
+public class WebConfig implements WebMvcConfigurer {
     @Autowired
     public WebConfig(final Jackson2ObjectMapperBuilder objectMapperBuilder,
                      @Qualifier("threadPoolExecutorFactoryBean") final ThreadPoolExecutorFactoryBean threadPoolExecutorFactoryBean,
