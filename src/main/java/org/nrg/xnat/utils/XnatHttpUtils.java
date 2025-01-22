@@ -12,6 +12,7 @@ package org.nrg.xnat.utils;
 import java.io.IOException;
 import java.util.Optional;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.MultipartConfig;
 import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ObjectUtils;
@@ -211,7 +212,10 @@ public class XnatHttpUtils {
      * @param template JDBC template for query executions
      */
     private static void checkAccountUpgrades(final HttpServletRequest request, final NamedParameterJdbcTemplate template) {
-        // The login method may be null in some cases, specifically basic auth, but that indicates localdb or alias token auth.
+        if (request.getContentType() != null && request.getContentType().toLowerCase().contains("multipart/form-data")) {
+            return;
+        }
+            // The login method may be null in some cases, specifically basic auth, but that indicates localdb or alias token auth.
         final String loginMethod = StringUtils.defaultIfBlank(request.getParameter(PARAM_LOGIN_METHOD), XdatUserAuthService.LOCALDB);
         final String username = getCredentialsNoExceptions(request).getLeft();
 
