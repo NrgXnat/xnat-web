@@ -212,9 +212,9 @@ public class XnatHttpUtils {
      * @param template JDBC template for query executions
      */
     private static void checkAccountUpgrades(final HttpServletRequest request, final NamedParameterJdbcTemplate template) {
-        if (request.getContentType() != null && request.getContentType().toLowerCase().contains("multipart/form-data")) {
-            return;
-        }
+//        if (request.getContentType() != null && request.getContentType().toLowerCase().contains("multipart/form-data")) {
+//            return;
+//        }
             // The login method may be null in some cases, specifically basic auth, but that indicates localdb or alias token auth.
         final String loginMethod = StringUtils.defaultIfBlank(request.getParameter(PARAM_LOGIN_METHOD), XdatUserAuthService.LOCALDB);
         final String username = getCredentialsNoExceptions(request).getLeft();

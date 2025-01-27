@@ -247,7 +247,7 @@ dependencies {
     implementation "org.apache.httpcomponents:httpcore-nio"
     implementation "org.apache.httpcomponents:httpmime"
     implementation "org.apache.commons:commons-pool2"
-
+    implementation "org.apache.commons:commons-compress"
     implementation "org.codehaus.groovy:groovy-all"
 
     implementation "eu.bitwalker:UserAgentUtils"
@@ -290,6 +290,7 @@ dependencies {
     runtimeOnly "net.bull.javamelody:javamelody-core"
     runtimeOnly "org.javassist:javassist"
     runtimeOnly "org.python:jython-standalone"
+    runtimeOnly "org.bouncycastle:bcpkix-jdk18on"
 
     tomcat "org.apache.tomcat.embed:tomcat-embed-core",
             "org.apache.tomcat.embed:tomcat-embed-logging-juli:9.0.0.M6",
