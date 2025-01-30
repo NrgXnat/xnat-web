@@ -1,8 +1,5 @@
 package org.nrg.xnat.services.archive.impl.hibernate;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -18,23 +15,23 @@ import org.nrg.xnat.config.TestFileStoreConfig;
 import org.nrg.xnat.entities.FileStoreInfo;
 import org.nrg.xnat.preferences.FileStorePreferences;
 import org.nrg.xnat.services.archive.FileStore;
-import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.modules.junit4.PowerMockRunnerDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
+
 @Slf4j
-@RunWith(PowerMockRunner.class)
-@PowerMockRunnerDelegate(SpringJUnit4ClassRunner.class)
-@PowerMockIgnore({"org.apache.*", "java.*", "javax.*", "org.w3c.*", "com.sun.*", "org.xml.sax.*"})
+@RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration(classes = {TestFileStoreConfig.class, SerializerConfig.class})
 public class TestFileStore {
     private FileStorePreferences _preferences;

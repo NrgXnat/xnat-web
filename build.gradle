@@ -28,7 +28,7 @@ plugins {
     id "io.franzbecker.gradle-lombok" version "4.0.0"
     id "io.spring.dependency-management" version "1.0.11.RELEASE"
     id "net.linguica.maven-settings" version "0.5"
-    id("org.openrewrite.rewrite") version("6.24.0")
+    id("org.openrewrite.rewrite") version("7.0.4")
 }
 
 group "org.nrg.xnat"
@@ -132,7 +132,9 @@ configurations.all {
 }
 
 dependencies {
-    rewrite("org.openrewrite.recipe:rewrite-migrate-java:2.26.0")
+//    rewrite("org.openrewrite.recipe:rewrite-migrate-java:2.26.0")
+    rewrite("org.openrewrite.recipe:rewrite-testing-frameworks:3.1.0")
+
     annotationProcessor "org.nrg:framework"
     annotationProcessor "com.google.auto.value:auto-value"
 
@@ -318,7 +320,8 @@ dependencies {
 }
 
 rewrite {
-    activeRecipe("org.openrewrite.java.migrate.UpgradeToJava21")
+//    activeRecipe("org.openrewrite.java.migrate.UpgradeToJava21")
+    activeRecipe("org.openrewrite.java.testing.mockito.ReplacePowerMockito")
     exportDatatables = true
 }
 
