@@ -14,10 +14,10 @@ import org.nrg.xdat.bean.ClassMappingFactory;
 import org.nrg.xdat.model.CatEntryI;
 import org.nrg.xnat.helpers.resource.XnatResourceInfo;
 import org.nrg.xnat.junit.ConcurrentJunitRunner;
-import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -65,9 +65,10 @@ public class TestThreadAndProcessFileLock {
         ClassMappingFactory.getInstance().getElements();
 
         // Stub getChecksumConfiguration check
-        Mockito.spy(CatalogUtils.class);
-        //doReturn(false).when(CatalogUtils.class, "getChecksumConfiguration"); // doesn't work, not sure why
-        Whitebox.setInternalState(CatalogUtils.class, "_checksumConfig", new AtomicBoolean(false));
+        Field privateField = CatalogUtils.class.getDeclaredField("_checksumConfig");
+        privateField.setAccessible(true);
+        privateField.set(null, new AtomicBoolean(false));
+        assertEquals(false, CatalogUtils.getChecksumConfiguration());
     }
 
     private static void rewriteFileWithCatalogUtils(File catFile) throws Exception {
