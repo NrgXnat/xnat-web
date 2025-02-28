@@ -5,13 +5,6 @@
 
 <%--@elvariable id="hibernateSpawnerService" type="org.nrg.xnat.spawner.services.SpawnerService"--%>
 
-<c:set var="redirect">
-    <div class="error">Not authorized. Redirecting...</div>
-    <script> window.location.href = '<c:url value="/"/>' </script>
-</c:set>
-
-<pg:restricted msg="${redirect}">
-
     <c:set var="SITE_ROOT" value="${sessionScope.siteRoot}"/>
 
     <div id="page-body">
@@ -54,43 +47,49 @@
                     function returnValue(value){ return value }
                 </script>
 
-                <c:catch var="jspError">
+                   <c:catch var="jspError">
+
 
                     <%-- don't worry about getting the list of plugins...
                          ...any Spawner namespace with :siteSettings will get processed --%>
 
                     <c:forEach items="${hibernateSpawnerService.namespaces}" var="namespace">
                         <%-- only get 'siteSettings' items --%>
-                        <script>console.log('namespace: ${namespace}')</script>
                         <c:if test="${fn:endsWith(namespace, 'siteSettings')}">
-                            <c:import url="/xapi/spawner/resolve/${namespace}/siteSettings" var="pluginTabsConfig"/>
-                            <c:if test="${empty pluginTabsConfig}">
+                             <c:catch var="jspResponseError1">
+                            <c:import url="/xapi/spawner/resolve/${namespace}/siteSettings?restrict=true" var="pluginTabsConfig"/>
+                            </c:catch>
+                            <c:if test="${not empty jspError1 && empty pluginTabsConfig}">
                                 <%-- originally 'siteSettings' was the expected name of
                                      the root element, but now 'root' is preferred --%>
-                                <script>console.log('(no "siteSettings" property; using "root")')</script>
+                                <c:catch var="jspResponseError2">
                                 <c:import url="/xapi/spawner/resolve/${namespace}/root" var="pluginTabsConfig"/>
+                                </c:catch>
                             </c:if>
-                            <script>
-                                (function(){
-                                    var config = returnValue(${pluginTabsConfig});
-                                    if (!config) return;
-                                    if (config.hasOwnProperty('siteSettings')) {
-                                        XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings'])
-                                    }
-                                    else if (config.hasOwnProperty('root')) {
-                                        XNAT.app.pluginSettings.siteTabConfigs.push(config['root'])
-                                    }
-                                })();
-                            </script>
+                            <c:if test="${empty jspError1 && empty jspError2}">
+                                <script>
+                                    (function(){
+                                        var config = returnValue(${pluginTabsConfig});
+
+                                        if (!config) return;
+                                        if (config.hasOwnProperty('siteSettings')) {
+                                            XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings'])
+                                        }
+                                        else if (config.hasOwnProperty('root')) {
+                                            XNAT.app.pluginSettings.siteTabConfigs.push(config['root'])
+                                        }
+                                    })();
+                                </script>
+                            </c:if>
                         </c:if>
                     </c:forEach>
 
                 </c:catch>
 
-                <c:if test="${not empty jspError}">
+                <c:if test="${not empty jspError || not empty jspError1 || not empty jspError2}">
                     <script>
                         console.error('JSP error:');
-                        console.error('${jspError}');
+                        console.error('${jspError} ${jspError1} ${jspError2}');
                     </script>
                 </c:if>
 
@@ -99,7 +98,7 @@
                         var siteSettingsTabs = {};
                         // alias for brevity
                         var tabConfigs = XNAT.app.pluginSettings.siteTabConfigs;
-                        if (tabConfigs.length) {
+                        if (tabConfigs.length != 0) {
                             // show the 'Plugin Settings' item in the 'Administer' menu
                             $('#view-plugin-settings').show().hidden(false);
                             forEach(tabConfigs, function(tabConfig){
@@ -149,4 +148,3 @@
 
     <div id="xnat-scripts"></div>
 
-</pg:restricted>
