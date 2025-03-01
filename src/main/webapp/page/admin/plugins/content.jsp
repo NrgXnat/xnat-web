@@ -136,6 +136,9 @@
                                         $(tabSelector).first().trigger('click');
                                     });
                                 })
+                        } else {
+                           document.querySelector('h2.pull-left').innerHTML += ': No plugins to administer';
+                           $('#tabs-loading').remove();
                         }
                     })();
                 </script>
