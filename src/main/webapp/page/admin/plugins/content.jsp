@@ -2,12 +2,11 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="pg" tagdir="/WEB-INF/tags/page" %>
-<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
-
 
 <%--@elvariable id="hibernateSpawnerService" type="org.nrg.xnat.spawner.services.SpawnerService"--%>
 
-    <c:set var="SITE_ROOT" value="${sessionScope.siteRoot}"/>
+    <c:set var="loggedInUser" value="${sessionScope.userHelper.user.username}"/>
+    <c:import url="/xapi/users/${loggedInUser}/roles" var="loggedInUserRoles"/>
 
     <div id="page-body">
         <div class="pad">
@@ -48,6 +47,7 @@
                     XNAT.app.pluginSettings.siteTabConfigs = [];
                     XNAT.app.pluginSettings.restrictedSiteTabConfigs = [];
                     function returnValue(value){ return value }
+                    var isPermittedToView = false;
                 </script>
 
                    <c:catch var="jspError">
@@ -61,7 +61,6 @@
                         <c:if test="${fn:endsWith(namespace, 'siteSettings')}">
                              <c:catch var="jspResponseError1">
                                 <c:import url="/xapi/spawner/resolve/${namespace}/siteSettings" var="pluginTabsConfig"/>
-                                <c:import url="/xapi/users/${username}/roles" var="loggedInUserRoles"/>
                             </c:catch>
                             <c:if test="${not empty jspError1 && empty pluginTabsConfig}">
                                 <%-- originally 'siteSettings' was the expected name of
@@ -81,11 +80,16 @@
                                              var restrictedTo = config['siteSettings']['meta']['restricted'];
                                              var restrictedToArray = restrictedTo.split(",");
                                              if (userRoles.some(role => restrictedToArray.includes(role))) {
+                                                isPermittedToView = true;
                                                 XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings']);
                                              } else {
+                                                if (userRoles.includes('Administrator')) {
+                                                  isPermittedToView = true;
+                                                }
                                                 XNAT.app.pluginSettings.restrictedSiteTabConfigs.push(config['siteSettings']);
                                              }
-                                           } else {
+                                           } else if (userRoles.includes('Administrator')){
+                                              isPermittedToView = true;
                                               XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings']);
                                            }
                                         } else if (config.hasOwnProperty('root')) {
@@ -108,6 +112,9 @@
 
                 <script>
                     (function(){
+                        if (!isPermittedToView) {
+                            window.location.href = '<c:url value="/"/>'
+                        }
                         var siteSettingsTabs = {};
                         // alias for brevity
                         var tabConfigs = XNAT.app.pluginSettings.siteTabConfigs;
