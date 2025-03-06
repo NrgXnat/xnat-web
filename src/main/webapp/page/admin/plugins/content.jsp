@@ -2,6 +2,8 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="pg" tagdir="/WEB-INF/tags/page" %>
+<%@ taglib prefix="sec" uri="http://www.springframework.org/security/tags" %>
+
 
 <%--@elvariable id="hibernateSpawnerService" type="org.nrg.xnat.spawner.services.SpawnerService"--%>
 
@@ -44,6 +46,7 @@
                     XNAT.app = getObject(XNAT.app || {});
                     XNAT.app.pluginSettings = getObject(XNAT.app.pluginSettings || {});
                     XNAT.app.pluginSettings.siteTabConfigs = [];
+                    XNAT.app.pluginSettings.restrictedSiteTabConfigs = [];
                     function returnValue(value){ return value }
                 </script>
 
@@ -57,7 +60,8 @@
                         <%-- only get 'siteSettings' items --%>
                         <c:if test="${fn:endsWith(namespace, 'siteSettings')}">
                              <c:catch var="jspResponseError1">
-                            <c:import url="/xapi/spawner/resolve/${namespace}/siteSettings?restrict=true" var="pluginTabsConfig"/>
+                                <c:import url="/xapi/spawner/resolve/${namespace}/siteSettings" var="pluginTabsConfig"/>
+                                <c:import url="/xapi/users/${username}/roles" var="loggedInUserRoles"/>
                             </c:catch>
                             <c:if test="${not empty jspError1 && empty pluginTabsConfig}">
                                 <%-- originally 'siteSettings' was the expected name of
@@ -70,12 +74,21 @@
                                 <script>
                                     (function(){
                                         var config = returnValue(${pluginTabsConfig});
-
+                                        var userRoles = returnValue(${loggedInUserRoles});
                                         if (!config) return;
                                         if (config.hasOwnProperty('siteSettings')) {
-                                            XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings'])
-                                        }
-                                        else if (config.hasOwnProperty('root')) {
+                                           if (config['siteSettings'].hasOwnProperty('meta') && config['siteSettings']['meta'].hasOwnProperty('restricted')) {
+                                             var restrictedTo = config['siteSettings']['meta']['restricted'];
+                                             var restrictedToArray = restrictedTo.split(",");
+                                             if (userRoles.some(role => restrictedToArray.includes(role))) {
+                                                XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings']);
+                                             } else {
+                                                XNAT.app.pluginSettings.restrictedSiteTabConfigs.push(config['siteSettings']);
+                                             }
+                                           } else {
+                                              XNAT.app.pluginSettings.siteTabConfigs.push(config['siteSettings']);
+                                           }
+                                        } else if (config.hasOwnProperty('root')) {
                                             XNAT.app.pluginSettings.siteTabConfigs.push(config['root'])
                                         }
                                     })();
@@ -98,6 +111,7 @@
                         var siteSettingsTabs = {};
                         // alias for brevity
                         var tabConfigs = XNAT.app.pluginSettings.siteTabConfigs;
+                        var restrictedTabConfigs = XNAT.app.pluginSettings.restrictedSiteTabConfigs;
                         if (tabConfigs.length != 0) {
                             // show the 'Plugin Settings' item in the 'Administer' menu
                             $('#view-plugin-settings').show().hidden(false);
@@ -120,6 +134,41 @@
                                 // merge all configs into a single config object
                                 extend(true, siteSettingsTabs, tabConfig);
                             });
+                        }
+                        if (restrictedTabConfigs.length != 0) {
+                            forEach(restrictedTabConfigs, function(restrictedTabConfig){
+                                var restrictedTabConfigModified = "{" +
+                                                                       "\"kind\": \"tabs\"," +
+                                                                       "\"groups\": {" +
+                                                                         "\"restrictedTabs\": \"" + restrictedTabConfig['label'] + "\"" +
+                                                                       "}," +
+                                                                       "\"contents\": {" +
+                                                                         "\"restrictedTab\": {" +
+                                                                           "\"kind\": \"tab\"," +
+                                                                           "\"group\": \"restrictedTabs\"," +
+                                                                           "\"label\": \"Restricted Access\"," +
+                                                                           "\"contents\": { " +
+                                                                             "\"accessSettingInfo\": {" +
+                                                                               "\"kind\": \"panel\"," +
+                                                                               "\"name\": \"accessSettingInfo\"," +
+                                                                               "\"label\": \"Restricted Access\"," +
+                                                                               "\"contents\": {" +
+                                                                                 "\"info\": {" +
+                                                                                   "\"tag\": \"p\"," +
+                                                                                   "\"element\": {" +
+                                                                                     "\"style\": \"margin: 15px 0 30px\"" +
+                                                                                   "}," +
+                                                                                   "\"contents\": \"Access is restricted to role(s):  <b>"  + restrictedTabConfig['meta']['restricted'] + "</b> <br><br> Please contact the Site Admin to grant this role to your user profile to administer this feature.\""+
+                                                                                 "}" +
+                                                                               "}" +
+                                                                             "}" +
+                                                                           "}" +
+                                                                         "}" +
+                                                                       "}" +
+                                                                   "}";
+                                extend(true, siteSettingsTabs, JSON.parse(restrictedTabConfigModified));
+                            });
+                        }
                             // make sure these properties are set correctly
                             siteSettingsTabs.kind = 'tabs';
                             siteSettingsTabs.name = 'siteSettingsTabs';
@@ -136,10 +185,6 @@
                                         $(tabSelector).first().trigger('click');
                                     });
                                 })
-                        } else {
-                           document.querySelector('h2.pull-left').innerHTML += ': No plugins to administer';
-                           $('#tabs-loading').remove();
-                        }
                     })();
                 </script>
 
