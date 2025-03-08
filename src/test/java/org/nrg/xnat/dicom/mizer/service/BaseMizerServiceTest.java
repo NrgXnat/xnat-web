@@ -203,6 +203,102 @@ public class BaseMizerServiceTest extends BaseMizerTest {
         }
     }
 
+
+    @Test
+    public void testThreadedAnonymization() throws MizerException {
+        for (int i=0; i<1; i++) {// set this to 10 or 100, what evern it takes to expose the issue in 1.8.10.0
+            System.out.println("Starting testThreadedAnonymization");
+            FileAnonThread thread = new FileAnonThread(i+"test",10);// set this to 1000 or something that runs long enough to expose issues
+            thread.start();
+        }
+    }
+
+    public class FileAnonThread extends Thread {
+        private final String _customString;
+        private final int _iterations;
+
+        public FileAnonThread(String customString, Integer iterations) {
+            _customString=customString;
+            _iterations=iterations;
+        }
+
+        @Override
+        public void run() {
+            System.out.println("***************************************************");
+            System.out.println("**     THREAD " + _customString + "              **");
+            System.out.println("***************************************************");
+
+            //prep files
+            File dir = new File("/tmp/threadedAnon/"+_customString);
+            if(dir.exists()) {
+                try {
+                    System.out.println("Deleting directory " + dir);
+                    FileUtils.deleteDirectory(dir);
+                } catch (Throwable e) {
+                }
+            }
+
+            System.out.println("Creating directory " + dir);
+            dir.mkdirs();
+
+            for (int i=0; i<_iterations; i++) {
+                File newFile = new File(dir,"DICOM_" + i + ".dcm");
+                try {
+                    System.out.println("Writing " + newFile);
+                    FileUtils.copyFile(TEST_FILE,newFile);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            //run actual anon test
+            for (int i=0; i<_iterations; i++) {
+                try {
+                    File newFile = new File(dir,"DICOM_" + i + ".dcm");
+
+                    // This may not adequately test our new code...
+                    // I think I may habe been using Anonymizar or soething
+                    MizerContextWithScript siteContext = new MizerContextWithScript();
+                    siteContext.setScript("(0010,0030) := \"DE4 site script:" + _customString +i+"\"\n");
+                    MizerContextWithScript projectContext = new MizerContextWithScript();
+                    projectContext.setScript("version \"6.0\"\n(0010,0040) := \"DE6 project script:" + _customString +i+"\"\n");
+
+                    System.out.println("Anonymizing " + newFile);
+                    service.anonymize(newFile, new ArrayList<MizerContext>(Arrays.asList(siteContext, projectContext)));
+
+                    DicomObjectI post_dobj = DicomObjectFactory.newInstance(newFile);
+                    if(!("DE4 site script:" + _customString +i).equals(post_dobj.getString(0x00100030))){
+                        System.out.println(String.format("ERROR: Expected {} but got {}","DE4 site script:" + _customString +i,post_dobj.getString(0x00100030) ));
+                        fail(String.format("ERROR: Expected {} but got {}","DE4 site script:" + _customString +i,post_dobj.getString(0x00100030) ));
+                    }else{
+                        System.out.println("ANON WORKED");
+                    }
+
+                    if(!("DE6 project script:" + _customString +i).equals(post_dobj.getString(0x00100040))){
+                        System.out.println(String.format("ERROR: Expected {} but got {}","DE6 proj(ect script:" + _customString +i,post_dobj.getString(0x00100040) ));
+                        fail(String.format("ERROR: Expected {} but got {}","DE6 proj(ect script:" + _customString +i,post_dobj.getString(0x00100040) ));
+                    }else{
+                        System.out.println("ANON WORKED");
+                    }
+
+                    post_dobj=null;
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    fail(e.getMessage());
+                }
+            }
+
+            //clean up files
+            for (int i=0; i<_iterations; i++) {
+                System.out.println("Deleting file");
+                File newFile = new File(dir,"DICOM_" + i + ".dcm");
+                try {
+                    FileUtils.forceDelete(newFile);
+                } catch (IOException e) {}
+            }
+        }
+    }
+
     @Test
     public void multiContextAnonTestHappyPath() {
         try {
