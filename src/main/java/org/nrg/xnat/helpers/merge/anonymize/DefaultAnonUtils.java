@@ -22,6 +22,7 @@ import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.framework.utilities.BasicXnatResourceLocator;
 import org.nrg.xdat.XDAT;
+import org.nrg.xnat.helpers.LightweightLocalCache;
 import org.nrg.xnat.helpers.editscript.DicomEdit;
 import org.nrg.xnat.helpers.merge.AnonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -113,16 +114,23 @@ public class DefaultAnonUtils implements AnonUtils {
 
     @Override
     public boolean isProjectScriptEnabled(final String projectId) {
-        final Configuration config  = getProjectScriptConfiguration(projectId);
-        final boolean       enabled = config != null && config.getStatus().equals(Configuration.ENABLED_STRING);
-        if (log.isDebugEnabled()) {
-            if (StringUtils.isNotBlank(projectId)) {
-                log.debug("Retrieved status {} for the site-wide anonymization script", enabled);
-            } else {
-                log.debug("Retrieved status {} for the anonymization script for project {}", enabled, projectId);
+        final String cacheKey = (projectId==null)?"":projectId;
+        Boolean enabled = cachedProjectAnonSetting.getValue(cacheKey,3000);
+
+        if(enabled!=null){
+            return enabled;
+        }else{
+            final Configuration config  = getProjectScriptConfiguration(projectId);
+            enabled = config != null && config.getStatus().equals(Configuration.ENABLED_STRING);
+            if (log.isDebugEnabled()) {
+                if (StringUtils.isNotBlank(projectId)) {
+                    log.debug("Retrieved status {} for the site-wide anonymization script", enabled);
+                } else {
+                    log.debug("Retrieved status {} for the anonymization script for project {}", enabled, projectId);
+                }
             }
+            return cachedProjectAnonSetting.cacheValue(cacheKey, enabled);
         }
-        return enabled;
     }
 
     @Override
@@ -256,6 +264,8 @@ public class DefaultAnonUtils implements AnonUtils {
             _configService.disable(login, "", DicomEdit.ToolName, path, Scope.Site, studyId);
         }
     }
+
+    private static LightweightLocalCache<Boolean> cachedProjectAnonSetting= new LightweightLocalCache();
 
     private static final String DEFAULT_ANON_SCRIPT = "classpath*:META-INF/xnat/defaults/**/id.das";
     private static final String SITE_WIDE_PATH      = DicomEdit.buildScriptPath(DicomEdit.ResourceScope.SITE_WIDE, null);
