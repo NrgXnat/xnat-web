@@ -647,32 +647,6 @@ public class UsersApi extends AbstractXapiRestController {
         return getRoleHolder().getUsers(role);
     }
 
-    @ApiOperation(value = "Returns the contact details of users with a specified role.",
-            notes = "Returns a collection of the details of the user's with a specified roles.",
-            responseContainer = "List",
-            response = String.class)
-    @ApiResponses({@ApiResponse(code = 200, message = "Users  successfully retrieved."),
-            @ApiResponse(code = 401, message = "Must be authenticated to access the XNAT REST API."),
-            @ApiResponse(code = 403, message = "Not authorized to view this user."),
-            @ApiResponse(code = 404, message = "Users not found."),
-            @ApiResponse(code = 500, message = "An unexpected error occurred.")})
-    @XapiRequestMapping(value = "/contact/roles/{role}", produces = APPLICATION_JSON_VALUE, method = GET, restrictTo = AccessLevel.Authenticated)
-    public List<User> getContactOfUsersWithRole(@ApiParam(value = "The ID of the user to retrieve the roles for.", required = true) @PathVariable final String role) throws DataFormatException, NotFoundException {
-        Collection<String> userIds =  getRoleHolder().getUsers(role);
-        List<User> users = new ArrayList();
-        for (String uId: userIds) {
-            User user = getUserProfile(uId);
-            User strippedUser = new User();
-            strippedUser.setEmail(user.getEmail());
-            strippedUser.setFirstName(user.getFirstName());
-            strippedUser.setLastName(user.getLastName());
-            strippedUser.setSecured(true);
-            users.add(strippedUser);
-        }
-        return users;
-    }
-
-
     @ApiOperation(value = "Returns the roles for the user with the specified user ID.",
                   notes = "Returns a collection of the user's roles.",
                   responseContainer = "List",
