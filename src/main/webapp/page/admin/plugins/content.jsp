@@ -143,38 +143,41 @@
                             });
                         }
                         if (restrictedTabConfigs.length != 0) {
-                            forEach(restrictedTabConfigs, function(restrictedTabConfig){
-                                var restrictedTabConfigModified = "{" +
-                                                                       "\"kind\": \"tabs\"," +
-                                                                       "\"groups\": {" +
-                                                                         "\"restrictedTabs\": \"" + restrictedTabConfig['label'] + "\"" +
-                                                                       "}," +
-                                                                       "\"contents\": {" +
-                                                                         "\"restrictedTab\": {" +
-                                                                           "\"kind\": \"tab\"," +
-                                                                           "\"group\": \"restrictedTabs\"," +
-                                                                           "\"label\": \"Restricted Access\"," +
-                                                                           "\"contents\": { " +
-                                                                             "\"accessSettingInfo\": {" +
-                                                                               "\"kind\": \"panel\"," +
-                                                                               "\"name\": \"accessSettingInfo\"," +
-                                                                               "\"label\": \"Restricted Access\"," +
-                                                                               "\"contents\": {" +
-                                                                                 "\"info\": {" +
-                                                                                   "\"tag\": \"p\"," +
-                                                                                   "\"element\": {" +
-                                                                                     "\"style\": \"margin: 15px 0 30px\"" +
-                                                                                   "}," +
-                                                                                   "\"contents\": \"Access is restricted to role(s):  <b>"  + restrictedTabConfig['meta']['restricted'] + "</b> <br><br> <a href='/app/template/Page.vm?view=admin/users'>Go to User Administration</a> to grant this role to your user profile to administer this feature.\""+
+                            if (isPermittedToView) {
+                              $('#view-plugin-settings').show().hidden(false);
+                                  forEach(restrictedTabConfigs, function(restrictedTabConfig){
+                                      var restrictedTabConfigModified = "{" +
+                                                                             "\"kind\": \"tabs\"," +
+                                                                             "\"groups\": {" +
+                                                                               "\"restrictedTabs\": \"" + restrictedTabConfig['label'] + "\"" +
+                                                                             "}," +
+                                                                             "\"contents\": {" +
+                                                                               "\"restrictedTab\": {" +
+                                                                                 "\"kind\": \"tab\"," +
+                                                                                 "\"group\": \"restrictedTabs\"," +
+                                                                                 "\"label\": \"Restricted Access\"," +
+                                                                                 "\"contents\": { " +
+                                                                                   "\"accessSettingInfo\": {" +
+                                                                                     "\"kind\": \"panel\"," +
+                                                                                     "\"name\": \"accessSettingInfo\"," +
+                                                                                     "\"label\": \"Restricted Access\"," +
+                                                                                     "\"contents\": {" +
+                                                                                       "\"info\": {" +
+                                                                                         "\"tag\": \"p\"," +
+                                                                                         "\"element\": {" +
+                                                                                           "\"style\": \"margin: 15px 0 30px\"" +
+                                                                                         "}," +
+                                                                                         "\"contents\": \"Access is restricted to role(s):  <b>"  + restrictedTabConfig['meta']['restricted'] + "</b> <br><br> <a href='/app/template/Page.vm?view=admin/users'>Go to User Administration</a> to grant this role to your user profile to administer this feature.\""+
+                                                                                       "}" +
+                                                                                     "}" +
+                                                                                   "}" +
                                                                                  "}" +
                                                                                "}" +
                                                                              "}" +
-                                                                           "}" +
-                                                                         "}" +
-                                                                       "}" +
-                                                                   "}";
-                                extend(true, siteSettingsTabs, JSON.parse(restrictedTabConfigModified));
-                            });
+                                                                         "}";
+                                      extend(true, siteSettingsTabs, JSON.parse(restrictedTabConfigModified));
+                                  });
+                            }
                         }
                             // make sure these properties are set correctly
                             siteSettingsTabs.kind = 'tabs';
