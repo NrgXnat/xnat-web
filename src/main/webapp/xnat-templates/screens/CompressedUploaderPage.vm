@@ -7,16 +7,22 @@
             success: function(siteConfig){
                 handler = siteConfig['uiDefaultCompressedUploaderImporter'];
                 document.getElementById('import-handler').value = handler;
-                hiddenIgnoreUnparsable(handler);
+                hiddenItemsByHandler(handler);
             }
         });
     }
 
-    function hiddenIgnoreUnparsable(handler) {
+    function hiddenItemsByHandler(handler) {
         if (handler === "DICOM-zip") {
             document.getElementById("ignoreUnparsableTr").hidden = false;
+            document.getElementById("custom-labeling").hidden = false;
+            document.getElementById("subject-labeling").hidden = false;
+            document.getElementById("session-labeling").hidden = false;
         } else {
             document.getElementById("ignoreUnparsableTr").hidden = true;
+            document.getElementById("custom-labeling").hidden = true;
+            document.getElementById("subject-labeling").hidden = true;
+            document.getElementById("session-labeling").hidden = true;
         }
     }
 
@@ -106,9 +112,12 @@
             xmodal.message('Upload Action', 'Please select a $displayManager.getSingularDisplayNameForProject().toLowerCase().');
             return false;
         }
-        if ((customSubjectLabel.prop('required') && !customSubjectLabel.val().length) || (customSessionLabel.prop('required') && !customSessionLabel.val().length)) {
-            xmodal.message('Upload Action', 'If you are customizing labels for $displayManager.getSingularDisplayNameForSubject().toLowerCase() and $displayManager.getSingularDisplayNameForImageSession().toLowerCase(), both inputs require a value.');
-            return false;
+        var handler = document.getElementById('import-handler').value;
+        if (handler === "DICOM-zip") {
+            if ((customSubjectLabel.prop('required') && !customSubjectLabel.val().length) || (customSessionLabel.prop('required') && !customSessionLabel.val().length)) {
+                xmodal.message('Upload Action', 'If you are customizing labels for $displayManager.getSingularDisplayNameForSubject().toLowerCase() and $displayManager.getSingularDisplayNameForImageSession().toLowerCase(), both inputs require a value.');
+                return false;
+            }
         }
         return true;
     }
@@ -140,6 +149,11 @@
         formDataArchive.append("src", usrResPath);
         formDataArchive.append("http-session-listener", uploadID);
         let ignoreUnparsable = document.getElementById("Ignore-UnparsableUI");
+        let handler = document.getElementById('import-handler').value;
+        if (handler !== "DICOM-zip") {
+            formDataArchive.delete("subject");
+            formDataArchive.delete("session");
+        }
         if (ignoreUnparsable.checked) {
             formDataArchive.append("Ignore-Unparsable", "true");
         } else {
@@ -274,13 +288,13 @@
             <tr>
                 <th align="left">Importer handler</th>
                 <td>
-                    <select id="import-handler" name="import-handler" onchange="hiddenIgnoreUnparsable(this.value);">
+                    <select id="import-handler" name="import-handler" onchange="hiddenItemsByHandler(this.value);">
                         <option value="DICOM-zip">DICOM Zip</option>
                         <option value="SI">Classic Session Importer (Deprecated)</option>
                     </select>
                 </td>
             </tr>
-            <tr>
+            <tr id="custom-labeling">
                 <th align="left">Custom Labeling <i class="fa fa-question-circle info-labeling-options" style="color: #084fab; cursor: pointer"></i></th>
                 <td>
                     <label><input type="radio" name="toggleSessionLabeling" class="toggleSessionLabeling" value="derived" checked="checked" style="padding-right: 1.5em" /> Extract From DICOM (Default)</label>
