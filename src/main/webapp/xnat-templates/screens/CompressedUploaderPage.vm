@@ -98,8 +98,6 @@
 
     function validateForm() {
         var imageArchive = document.getElementById("image_archive");
-        var customSubjectLabel = $('#uploadFORM').find('input[name=subject]');
-        var customSessionLabel = $('#uploadFORM').find('input[name=session]');
         if (!imageArchive.value) {
             xmodal.message('Upload Action', 'Please select an archive to upload.');
             return false;
@@ -114,6 +112,8 @@
         }
         var handler = document.getElementById('import-handler').value;
         if (handler === "DICOM-zip") {
+            var customSubjectLabel = $('#uploadFORM').find('input[name=subject]');
+            var customSessionLabel = $('#uploadFORM').find('input[name=session]');
             if ((customSubjectLabel.prop('required') && !customSubjectLabel.val().length) || (customSessionLabel.prop('required') && !customSessionLabel.val().length)) {
                 xmodal.message('Upload Action', 'If you are customizing labels for $displayManager.getSingularDisplayNameForSubject().toLowerCase() and $displayManager.getSingularDisplayNameForImageSession().toLowerCase(), both inputs require a value.');
                 return false;
