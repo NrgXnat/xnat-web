@@ -83,7 +83,7 @@
         XNAT.dialog.open({
             "title": "Customized Labeling on Compressed Uploads",
             "width": 450,
-            "content": "For a single session, you can specify a custom label for subject and session rather than relying on importing values from DICOM fields during import. This feature should not be used if multiple sessions are packed in a single ZIP file &ndash; the resulting upload will create a merge error in the Prearchive.",
+            "content": "For a single session, you can specify a custom label for subject and session rather than relying on importing values from DICOM fields during import. Custom labeling depends on using the DICOM-Zip importer, and this feature should not be used if multiple sessions are packed in a single ZIP file &ndash; the resulting upload will create a merge error in the Prearchive. ",
             "buttons": [
                 {
                     "label": "OK",
