@@ -903,6 +903,13 @@ notifications:
             onText: Enabled
             offText: Disabled
             description: "If enabled, the primary administrator will receive a copy of error, issue, new user, and update notifications."
+        suppressJMSFailureNotifications:
+            kind: panel.input.switchbox
+            name: suppressJMSFailureNotifications
+            label: "Suppress JMS Error email notifications"
+            onText: Suppress Notifications
+            offText: Allow Notifications
+            description: "JMS errors are always entered in the logs. This setting determines whether JMS errors should also trigger a notification email, or whether those emails should be suppressed."
 
 notificationEmails:
     kind: panel.form
@@ -1541,6 +1548,41 @@ registrationOptionsPanel:
             description: >
                 User comments, if allowed, are displayed in the email notifications sent to the site administrator.
 
+captchaOptionsPanel:
+    kind: panel.form
+    label: CAPTCHA Options
+    url: /xapi/siteConfig
+    method: POST
+    contentType: json
+    contents:
+        captchaOptionsMessage:
+            tag: div.message
+            element:
+                style:
+                    marginBottom: 24px
+                html: >
+                    These settings control whether <a href="https://developers.google.com/recaptcha" target="_blank">Google 
+                    reCAPTCHA</a> is enabled on the <strong>User Registration</strong> page.<br><br>
+                    <strong>Important:</strong> To use reCAPTCHA, you must register your site with Google and obtain site and
+                    secret keys. When <a href="https://cloud.google.com/security/products/recaptcha" target="_blank">creating 
+                    your keys</a>, make sure you set <strong>reCAPTCHA type</strong> to <strong>score-based (v3)</strong>.
+        uiNewUserRequireCaptcha:
+            kind: panel.input.switchbox
+            label: "Enable reCAPTCHA on User Registration page"
+            onText: Require
+            offText: Not Required
+            checked: false
+            description: >
+                Enforce requirement of a reCAPTCHA in the User Registration page.
+        uiNewUserCaptchaPublic:
+            kind: panel.input.text
+            name: uiNewUserCaptchaPublic
+            label: Google reCAPTCHA Site (Public) Key
+        uiNewUserCaptchaPrivate:
+            kind: panel.input.text
+            name: uiNewUserCaptchaPrivate
+            label: Google reCAPTCHA Secret Key
+
 ## SESSION UPLOAD
 
 uploadChannels:
@@ -1690,7 +1732,7 @@ seriesImportFilter:
         cautionMessage:
             tag: div.warning.bold
             content: >
-                Caution: This feature has been deprecated as of XNAT 1.8.10 and will be removed from future versions. Series filtering and rejection can now be managed natively within DicomEdit anonymization scripts. See <a href="https://wiki.xnat.org/documentation/how-to-write-a-series-import-filter" target="_blank">documentation for details</a>. (Note: Support for modality maps will not be preserved.)
+                Caution: This feature has been deprecated as of XNAT 1.8.10 and will be removed from XNAT in the 1.10 release. Series filtering and rejection can now be managed natively within DicomEdit anonymization scripts. See <a href="https://wiki.xnat.org/documentation/how-to-write-a-series-import-filter" target="_blank">documentation for details</a>. (Note: Support for modality maps will not be preserved.)
         enableSitewideSeriesImportFilter:
             kind: panel.input.switchbox
             name: enableSitewideSeriesImportFilter
@@ -2067,6 +2109,27 @@ dicomScpReceivers:
         dicomScpManagerScript:
             tag: script|src="~/scripts/xnat/admin/dicomScpManager.js"
 
+## Logging configuration
+loggingConfigurationPanel:
+    kind: panel
+    name: loggingConfigurationPanel
+    label: Manage Logging Configuration
+    footer: false
+    contents:
+        loggingConfigurationMessage:
+            tag: div.message
+            element:
+                style:
+                    marginBottom: 24px
+                html: >
+                    All installed logfile appenders and loggers are listed in the table below. Site admins can change the log levels in real time by using the "Set Level" selector. <strong>Please note: These log level settings will be reset to their defaults on Tomcat restart.</strong><br><br>
+                    Click on any filename to download the most recent instance of that file, or download a zip archive of all current log files:
+                    <a href="~/xapi/logs/download" download="xnat-logs.zip">Download All Logs</a>.
+        loggingConfiguration:
+            tag: "div#logging-configuration"
+        loggingConfigurationScript:
+            tag: script|src="~/scripts/xnat/admin/loggingConfiguration.js"
+
 ## FILE SYSTEM
 
 fileSystemSettingsWarning:
@@ -2337,6 +2400,45 @@ reactorWorkQueueDispatcherRingBufferSizePower:
             validation: required onblur integer gte:10 lte:31
             after: >
                 <p class="description">Sets the size of the event buffer.</p>
+
+eventTrackingDataCleanup:
+    kind: panel.form
+    name: eventTrackingDataCleanup
+    label: Event Tracking Cleanup
+    method: POST
+    contentType: json
+    url: /xapi/asyncOps
+    contents:
+        eventTrackingDataCleanupDescription:
+            tag: div.message
+            element:
+                style:
+                    marginBottom: 24px
+                html: >
+                    These entries control how often the system runs the event-tracking clean-up process as well as the threshold for
+                    how long an event-tracking entry should be kept before being deleted. The default is to run the clean-up process
+                    every 24 hours (i.e. once a day) and keep entries for 30 days.
+                    <br><br>
+                    <strong>Updating the frequency in this panel requires a Tomcat restart to be applied.</strong>
+        eventTrackingDataCleanupFrequency:
+            kind: panel.input.number
+            label: Frequency (in hours)
+            validation: integer onblur
+            placeholder: Frequency in hours
+            afterElement: <span class="after">hours</span>
+            description: >
+                This controls how often the system runs the event-tracking clean-up process. This value should be 
+                specified in hours and defaults to 24 hours (i.e. once a day). Note that a system restart is required 
+                for this value to take effect.
+        eventTrackingDataCleanupTtl:
+            kind: panel.input.number
+            label: Time to live
+            validation: integer onblur
+            placeholder: Time to live in days
+            afterElement: <span class="after">days</span>
+            description: >
+                This controls the threshold for how long an event-tracking entry should be kept before being deleted. 
+                The default is to keep entries for 30 days.
 
 ## EVENT SERVICE
 
@@ -2771,6 +2873,7 @@ root:
             group: manageAccess
             contents:
                 ${registrationOptionsPanel}
+                ${captchaOptionsPanel}
         #        manageDataTypes:
         #            kind: tab
         #            name: manageDataTypes
@@ -2820,6 +2923,12 @@ root:
             contents:
                 ${dicomScpReceiversGlobal}
                 ${dicomScpReceivers}
+        loggingConfigurationTab:
+            kind: tab
+            label: Logging Configuration
+            group: advanced
+            contents:
+                ${loggingConfigurationPanel}
         fileSystemTab:
             kind: tab
             label: File System
@@ -2838,6 +2947,8 @@ root:
             group: advanced
             contents:
                 ${asyncOperations}
+                ${eventTrackingDataCleanup}
+
         #        automationTab:
         #            kind: tab
         #            name: automationTab
