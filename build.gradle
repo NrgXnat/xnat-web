@@ -313,6 +313,9 @@ dependencies {
     testImplementation "org.springframework.security:spring-security-config"
     testImplementation "org.hamcrest:hamcrest"
     testImplementation "org.mockito:mockito-core"
+    testImplementation "org.testcontainers:testcontainers"
+    testImplementation "org.testcontainers:junit-jupiter"
+    testImplementation "org.testcontainers:postgresql"
 
     javadocCoverage "com.manoelcampos:javadoc-coverage"
 }
