@@ -22,8 +22,11 @@ import org.nrg.test.utils.TestBeans;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.services.PermissionsServiceI;
 import org.nrg.xdat.services.cache.UserDataCache;
+import org.nrg.xnat.daos.CatalogLockDAO;
+import org.nrg.xnat.services.archive.CatalogLockService;
 import org.nrg.xnat.services.archive.CatalogService;
 import org.nrg.xnat.services.archive.RemoteFilesService;
+import org.nrg.xnat.services.archive.impl.hibernate.CatalogLockServiceImpl;
 import org.nrg.xnat.services.archive.impl.legacy.DefaultCatalogService;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -45,6 +48,16 @@ import reactor.bus.EventBus;
 @Configuration
 @Import({OrmTestConfiguration.class, NrgPrefsConfiguration.class})
 public class TestCatalogServiceConfig {
+    @Bean
+    public CatalogLockService catalogLockService() {
+        return new CatalogLockServiceImpl();
+    }
+
+    @Bean
+    public CatalogLockDAO catalogLockDAO() {
+        return new CatalogLockDAO();
+    }
+
     @Bean
     public JsonNode siteMap() throws IOException {
         return TestBeans.getDefaultTestSiteMap();

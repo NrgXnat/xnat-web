@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,7 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.is;
@@ -83,7 +81,7 @@ public class TestThreadAndProcessFileLock {
         // (the way the test resources are "compiled" adds a newline at end of file, which writeCatalogToFile strips)
         CatalogUtils.CatalogData catalogData = new CatalogUtils.CatalogData(catFile, fakeProject,false);
         CatalogUtils.writeCatalogToFile(catalogData, false,
-                new HashMap<String, Map<String, Integer>>());
+                new HashMap<>());
     }
 
     private static void copyCatalog(File catFile, File permFile) throws Exception {
@@ -98,19 +96,16 @@ public class TestThreadAndProcessFileLock {
     }
 
     @Test
-    @Ignore
     public void testCatalog() throws Exception {
         doReadWrite(TEST_CATALOG_FILE);
     }
 
     @Test
-    @Ignore
     public void testCatalogRepeat() throws Exception {
         doReadWrite(TEST_CATALOG_FILE);
     }
 
     @Test
-    @Ignore
     public void testCatalogRepeat2() throws Exception {
         doReadWrite(TEST_CATALOG_FILE);
     }
@@ -212,43 +207,13 @@ public class TestThreadAndProcessFileLock {
         assertThat(catalogData2.catBean.getEntries_entry(), Matchers.<CatEntryI>hasSize(1));
     }
 
-    @Test
-    public void testConcurrentRead() throws Exception {
-        final ThreadAndProcessFileLock fl = ThreadAndProcessFileLock.getThreadAndProcessFileLock(TEST_CATALOG_FILE, true);
-        try {
-            try {
-                fl.tryLock(1L, TimeUnit.SECONDS);
-            } catch (IOException e) {
-                fail("Unable to obtain single read lock");
-            }
-
-            List<ThreadAndProcessFileLock> tounlock = new ArrayList<>();
-            for (int i = 0; i < 10; i++) {
-                final ThreadAndProcessFileLock fl2 = ThreadAndProcessFileLock.getThreadAndProcessFileLock(TEST_CATALOG_FILE, true);
-                try {
-                    fl2.tryLock(1L, TimeUnit.SECONDS);
-                    tounlock.add(fl2);
-                } catch (IOException e) {
-                    fail("Unable to obtain concurrent read lock " + i + ": " + e.getMessage());
-                }
-            }
-
-            for (ThreadAndProcessFileLock lock : tounlock) {
-                lock.unlock();
-            }
-        } finally {
-            fl.unlock();
-            ThreadAndProcessFileLock.removeThreadAndProcessFileLock(TEST_CATALOG_FILE);
-        }
-    }
-
     private void doReadWrite(File file) throws Exception {
         // Read the shared file
         CatalogUtils.CatalogData catalogData = new CatalogUtils.CatalogData(file, fakeProject,false);
 
         // Write to the shared file (without changing anything)
         CatalogUtils.writeCatalogToFile(catalogData, false,
-                new HashMap<String, Map<String, Integer>>());
+                new HashMap<>());
 
         // Read it again - since we didn't actually mod anything, it better match
         CatCatalogBean cat2 = CatalogUtils.getCatalog(file, fakeProject);
