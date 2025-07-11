@@ -9,7 +9,7 @@
 
 buildscript {
     ext {
-        vXnat = "1.9.3-SNAPSHOT"
+        vXnat = "1.10.0-RC-SNAPSHOT"
     }
 }
 
@@ -41,8 +41,8 @@ repositories {
     mavenCentral()
 }
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+sourceCompatibility = 21
+targetCompatibility = 21
 
 war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web"
 
@@ -309,8 +309,9 @@ dependencies {
     testImplementation "org.springframework.security:spring-security-config"
     testImplementation "org.hamcrest:hamcrest"
     testImplementation "org.mockito:mockito-core"
-    testImplementation "org.powermock:powermock-api-mockito2"
-    testImplementation "org.powermock:powermock-module-junit4"
+    testImplementation "org.testcontainers:testcontainers"
+    testImplementation "org.testcontainers:junit-jupiter"
+    testImplementation "org.testcontainers:postgresql"
 
     javadocCoverage "com.manoelcampos:javadoc-coverage"
 }
@@ -459,31 +460,17 @@ task javadocCoverageReport(type: Javadoc, dependsOn: javadoc) {
     options.doclet = "com.manoelcampos.javadoc.coverage.CoverageDoclet"
 }
 
-task sourceJar(type: Jar, dependsOn: classes) {
-    classifier "sources"
-    manifest {
-        from gitManifest
-    }
-    from sourceSets.main.allSource
+java {
+   // withJavadocJar()
+    withSourcesJar()
 }
 
-task javadocJar(type: Jar) {
-    classifier "javadoc"
-    manifest {
-        from gitManifest
-    }
-    from javadoc.destinationDir
-}
+
 
 publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-
-            artifacts {
-                artifact sourceJar
-                artifact javadocJar
-            }
 
             pom.withXml {
                 def root = asNode()
