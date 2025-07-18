@@ -23,6 +23,7 @@ import org.nrg.xft.utils.zip.ZipUtils;
 import org.nrg.xnat.helpers.FileWriterWrapper;
 import org.nrg.xnat.restlet.representations.ZipRepresentation;
 import org.nrg.xnat.turbine.utils.ArcSpecManager;
+import org.nrg.xnat.utils.DirectoryToJsonTreeConverter;
 import org.restlet.Context;
 import org.restlet.data.MediaType;
 import org.restlet.data.Request;
@@ -58,7 +59,7 @@ public class UserCacheResource extends SecureResource {
 		_pXname = (String)getParameter(getRequest(),"XNAME");
 		_pFile = (String)getParameter(getRequest(),"FILE");
 		_hasPXname = StringUtils.isNotBlank(_pXname);
-		_hasPFile = StringUtils.isBlank(_pFile);
+		_hasPFile = StringUtils.isNotBlank(_pFile);
 	}
 
 	@Override
@@ -185,22 +186,37 @@ public class UserCacheResource extends SecureResource {
 	}
 
 	private void returnXnameList(String userPath) {
-        File[] fileArray = new File(userPath).listFiles();
-        ArrayList<String> columns= new ArrayList<>();
-        columns.add("Resource");
-        columns.add("URI");
-        XFTTable table=new XFTTable();
-        table.initTable(columns);
-        if(fileArray!=null){
-        for (File f : fileArray) {
-        	String fn=f.getName();
-        	Object[] oarray = new Object[] { fn, constructResourceURI(fn) };
-        	table.insertRow(oarray);
-        }
-        }
-        
-        sendTableRepresentation(table,true);
-		
+		if (requested_format != null && requested_format.equals(TREE_JSON)) {
+			returnXnameListAsTreeJson(userPath);
+		} else {
+			returnXnameListAsTableRepresentattion(userPath);
+		}
+	}
+
+	private void returnXnameListAsTreeJson(final String userPath) {
+		try {
+			String json = new DirectoryToJsonTreeConverter().toJson(userPath);
+			getResponse().setEntity(new StringRepresentation(json, MediaType.APPLICATION_JSON));
+		} catch(IOException ioe) {
+			this.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND,"User directory not found or is not a directory.");
+		}
+	}
+
+	private void returnXnameListAsTableRepresentattion(final String userPath) {
+		File[] fileArray = new File(userPath).listFiles();
+		ArrayList<String> columns= new ArrayList<>();
+		columns.add("Resource");
+		columns.add("URI");
+		XFTTable table=new XFTTable();
+		table.initTable(columns);
+		if(fileArray!=null){
+			for (File f : fileArray) {
+				String fn=f.getName();
+				Object[] oarray = new Object[] { fn, constructResourceURI(fn) };
+				table.insertRow(oarray);
+			}
+		}
+		sendTableRepresentation(table,true);
 	}
 	
 	// TODO - Make recursive list optional?
@@ -659,5 +675,6 @@ public class UserCacheResource extends SecureResource {
 	private final String        _pFile;
 	private final boolean _hasPXname;
 	private final boolean _hasPFile;
+	private final String TREE_JSON = "treeJson";
 
 }
