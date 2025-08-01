@@ -1,0 +1,49 @@
+#* @vtlvariable name="userHelper" type="org.nrg.xdat.security.services.UserHelperServiceI" *#
+#set($userHelper = $data.getSession().getAttribute("userHelper"))
+<link rel="stylesheet" type="text/css"  href="$content.getURI('/style/userCache/usercache.css')" >
+
+  <div class="uce-container">
+        <div class="uce-upload-widget">
+              <div class="uce-upload-area" onclick="document.getElementById('zipFile').click()">
+                  <span class="uce-upload-icon"><i class="fa fa-upload"></i></span>
+                  <div class="uce-upload-text">Upload ZIP File</div>
+                  <div class="uce-upload-subtext">Click to browse or drag and drop</div>
+              </div>
+              <input type="file" id="zipFile" accept=".zip" />
+          </div>
+  <div class="uce-panels-container">
+
+         <!-- Source Pane -->
+         <div class="uce-panel uce-left-panel">
+             <div class="uce-pane-header">
+                 <span class="uce-icon"><i class="fa fa-folder"></i></span>
+                 My Cache Folder
+             </div>
+             <div class="use-pane-content">
+                 <div class="uce-folder-tree" id="sourceTree"></div>
+             </div>
+         </div>
+
+         <!-- Destination Pane -->
+         <div class="uce-panel uce-right-panel">
+             <div class="uce-pane-header uce-remote">
+                 <span class="uce-icon"><i class="fa fa-folder"></i></span>
+                  Select Destination
+                   <!-- Review Button -->
+                                  <div class="uce-review-section">
+                                      <button class="uce-review-btn" id="reviewBtn">
+                                          <span class="uce-review-icon"></span>
+                                          <span class="uce-review-text">Review</span>
+                                          <span class="uce-total-files" id="totalFiles">0 files</span>
+                                      </button>
+
+                                  </div>
+             </div>
+             <div class="use-pane-content">
+                 <div class="uce-folder-tree" id="destinationTree"></div>
+             </div>
+
+         </div>
+</div>
+     </div>
+<script type="text/javascript" src="$content.getURI('/scripts/xnat/app/usercacheFiles/userCacheFileManager.js')"></script>

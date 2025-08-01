@@ -195,7 +195,7 @@ public class UserCacheResource extends SecureResource {
 
 	private void returnXnameListAsTreeJson(final String userPath) {
 		try {
-			String json = new DirectoryToJsonTreeConverter().toJson(userPath);
+			String json = new DirectoryToJsonTreeConverter().toJson(userPath, "My Uploads");
 			getResponse().setEntity(new StringRepresentation(json, MediaType.APPLICATION_JSON));
 		} catch(IOException ioe) {
 			this.getResponse().setStatus(Status.CLIENT_ERROR_NOT_FOUND,"User directory not found or is not a directory.");

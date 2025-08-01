@@ -58,10 +58,10 @@ public class DirectoryToJsonTreeConverter {
         }
     }
 
-    private  TreeNode buildDirectoryTree(Path path) throws IOException {
+    private  TreeNode buildDirectoryTree(final Path path, final String rootNodeLabel) throws IOException {
         BasicFileAttributes attrs = Files.readAttributes(path, BasicFileAttributes.class);
 
-        String name = path.getFileName() != null ? path.getFileName().toString() : path.toString();
+        String name = rootNodeLabel == null ? path.getFileName() != null ? path.getFileName().toString() : path.toString() : rootNodeLabel;
         String type = Files.isDirectory(path) ? "folder" : "file";
         String lastModified = attrs.lastModifiedTime().toString();
         String absolutePath = path.toAbsolutePath().toString();
@@ -76,7 +76,7 @@ public class DirectoryToJsonTreeConverter {
 
                 for (Path child : stream) {
                     try {
-                        TreeNode childNode = buildDirectoryTree(child);
+                        TreeNode childNode = buildDirectoryTree(child, null);
                         children.add(childNode);
                         totalSize += childNode.getSize();
                     } catch (IOException e) {
@@ -102,9 +102,9 @@ public class DirectoryToJsonTreeConverter {
         return node;
     }
 
-    public String toJson(final String directoryPath) throws IOException {
+    public String toJson(final String directoryPath, final String parentNodeLabel) throws IOException {
         Path path = Paths.get(directoryPath);
-        return toJson(buildDirectoryTree(path));
+        return toJson(buildDirectoryTree(path, parentNodeLabel));
     }
 
     /**

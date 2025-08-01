@@ -1,0 +1,29 @@
+#* @vtlvariable name="userHelper" type="org.nrg.xdat.security.services.UserHelperServiceI" *#
+#set($userHelper = $data.getSession().getAttribute("userHelper"))
+<link rel="stylesheet" type="text/css"  href="$content.getURI('/style/userCache/usercache.css')" >
+
+    <div class="container">
+        <!-- Source Pane -->
+        <div class="pane">
+            <div class="pane-header">
+                <span class="icon"><i class="fas fa-folder"></i></span>
+                My Cache Folder
+            </div>
+            <div class="pane-content">
+                <div class="folder-tree" id="sourceTree"></div>
+            </div>
+        </div>
+
+        <!-- Destination Pane -->
+        <div class="pane">
+            <div class="pane-header remote">
+                <span class="icon"><i class="fas fa-folder"></i></span>
+                Ingest into XNAT
+            </div>
+            <div class="pane-content">
+                <div class="destination-tree" id="destinationTree"></div>
+            </div>
+        </div>
+    </div>
+
+<script type="text/javascript" src="$content.getURI('/scripts/xnat/app/usercacheFiles/userCacheFileManager.js')"></script>
