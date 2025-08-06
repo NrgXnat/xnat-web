@@ -49,6 +49,251 @@ var XNAT = getObject(XNAT);
             userData.scan_resources = [];
 
 
+//Upload Widget
+
+    let isUploading = false;
+    let isMinimized = false;
+
+     // Status message system
+           usercacheFileManager.showStatus = function(message, type = 'success') {
+                const statusEl = document.getElementById('statusMessage');
+                statusEl.textContent = message;
+                statusEl.className = `status-message ${type} show`;
+                setTimeout(() => {
+                    statusEl.classList.remove('show');
+                }, 3000);
+            }
+
+            // File size formatter
+           usercacheFileManager.formatFileSize = function(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+    // Generate XNAME (datestamp)
+       usercacheFileManager.generateXName = function() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+
+            return `${year}${month}${day}-${hours}${minutes}${seconds}`;
+        }
+
+        // Update progress display
+        usercacheFileManager.updateProgress = function(percentage, status) {
+            const progressFill = document.getElementById('progressFill');
+            const progressStatus = document.getElementById('progressStatus');
+            const progressPercentage = document.getElementById('progressPercentage');
+
+            progressFill.style.width = `${percentage}%`;
+            progressStatus.textContent = status;
+            progressPercentage.textContent = `${Math.round(percentage)}%`;
+        }
+
+        // Show/hide upload controls
+        usercacheFileManager.toggleUploadControls = function(show) {
+            const controls = document.getElementById('uploadControls');
+            const progress = document.getElementById('progressContainer');
+
+            if (show) {
+                controls.classList.add('uce-show');
+            } else {
+                controls.classList.remove('uce-show');
+                progress.classList.remove('uce-show');
+            }
+        }
+
+        // Upload file to API
+        usercacheFileManager.uploadFileToAPI = async function(file) {
+            if (isUploading) return;
+
+            isUploading = true;
+            const uploadArea = document.querySelector('.uce-upload-area');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressContainer = document.getElementById('progressContainer');
+
+            // Update UI
+            uploadArea.classList.add('uce-uploading');
+            uploadBtn.disabled = true;
+            progressContainer.classList.add('uce-show');
+            usercacheFileManager.updateProgress(0, 'Preparing upload...');
+
+            try {
+                // Generate XNAME and construct endpoint
+                const xname = usercacheFileManager.generateXName();
+                const filename = encodeURIComponent(file.name);
+                const endpoint = `${serverRoot}/data/user/cache/resources/${xname}/files/${filename}`;
+                let uploadUrl = XNAT.url.csrfUrl(endpoint,{extract: true},false,false);
+                // Use Fetch API with file in body
+                const formData = new FormData();
+                formData.append('file', file);
+                const response = await fetch(uploadUrl, {
+                    method: 'PUT',
+                    body: formData
+                });
+
+                usercacheFileManager.updateProgress(90, 'Processing response...');
+
+                if (!response.ok) {
+                    throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
+                }
+
+                usercacheFileManager.updateProgress(100, 'Upload complete!');
+                usercacheFileManager.showStatus(`File uploaded successfully to ${endpoint}`, 'success');
+                usercacheFileManager.updateSourceTree();
+                console.log('Upload to user cache successful:', responseData);
+                usercacheFileManager.resetUploadWidget();
+
+            } catch (error) {
+               console.error('Upload error:', error);
+                               usercacheFileManager.updateProgress(0, 'Upload failed');
+
+                               // Handle different error types
+                               let errorMessage = 'Upload failed';
+                               if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                                   errorMessage = 'Network error - check your connection';
+                               } else if (error.message.includes('status')) {
+                                   errorMessage = error.message;
+                               } else {
+                                   errorMessage = `Upload failed: ${error.message}`;
+                               }
+
+                               usercacheFileManager.showStatus(errorMessage, 'error');
+
+                               // Reset after delay
+                               setTimeout(() => {
+                                   usercacheFileManager.resetUploadWidget();
+                               }, 3000);
+            }
+        }
+
+        // Reset upload widget
+        usercacheFileManager.resetUploadWidget = function() {
+            isUploading = false;
+            selectedZipFile = null;
+
+            const uploadArea = document.querySelector('.uce-upload-area');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const zipFileInput = document.getElementById('zipFile');
+
+            uploadArea.classList.remove('uce-uploading');
+            uploadBtn.disabled = false;
+            zipFileInput.value = '';
+
+            usercacheFileManager.toggleUploadControls(false);
+        }
+
+        // Toggle minimize state
+        usercacheFileManager.toggleMinimize = function() {
+            const uploadWidget = document.getElementById('uploadWidget');
+            const minimizeBtn = document.getElementById('minimizeBtn');
+
+            isMinimized = !isMinimized;
+
+            if (isMinimized) {
+                uploadWidget.classList.add('uce-minimized');
+                minimizeBtn.innerHTML = '+';
+                minimizeBtn.title = 'Maximize';
+                usercacheFileManager.showStatus('Upload widget minimized');
+            } else {
+                uploadWidget.classList.remove('uce-minimized');
+                minimizeBtn.innerHTML = '−';
+                minimizeBtn.title = 'Minimize';
+                usercacheFileManager.showStatus('Upload widget maximized');
+            }
+        }
+
+        // Update selected file display
+        usercacheFileManager.updateSelectedFileDisplay = function(file) {
+            const fileNameEl = document.getElementById('selectedFileName');
+            const fileSizeEl = document.getElementById('selectedFileSize');
+
+            fileNameEl.textContent = file.name;
+            fileSizeEl.textContent = usercacheFileManager.formatFileSize(file.size);
+            usercacheFileManager.toggleUploadControls(true);
+
+            // Auto-expand if minimized when file is selected
+            if (isMinimized) {
+                usercacheFileManager.toggleMinimize();
+                usercacheFileManager.showStatus(`File selected: ${file.name}. Widget expanded for upload.`);
+            }
+        }
+
+        // ZIP file upload
+        document.getElementById('zipFile').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                selectedZipFile = file;
+                usercacheFileManager.updateSelectedFileDisplay(file);
+                usercacheFileManager.showStatus(`ZIP file "${file.name}" selected. Click upload to send to server.`);
+            }
+        });
+
+        // Upload button click
+        document.getElementById('uploadBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedZipFile && !isUploading) {
+                usercacheFileManager.uploadFileToAPI(selectedZipFile);
+            }
+        });
+
+        // Minimize button click
+        document.getElementById('minimizeBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            usercacheFileManager.toggleMinimize();
+        });
+
+        // Upload widget drag and drop
+        const uploadArea = document.querySelector('.uce-upload-area');
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('click', (e) => {
+            // Prevent file dialog if widget is minimized
+            if (isMinimized) {
+                e.preventDefault();
+                e.stopPropagation();
+                usercacheFileManager.toggleMinimize();
+                return;
+            }
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = Array.from(e.dataTransfer.files);
+            const zipFiles = files.filter(f => f.name.toLowerCase().endsWith('.zip'));
+
+            if (zipFiles.length > 0) {
+                selectedZipFile = zipFiles[0];
+                usercacheFileManager.updateSelectedFileDisplay(selectedZipFile);
+                usercacheFileManager.showStatus(`ZIP file "${selectedZipFile.name}" selected. Click upload to send to server.`);
+
+                // Update file input
+                const dt = new DataTransfer();
+                dt.items.add(selectedZipFile);
+                document.getElementById('zipFile').files = dt.files;
+            } else {
+                usercacheFileManager.showStatus('Please drop ZIP files only', 'error');
+            }
+        });
+
+
+//Left Panel
+
        usercacheFileManager.fetchData = function(url) {
           let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
           var responseData = {};

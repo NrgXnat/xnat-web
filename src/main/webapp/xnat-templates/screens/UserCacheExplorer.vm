@@ -3,14 +3,44 @@
 <link rel="stylesheet" type="text/css"  href="$content.getURI('/style/userCache/usercache.css')" >
 
   <div class="uce-container">
-        <div class="uce-upload-widget">
-              <div class="uce-upload-area" onclick="document.getElementById('zipFile').click()">
-                  <span class="uce-upload-icon"><i class="fa fa-upload"></i></span>
-                  <div class="uce-upload-text">Upload ZIP File</div>
-                  <div class="uce-upload-subtext">Click to browse or drag and drop</div>
-              </div>
-              <input type="file" id="zipFile" accept=".zip" />
-          </div>
+            <!-- Upload Widget -->
+                  <div class="uce-upload-widget" id="uploadWidget">
+                      <div class="uce-widget-header">
+                          <div class="uce-widget-title">
+                              <span><i class="fa fa-upload"></span>
+                              <span>ZIP File Upload</span>
+                          </div>
+                          <button class="uce-minimize-btn" id="minimizeBtn" title="Minimize/Maximize">−</button>
+                      </div>
+
+                      <div class="uce-upload-content" id="uploadContent">
+                          <div class="uce-upload-area" onclick="document.getElementById('zipFile').click()">
+                              <span class="uce-upload-icon"><i class="fa fa-upload"></span>
+                              <div class="uce-upload-text">Upload ZIP File</div>
+                              <div class="uce-upload-subtext">Click to browse or drag and drop</div>
+
+                              <div class="uce-upload-controls" id="uploadControls">
+                                  <div class="uce-selected-file" id="selectedFile">
+                                      <div class="uce-file-name" id="selectedFileName">No file selected</div>
+                                      <div class="uce-file-size" id="selectedFileSize"></div>
+                                  </div>
+                                  <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"> Upload</button>
+                              </div>
+
+                              <div class="uce-progress-container" id="progressContainer">
+                                  <div class="uce-progress-bar">
+                                      <div class="uce-progress-fill" id="progressFill"></div>
+                                  </div>
+                                  <div class="uce-progress-text">
+                                      <span class="uce-progress-status" id="progressStatus">Preparing upload...</span>
+                                      <span class="uce-progress-percentage" id="progressPercentage">0%</span>
+                                  </div>
+                              </div>
+                          </div>
+                          <input type="file" id="zipFile" accept=".zip" />
+                      </div>
+                  </div>
+
   <div class="uce-panels-container">
 
          <!-- Source Pane -->
@@ -30,20 +60,20 @@
                  <span class="uce-icon"><i class="fa fa-folder"></i></span>
                   Select Destination
                    <!-- Review Button -->
-                                  <div class="uce-review-section">
-                                      <button class="uce-review-btn" id="reviewBtn">
-                                          <span class="uce-review-icon"></span>
-                                          <span class="uce-review-text">Review</span>
-                                          <span class="uce-total-files" id="totalFiles">0 files</span>
-                                      </button>
-
-                                  </div>
              </div>
              <div class="use-pane-content">
                  <div class="uce-folder-tree" id="destinationTree"></div>
              </div>
+              <div class="uce-review-section sticky-button">
+                  <button class="uce-review-btn" id="reviewBtn">
+                      <span class="uce-review-icon"></span>
+                      <span class="uce-review-text">Review and Ingest</span>
+                      <span class="uce-total-files" id="totalFiles">0 files</span>
+                  </button>
 
+              </div>
          </div>
 </div>
+ <div id="statusMessage" class="status-message"></div>
      </div>
 <script type="text/javascript" src="$content.getURI('/scripts/xnat/app/usercacheFiles/userCacheFileManager.js')"></script>

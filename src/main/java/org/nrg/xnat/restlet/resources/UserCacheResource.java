@@ -356,7 +356,8 @@ public class UserCacheResource extends SecureResource {
 		} else {
 			dirString = userPath + File.separator + pXNAME;
 			if (pFILE==null || pFILE.length()>0) {
-				fileName=pFILE + File.separator + remainingPart;
+				fileName=pFILE;
+				if (!remainingPart.equals("")) fileName += File.separator + remainingPart;
 			}
 		}
 		File dir = new File (dirString);

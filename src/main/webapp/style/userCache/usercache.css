@@ -26,12 +26,17 @@
             backdrop-filter: blur(10px);
         }
 
-      .uce-upload-widget {
+   .uce-upload-widget {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 30px;
             text-align: center;
             position: relative;
             overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .uce-upload-widget.uce-minimized {
+            padding: 15px 30px;
         }
 
         .uce-upload-widget::before {
@@ -48,6 +53,69 @@
         @keyframes shimmer {
             0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
             100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .uce-widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .uce-upload-widget.minimized .uce-widget-header {
+            margin-bottom: 0;
+        }
+
+        .uce-widget-title {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .uce-minimize-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: bold;
+            backdrop-filter: blur(5px);
+        }
+
+        .uce-minimize-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: scale(1.1);
+        }
+
+        .uce-minimize-btn:active {
+            transform: scale(0.95);
+        }
+
+        .uce-upload-content {
+            transition: all 0.3s ease;
+            opacity: 1;
+            max-height: 500px;
+            overflow: hidden;
+        }
+
+        .uce-upload-widget.minimized .upload-content {
+            opacity: 0;
+            max-height: 0;
+            margin: 0;
+            padding: 0;
         }
 
         .uce-upload-area {
@@ -72,6 +140,11 @@
             transform: scale(1.02);
         }
 
+        .uce-upload-area.uce-uploading {
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
         .uce-upload-icon {
             font-size: 48px;
             color: white;
@@ -91,9 +164,124 @@
             font-size: 14px;
         }
 
+        .uce-upload-controls {
+            margin-top: 20px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .uce-upload-controls.uce-show {
+            display: flex;
+        }
+
+        .uce-selected-file {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 15px;
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            flex: 1;
+            backdrop-filter: blur(5px);
+        }
+
+        .uce-file-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .uce-file-size {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .uce-upload-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .uce-upload-btn:hover {
+            background: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .uce-upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .uce-progress-container {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .uce-progress-container.uce-show {
+            display: block;
+        }
+
+        .uce-progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .uce-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .uce-progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: progressShimmer 2s infinite;
+        }
+
+        @keyframes progressShimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .uce-progress-text {
+            color: white;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .uce-progress-status {
+            font-weight: 500;
+        }
+
+        .uce-progress-percentage {
+            font-weight: 600;
+        }
+
         #zipFile {
             display: none;
         }
+
 
                   .uce-panels-container {
                             display: flex;
@@ -578,14 +766,14 @@
                     flex-direction: column;
                 }
 
-                .uce-pane.sticky-button #associatedTree {
+                .uce-panel.sticky-button #associatedTree {
                     flex: 1;
                     overflow-y: auto;
                     padding: 15px;
                     padding-bottom: 70px; /* Space for button */
                 }
 
-                .uce-pane.sticky-button .uce-ingest-button {
+                .uce-review-section.sticky-button .uce-ingest-button {
                     position: sticky;
                     bottom: 0;
                     margin: 0;
