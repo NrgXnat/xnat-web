@@ -148,7 +148,7 @@ var XNAT = getObject(XNAT);
                 usercacheFileManager.updateProgress(100, 'Upload complete!');
                 usercacheFileManager.showStatus(`File uploaded successfully to ${endpoint}`, 'success');
                 usercacheFileManager.updateSourceTree();
-                console.log('Upload to user cache successful:', responseData);
+                console.log('Upload of file ' + filename + ' to user cache successful');
                 usercacheFileManager.resetUploadWidget();
 
             } catch (error) {
@@ -193,18 +193,21 @@ var XNAT = getObject(XNAT);
         // Toggle minimize state
         usercacheFileManager.toggleMinimize = function() {
             const uploadWidget = document.getElementById('uploadWidget');
+            const uploadContent = document.getElementById('uploadContent');
             const minimizeBtn = document.getElementById('minimizeBtn');
 
             isMinimized = !isMinimized;
 
             if (isMinimized) {
+                uploadContent.classList.add('uce-minimized');
                 uploadWidget.classList.add('uce-minimized');
-                minimizeBtn.innerHTML = '+';
+                minimizeBtn.innerHTML = '<i class="fa fa-plus-circle"></i>';
                 minimizeBtn.title = 'Maximize';
                 usercacheFileManager.showStatus('Upload widget minimized');
             } else {
+                uploadContent.classList.remove('uce-minimized');
                 uploadWidget.classList.remove('uce-minimized');
-                minimizeBtn.innerHTML = '−';
+                minimizeBtn.innerHTML = '<i class="fa fa-minus-circle"></i>';
                 minimizeBtn.title = 'Minimize';
                 usercacheFileManager.showStatus('Upload widget maximized');
             }
@@ -622,10 +625,21 @@ var XNAT = getObject(XNAT);
                     dropZoneDiv.style.background = 'transparent';
                 });
 
+                dropZoneDiv.addEventListener('mouseenter', () => {
+                     const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
+                     tooltip.style.display = 'block'; // Show the tooltip
+                });
+
+                dropZoneDiv.addEventListener('mouseleave', () => {
+                     const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
+                     tooltip.style.display = 'none'; // Hide the tooltip
+                });
+
+
                 dropZoneDiv.addEventListener('drop', (e) => {
                     e.preventDefault();
-                    dropZoneDiv.style.borderColor = '#ddd';
-                    dropZoneDiv.style.background = 'transparent';
+                    dropZoneDiv.style.borderColor = '#667eea';
+                    dropZoneDiv.style.background = 'rgba(79, 172, 254, 0.3)';
 
                     const fileData = JSON.parse(e.dataTransfer.getData('text/plain'));
                     usercacheFileManager.handleFileDrop(fileData, dropZoneDiv.getAttribute('data-uri'));
@@ -643,15 +657,99 @@ var XNAT = getObject(XNAT);
 
             droppedFiles.push(fileInfo);
             usercacheFileManager.updateFileCount();
-            usercacheFileManager.showNotification(`${fileData.name} associated to ${destinationPath}`, 'success');
-            //usercacheFileManager.updateAssociatedFileTree();
+            usercacheFileManager.showStatus(`${fileData.name} associated to ${destinationPath}`, 'success');
         }
 
 
-        usercacheFileManager.updateAssociatedFileTree = function() {
-            console.log(JSON.stringify(droppedFiles));
-            const tree = usercacheFileManager.convertToTree(droppedFiles);
-            associatedTree.innerHTML = usercacheFileManager.displayTree(tree);
+    usercacheFileManager.updateAssociatedFileTree = function() {
+        console.log(JSON.stringify(droppedFiles));
+        const tree = usercacheFileManager.convertToTree(droppedFiles);
+        const associatedTree = document.getElementById('associatedTree');
+        associatedTree.innerHTML = usercacheFileManager.displayTree(tree);
+        usercacheFileManager.show(associatedTree);
+        usercacheFileManager.hide(document.getElementById('destinationTree'));
+    }
+
+    usercacheFileManager.hide = function(element) {
+        element.style.display = 'none';
+    }
+
+    usercacheFileManager.show = function(element) {
+        element.style.display = 'block';
+    }
+
+
+        usercacheFileManager.convertToTree = function(jsonArray) {
+             const tree = {};
+             jsonArray.forEach(item => {
+               // Split the destPath into segments
+               const pathSegments = item.destPath.split('/');
+               let currentNode = tree;
+
+               // Navigate through each path segment
+               pathSegments.forEach((segment, index) => {
+                 // If this segment doesn't exist, create it
+                 if (!currentNode[segment]) {
+                   currentNode[segment] = {
+                     type: 'folder',
+                     children: {},
+                     files: []
+                   };
+                 }
+
+                 // If this is the last segment, add the file here
+                 if (index === pathSegments.length - 1) {
+                   currentNode[segment].files.push({
+                     name: item.name,
+                     sourcePath: item.sourcePath,
+                     destPath: item.destPath,
+                     status: item.status
+                   });
+                 } else {
+                   // Move to the next level
+                   currentNode = currentNode[segment].children;
+                 }
+               });
+             });
+             return tree;
+           }
+
+
+        usercacheFileManager.displayTree = function(tree, indent = '') {
+          let result = '';
+          let folderIcon = '<i class="fa fa-folder"></i>';
+          let fileIcon = '<i class="fa fa-file"></i>';
+          Object.keys(tree).forEach(key => {
+            if (key === '__files__') {
+              tree[key].forEach(file => {
+                result += `<div style="padding-left: ${indent.length * 10}px;">${fileIcon} ${file.name}
+                             <button onclick="XNAT.app.usercacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
+                                                        style="padding: 0;  color: red; border: none;  cursor: pointer;"
+                                                        title="Remove file">
+                                                  <i class="fa fa-times"></i>
+                                                </button>
+                </div>`;
+              });
+            } else if (tree[key].type === 'folder') {
+              result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon} ${key}/</div>`;
+              if (tree[key].files.length > 0) {
+                tree[key].files.forEach(file => {
+                  result += `<div style="padding-left: ${(indent.length + 2) * 10}px;">${fileIcon}${file.name}
+                               <button onclick="XNAT.app.usercacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
+                                                          style="padding: 0;  color: red; border: none;  cursor: pointer;"
+                                                          title="Remove file">
+                                                    <i class="fa fa-times"></i>
+                                                  </button>
+                  </div>`;
+                });
+              }
+              result += usercacheFileManager.displayTree(tree[key].children, indent + '  ');
+            } else {
+              result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon}${key}/</div>`;
+              result += usercacheFileManager.displayTree(tree[key], indent + '  ');
+            }
+          });
+          return result;
         }
 
 
@@ -660,6 +758,7 @@ var XNAT = getObject(XNAT);
        droppedFiles = droppedFiles.filter(item =>
                         item && item.sourcePath && item.sourcePath !== sourcePath);
        usercacheFileManager.updateAssociatedFileTree();
+       usercacheFileManager.updateFileCount();
     }
 
     usercacheFileManager.removeFileFromCache = function(filePath) {
@@ -673,16 +772,41 @@ var XNAT = getObject(XNAT);
        urlTail += '/files/' + relativeFilePath;
      }
      let deleteUrl = XNAT.url.csrfUrl(urlTail,{},false,false);
-     XNAT.xhr.delete({
-                  url: deleteUrl,
-                  async: false,
-                  success: function (data) {
-                      XNAT.app.usercacheFileManager.updateSourceTree();
-                  },
-                  fail: function (e) {
-                      errorHandler(e);
-                  }
-       });
+
+
+      XNAT.ui.dialog.open({
+                title: 'Confirm Deletion',
+                width: 350,
+                content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
+                buttons: [
+                    {
+                        label: 'Confirm Delete',
+                        isDefault: true,
+                        close: true,
+                        action: function(){
+                             usercacheFileManager.deleteCacheFile(deleteUrl);
+                        }
+                    },
+                    {
+                        label: 'Cancel',
+                        close: true
+                    }
+                ]
+            })
+    }
+
+    usercacheFileManager.deleteCacheFile = function(deleteUrl) {
+          XNAT.xhr.delete({
+                       url: deleteUrl,
+                       async: false,
+                       success: function (data) {
+                           XNAT.app.usercacheFileManager.updateSourceTree();
+                       },
+                       fail: function (e) {
+                           errorHandler(e);
+                       }
+            });
+
     }
 
     usercacheFileManager.getRelativePath = function(fullPath) {
@@ -696,31 +820,6 @@ var XNAT = getObject(XNAT);
         totalFilesSpan.innerHTML = droppedFiles.length +  " files";
     }
 
-        usercacheFileManager.showNotification = function(message, type = 'success') {
-            const notification = document.createElement('div');
-            const bgColor = type === 'success' ? 'rgba(40, 167, 69, 0.9)' : 'rgba(220, 53, 69, 0.9)';
-
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${bgColor};
-                color: white;
-                padding: 15px 20px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-                z-index: 1000;
-                font-weight: 600;
-                animation: slideIn 0.3s ease-out;
-                max-width: 300px;
-            `;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
-        }
 
         usercacheFileManager.toggleFolder = function(event, folderPath, isSourcePane) {
           event.preventDefault();
@@ -745,8 +844,6 @@ var XNAT = getObject(XNAT);
               }
               const treeContainer = document.getElementById('sourceTree');
               treeContainer.innerHTML = usercacheFileManager.renderTree(sourceStructure, true);
-          } else {
-
           }
           folderElement.style.backgroundColor = '#e8f4fd';
         }
@@ -796,6 +893,30 @@ var XNAT = getObject(XNAT);
 
 /*********************************************
 / Code for Destination panel */
+
+                const reviewRow = document.getElementById('reviewRow');
+                const actionRow = document.getElementById('actionRow');
+                const reviewBtn = document.getElementById('reviewBtn');
+                const addMoreBtn = document.getElementById('continueBtn');
+                const ingestBtn = document.getElementById('ingestBtn');
+
+                // Review button click handler
+                reviewBtn.addEventListener('click', function() {
+                    usercacheFileManager.updateAssociatedFileTree();
+                    reviewRow.classList.add('hidden');
+                    actionRow.classList.remove('hidden');
+                });
+
+                // Add More button click handler
+                continueBtn.addEventListener('click', function() {
+                    actionRow.classList.add('hidden');
+                    reviewRow.classList.remove('hidden');
+                    usercacheFileManager.renderDestinationTree(destinationStructure);
+                    usercacheFileManager.hide(document.getElementById('associatedTree'));
+                    usercacheFileManager.show(document.getElementById('destinationTree'));
+
+                });
+
 
 // Cache for loaded data
         usercacheFileManager.updateDestinationTree = async function() {
@@ -872,9 +993,10 @@ var XNAT = getObject(XNAT);
                          data-filename="${node.name}"
                          data-path="${path + node.name}" data-uri="${node.uri}"
                         >
-                        <span class="uce-dropbox-icon"><i class="fa fa-dropbox"></i>${node.uri}</span>
+                        <span class="uce-dropbox-icon"><i class="fa fa-dropbox"></i></span>
+                        <span class="uce-drop-zone-tooltip" style="display:none">${node.uri}</span>
                         <br>
-                        <span>Drop files here for ${node.name}</span>
+                        <span class="uce-dropbox-icon">Drop files here for ${node.name}</span>
                      </div>`;
             }
             return html;
@@ -918,6 +1040,10 @@ var XNAT = getObject(XNAT);
           const nodeXnatType = folderElement.getAttribute('data-xnatType');
           const nodeName = folderElement.getAttribute('data-name');
           const nodeUri = folderElement.getAttribute('data-uri');
+          let isAlreadyLoaded = usercacheFileManager.isNodeLoaded(destinationStructure, nodeUri, );
+          if (isAlreadyLoaded) {
+            return;
+          }
           switch(nodeXnatType) {
             case 'project':
                 var resources = usercacheFileManager.fetchProjectResources(nodeUri);
@@ -1070,10 +1196,23 @@ usercacheFileManager.addChildToNode = function(data, targetUri, childNode) {
     } else if (!Array.isArray(node.children)) {
         node.children = [];
     }
-
     node.children.push(childNode);
     return true;
 }
+
+usercacheFileManager.isNodeLoaded = function(data, targetUri) {
+    const node = usercacheFileManager.findNodeByUri(data, targetUri);
+
+    if (!node) {
+        return true;
+    }
+
+    if (node.children && node.children.length>0) {
+        return true;
+    }
+    return false;
+}
+
 
 /**
  * Finds a node and returns both the node reference and its parent for advanced modification

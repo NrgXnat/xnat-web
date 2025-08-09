@@ -12,6 +12,7 @@ package org.nrg.xnat.restlet.resources;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.nrg.action.ActionException;
 import org.nrg.xdat.XDAT;
@@ -500,8 +501,8 @@ public class UserCacheResource extends SecureResource {
 		
 		// Assume file name represents correct compression method
         if (fileName.contains(".")) {
-			final String extension = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
-        	if (Arrays.asList(XDAT.getSiteConfigPreferences().getZipExtensionsAsArray()).contains(extension)) {
+        	final String extension = FilenameUtils.getExtension(fileName);
+			if (Arrays.asList(XDAT.getSiteConfigPreferences().getZipExtensionsAsArray()).contains(extension)) {
 	        	return CompressionMethod.ZIP;
 	        } else if (extension.equalsIgnoreCase(".tar")) {
 	        	return CompressionMethod.TAR;

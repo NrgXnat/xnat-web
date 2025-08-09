@@ -7,15 +7,15 @@
                   <div class="uce-upload-widget" id="uploadWidget">
                       <div class="uce-widget-header">
                           <div class="uce-widget-title">
-                              <span><i class="fa fa-upload"></span>
+                              <span><i class="fa fa-upload"></i></span>
                               <span>ZIP File Upload</span>
                           </div>
-                          <button class="uce-minimize-btn" id="minimizeBtn" title="Minimize/Maximize">−</button>
+                          <button class="uce-minimize-btn" id="minimizeBtn" title="Minimize/Maximize"><i class="fa fa-minus-circle"></i></button>
                       </div>
 
                       <div class="uce-upload-content" id="uploadContent">
                           <div class="uce-upload-area" onclick="document.getElementById('zipFile').click()">
-                              <span class="uce-upload-icon"><i class="fa fa-upload"></span>
+                              <span class="uce-upload-icon"><i class="fa fa-upload"></i></span>
                               <div class="uce-upload-text">Upload ZIP File</div>
                               <div class="uce-upload-subtext">Click to browse or drag and drop</div>
 
@@ -24,7 +24,7 @@
                                       <div class="uce-file-name" id="selectedFileName">No file selected</div>
                                       <div class="uce-file-size" id="selectedFileSize"></div>
                                   </div>
-                                  <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"> Upload</button>
+                                  <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"></i> Upload</button>
                               </div>
 
                               <div class="uce-progress-container" id="progressContainer">
@@ -63,15 +63,30 @@
              </div>
              <div class="use-pane-content">
                  <div class="uce-folder-tree" id="destinationTree"></div>
+                 <div class="uce-folder-tree" id="associatedTree" style="display:none"></div>
              </div>
-              <div class="uce-review-section sticky-button">
-                  <button class="uce-review-btn" id="reviewBtn">
-                      <span class="uce-review-icon"></span>
-                      <span class="uce-review-text">Review and Ingest</span>
-                      <span class="uce-total-files" id="totalFiles">0 files</span>
-                  </button>
+             <div class="button-container sticky-button">
+                     <!-- Row 1: Review Button -->
+                     <div id="reviewRow" class="button-row review">
+                         <button id="reviewBtn" class="btn review-btn">
+                               <span class="uce-review-icon"></span>
+                               <span class="uce-review-text">Review and Ingest</span>
+                               <span class="uce-total-files" id="totalFiles">0 files</span>
+                         </button>
+                     </div>
 
-              </div>
+                     <!-- Row 2: Add More and Ingest Buttons -->
+                     <div id="actionRow" class="button-row hidden">
+                         <button id="continueBtn" class="btn continue-btn">
+                           <span class="uce-review-icon"></span>
+                           <span class="uce-review-text">Add More</span>
+                         </button>
+                         <button id="ingestBtn" class="btn ingest-btn">
+                              <span class="uce-review-icon"></span>
+                              <span class="uce-review-text">Ingest</span>
+                         </button>
+                     </div>
+             </div>
          </div>
 </div>
  <div id="statusMessage" class="status-message"></div>
