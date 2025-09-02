@@ -8,7 +8,9 @@ import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
-import org.nrg.dicom.mizer.objects.AnonymizationResultReject;
+import org.nrg.dicom.mizer.objects.Dcm4cheConvert;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.xnat.entities.ArchiveProcessorInstance;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
@@ -23,7 +25,7 @@ import java.util.Map;
 public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
 
     @Override
-    public boolean process(final DicomObject dicomData, final SessionData sessionData, final MizerService mizer, ArchiveProcessorInstance instance, Map<String, Object> aeParameters) throws ServerException{
+    public boolean process(DicomObject dicomData, final SessionData sessionData, final MizerService mizer, ArchiveProcessorInstance instance, Map<String, Object> aeParameters) throws ServerException{
         try {
             final String studyInstanceUID = dicomData.getString(Tag.StudyInstanceUID);
 
@@ -38,7 +40,9 @@ public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
                     subj = sessionData.getSubject();
                     folder = sessionData.getFolderName();
                 }
-                AnonymizationResult result = mizer.anonymize(dicomData, proj, subj, folder, script, true);
+                DicomObjectI doi = DicomObjectFactory.newInstance(dicomData);
+                AnonymizationResult result = mizer.anonymize(doi, proj, subj, folder, script, true);
+                dicomData = Dcm4cheConvert.toDcm4che2DicomObject(doi.getAttributes());
                 if (result instanceof AnonymizationResultError) {
                     String msg = result.getMessage();
                     log.debug("Dicom anonymization failed: {}: {}", dicomData, msg);
