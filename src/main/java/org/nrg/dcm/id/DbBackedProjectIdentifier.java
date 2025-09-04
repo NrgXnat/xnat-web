@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.dcm4che2.data.DicomElement;
 import org.dcm4che2.data.DicomObject;
 import org.nrg.dcm.Extractor;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
@@ -57,7 +58,7 @@ public abstract class DbBackedProjectIdentifier implements DicomProjectIdentifie
             extractors = _extractors;
         }
         for (final Extractor extractor : extractors) {
-            final String alias = extractor.extract(dicomObject);
+            final String alias = extractor.extract(DicomObjectFactory.newInstance(dicomObject));
             if (_log.isDebugEnabled()) {
                 dumpExtractor(extractor, dicomObject, alias);
             }
