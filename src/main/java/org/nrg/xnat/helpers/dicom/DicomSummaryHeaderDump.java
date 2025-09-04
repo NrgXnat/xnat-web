@@ -11,6 +11,26 @@
  */
 package org.nrg.xnat.helpers.dicom;
 
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ListMultimap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multimaps;
+import org.apache.commons.lang.StringUtils;
+import org.dcm4che2.data.DicomElement;
+import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.data.DicomObjectToStringParam;
+import org.dcm4che2.data.Tag;
+import org.dcm4che2.io.DicomInputStream;
+import org.dcm4che2.io.StopTagInputHandler;
+import org.dcm4che2.util.TagUtils;
+import org.nrg.dicom.mizer.objects.DicomElementI;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
+import org.nrg.xft.XFTTable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -23,24 +43,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-
-import org.apache.commons.lang.StringUtils;
-import org.dcm4che2.data.DicomElement;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.DicomObjectToStringParam;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.StopTagInputHandler;
-import org.dcm4che2.util.TagUtils;
-import org.nrg.xft.XFTTable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimaps;
 
 /**
  * The Class DicomSummaryHeaderDump.
@@ -283,6 +285,8 @@ public final class DicomSummaryHeaderDump {
      * @param e the e
      */
     public void write(XFTTable t,DicomObject header,DicomObjectToStringParam formatParams,DicomElement e){
+        DicomObjectI doi= DicomObjectFactory.newInstance(header);
+        DicomElementI dei = doi.getElement(e.tag());
     	if (fields.isEmpty() || fields.containsKey(e.tag())) {
             if (e.hasDicomObjects()) {
                 for (int i = 0; i < e.countItems(); i++) {
@@ -293,8 +297,8 @@ public final class DicomSummaryHeaderDump {
                         write( t, header, formatParams, e1);
                     }
                 }
-            } else if (SiemensShadowHeader.isShadowHeader(header, e)) {
-                SiemensShadowHeader.addRows(t, header, e, fields.get(e.tag()));
+            } else if (SiemensShadowHeader.isShadowHeader(doi, dei)) {
+                SiemensShadowHeader.addRows(t, doi, dei, fields.get(e.tag()));
             } else {
                 t.insertRow(makeRow(header, e, null, formatParams.valueLength));		
             }

@@ -18,6 +18,9 @@ import org.dcm4che2.data.Tag;
 import org.dcm4che2.io.DicomInputStream;
 import org.dcm4che2.io.StopTagInputHandler;
 import org.dcm4che2.util.TagUtils;
+import org.nrg.dicom.mizer.objects.DicomElementI;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xft.XFTTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -170,6 +173,8 @@ public final class DicomHeaderDump {
         return t;
     }
     public void write(XFTTable t,DicomObject header,DicomObjectToStringParam formatParams,DicomElement e){
+        DicomObjectI doi= DicomObjectFactory.newInstance(header);
+        DicomElementI dei = doi.getElement(e.tag());
         if (fields.isEmpty() || fields.containsKey(e.tag())) {
             if (e.hasDicomObjects()) {
                 for (int i = 0; i < e.countItems(); i++) {
@@ -180,8 +185,8 @@ public final class DicomHeaderDump {
                         t.insertRow(makeRow(header, e1, TagUtils.toString(e.tag()), formatParams.valueLength));
                     }
                 }
-            } else if (SiemensShadowHeader.isShadowHeader(header, e)) {
-                SiemensShadowHeader.addRows(t, header, e, fields.get(e.tag()));
+            } else if (SiemensShadowHeader.isShadowHeader(doi, dei)) {
+                SiemensShadowHeader.addRows(t, doi, dei, fields.get(e.tag()));
             } else {
                 t.insertRow(makeRow(header, e, null, formatParams.valueLength));		
             }
