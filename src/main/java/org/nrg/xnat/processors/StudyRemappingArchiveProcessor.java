@@ -2,14 +2,11 @@ package org.nrg.xnat.processors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
 import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.dicom.mizer.objects.AnonymizationResultNoOp;
-import org.nrg.dicom.mizer.objects.Dcm4cheConvert;
-import org.nrg.dicom.mizer.objects.DicomObjectFactory;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.xnat.entities.ArchiveProcessorInstance;
@@ -25,7 +22,7 @@ import java.util.Map;
 public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
 
     @Override
-    public boolean process(DicomObject dicomData, final SessionData sessionData, final MizerService mizer, ArchiveProcessorInstance instance, Map<String, Object> aeParameters) throws ServerException{
+    public boolean process(DicomObjectI dicomData, final SessionData sessionData, final MizerService mizer, ArchiveProcessorInstance instance, Map<String, Object> aeParameters) throws ServerException{
         try {
             final String studyInstanceUID = dicomData.getString(Tag.StudyInstanceUID);
 
@@ -40,9 +37,7 @@ public class StudyRemappingArchiveProcessor extends AbstractArchiveProcessor {
                     subj = sessionData.getSubject();
                     folder = sessionData.getFolderName();
                 }
-                DicomObjectI doi = DicomObjectFactory.newInstance(dicomData);
-                AnonymizationResult result = mizer.anonymize(doi, proj, subj, folder, script, true);
-                dicomData = Dcm4cheConvert.toDcm4che2DicomObject(doi.getAttributes());
+                AnonymizationResult result = mizer.anonymize(dicomData, proj, subj, folder, script, true);
                 if (result instanceof AnonymizationResultError) {
                     String msg = result.getMessage();
                     log.debug("Dicom anonymization failed: {}: {}", dicomData, msg);

@@ -33,6 +33,8 @@ import org.nrg.dcm.Restructurer;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.dicom.mizer.objects.AnonymizationResultReject;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
@@ -572,9 +574,10 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 Class<? extends ArchiveProcessor> processorClass =
                         (Class<? extends ArchiveProcessor>) Class.forName(processorInstance.getProcessorClass());
                 ArchiveProcessor processor = processorsMap.get(processorClass);
-                if (processor.accept(dicom, session, _mizer, processorInstance, _parameters)) {
+                DicomObjectI doi = DicomObjectFactory.newInstance(dicom);
+                if (processor.accept(doi, session, _mizer, processorInstance, _parameters)) {
                     // processor.process return false if the instance is rejected.
-                    if (!processor.process(dicom, session, _mizer, processorInstance, _parameters)) {
+                    if (!processor.process(doi, session, _mizer, processorInstance, _parameters)) {
                         continueProcessingData = false;
                         break;
                     }
