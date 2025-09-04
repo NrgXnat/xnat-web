@@ -12,16 +12,15 @@ package org.nrg.dcm.scp;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.dcm4che2.data.DicomObject;
-import org.dcm4che3.data.Tag;
-import org.dcm4che3.data.VR;
-import org.dcm4che3.net.Association;
+import org.dcm4che2.data.Tag;
+import org.dcm4che2.data.UID;
+import org.dcm4che2.data.VR;
+import org.dcm4che2.net.Association;
 import org.dcm4che2.net.CommandUtils;
-import org.dcm4che3.net.DicomServiceException;
+import org.dcm4che2.net.DicomServiceException;
 import org.dcm4che2.net.PDVInputStream;
-import org.dcm4che3.data.Attributes;
-import org.dcm4che3.data.UID;
-import org.dcm4che3.net.service.BasicCStoreSCP;
-import org.dcm4che3.net.pdu.PresentationContext;
+import org.dcm4che2.net.service.CStoreSCP;
+import org.dcm4che2.net.service.DicomService;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dcm.DicomFileNamer;
@@ -34,10 +33,12 @@ import org.nrg.xnat.helpers.uri.URIManager;
 import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 
 import javax.inject.Provider;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Slf4j
-public class CStoreService extends BasicCStoreSCP {
+public class CStoreService extends DicomService implements CStoreSCP {
     private static final String PhilipsPrivateCXImageStorage = "1.3.46.670589.2.4.1.1";
     private static final String PhilipsPrivateVolumeStorage = "1.3.46.670589.5.0.1";
     private static final String PhilipsPrivate3DObjectStorage = "1.3.46.670589.5.0.2";
@@ -80,10 +81,10 @@ public class CStoreService extends BasicCStoreSCP {
         UID.HemodynamicWaveformStorage,
         UID.CardiacElectrophysiologyWaveformStorage,
         UID.BasicVoiceAudioWaveformStorage,
-//        UID.GrayscaleSoftcopyPresentationStateStorageSOPClass,
-//        UID.ColorSoftcopyPresentationStateStorageSOPClass,
-//        UID.PseudoColorSoftcopyPresentationStateStorageSOPClass,
-//        UID.BlendingSoftcopyPresentationStateStorageSOPClass,
+        UID.GrayscaleSoftcopyPresentationStateStorageSOPClass,
+        UID.ColorSoftcopyPresentationStateStorageSOPClass,
+        UID.PseudoColorSoftcopyPresentationStateStorageSOPClass,
+        UID.BlendingSoftcopyPresentationStateStorageSOPClass,
         UID.XRayAngiographicImageStorage,
         UID.EnhancedXAImageStorage,
         UID.XRayRadiofluoroscopicImageStorage,
@@ -128,7 +129,7 @@ public class CStoreService extends BasicCStoreSCP {
         UID.RTIonPlanStorage,
         UID.RTIonBeamsTreatmentRecordStorage,
         UID.EnhancedMRColorImageStorage, // Support for enhanced DICOM color images
-//        UID.SiemensCSANonImageStorage, // Siemens proprietary; we get this sometimes
+        UID.SiemensCSANonImageStorage, // Siemens proprietary; we get this sometimes
         PhilipsPrivateCXImageStorage, // Philips proprietary. Thanks, Philips.
         PhilipsPrivateVolumeStorage, PhilipsPrivate3DObjectStorage,
         PhilipsPrivate3DObject2Storage, PhilipsPrivateSurfaceStorage,
@@ -239,36 +240,23 @@ public class CStoreService extends BasicCStoreSCP {
      * int, org.dcm4che2.data.DicomObject, org.dcm4che2.net.PDVInputStream,
      * java.lang.String)
      */
-
     /**
      * Adapted from StorageService, with a few tweaks for better compliance with
      * the standard: (see PS 3.7, section 9.3.1.2) + standard requires UID
      * fields in C-STORE-RSP + standard requires Data Set Type (Null) in
      * response
      */
-
-
     @Override
-    protected void store(Association as, PresentationContext pc, Attributes rq, org.dcm4che3.net.PDVInputStream data, Attributes rsp) throws IOException {
-//        final boolean includeUIDs = CommandUtils.isIncludeUIDinRSP();
-//        CommandUtils.setIncludeUIDinRSP(true);
-//        final DicomObject rsp = CommandUtils.mkRSP(rq, CommandUtils.SUCCESS);
-//        rsp.putInt(Tag.DataSetType, VR.US, 0x0101);
-        try {
-//            Attributes rsp = new Attributes();
-//            rsp.setInt(Tag.Status, VR.US, 0x0000); // SUCCESS
-//            rsp.setInt(Tag.DataSetType, VR.US, 0x0101);
-            doCStore(as, pc, rq, data, rsp);
-
-
-            as.tryWriteDimseRSP(pc, rsp);
-
-        } catch (IOException e) {
-            throw e;
-        }
-//        doCStore(as, pcid, rq, dataStream, tsuid, rsp);
-//        as.writeDimseRSP(pcid, rsp);
-//        CommandUtils.setIncludeUIDinRSP(includeUIDs);
+    public void cstore(final Association as, final int pcid,
+            final DicomObject rq, final PDVInputStream dataStream,
+            final String tsuid) throws DicomServiceException,IOException {
+        final boolean includeUIDs = CommandUtils.isIncludeUIDinRSP();
+        CommandUtils.setIncludeUIDinRSP(true);
+        final DicomObject rsp = CommandUtils.mkRSP(rq, CommandUtils.SUCCESS);
+        rsp.putInt(Tag.DataSetType, VR.US, 0x0101);
+        doCStore(as, pcid, rq, dataStream, tsuid, rsp);
+        as.writeDimseRSP(pcid, rsp);
+        CommandUtils.setIncludeUIDinRSP(includeUIDs);
     }
 
     /**
@@ -287,9 +275,11 @@ public class CStoreService extends BasicCStoreSCP {
         .append(association.getSocket().getRemoteSocketAddress());
     }
 
-    private void doCStore(final Association as, PresentationContext pc, Attributes rq, org.dcm4che3.net.PDVInputStream data, Attributes rsp)
-    throws IOException {
-        final FileWriterWrapperI fw = new StreamWrapper(data);
+    private void doCStore(final Association as, final int pcid,
+            final DicomObject rq, final PDVInputStream dataStream,
+            final String tsuid, final DicomObject rsp)
+    throws DicomServiceException {
+        final FileWriterWrapperI fw = new StreamWrapper(dataStream);
         try {
             try {
                 boolean doCustomProcessing   = false;
@@ -297,7 +287,7 @@ public class CStoreService extends BasicCStoreSCP {
                 boolean anonymizationEnabled = true;
 
                 String aeTitle = as.getLocalAET();
-                int port = as.getConnection().getPort();
+                int port = as.getConnector().getPort();
                 doCustomProcessing   = _manager.isCustomProcessing( aeTitle, port);
                 directArchive        = _manager.isDirectArchive( aeTitle, port);
                 anonymizationEnabled = _manager.isAnonymizationEnabled( aeTitle, port);
@@ -307,7 +297,7 @@ public class CStoreService extends BasicCStoreSCP {
                         .put(GradualDicomImporter.TSUID_PARAM, tsuid)
                         .put(GradualDicomImporter.SENDER_AE_TITLE_PARAM, as.getRemoteAET())
                         .put(GradualDicomImporter.RECEIVER_AE_TITLE_PARAM, as.getLocalAET())
-                        .put(GradualDicomImporter.RECEIVER_PORT_PARAM, port)
+                        .put(GradualDicomImporter.RECEIVER_PORT_PARAM, as.getConnector().getPort())
                         .put(GradualDicomImporter.CUSTOM_PROC_PARAM, doCustomProcessing)
                         .put(GradualDicomImporter.DIRECT_ARCHIVE_PARAM, directArchive)
                         .put(URIManager.PREVENT_ANON, String.valueOf(!anonymizationEnabled))
