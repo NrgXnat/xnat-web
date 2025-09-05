@@ -12,6 +12,7 @@ import org.dcm4che3.net.ApplicationEntity;
 import org.dcm4che3.net.Connection;
 import org.dcm4che3.net.Device;
 import org.dcm4che3.net.TransferCapability;
+import org.dcm4che3.net.WhitelistAssociationHandler;
 import org.dcm4che3.net.service.BasicCEchoSCP;
 import org.dcm4che3.net.service.BasicCStoreSCP;
 import org.dcm4che3.net.service.DicomServiceRegistry;
@@ -71,6 +72,9 @@ public class DicomSCP {
 
                 final Device device = new Device(DEVICE_NAME);
                 device.addConnection(connection);
+
+                WhitelistAssociationHandler handler = new WhitelistAssociationHandler();
+                device.setAssociationHandler(handler);
 
                 dicomSCPs.put(port, new DicomSCP(device, port, manager));
             }
@@ -167,6 +171,7 @@ public class DicomSCP {
         for (final ApplicationEntity ae : applicationEntities) {
             getDevice().addApplicationEntity(ae);
         }
+
         log.info("Starting DICOM SCP on port {} with {} application entities", getPort(), applicationEntities.size());
 
         try {
@@ -263,6 +268,7 @@ public class DicomSCP {
         log.debug("Adding application entity \"{}\" with identifier \"{}\" and file namer \"{}\" to DICOM SCP on port {}", aeTitle, identifier, fileNamer, getPort());
 
         final ApplicationEntity applicationEntity = createApplicationEntity(aeTitle, instance);
+        ((WhitelistAssociationHandler)getDevice().getAssociationHandler()).addWhitelist(applicationEntity.getAETitle(), instance.isWhitelistEnabled(), instance.getWhitelist());
 
         getApplicationEntities().put(aeTitle, applicationEntity);
         getDicomServicesByApplicationEntity().put(applicationEntity,
@@ -279,8 +285,7 @@ public class DicomSCP {
         final ApplicationEntity applicationEntity = new ApplicationEntity(aeTitle);
         applicationEntity.addConnection(getDevice().listConnections().get(0));
         applicationEntity.setAssociationAcceptor(true);
-//        applicationEntity.setWhitelist(instance.getWhitelist());
-//        applicationEntity.setWhitelistEnabled(instance.isWhitelistEnabled());
+
         return applicationEntity;
     }
 
