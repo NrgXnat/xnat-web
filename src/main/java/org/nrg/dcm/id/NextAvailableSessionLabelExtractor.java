@@ -1,6 +1,6 @@
 package org.nrg.dcm.id;
 
-import org.dcm4che2.data.Tag;
+import org.dcm4che3.data.Tag;
 import org.nrg.dcm.Extractor;
 import org.nrg.dicom.mizer.objects.Dcm4cheConvert;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
