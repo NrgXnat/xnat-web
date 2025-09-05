@@ -2,7 +2,7 @@ package org.nrg.xnat.processors;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
-import org.dcm4che2.data.Tag;
+import org.dcm4che3.data.Tag;
 import org.nrg.action.ServerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;

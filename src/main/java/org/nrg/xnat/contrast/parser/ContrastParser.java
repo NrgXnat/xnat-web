@@ -37,7 +37,7 @@ public class ContrastParser implements Callable<List<ContrastBolus>> {
 
             final DicomObject dcmObj = din.readDicomObject();
 
-            final String classUID=dcmObj.getString(org.dcm4che2.data.Tag.SOPClassUID);
+            final String classUID=dcmObj.getString(Tag.SOPClassUID);
 
             final List<ContrastBolus> contrasts;
             if(enhancedUIDs.contains(classUID)){

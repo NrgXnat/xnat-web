@@ -14,13 +14,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.StopTagInputHandler;
-import org.dcm4che2.util.TagUtils;
+import org.dcm4che3.data.Tag;
+import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.util.TagUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.dicom.mizer.exceptions.MizerException;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
 import org.nrg.framework.utilities.Reflection;
@@ -772,13 +773,12 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         for (final XnatImagescandataI scan : src.getScans_scan()) {
             for (File file: getAllDicomFile(scan)) {
                 try (DicomInputStream dis = new DicomInputStream(file)) {
-                    dis.setHandler(new StopTagInputHandler(lastTag));
-                    DicomObject dio = dis.readDicomObject();
-                    if (!projectSpecific.shouldIncludeDicomObject(dio)) {
+                    DicomObjectI doi = DicomObjectFactory.newInstance(dis, lastTag);
+                    if (!projectSpecific.shouldIncludeDicomObject(doi.getDcm4che2Object())) {
                         fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
                         break;
                     }
-                } catch (IOException e) {
+                } catch (IOException | MizerException e) {
                     log.warn("Can't create DicomObject for file {}", file.getAbsolutePath());
                 }
             }
