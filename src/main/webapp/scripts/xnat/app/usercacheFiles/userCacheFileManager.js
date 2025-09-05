@@ -454,13 +454,11 @@ var XNAT = getObject(XNAT);
        usercacheFileManager.renderTree = function(node, enableDrag, path = "", level = 0) {
             let html = '';
             let enableFileDragOptions = "";
-            let enableFolderDragOptions = "";
             const folderPath = path + node.name;
             let includeDelete = enableDrag;
             let draggable = "";
             if (enableDrag) {
                 enableFileDragOptions =  'ondragstart="XNAT.app.usercacheFileManager.handleDragStart(event)" ondragend="XNAT.app.usercacheFileManager.handleDragEnd(event)"';
-                enableFolderDragOptions =  'ondragstart="XNAT.app.usercacheFileManager.handleDragStart(event)" ondragend="XNAT.app.usercacheFileManager.handleDragEnd(event)"';
                 draggable = 'draggable="true"';
             }
 
@@ -474,8 +472,10 @@ var XNAT = getObject(XNAT);
                  html += `
                             <div class="uce-folder-item ${isExpanded ? 'expanded' : ''}"
                                 data-path="${folderPath}"
+                                data-filename="${node.name}"
+                                data-type="${node.type}"
                                 ${draggable}
-                                ${enableFolderDragOptions}>
+                                ${enableFileDragOptions}>
                                  <span class="uce-folder-toggle" onclick="XNAT.app.usercacheFileManager.toggleFolder(event, '${folderPath}', ${enableDrag})">
                                       ${toggleIcon}
                                  </span>
@@ -503,7 +503,8 @@ var XNAT = getObject(XNAT);
                          ${draggable}
                          data-filename="${node.name}"
                          data-path="${path + node.name}"
-                          ${enableFileDragOptions}
+                         data-type="${node.type}"
+                         ${enableFileDragOptions}
                         >
                         <span class="uce-icon">${getFileIcon(node.name)}</span>
                         <span>${node.name}</span>`;
@@ -594,16 +595,19 @@ var XNAT = getObject(XNAT);
        usercacheFileManager.handleDragStart = function(e) {
             const fileName = e.target.dataset.filename;
             const filePath = e.target.dataset.path;
+            const fileType = e.target.dataset.type;
 
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 name: fileName,
-                path: filePath
+                path: filePath,
+                type: fileType
             }));
 
             e.target.classList.add('dragging');
         }
 
         usercacheFileManager.handleDragEnd = function(e) {
+            e.target.setAttribute("draggable", false);
             e.target.classList.remove('dragging');
         }
 
@@ -650,11 +654,11 @@ var XNAT = getObject(XNAT);
        usercacheFileManager.handleFileDrop = function (fileData, destinationPath) {
             const fileInfo = {
                 name: fileData.name,
+                type: fileData.type,
                 sourcePath: fileData.path,
                 destPath: destinationPath,
                 status: 'Associated'
             };
-
             droppedFiles.push(fileInfo);
             usercacheFileManager.updateFileCount();
             usercacheFileManager.showStatus(`${fileData.name} associated to ${destinationPath}`, 'success');
@@ -662,7 +666,6 @@ var XNAT = getObject(XNAT);
 
 
     usercacheFileManager.updateAssociatedFileTree = function() {
-        console.log(JSON.stringify(droppedFiles));
         const tree = usercacheFileManager.convertToTree(droppedFiles);
         const associatedTree = document.getElementById('associatedTree');
         associatedTree.innerHTML = usercacheFileManager.displayTree(tree);
@@ -701,6 +704,7 @@ var XNAT = getObject(XNAT);
                  if (index === pathSegments.length - 1) {
                    currentNode[segment].files.push({
                      name: item.name,
+                     type: item.type,
                      sourcePath: item.sourcePath,
                      destPath: item.destPath,
                      status: item.status
@@ -720,30 +724,24 @@ var XNAT = getObject(XNAT);
           let folderIcon = '<i class="fa fa-folder"></i>';
           let fileIcon = '<i class="fa fa-file"></i>';
           Object.keys(tree).forEach(key => {
-            if (key === '__files__') {
-              tree[key].forEach(file => {
-                result += `<div style="padding-left: ${indent.length * 10}px;">${fileIcon} ${file.name}
-                             <button onclick="XNAT.app.usercacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
-                                                        style="padding: 0;  color: red; border: none;  cursor: pointer;"
-                                                        title="Remove file">
-                                                  <i class="fa fa-times"></i>
-                                                </button>
-                </div>`;
-              });
-            } else if (tree[key].type === 'folder') {
-              result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon} ${key}/</div>`;
-              if (tree[key].files.length > 0) {
-                tree[key].files.forEach(file => {
-                  result += `<div style="padding-left: ${(indent.length + 2) * 10}px;">${fileIcon}${file.name}
-                               <button onclick="XNAT.app.usercacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
-                                                          style="padding: 0;  color: red; border: none;  cursor: pointer;"
-                                                          title="Remove file">
-                                                    <i class="fa fa-times"></i>
-                                                  </button>
-                  </div>`;
-                });
-              }
-              result += usercacheFileManager.displayTree(tree[key].children, indent + '  ');
+             if (tree[key].type === 'folder') {
+                  result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon} ${key}/</div>`;
+                  if (tree[key].files.length > 0) {
+                    tree[key].files.forEach(file => {
+                      var icon = fileIcon;
+                      if (file.type === 'folder') {
+                        icon = folderIcon;
+                      }
+                      result += `<div style="padding-left: ${(indent.length + 2) * 10}px;">${icon}${file.name}
+                                   <button onclick="XNAT.app.usercacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
+                                                              style="padding: 0;  color: red; border: none;  cursor: pointer;"
+                                                              title="Remove file">
+                                                        <i class="fa fa-times"></i>
+                                                      </button>
+                      </div>`;
+                    });
+                  }
+                  result += usercacheFileManager.displayTree(tree[key].children, indent + '  ');
             } else {
               result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon}${key}/</div>`;
               result += usercacheFileManager.displayTree(tree[key], indent + '  ');
@@ -760,6 +758,32 @@ var XNAT = getObject(XNAT);
        usercacheFileManager.updateAssociatedFileTree();
        usercacheFileManager.updateFileCount();
     }
+
+    usercacheFileManager.parseXnatUri = function(path, component) {
+        const patterns = {
+            project: /\/projects\/([^\/]+)/,
+            subject: /\/subjects\/([^\/]+)/,
+            experiment: /\/experiments\/([^\/]+)/,
+            scan: /\/scans\/([^\/]+)/
+        };
+
+        if (!patterns[component]) {
+            console.error(`Invalid component: ${component}. Must be 'project', 'subject', or 'experiment' or 'scan'`);
+            return null;
+        }
+        const match = path.match(patterns[component]);
+        return match ? match[1] : null;
+    }
+
+    usercacheFileManager.parseUri = function(path) {
+        return {
+            project: usercacheFileManager.parseXnatUri(path, 'project'),
+            subject: usercacheFileManager.parseXnatUri(path, 'subject'),
+            experiment: usercacheFileManager.parseXnatUri(path, 'experiment'),
+            scan: usercacheFileManager.parseXnatUri(path, 'scan')
+        };
+    }
+
 
     usercacheFileManager.removeFileFromCache = function(filePath) {
      let urlTail = 'data/user/cache/resources/';
@@ -793,6 +817,34 @@ var XNAT = getObject(XNAT);
                     }
                 ]
             })
+    }
+
+    usercacheFileManager.addNewResource = function(element) {
+        console.log(usercacheFileManager.parseUri(element.getAttribute("data-uri")));
+
+    }
+
+    usercacheFileManager.addNewSubject = function(element) {
+       const uriParts = usercacheFileManager.parseUri(element.getAttribute("data-uri"));
+       window.create_subject_link = "$link.setPage('XDATScreen_edit_xnat_subjectData.vm').addPathInfo('popup','true')";
+       const project = uriParts.project;
+        if ((project == null) ) {
+            xmodal.message('Create Subject', 'Please Add Yourself as a "Member" of the $displayManager.getSingularDisplayNameForProject().');
+            return;
+        }
+        window.create_subject_link += "/project/" + project + "/destination/JS_Parent_Return.vm";
+        this.subjectForm = popupCentered(window.create_subject_link,'Subject',610,800,10,'status=yes,resizable=yes,scrollbars=yes,toolbar=no');
+        if (this.subjectForm.opener == null) this.subjectForm.opener = self;
+        return this.subjectForm;
+    }
+
+    usercacheFileManager.addNewExperiment = function(element) {
+        console.log(usercacheFileManager.parseUri(element.getAttribute("data-uri")));
+    }
+
+
+    usercacheFileManager.addNewScan = function(element) {
+        console.log(usercacheFileManager.parseUri(element.getAttribute("data-uri")));
     }
 
     usercacheFileManager.deleteCacheFile = function(deleteUrl) {
@@ -917,6 +969,11 @@ var XNAT = getObject(XNAT);
 
                 });
 
+                // Ingest button click handler
+                ingestBtn.addEventListener('click', function() {
+                    usercacheFileManager.ingest();
+                });
+
 
 // Cache for loaded data
         usercacheFileManager.updateDestinationTree = async function() {
@@ -952,25 +1009,25 @@ var XNAT = getObject(XNAT);
                                  </span>
                                  <span class="uce-folder-name">${node.name}</span>`;
                  if (node.xnatType === 'resources') {
-                      html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
+                      html +=  `<button onclick="XNAT.app.usercacheFileManager.addNewResource(this)" data-uri="${node.uri}"
                                                              style="padding: 0; color: black; border: none;  cursor: pointer;"
                                                              title="Add Resource">
                                                        <i class="fa fa-folder"></i>
                                   </button>`;
                  } else if (node.xnatType === 'subjects') {
-                      html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
+                      html +=  `<button onclick="XNAT.app.usercacheFileManager.addNewSubject(this)" data-uri="${node.uri}"
                                                              style="padding: 0; color: black; border: none;  cursor: pointer;"
                                                              title="Add Subject">
                                                        <i class="fa fa-user-plus"></i>
                                   </button>`;
                  }  else if (node.xnatType === 'experiments') {
-                                         html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
+                                         html +=  `<button onclick="XNAT.app.usercacheFileManager.addNewExperiment(this)" data-uri="${node.uri}"
                                                                                 style="padding: 0; color: black; border: none;  cursor: pointer;"
                                                                                 title="Add Experiment">
                                                                           <i class="fa fa-flask" ></i>
                                                      </button>`;
                  }  else if (node.xnatType === 'scans') {
-                    html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
+                    html +=  `<button onclick="XNAT.app.usercacheFileManager.addNewScan(this)" data-uri="${node.uri}"
                                                            style="padding: 0; color: black; border: none;  cursor: pointer;"
                                                            title="Add Scan">
                                                      <i class="fa fa-search" ></i>
