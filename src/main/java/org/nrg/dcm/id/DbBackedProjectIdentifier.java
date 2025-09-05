@@ -11,10 +11,8 @@ package org.nrg.dcm.id;
 
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.data.DicomElement;
-import org.dcm4che2.data.DicomObject;
 import org.nrg.dcm.Extractor;
-import org.nrg.dicom.mizer.objects.DicomObjectFactory;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
@@ -44,7 +42,7 @@ public abstract class DbBackedProjectIdentifier implements DicomProjectIdentifie
      * {@inheritDoc}
      */
     @Override
-    public final XnatProjectdata apply(final UserI user, final DicomObject dicomObject) {
+    public final XnatProjectdata apply(final UserI user, final DicomObjectI dicomObject) {
         if (!_initialized) {
             initialize();
         }
@@ -58,7 +56,7 @@ public abstract class DbBackedProjectIdentifier implements DicomProjectIdentifie
             extractors = _extractors;
         }
         for (final Extractor extractor : extractors) {
-            final String alias = extractor.extract(DicomObjectFactory.newInstance(dicomObject));
+            final String alias = extractor.extract(dicomObject);
             if (_log.isDebugEnabled()) {
                 dumpExtractor(extractor, dicomObject, alias);
             }
@@ -128,15 +126,16 @@ public abstract class DbBackedProjectIdentifier implements DicomProjectIdentifie
         }
     }
 
-    private void dumpExtractor(final Extractor extractor, final DicomObject dicomObject, final String alias) {
+    private void dumpExtractor(final Extractor extractor, final DicomObjectI dicomObject, final String alias) {
         final Class<? extends Extractor> extractorClass = extractor.getClass();
         _log.debug("Extractor:   {}", extractorClass.getSimpleName());
         _log.debug(" toString(): {}", extractor.toString());
         _log.debug(" found():    {}", StringUtils.defaultIfBlank(alias, "(blank)"));
 
         for (final int tag : extractor.getTags()) {
-            final DicomElement tagValue = dicomObject.get(tag);
-            final String       display  = tagValue == null ? "(null)" : tagValue.getValueAsString(dicomObject.getSpecificCharacterSet(), 0);
+//            final DicomElement tagValue = dicomObject.get(tag);
+            String tagValue = dicomObject.getString(tag);
+            final String       display  = tagValue == null ? "(null)" : tagValue;
             _log.debug(" tag {}:     {}", DicomUtils.getDicomAttribute(tag), display);
         }
     }

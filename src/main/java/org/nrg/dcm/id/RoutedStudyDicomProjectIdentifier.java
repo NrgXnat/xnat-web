@@ -11,8 +11,8 @@ package org.nrg.dcm.id;
 
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.data.Tag;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xdat.entities.StudyRouting;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.services.StudyRoutingService;
@@ -41,7 +41,7 @@ public final class RoutedStudyDicomProjectIdentifier implements DicomProjectIden
      * {@inheritDoc}
      */
     @Override
-    public XnatProjectdata apply(final UserI user, final DicomObject dicom) {
+    public XnatProjectdata apply(final UserI user, final DicomObjectI dicom) {
         final String studyInstanceUid = dicom.getString(Tag.StudyInstanceUID);
         if (!StringUtils.isBlank(studyInstanceUid)) {
             StudyRouting routing = _service.getStudyRouting(studyInstanceUid);

@@ -12,6 +12,7 @@ package org.nrg.dcm.id;
 import java.util.SortedSet;
 
 import org.dcm4che2.data.DicomObject;
+import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
 
@@ -41,7 +42,7 @@ public final class FixedDicomProjectIdentifier implements DicomProjectIdentifier
      * {@inheritDoc}
      */
     @Override
-    public XnatProjectdata apply(final UserI user, final DicomObject o) {
+    public XnatProjectdata apply(final UserI user, final DicomObjectI o) {
         if (null == _project) {
             _project = XnatProjectdata.getProjectByIDorAlias(_name, user, false);
         }
