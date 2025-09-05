@@ -631,7 +631,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
     }
 
     private File getSafeFile(File sessionDir, String scan, String name, DicomObject o, boolean forceRename) {
-        String fileName = getNamer().makeFileName(o);
+        String fileName = getNamer().makeFileName(DicomObjectFactory.newInstance(o));
         while (fileName.charAt(0) == '.') {
             fileName = fileName.substring(1);
         }

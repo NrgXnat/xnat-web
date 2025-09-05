@@ -12,6 +12,7 @@ import org.dcm4che2.data.DicomObject;
 import org.dcm4che2.io.StopTagInputHandler;
 import org.dcm4che3.data.Tag;
 import org.nrg.dcm.DicomFileNamer;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.exceptions.NotFoundException;
 import org.nrg.framework.services.SerializerService;
@@ -168,7 +169,7 @@ public class ResourceSurveyHelper implements Callable<ResourceSurveyReport> {
 
             private String getCalculatedFileName(final DicomObject dicomObject) {
                 if (dicomObject != null) {
-                    return _dicomFileNamer.makeFileName(dicomObject);
+                    return _dicomFileNamer.makeFileName(DicomObjectFactory.newInstance(dicomObject));
                 }
                 return null;
             }
