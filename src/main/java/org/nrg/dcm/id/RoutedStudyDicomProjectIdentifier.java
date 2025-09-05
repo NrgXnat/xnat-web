@@ -11,7 +11,7 @@ package org.nrg.dcm.id;
 
 import com.google.common.collect.ImmutableSortedSet;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.data.Tag;
+import org.dcm4che3.data.Tag;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xdat.entities.StudyRouting;
 import org.nrg.xdat.om.XnatProjectdata;

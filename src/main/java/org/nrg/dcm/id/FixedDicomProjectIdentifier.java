@@ -9,14 +9,12 @@
 
 package org.nrg.dcm.id;
 
-import java.util.SortedSet;
-
-import org.dcm4che2.data.DicomObject;
+import com.google.common.collect.ImmutableSortedSet;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
 
-import com.google.common.collect.ImmutableSortedSet;
+import java.util.SortedSet;
 
 public final class FixedDicomProjectIdentifier implements DicomProjectIdentifier {
     @SuppressWarnings("unused")
