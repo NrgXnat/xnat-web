@@ -150,7 +150,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             try {
                 // project identifier is expensive, so avoid if possible
                 project = getProject(PrearcUtils.identifyProject(_parameters),
-                        () -> dicomObjectIdentifier.getProject(finalDicom.getDcm4che2Object()));
+                        () -> dicomObjectIdentifier.getProject(finalDicom));
             } catch (MalformedURLException e1) {
                 log.error("unable to parse supplied destination flag", e1);
                 throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST, e1);
@@ -213,7 +213,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 log.trace("using provided experiment label {}", _parameters.get(URIManager.EXPT_LABEL));
             }
             if (sessionLabel == null) {
-                sessionLabel = StringUtils.defaultIfBlank(dicomObjectIdentifier.getSessionLabel(dicom.getDcm4che2Object()), "dicom_upload");
+                sessionLabel = StringUtils.defaultIfBlank(dicomObjectIdentifier.getSessionLabel(dicom), "dicom_upload");
             }
 
             String folderName = null;
@@ -245,7 +245,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             if (_parameters.containsKey(URIManager.SUBJECT_ID)) {
                 subject = (String) _parameters.get(URIManager.SUBJECT_ID);
             } else {
-                subject = dicomObjectIdentifier.getSubjectLabel(dicom.getDcm4che2Object());
+                subject = dicomObjectIdentifier.getSubjectLabel(dicom);
             }
 
             // Fill a SessionData object in case it is the first upload
@@ -674,7 +674,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         if (null == project) {
             return null;
         }
-        Boolean fromDicomObject = getIdentifier().requestsAutoarchive(o.getDcm4che2Object());
+        Boolean fromDicomObject = getIdentifier().requestsAutoarchive(o);
         if (fromDicomObject != null) {
             return fromDicomObject ? PrearchiveCode.AutoArchive : PrearchiveCode.Manual;
         }

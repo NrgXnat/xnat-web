@@ -2,7 +2,6 @@ package org.nrg.dcm.id;
 
 import org.dcm4che3.data.Tag;
 import org.nrg.dcm.Extractor;
-import org.nrg.dicom.mizer.objects.Dcm4cheConvert;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.framework.utilities.SortedSets;
 import org.nrg.xdat.om.XnatProjectdata;
@@ -41,7 +40,7 @@ public class NextAvailableSessionLabelExtractor implements IdentifierReferencing
     public String extract(final DicomObjectI object) {
         final XnatProjectdata project;
         try {
-            project = _identifier.getProject(Dcm4cheConvert.toDcm4che2DicomObject(object.getAttributes()));
+            project = _identifier.getProject(object);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
