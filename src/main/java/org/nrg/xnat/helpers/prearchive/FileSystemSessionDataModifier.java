@@ -17,8 +17,6 @@ import org.nrg.dicom.mizer.exceptions.MizerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.dicom.mizer.objects.AnonymizationResultReject;
-import org.nrg.dicom.mizer.objects.DicomObjectFactory;
-import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.dicom.mizer.service.impl.MizerContextWithScript;
 import org.nrg.framework.exceptions.NrgServiceError;
@@ -150,9 +148,8 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
                         }
                         final DICOMSessionBuilder db = new DICOMSessionBuilder(fileSetDir, params,
                                 o -> {
-                                    DicomObjectI di = DicomObjectFactory.newInstance(o);
                                     try {
-                                        AnonymizationResult anonResult = mizerService.anonymize( di, context);
+                                        AnonymizationResult anonResult = mizerService.anonymize( o, context);
                                         if (anonResult instanceof AnonymizationResultError) {
                                             throw new RuntimeException(String.join(" ","Error on DICOM object when anonymizing", fileSetDir.getAbsolutePath(),":",anonResult.getMessage()));
                                         }
@@ -165,7 +162,7 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
                                     catch ( MizerException e) {
                                         throw new RuntimeException(e);
                                     }
-                                    return di.getDcm4che2Object();
+                                    return o;
                                 });
                         doc = db.call();
                         mizerService.removeContext( context);
