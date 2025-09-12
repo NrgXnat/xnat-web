@@ -1925,6 +1925,33 @@ dicomNaming:
                 "dicomFileNameTemplate" configuration setting. However, using file name is offered for backward 
                 compatibility or handling non-compliant scenarios.
 
+## DICOM Q/R SCP
+dicomQueries:
+    kind: panel.form
+    label: DICOM Query Availability
+    method: POST
+    contentType: json
+    url: /xapi/siteConfig
+    contents:
+        allowExternalDicomQueries:
+            kind: panel.input.switchbox
+            name: allowExternalDicomQueries
+            label: "Allow DICOM C-FIND and C-GET requests"
+            onText: Yes, allow incoming C-FIND/C-GET requests
+            offText: No, disable incoming C-FIND/C-GET requests
+            description: >
+                Accept C-FIND and C-GET DIMSE requests.
+
+        enableSitewideDicomQueries:
+            kind: panel.input.switchbox
+            name: enableSitewideDicomQueries
+            label: "Enable C-FIND/C-GET access to data in all projects"
+            onText: Yes, enable C-FIND/C-GET requests to access data by default
+            offText: No, disable C-FIND/C-GET requests from accessing data by default
+            description: >
+                Allow C-FIND and C-GET requests to retrieve data from all projects, except those
+                where C-FIND and C-GET are disabled in project settings.
+
 ## PIPELINE SETTINGS
 
 pipelineSettings:
@@ -2910,6 +2937,13 @@ root:
             group: manageData
             contents:
                 ${dicomNaming}
+        dicomQueries:
+            kind: tab
+            name: dicomQueries
+            label: "DICOM Query Availability"
+            group: manageData
+            contents:
+                ${dicomQueries}
         pipelinesTab:
             kind: tab
             label: Pipeline Settings
