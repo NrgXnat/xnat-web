@@ -1,6 +1,5 @@
 package org.nrg.xapi.rest.dicom;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import groovy.util.logging.Slf4j;
 import io.swagger.annotations.*;
 import org.nrg.framework.annotations.XapiRestController;
@@ -22,8 +21,8 @@ import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 @XapiRestController
 @RequestMapping("dicom-qr-scp")
 @Slf4j
-public class DicomQRSCPApi extends AbstractXapiRestController {
-    public DicomQRSCPApi(
+public class DicomQrScpApi extends AbstractXapiRestController {
+    public DicomQrScpApi(
             final UserManagementServiceI userManagementService,
             final RoleHolder roleHolder,
             final SiteConfigPreferences preferences
@@ -46,9 +45,7 @@ public class DicomQRSCPApi extends AbstractXapiRestController {
             @ApiResponse(code = 403, message = "Not authorized to alter site DIMSE C-FIND/C-GET SCP settings."),
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "site/allow/{allow}", method = PUT, restrictTo = Admin)
-    public void setAllowExternalDicomQueries(
-            @ApiParam(value = "The value to set for the enabled status.", required = true) final Boolean allow
-    ) {
+    public void setAllowExternalDicomQueries(final @PathVariable Boolean allow) {
         _preferences.setAllowExternalDicomQueries(allow);
     }
 
@@ -64,7 +61,7 @@ public class DicomQRSCPApi extends AbstractXapiRestController {
             @ApiResponse(code = 403, message = "Not authorized to alter site DIMSE C-FIND/C-GET SCP settings."),
             @ApiResponse(code = 500, message = "Unexpected error")})
     @XapiRequestMapping(value = "site/enableSitewide/{enable}", method = PUT, restrictTo = Admin)
-    public void setEnableSitewideDicomQueries(final Boolean enable) {
+    public void setEnableSitewideDicomQueries(final @PathVariable Boolean enable) {
         _preferences.setEnableSitewideDicomQueries(enable);
     }
 
