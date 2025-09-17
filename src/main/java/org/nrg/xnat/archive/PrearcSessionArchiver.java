@@ -774,7 +774,7 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
             for (File file: getAllDicomFile(scan)) {
                 try (DicomInputStream dis = new DicomInputStream(file)) {
                     DicomObjectI doi = DicomObjectFactory.newInstance(dis, lastTag);
-                    if (!projectSpecific.shouldIncludeDicomObject(doi.getDcm4che2Object())) {
+                    if (!projectSpecific.shouldIncludeDicomObject(doi)) {
                         fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
                         break;
                     }

@@ -649,7 +649,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         if (filter == null || !filter.isEnabled()) {
             return true;
         }
-        final boolean shouldInclude = filter.shouldIncludeDicomObject(dicom.getDcm4che2Object());
+        final boolean shouldInclude = filter.shouldIncludeDicomObject(dicom);
         if (log.isDebugEnabled()) {
             final String association = StringUtils.isBlank(filter.getProjectId()) ? "site" : "project " + filter.getProjectId();
             log.debug("The series import filter for " + association + " indicated a DICOM object from series \"" +
