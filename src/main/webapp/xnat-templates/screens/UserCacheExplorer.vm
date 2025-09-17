@@ -58,12 +58,17 @@
          <div class="uce-panel uce-right-panel">
              <div class="uce-pane-header uce-remote">
                  <span class="uce-icon"><i class="fa fa-folder"></i></span>
-                  Select Destination
+                  Destination
                    <!-- Review Button -->
              </div>
              <div class="use-pane-content">
                  <div class="uce-folder-tree" id="destinationTree"></div>
-                 <div class="uce-folder-tree" id="associatedTree" style="display:none"></div>
+                 <div class="uce-folder-tree" id="associatedTree" style="display:none">
+                     <div id="stats" class="stats"></div>
+                         <div class="tree-container">
+                             <div id="tree"></div>
+                         </div>
+                     </div>
              </div>
              <div class="button-container sticky-button">
                      <!-- Row 1: Review Button -->

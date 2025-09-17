@@ -48,6 +48,177 @@ var XNAT = getObject(XNAT);
             userData.scans = [];
             userData.scan_resources = [];
 
+     class TreeViewer {
+            constructor(data, container) {
+                this.data = data;
+                this.container = container;
+                this.expandedNodes = new Set();
+                this.init();
+            }
+
+            init() {
+                this.render();
+                this.updateStats();
+            }
+
+            formatSize(bytes) {
+                if (!bytes) return '';
+                const units = ['B', 'KB', 'MB', 'GB'];
+                let size = bytes;
+                let unit = 0;
+                while (size >= 1024 && unit < units.length - 1) {
+                    size /= 1024;
+                    unit++;
+                }
+                return `${size.toFixed(1)} ${units[unit]}`;
+            }
+
+            formatDate(dateString) {
+                if (!dateString) return '';
+                return new Date(dateString).toLocaleDateString();
+            }
+
+            hasChildren(node) {
+                return node.children && node.children.length > 0;
+            }
+
+            isExpanded(nodeId) {
+                return this.expandedNodes.has(nodeId);
+            }
+
+            toggleExpand(nodeId) {
+                if (this.expandedNodes.has(nodeId)) {
+                    this.expandedNodes.delete(nodeId);
+                } else {
+                    this.expandedNodes.add(nodeId);
+                }
+            }
+
+            generateNodeId(node, path = '') {
+                return `${path}/${node.name}`.replace(/^\//, '');
+            }
+
+            createTreeNode(node, path = '', level = 0) {
+                const nodeId = this.generateNodeId(node, path);
+                const hasChildren = this.hasChildren(node);
+                const isExpanded = this.isExpanded(nodeId);
+                const isFolder = node.type === 'folder';
+
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'tree-node';
+
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'tree-item';
+
+                // Expand/collapse icon
+                const expandIcon = document.createElement('span');
+                expandIcon.className = `expand-icon ${hasChildren ? (isExpanded ? 'expanded fa fa-minus' : ' fa fa-plus') : 'no-children'}`;
+                //expandIcon.class = hasChildren ? (isExpanded ? '−' : '+') : '';
+
+                if (hasChildren) {
+                    expandIcon.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.toggleExpand(nodeId);
+                        this.render();
+                    });
+                }
+
+                // File/folder icon
+                const icon = document.createElement('span');
+                icon.className = isFolder ? 'folder-icon fa fa-folder' : 'file-icon fa fa-file';
+
+                // Name
+                const name = document.createElement('span');
+                name.className = 'item-name';
+                name.textContent = node.name;
+
+                // Info (size, date, etc.)
+                const info = document.createElement('span');
+                info.className = `item-info ${isFolder ? '' : 'file-info'}`;
+
+                let infoText = [];
+                if (node.size) infoText.push(this.formatSize(node.size));
+                info.textContent = infoText.join(' ');
+
+                itemDiv.appendChild(expandIcon);
+                itemDiv.appendChild(icon);
+                itemDiv.appendChild(name);
+                if (infoText.length > 0) {
+                    itemDiv.appendChild(info);
+                }
+
+                nodeDiv.appendChild(itemDiv);
+
+                // Add path info for detailed view
+                if (node.destPath) {
+                    const pathDiv = document.createElement('div');
+                    pathDiv.className = 'tree-path';
+                    pathDiv.textContent = node.destPath || '';
+                    nodeDiv.appendChild(pathDiv);
+                }
+
+                // Children container
+                if (hasChildren) {
+                    const childrenDiv = document.createElement('div');
+                    childrenDiv.className = `tree-children ${isExpanded ? 'expanded' : ''}`;
+
+                    node.children.forEach(child => {
+                        const childNode = this.createTreeNode(child, nodeId, level + 1);
+                        childrenDiv.appendChild(childNode);
+                    });
+
+                    nodeDiv.appendChild(childrenDiv);
+                }
+
+                return nodeDiv;
+            }
+
+            render() {
+                this.container.innerHTML = '';
+                this.data.forEach(rootNode => {
+                    const treeNode = this.createTreeNode(rootNode);
+                    this.container.appendChild(treeNode);
+                });
+            }
+
+            countNodes(nodes) {
+                let folders = 0;
+                let files = 0;
+                let totalSize = 0;
+
+                const traverse = (nodeList) => {
+                    nodeList.forEach(node => {
+                        if (node.type === 'folder') {
+                            folders++;
+                        } else {
+                            files++;
+                        }
+                        if (node.size) {
+                            totalSize += node.size;
+                        }
+                        if (node.children) {
+                            traverse(node.children);
+                        }
+                    });
+                };
+
+                traverse(nodes);
+                return { folders, files, totalSize };
+            }
+
+            updateStats() {
+                const stats = this.countNodes(this.data);
+               // const statsDiv = document.getElementById('stats');
+               // statsDiv.innerHTML = `
+               //     <strong>Summary:</strong>
+               //     ${stats.folders} folders,
+               //     ${stats.files} files,
+               //     Total size: ${this.formatSize(stats.totalSize)}
+               // `;
+               console.log(JSON.stringify(stats));
+            }
+        }
+
 
 //Upload Widget
 
@@ -474,6 +645,7 @@ var XNAT = getObject(XNAT);
                                 data-path="${folderPath}"
                                 data-filename="${node.name}"
                                 data-type="${node.type}"
+                                data-absolutepath="${node.absolutePath}"
                                 ${draggable}
                                 ${enableFileDragOptions}>
                                  <span class="uce-folder-toggle" onclick="XNAT.app.usercacheFileManager.toggleFolder(event, '${folderPath}', ${enableDrag})">
@@ -504,6 +676,7 @@ var XNAT = getObject(XNAT);
                          data-filename="${node.name}"
                          data-path="${path + node.name}"
                          data-type="${node.type}"
+                         data-absolutepath="${node.absolutePath}"
                          ${enableFileDragOptions}
                         >
                         <span class="uce-icon">${getFileIcon(node.name)}</span>
@@ -596,11 +769,13 @@ var XNAT = getObject(XNAT);
             const fileName = e.target.dataset.filename;
             const filePath = e.target.dataset.path;
             const fileType = e.target.dataset.type;
+            const absolutepath = e.target.dataset.absolutepath;
 
             e.dataTransfer.setData('text/plain', JSON.stringify({
                 name: fileName,
                 path: filePath,
-                type: fileType
+                type: fileType,
+                absolutepath: absolutepath
             }));
 
             e.target.classList.add('dragging');
@@ -657,6 +832,8 @@ var XNAT = getObject(XNAT);
                 type: fileData.type,
                 sourcePath: fileData.path,
                 destPath: destinationPath,
+                absolutepath: fileData.absolutepath,
+                children: [],
                 status: 'Associated'
             };
             droppedFiles.push(fileInfo);
@@ -666,9 +843,9 @@ var XNAT = getObject(XNAT);
 
 
     usercacheFileManager.updateAssociatedFileTree = function() {
-        const tree = usercacheFileManager.convertToTree(droppedFiles);
+        let populatedJsonArray = usercacheFileManager.populateFolderChildren(droppedFiles);
         const associatedTree = document.getElementById('associatedTree');
-        associatedTree.innerHTML = usercacheFileManager.displayTree(tree);
+        const treeViewer = new TreeViewer(populatedJsonArray, associatedTree);
         usercacheFileManager.show(associatedTree);
         usercacheFileManager.hide(document.getElementById('destinationTree'));
     }
@@ -682,7 +859,153 @@ var XNAT = getObject(XNAT);
     }
 
 
-        usercacheFileManager.convertToTree = function(jsonArray) {
+usercacheFileManager.findChildrenByAbsolutePath = function(absolutePath) {
+    if (Array.isArray(sourceStructure)) {
+        for (let item of sourceStructure) {
+          const result = usercacheFileManager.searchNodeByAbsolutePath (item, absolutePath);
+          if (result) {
+            return result;
+          }
+        }
+      } else {
+        // Handle case where sourceStructure is a single object
+        const result = usercacheFileManager.searchNodeByAbsolutePath (sourceStructure, absolutePath);
+        if (result) {
+          return result;
+        }
+      }
+      return [];
+}
+
+
+usercacheFileManager.searchNodeByAbsolutePath = function(node, targetAbsolutePath) {
+    // Check if current node matches the target path
+    if (node.absolutePath === targetAbsolutePath) {
+      return node.children || [];
+    }
+
+    // If this node has children, search through them
+    if (node.children && Array.isArray(node.children)) {
+      for (let child of node.children) {
+        const result = usercacheFileManager.searchNodeByAbsolutePath(child, targetAbsolutePath);
+        if (result) {
+          return result;
+        }
+      }
+    }
+    return null;
+  }
+
+  usercacheFileManager.getParentFolderName = function (absolutePath) {
+     // Remove trailing slash if present
+     const cleanPath = absolutePath.replace(/\/$/, '');
+     // Split by path separator
+     const pathParts = cleanPath.split('/');
+     // Return the last part (which is the parent folder name)
+     return pathParts[pathParts.length - 1];
+}
+
+usercacheFileManager.populateFolderChildren = function(jsonArray) {
+  let updatedJsonArray = [];
+  jsonArray.forEach(item => {
+        if (item.type === 'folder') {
+          // Look up children from sourceStructure using absolutePath
+         if (item.absolutepath && sourceStructure) {
+             const folderChildren = usercacheFileManager.findChildrenByAbsolutePath(item.absolutepath);
+             const parentFolderName = usercacheFileManager.getParentFolderName(item.absolutepath);
+             if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
+               // Process each child
+               folderChildren.forEach(child => {
+                 // Create the child's full destination path
+                 const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
+                 const childItem = {
+                   ...child,
+                   destPath: childDestPath
+                 };
+                 item.children.push(childItem);
+               });
+             }
+          }
+        }
+        updatedJsonArray.push(item);
+  });
+  return updatedJsonArray;
+}
+
+
+usercacheFileManager.convertToTree2 = function(jsonArray) {
+  const tree = {};
+
+  jsonArray.forEach(item => {
+    // Split the destPath into segments
+    const pathSegments = item.destPath.split('/');
+    let currentNode = tree;
+
+    // Navigate through each path segment
+    pathSegments.forEach((segment, index) => {
+      // If this segment doesn't exist, create it
+      if (!currentNode[segment]) {
+        currentNode[segment] = {
+          type: 'folder',
+          children: {},
+          files: []
+        };
+      }
+
+      // If this is the last segment
+      if (index === pathSegments.length - 1) {
+        if (item.type === 'folder') {
+          // For folders, ensure the node exists and update its properties
+          currentNode[segment].name = item.name;
+          currentNode[segment].type = item.type;
+          currentNode[segment].sourcePath = item.sourcePath;
+          currentNode[segment].destPath = item.destPath;
+          currentNode[segment].status = item.status;
+          currentNode[segment].absolutepath = item.absolutepath;
+
+
+          // Look up children from sourceStructure using absolutePath
+         if (item.absolutepath && sourceStructure) {
+             const folderChildren = usercacheFileManager.findChildrenByAbsolutePath(item.absolutepath);
+             const parentFolderName = usercacheFileManager.getParentFolderName(item.absolutepath);
+             if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
+               // Process each child
+               folderChildren.forEach(child => {
+                 // Create the child's full destination path
+                 const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
+                 const childItem = {
+                   ...child,
+                   destPath: childDestPath
+                 };
+
+                 // Add child to the array for processing
+                 jsonArray.push(childItem);
+               });
+             }
+          }
+        } else {
+          // For files, add to the files array
+          currentNode[segment].files.push({
+            name: item.name,
+            type: item.type,
+            sourcePath: item.sourcePath,
+            destPath: item.destPath,
+            status: item.status,
+            absolutepath: item.absolutepath
+          });
+        }
+      } else {
+        // Move to the next level
+        currentNode = currentNode[segment].children;
+      }
+    });
+  });
+
+  return tree;
+}
+
+
+        usercacheFileManager.convertToTree1 = function(jsonArray) {
              const tree = {};
              jsonArray.forEach(item => {
                // Split the destPath into segments
@@ -743,7 +1066,7 @@ var XNAT = getObject(XNAT);
                   }
                   result += usercacheFileManager.displayTree(tree[key].children, indent + '  ');
             } else {
-              result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon}${key}/</div>`;
+              result += `<div style="padding-left: ${indent.length * 10}px;">${fileIcon}${key}/</div>`;
               result += usercacheFileManager.displayTree(tree[key], indent + '  ');
             }
           });
