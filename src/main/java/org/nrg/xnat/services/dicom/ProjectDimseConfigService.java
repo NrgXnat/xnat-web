@@ -51,31 +51,34 @@ public interface ProjectDimseConfigService extends BaseHibernateService<ProjectD
     void deleteProjectDimseConfig(String projectId) throws NotFoundException;
 
     enum Availability {
-        DEFAULT {
-            public Boolean asBoolean() { return null; }
-            public boolean enabled(boolean sitewide) { return sitewide; }
-        },
-        AVAILABLE {
-            public Boolean asBoolean() { return true; }
-            public boolean enabled(boolean sitewide) { return true; }
-        },
-        EXCLUDED {
-            public Boolean asBoolean() { return false; }
-            public boolean enabled(boolean sitewide) { return false; }
-        };
+        DEFAULT(null),
+        AVAILABLE(true),
+        EXCLUDED(false);
 
-        public abstract Boolean asBoolean();
-        public abstract boolean enabled(boolean sitewideEnabled);
-
-        public static Availability fromBoolean(final Boolean available) {
-            if (null == available) return Availability.DEFAULT;
-            return available ? Availability.AVAILABLE : Availability.EXCLUDED;
+        private Availability(Boolean enabled) {
+            _enabled = enabled;
         }
 
+        private final Boolean _enabled;
+
+        public boolean enabled(boolean sitewideEnabled) {
+            return null == _enabled ? sitewideEnabled : _enabled;
+        }
+
+        public Boolean asBoolean() {
+            return _enabled;
+        };
+
         public static Availability fromString(final String available) throws InvalidScpAvailabilityException {
-            if (null == available || "default".equalsIgnoreCase(available)) return Availability.DEFAULT;
-            if ("true".equalsIgnoreCase(available)) return Availability.AVAILABLE;
-            if ("false".equalsIgnoreCase(available)) return Availability.EXCLUDED;
+            if (null == available || "default".equalsIgnoreCase(available)) {
+                return Availability.DEFAULT;
+            }
+            if ("true".equalsIgnoreCase(available)) {
+                return Availability.AVAILABLE;
+            }
+            if ("false".equalsIgnoreCase(available)) {
+                return Availability.EXCLUDED;
+            }
             throw new InvalidScpAvailabilityException(available);
         }
     }
