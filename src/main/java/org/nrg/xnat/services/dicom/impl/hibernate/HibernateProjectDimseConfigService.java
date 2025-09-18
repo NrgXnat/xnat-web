@@ -13,6 +13,9 @@ import org.nrg.xnat.services.dicom.ProjectDimseConfigService;
 import javax.transaction.Transactional;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class HibernateProjectDimseConfigService
         extends AbstractHibernateEntityService<ProjectDimseConfig, ProjectDimseConfigDAO>
@@ -56,9 +59,15 @@ public class HibernateProjectDimseConfigService
     }
 
     @Override
-    public Collection<String> getQrAvailableProjects(final UserI user) {
-        // TODO
-        throw new UnsupportedOperationException("not implemented");
+    public Collection<String> getQrAvailableProjects(final UserI user, final boolean sitewideEnabled) {
+        final Map<String, Availability> availability = getDao().findAll().stream()
+                .collect(Collectors.toMap(ProjectDimseConfig::getProjectId, ProjectDimseConfig::getQrScpAvailable));
+
+        return XnatProjectdata.getAllXnatProjectdatas(user, false).stream()
+                // ### FIXME: filter on projects where user can read XnatImagescandata?
+                .map(XnatProjectdata::getId)
+                .filter(id -> availability.getOrDefault(id, Availability.DEFAULT).enabled(sitewideEnabled))
+                .collect(Collectors.toList());
     }
 
     @Override

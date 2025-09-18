@@ -38,9 +38,10 @@ public interface ProjectDimseConfigService extends BaseHibernateService<ProjectD
     /**
      * Get IDs of all projects for which QR access is enabled.
      * @param user calling user
+     * @param sitewideEnabled true if project data access is sitewide enabled
      * @return list of project IDs
      */
-    Collection<String> getQrAvailableProjects(UserI user);
+    Collection<String> getQrAvailableProjects(UserI user, boolean sitewideEnabled);
 
     /**
      * Delete the DIMSE QR SCP config for the named project
@@ -52,15 +53,19 @@ public interface ProjectDimseConfigService extends BaseHibernateService<ProjectD
     enum Availability {
         DEFAULT {
             public Boolean asBoolean() { return null; }
+            public boolean enabled(boolean sitewide) { return sitewide; }
         },
         AVAILABLE {
             public Boolean asBoolean() { return true; }
+            public boolean enabled(boolean sitewide) { return true; }
         },
         EXCLUDED {
             public Boolean asBoolean() { return false; }
+            public boolean enabled(boolean sitewide) { return false; }
         };
 
         public abstract Boolean asBoolean();
+        public abstract boolean enabled(boolean sitewideEnabled);
 
         public static Availability fromBoolean(final Boolean available) {
             if (null == available) return Availability.DEFAULT;

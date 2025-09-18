@@ -98,10 +98,18 @@ public class DicomQrScpApi extends AbstractXapiRestController {
         _projectDimseConfigService.updateProjectQrAvailability(projectId, available);
     }
 
-    @ApiOperation(value = "Gets IDs for all projects for which DIMSE QR access is enabled.")
+    @ApiOperation(value = "Gets IDs for all projects for which DIMSE QR access is enabled.",
+            response = String.class, responseContainer = "List"
+    )
+    @ApiResponses({@ApiResponse(code = 200, message = "Successfully retrieved list of QR-available projects."),
+            @ApiResponse(code = 403, message = "Not authorized to list project-specific permissions."),
+            @ApiResponse(code = 500, message = "Unexpected error")
+    })
     @XapiRequestMapping(value = "projects/available", method = PUT, restrictTo = Authenticated)
     public Collection<String> getAvailableProjects() {
-        return _projectDimseConfigService.getQrAvailableProjects(getSessionUser());
+        return _projectDimseConfigService.getQrAvailableProjects(
+                getSessionUser(), _preferences.getEnableSitewideDicomQueries()
+        );
     }
 
     @ApiOperation(value = "Deletes DIMSE QR project configuration for the named project.")
