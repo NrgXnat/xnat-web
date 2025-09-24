@@ -309,7 +309,7 @@ public class DicomSCP {
             UID.JPEG2000MC,
             UID.JPIPReferenced,
             UID.JPIPReferencedDeflate,
-            org.dcm4che2.data.UID.MPEG2,
+            UID.MPEG2MPML,
             UID.RLELossless,
             UID.RFC2557MIMEEncapsulation,
             UID.XMLEncoding};
