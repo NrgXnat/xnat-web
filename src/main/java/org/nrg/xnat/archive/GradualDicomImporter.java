@@ -168,8 +168,13 @@ public class GradualDicomImporter extends ImporterHandlerA {
             final SeriesImportFilter projectFilter = StringUtils.isNotBlank(projectId) ? getDicomFilterService().getSeriesImportFilter(projectId) : null;
             final int maxProjectTag = getMaxFilterTag(projectFilter)+1;
             if (maxProjectTag > lastTag) {
-                bis.reset();
-                dicom = DicomObjectFactory.newInstance(bis, maxProjectTag);
+                try (final BufferedInputStream bis2 = new BufferedInputStream(_fileWriter.getInputStream());
+                     final DicomInputStream dis2 = null == _transferSyntax ? new DicomInputStream(bis2) : new DicomInputStream(bis2, _transferSyntax)) {
+                    dicom = DicomObjectFactory.newInstance(dis2, maxProjectTag);
+                } catch (IOException e) {
+                    log.error("unable to re-read DICOM data stream for project filter", e);
+                    throw new ClientException("Unable to re-read DICOM data for project-specific filtering", e);
+                }
             }
             if (log.isDebugEnabled()) {
                 if (siteFilter != null) {
@@ -191,11 +196,6 @@ public class GradualDicomImporter extends ImporterHandlerA {
                  * returning the information that a particular file type was not accepted would be
                  * nice, though. Possibly record the information and display on an admin page.
                  */
-            }
-            try {
-                bis.reset();
-            } catch (IOException e) {
-                log.error("unable to reset DICOM data stream", e);
             }
             if (Strings.isNullOrEmpty(dicom.getString(Tag.SOPClassUID))) {
                 throw new ClientException("object " + name + " contains no SOP Class UID");
@@ -365,8 +365,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
             }
 
             try {
-                try {
-                    write(dicom, bis, outputFile, source);
+                try (final BufferedInputStream bis3 = new BufferedInputStream(_fileWriter.getInputStream())) {
+                    write(dicom, bis3, outputFile, source);
                 } catch (IOException e) {
                     throw new ServerException(Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e);
                 }
