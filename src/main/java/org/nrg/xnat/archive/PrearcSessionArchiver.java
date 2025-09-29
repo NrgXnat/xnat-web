@@ -14,6 +14,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.util.TagUtils;
@@ -24,6 +25,7 @@ import org.nrg.dicom.mizer.objects.DicomObjectFactory;
 import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
+import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.utilities.Reflection;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
@@ -771,14 +773,14 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         final int lastTag = Math.max(filterTags.get(filterTags.size() - 1), Tag.SeriesDescription) + 1;
         log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
         for (final XnatImagescandataI scan : src.getScans_scan()) {
-            for (File file: getAllDicomFile(scan)) {
-                try (DicomInputStream dis = new DicomInputStream(file)) {
-                    DicomObjectI doi = DicomObjectFactory.newInstance(dis, lastTag);
-                    if (!projectSpecific.shouldIncludeDicomObject(doi)) {
+            for (final File file: getAllDicomFile(scan)) {
+                try {
+                    final Attributes attributes = DicomUtils.read(file, lastTag);
+                    if (!projectSpecific.shouldIncludeDicomObject(attributes)) {
                         fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
                         break;
                     }
-                } catch (IOException | MizerException e) {
+                } catch (IOException e) {
                     log.warn("Can't create DicomObject for file {}", file.getAbsolutePath());
                 }
             }

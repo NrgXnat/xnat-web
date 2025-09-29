@@ -17,6 +17,7 @@ import org.nrg.dicom.mizer.exceptions.MizerException;
 import org.nrg.dicom.mizer.objects.AnonymizationResult;
 import org.nrg.dicom.mizer.objects.AnonymizationResultError;
 import org.nrg.dicom.mizer.objects.AnonymizationResultReject;
+import org.nrg.dicom.mizer.objects.DicomObjectFactory;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.dicom.mizer.service.impl.MizerContextWithScript;
 import org.nrg.framework.exceptions.NrgServiceError;
@@ -146,10 +147,10 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
                         catch( MizerException e) {
                             throw new RuntimeException(e);
                         }
-                        final DICOMSessionBuilder db = new DICOMSessionBuilder(fileSetDir, params,
+                        try (final DICOMSessionBuilder db = new DICOMSessionBuilder(fileSetDir, params,
                                 o -> {
                                     try {
-                                        AnonymizationResult anonResult = mizerService.anonymize( o, context);
+                                        AnonymizationResult anonResult = mizerService.anonymize(new DicomObjectFactory.MizerDicomObject(o), context);
                                         if (anonResult instanceof AnonymizationResultError) {
                                             throw new RuntimeException(String.join(" ","Error on DICOM object when anonymizing", fileSetDir.getAbsolutePath(),":",anonResult.getMessage()));
                                         }
@@ -163,9 +164,11 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
                                         throw new RuntimeException(e);
                                     }
                                     return o;
-                                });
-                        doc = db.call();
-                        mizerService.removeContext( context);
+                                })) {
+                            doc = db.call();
+                        } finally {
+                            mizerService.removeContext(context);
+                        }
                     } else {
                         doc = PrearcTableBuilder.parseSession(xml);
                         doc.setProject(newProject);
