@@ -10,7 +10,7 @@
 package org.nrg.dcm.id;
 
 import com.google.common.collect.ImmutableSortedSet;
-import org.nrg.dicom.mizer.objects.DicomObjectI;
+import org.dcm4che3.data.Attributes;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
 
@@ -40,7 +40,7 @@ public final class FixedDicomProjectIdentifier implements DicomProjectIdentifier
      * {@inheritDoc}
      */
     @Override
-    public XnatProjectdata apply(final UserI user, final DicomObjectI o) {
+    public XnatProjectdata apply(final UserI user, final Attributes unused) {
         if (null == _project) {
             _project = XnatProjectdata.getProjectByIDorAlias(_name, user, false);
         }
