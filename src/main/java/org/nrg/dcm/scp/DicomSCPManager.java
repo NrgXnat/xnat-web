@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -117,6 +118,8 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
             log.error("A DICOM network error occurred while trying to shut down", e);
         } catch (UnknownDicomHelperInstanceException e) {
             log.error("An unknown DICOM helper error occurred while trying to shut down", e);
+        } catch (GeneralSecurityException e) {
+            log.error("An unknown General Security error occurred while trying to shut down", e);
         }
     }
 
@@ -143,7 +146,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
      * @throws NotFoundException When an instance with the same ID does not already exist.
      */
     @SuppressWarnings("unused")
-    public DicomSCPInstance updateDicomSCPInstance(final DicomSCPInstance instance) throws NotFoundException, DicomNetworkException, UnknownDicomHelperInstanceException {
+    public DicomSCPInstance updateDicomSCPInstance(final DicomSCPInstance instance) throws NotFoundException, DicomNetworkException, UnknownDicomHelperInstanceException, GeneralSecurityException {
         if (hasDicomSCPInstance(instance.getId())) {
             _dicomSCPInstanceService.update(instance);
             cycleDicomSCPPorts(Collections.singleton(instance.getPort()));
@@ -164,7 +167,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
      *
      */
     @SuppressWarnings("unused")
-    public DicomSCPInstance update(final DicomSCPInstance instance, final boolean lookup) throws NotFoundException, DicomNetworkException, UnknownDicomHelperInstanceException {
+    public DicomSCPInstance update(final DicomSCPInstance instance, final boolean lookup) throws NotFoundException, DicomNetworkException, UnknownDicomHelperInstanceException, GeneralSecurityException {
         if (instance == null) {
             throw new NotFoundException("Instance is null");
         }
@@ -190,7 +193,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
      *                                                         already an enabled instance with the same AE title
      *                                                         and port.
      */
-    public DicomSCPInstance saveDicomSCPInstance(final DicomSCPInstance instance) throws DICOMReceiverWithDuplicatePropertiesException, DicomNetworkException, UnknownDicomHelperInstanceException, DicomScpInvalidWhitelistedItemException, DicomScpInvalidAeTitleException, DicomScpInvalidRoutingExpressionException, DicomScpUnsupportedRoutingExpressionException, DicomScpUnknownDOIException {
+    public DicomSCPInstance saveDicomSCPInstance(final DicomSCPInstance instance) throws DICOMReceiverWithDuplicatePropertiesException, DicomNetworkException, UnknownDicomHelperInstanceException, DicomScpInvalidWhitelistedItemException, DicomScpInvalidAeTitleException, DicomScpInvalidRoutingExpressionException, DicomScpUnsupportedRoutingExpressionException, DicomScpUnknownDOIException, GeneralSecurityException {
         final long instanceId = instance.getId();
         log.debug("Saving DicomScpInstance {}: {}", instanceId, instance);
 
@@ -290,7 +293,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
         return instance.isRoutingExpressionsEnabled() && !_dicomObjectIdentifierMap.get(instance.getIdentifier()).isCustomRoutingSupported();
     }
 
-    public void deleteDicomSCPInstances(final Set<Integer> ids) throws DicomNetworkException, UnknownDicomHelperInstanceException, NotFoundException {
+    public void deleteDicomSCPInstances(final Set<Integer> ids) throws DicomNetworkException, UnknownDicomHelperInstanceException, NotFoundException, GeneralSecurityException {
         log.debug("Got request to delete {} DicomSCPInstances: {}", ids.size(), StringUtils.join(ids, ", "));
         final Map<String, DicomSCPInstance> instances  = getDicomSCPInstances();
         final Set<String>                   stringIds  = ids.stream().map(id -> Integer.toString(id)).collect(Collectors.toSet());
@@ -310,7 +313,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
         cycleDicomSCPPorts(ports);
     }
 
-    public void deleteDicomSCPInstance(final int id) throws DicomNetworkException, UnknownDicomHelperInstanceException, NotFoundException {
+    public void deleteDicomSCPInstance(final int id) throws DicomNetworkException, UnknownDicomHelperInstanceException, NotFoundException, GeneralSecurityException {
         try {
             deleteDicomSCPInstances(Collections.singleton(id));
         } catch (NotFoundException e) {
@@ -381,11 +384,11 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
      * This starts all configured DICOM SCP instances, as long as the {@link SiteConfigPreferences#isEnableDicomReceiver()}
      * preference setting is set to true.
      */
-    public List<Triple<String, Integer, Boolean>> start() throws UnknownDicomHelperInstanceException, DicomNetworkException {
+    public List<Triple<String, Integer, Boolean>> start() throws UnknownDicomHelperInstanceException, DicomNetworkException, GeneralSecurityException {
         return _isEnableDicomReceiver ? cycleDicomSCPPorts(_dicomSCPInstanceService.getPortsWithEnabledInstances()) : Collections.emptyList();
     }
 
-    public List<Triple<String, Integer, Boolean>> stop() throws DicomNetworkException, UnknownDicomHelperInstanceException {
+    public List<Triple<String, Integer, Boolean>> stop() throws DicomNetworkException, UnknownDicomHelperInstanceException, GeneralSecurityException {
         return _dicomSCPStore.stopAll();
     }
 
@@ -543,13 +546,13 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
                 _dicomSCPStore.stop(instance.getPort());
             }
             return saveDicomSCPInstance(instance);
-        } catch (NrgServiceException e) {
+        } catch (NrgServiceException | GeneralSecurityException e) {
             // Shouldn't happen: we just retrieved it and enabled doesn't count towards duplicate properties.
             return instance;
         }
     }
 
-    private List<Triple<String, Integer, Boolean>> cycleDicomSCPPorts(final Set<Integer> updated) throws DicomNetworkException, UnknownDicomHelperInstanceException {
+    private List<Triple<String, Integer, Boolean>> cycleDicomSCPPorts(final Set<Integer> updated) throws DicomNetworkException, UnknownDicomHelperInstanceException, GeneralSecurityException {
         log.debug("I'm going to cycle {} ports that have been added or updated: {}", updated.size(), updated);
         return _dicomSCPStore.cycle(updated);
     }
@@ -563,7 +566,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
             } else {
                 stop();
             }
-        } catch (UnknownDicomHelperInstanceException | DicomNetworkException e) {
+        } catch (UnknownDicomHelperInstanceException | DicomNetworkException | GeneralSecurityException e) {
             log.error("Error globally {} all Dicom SCP Receivers.", _isEnableDicomReceiver ? "starting" : "stopping", e);
         }
     }

@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,8 @@ public class DicomSCP {
 
         _executor = manager.getExecutor();
         _device = device;
+        _device.setExecutor(_executor);
+        _device.setScheduledExecutor(Executors.newSingleThreadScheduledExecutor());
         _port = port;
         _manager = manager;
         setStarted(false);
@@ -68,6 +71,7 @@ public class DicomSCP {
         for (final int port : ports) {
             if (!dicomSCPs.containsKey(port)) {
                 final Connection connection = new Connection();
+                connection.setHostname("0.0.0.0");
                 connection.setPort(port);
 
                 final Device device = new Device(DEVICE_NAME);
@@ -103,7 +107,7 @@ public class DicomSCP {
         return started;
     }
 
-    public List<String> start() throws DicomNetworkException, UnknownDicomHelperInstanceException {
+    public List<String> start() throws DicomNetworkException, UnknownDicomHelperInstanceException, GeneralSecurityException {
         if (isStarted()) {
             log.warn("The DICOM SCP on port {} has already started its configured receivers.", getPort());
             return Collections.emptyList();
@@ -139,8 +143,6 @@ public class DicomSCP {
         final BasicCEchoSCP cEcho = new BasicCEchoSCP();
 
         final Set<ApplicationEntity> applicationEntities = getDicomServicesByApplicationEntity().keySet();
-        DicomServiceRegistry serviceRegistry = new DicomServiceRegistry();
-        serviceRegistry.addDicomService(cEcho);
 
         for (final ApplicationEntity applicationEntity : applicationEntities) {
             log.trace("Setting up AE {}", applicationEntity.getAETitle());
@@ -152,12 +154,11 @@ public class DicomSCP {
                             UID.ImplicitVRLittleEndian,
                             UID.ExplicitVRLittleEndian));
 
-
+            DicomServiceRegistry serviceRegistry = new DicomServiceRegistry();
+            serviceRegistry.addDicomService(cEcho);
             for (final BasicCStoreSCP service : getDicomServicesByApplicationEntity().get(applicationEntity)) {
                 log.trace("Adding service {}", service);
-//                serviceRegistry = new DicomServiceRegistry();
                 serviceRegistry.addDicomService(service);
-//                getDevice().setDimseRQHandler(serviceRegistry);
 
                 for (final String sopClass : service.getSOPClasses()) {
                     applicationEntity.addTransferCapability(
@@ -165,8 +166,9 @@ public class DicomSCP {
                     );
                 }
             }
+            applicationEntity.setDimseRQHandler(serviceRegistry);
         }
-        getDevice().setDimseRQHandler(serviceRegistry);
+//        getDevice().setDimseRQHandler(serviceRegistry);
 
         for (final ApplicationEntity ae : applicationEntities) {
             getDevice().addApplicationEntity(ae);
@@ -178,8 +180,6 @@ public class DicomSCP {
             getDevice().bindConnections();
         } catch (IOException e) {
             throw new DicomNetworkException(e);
-        } catch (GeneralSecurityException e) {
-            throw new RuntimeException(e);
         }
 
         setStarted(true);
@@ -198,20 +198,16 @@ public class DicomSCP {
         getDevice().unbindConnections();
 
         final List<String> aeTitles = new ArrayList<>();
-//        DicomServiceRegistry serviceRegistry = getDevice().getDimseRQHandler();
 
         for (final ApplicationEntity applicationEntity : getDicomServicesByApplicationEntity().keySet()) {
             final String aeTitle = applicationEntity.getAETitle();
             log.debug("Removing application entity {} on port {}", aeTitle, getPort());
             aeTitles.add(aeTitle);
-//            for (final CStoreService service : getDicomServicesByApplicationEntity().get(applicationEntity)) {
-//                getDevice().getServiceRegistry().removeDicomService(service);
-//            }
             applicationEntity.addTransferCapability(new TransferCapability());
+            applicationEntity.setDimseRQHandler(new DicomServiceRegistry());
             getApplicationEntities().remove(aeTitle);
             getDevice().removeApplicationEntity(applicationEntity);
         }
-        getDevice().setDimseRQHandler(new DicomServiceRegistry());
         getDicomServicesByApplicationEntity().clear();
 
         setStarted(false);
