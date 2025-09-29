@@ -1,8 +1,8 @@
 package org.nrg.dcm.id;
 
+import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.nrg.dcm.Extractor;
-import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.framework.utilities.SortedSets;
 
 import java.util.SortedSet;
@@ -15,11 +15,17 @@ public class FixedSubjectExtractor implements Extractor {
         _subjectLabel = subjectLabel;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
-    public String extract(final DicomObjectI o) {
+    public String extract(final Attributes unused) {
         return _subjectLabel;
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public SortedSet<Integer> getTags() {
         return SortedSets.singleton(Tag.PatientID);

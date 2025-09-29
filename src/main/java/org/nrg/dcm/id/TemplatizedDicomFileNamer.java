@@ -13,9 +13,9 @@ import com.google.common.collect.ArrayListMultimap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
+import org.dcm4che3.data.Attributes;
 import org.dcm4che3.util.TagUtils;
 import org.nrg.dcm.DicomFileNamer;
-import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xnat.event.listeners.methods.AbstractXnatPreferenceHandlerMethod;
 import org.springframework.stereotype.Component;
@@ -51,7 +51,7 @@ public class TemplatizedDicomFileNamer extends AbstractXnatPreferenceHandlerMeth
      * @return The generated file name from the variable values extracted from the DICOM object.
      */
     @Override
-    public String makeFileName(final DicomObjectI dicomObject) {
+    public String makeFileName(final Attributes dicomObject) {
         final Map<String, String> values  = new HashMap<>();
         for (final String variable : _variables) {
             if (!variable.startsWith(HASH_PREFIX)) {

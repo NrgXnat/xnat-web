@@ -16,9 +16,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.VR;
 import org.dcm4che3.io.DicomInputStream;
+import org.dcm4che3.io.DicomOutputStream;
 import org.dcm4che3.util.TagUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
@@ -34,6 +36,7 @@ import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
+import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.ArcProject;
@@ -131,8 +134,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
     @Override
     public List<String> call() throws ClientException {
         final String name = _fileWriter.getName();
-        DicomObjectI dicom;
-        final DicomObjectI finalDicom;
+        Attributes dicom;
+        final Attributes finalDicom;
         final XnatProjectdata project;
         final DicomObjectIdentifier<XnatProjectdata> dicomObjectIdentifier = getIdentifier();
         final SeriesImportFilter siteFilter = getDicomFilterService().getSeriesImportFilter();
@@ -140,7 +143,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         try (final BufferedInputStream bis = new BufferedInputStream(_fileWriter.getInputStream());
              final DicomInputStream dis = null == _transferSyntax ? new DicomInputStream(bis) : new DicomInputStream(bis, _transferSyntax)) {
             log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
-            dicom = DicomObjectFactory.newInstance(dis, lastTag);
+            dicom = dis.readDataset(lastTag + 1);
             finalDicom = dicom;
             if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AT_BEGINNING_AFTER_DICOM_OBJECT_IS_READ, dicom, null)) {
                 return returnEmptyList();
@@ -170,7 +173,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             if (maxProjectTag > lastTag) {
                 try (final BufferedInputStream bis2 = new BufferedInputStream(_fileWriter.getInputStream());
                      final DicomInputStream dis2 = null == _transferSyntax ? new DicomInputStream(bis2) : new DicomInputStream(bis2, _transferSyntax)) {
-                    dicom = DicomObjectFactory.newInstance(dis2, maxProjectTag);
+                    dicom = dis2.readDataset(maxProjectTag);
                 } catch (IOException e) {
                     log.error("unable to re-read DICOM data stream for project filter", e);
                     throw new ClientException("Unable to re-read DICOM data for project-specific filtering", e);
@@ -189,7 +192,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
                     log.debug("Found no site-wide series import filter and " + (projectFilter.isEnabled() ? "enabled" : "disabled") + " series import filter for the project " + projectId);
                 }
             }
-            if (!(shouldIncludeDicomObject(siteFilter, dicom) && shouldIncludeDicomObject(projectFilter, dicom))) {
+            final DicomObjectI doi = new DicomObjectFactory.MizerDicomObject(dicom);
+            if (!(shouldIncludeDicomObject(siteFilter, doi) && shouldIncludeDicomObject(projectFilter, doi))) {
                 return returnEmptyList();
                 /* TODO: Return information to user on rejected files. Unfortunately throwing an
                  * exception causes DicomBrowser to display a panicked error message. Some way of
@@ -291,9 +295,9 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 initialize.setProject(project == null ? null : project.getId());
                 initialize.setVisit(visit);
                 initialize.setProtocol(subtype);
-                Date studyDate = dicom.getAttributes().getDate(Tag.StudyDate);
+                Date studyDate = dicom.getDate(Tag.StudyDate);
                 try {
-                    Date d2 = dicom.getAttributes().getDate(Tag.StudyTime);
+                    Date d2 = dicom.getDate(Tag.StudyTime);
                     if (d2 != null) {
                         studyDate.setHours(d2.getHours());
                         studyDate.setMinutes(d2.getMinutes());
@@ -344,7 +348,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 transferSyntaxUID = dicom.getString(Tag.TransferSyntaxUID);
             }
             if (_parameters.containsKey(SENDER_AE_TITLE_PARAM)) {
-                dicom.putString(Tag.SourceApplicationEntityTitle, VR.AE, (String) _parameters.get(SENDER_AE_TITLE_PARAM));
+                dicom.setString(Tag.SourceApplicationEntityTitle, VR.AE, (String) _parameters.get(SENDER_AE_TITLE_PARAM));
             }
 
 
@@ -474,7 +478,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
     }
 
     private SessionData eitherGetOrCreateSession(SessionData initialize, File prearchiveRoot,
-                                                 XnatProjectdata project, DicomObjectI dicom, AtomicBoolean isNew)
+                                                 XnatProjectdata project, Attributes dicom, AtomicBoolean isNew)
             throws Exception {
         SessionData session = null;
         if (_directArchive) {
@@ -513,7 +517,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
      * @return true if processing success, false if the instance is rejected.
      * @throws Exception
      */
-    private boolean customProcessing(String location, DicomObjectI dicom, SessionData session)
+    private boolean customProcessing(String location, Attributes dicom, SessionData session)
             throws Exception {
         return customProcessing(location, dicom, session, () -> null);
     }
@@ -521,16 +525,16 @@ public class GradualDicomImporter extends ImporterHandlerA {
     /**
      *
      * @param location
-     * @param dicom
+     * @param attributes
      * @param session
      * @param onException
      * @return true if processing success, false if the instance is rejected.
      * @throws Exception
      */
-    private boolean customProcessing(String location, DicomObjectI dicom, SessionData session, Callable<Void> onException)
+    private boolean customProcessing(String location, Attributes attributes, SessionData session, Callable<Void> onException)
             throws Exception {
         try {
-            return iterateOverProcessorsAtLocation(location, dicom, session);
+            return iterateOverProcessorsAtLocation(location, attributes, session);
         } catch (Throwable e) {
             //If a processor throws an exception, processing should not proceed and that exception will be passed to the calling class.
             //We may be okay just passing an empty list in this case, but since I wasn't sure, I didn't want to change how it works now where if there's a problem importing part of a zip, the whole import fails.
@@ -542,13 +546,14 @@ public class GradualDicomImporter extends ImporterHandlerA {
     /**
      * See XNAT-5441 and commit 73538bf for source of this code
      * @param location
-     * @param dicom
+     * @param attributes
      * @param session
      * @return true if processing success, false if the Dicom instance is rejected.
      * @throws Exception
      */
-    private boolean iterateOverProcessorsAtLocation(String location, final DicomObjectI dicom, final SessionData session)
+    private boolean iterateOverProcessorsAtLocation(String location, final Attributes attributes, final SessionData session)
             throws Exception {
+        final DicomObjectI dicom = new DicomObjectFactory.MizerDicomObject(attributes);
         boolean continueProcessingData = true;
         Map<Class<? extends ArchiveProcessor>, ArchiveProcessor> processorsMap = getProcessorsMap();
         //Later this map will be used when iterating over the processorInstances to get the processor for the given instance
@@ -613,7 +618,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         }
     }
 
-    private File getSafeFile(File sessionDir, String scan, String name, DicomObjectI o, boolean forceRename) {
+    private File getSafeFile(File sessionDir, String scan, String name, Attributes o, boolean forceRename) {
         String fileName = getNamer().makeFileName(o);
         while (fileName.charAt(0) == '.') {
             fileName = fileName.substring(1);
@@ -649,7 +654,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         if (filter == null || !filter.isEnabled()) {
             return true;
         }
-        final boolean shouldInclude = filter.shouldIncludeDicomObject(dicom);
+        final boolean shouldInclude = filter.shouldIncludeDicomObject(dicom.getAttributes());
         if (log.isDebugEnabled()) {
             final String association = StringUtils.isBlank(filter.getProjectId()) ? "site" : "project " + filter.getProjectId();
             log.debug("The series import filter for " + association + " indicated a DICOM object from series \"" +
@@ -670,7 +675,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
         return _filterService;
     }
 
-    private PrearchiveCode shouldAutoArchive(final XnatProjectdata project, final DicomObjectI o) {
+    private PrearchiveCode shouldAutoArchive(final XnatProjectdata project, final Attributes o) {
         if (null == project) {
             return null;
         }
@@ -721,38 +726,24 @@ public class GradualDicomImporter extends ImporterHandlerA {
         }
     }
 
-    private static void write(final DicomObjectI dicomObjectI, final BufferedInputStream remainder,
+    private static void write(final Attributes attributes, final BufferedInputStream remainder,
                               final File outputFile, final String source)
             throws ClientException, IOException {
-        IOException ioexception = null;
-        final FileOutputStream fos = new FileOutputStream(outputFile);
-        final BufferedOutputStream bos = new BufferedOutputStream(fos);
-        try {
-            // dcm4che3 - Use DicomObjectI.write() method for simplified writing
-            try {
-                // Use DicomObjectI's built-in write method which handles the complexity
-                dicomObjectI.write(bos);
-                
+        final String tsuid = DicomUtils.getTransferSyntaxUID(attributes);
+        final Attributes fmi = attributes.createFileMetaInformation(tsuid);
+        try (final FileOutputStream fos = new FileOutputStream(outputFile);
+            final BufferedOutputStream bos = new BufferedOutputStream(fos);
+            final DicomOutputStream dos = new DicomOutputStream(bos, tsuid)) {
+                dos.writeDataset(fmi, attributes);
+                dos.flush();
+
                 // If there's remaining data (like pixel data), append it
                 if (null != remainder) {
                     final long copied = ByteStreams.copy(remainder, bos);
                     log.trace("copied {} additional bytes to {}", copied, outputFile);
                 }
-                
+
                 LoggerFactory.getLogger("org.nrg.xnat.received").info("{}:{}", source, outputFile);
-            } catch (IOException e) {
-                throw ioexception = e;
-            } catch (MizerException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (IOException e) {
-            throw ioexception = e;
-        } finally {
-            try {
-                bos.close();
-            } catch (IOException e) {
-                throw null == ioexception ? e : ioexception;
-            }
         }
     }
 
