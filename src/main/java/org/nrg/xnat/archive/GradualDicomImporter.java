@@ -16,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.dcm4che2.data.UID;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.VR;
@@ -730,8 +731,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
             throws ClientException, IOException {
         final Attributes fmi = attributes.createFileMetaInformation(transferSyntaxUid);
         try (final FileOutputStream fos = new FileOutputStream(outputFile);
-            final BufferedOutputStream bos = new BufferedOutputStream(fos);
-            final DicomOutputStream dos = new DicomOutputStream(bos, transferSyntaxUid)) {
+             final BufferedOutputStream bos = new BufferedOutputStream(fos);
+             final DicomOutputStream dos = new DicomOutputStream(bos, UID.ExplicitVRLittleEndian)) {
                 dos.writeDataset(fmi, attributes);
                 dos.flush();
 
