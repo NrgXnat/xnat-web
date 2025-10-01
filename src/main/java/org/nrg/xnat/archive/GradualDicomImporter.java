@@ -143,7 +143,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
         try (final BufferedInputStream bis = new BufferedInputStream(_fileWriter.getInputStream());
              final DicomInputStream dis = new ResumableDicomInputStream(bis)) {
             log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
-            final Attributes dicom = dis.readFileMetaInformation();
+            final Attributes dicomFmi = dis.readFileMetaInformation();
+            final Attributes dicom = dicomFmi == null ? new Attributes() : dicomFmi;
             final String transferSyntaxUID = null == _transferSyntax ? dis.getTransferSyntax() : _transferSyntax;
             dis.readAttributes(dicom, -1, lastTag + 1);
             dis.reset();

@@ -12,9 +12,12 @@ package org.nrg.dcm.scp;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.dcm4che3.data.Attributes;
+import org.dcm4che3.data.Tag;
 import org.dcm4che3.data.UID;
+import org.dcm4che3.data.VR;
 import org.dcm4che3.net.Association;
 import org.dcm4che3.net.PDVInputStream;
+import org.dcm4che3.net.Status;
 import org.dcm4che3.net.pdu.PresentationContext;
 import org.dcm4che3.net.service.BasicCStoreSCP;
 import org.nrg.action.ClientException;
@@ -238,6 +241,7 @@ public class CStoreService extends BasicCStoreSCP {
         try {
             doCStore(as, pc, rq, data, pc.getTransferSyntax(), rsp);
         } catch (Exception e) {
+            rsp.setInt(Tag.Status, VR.US, Status.ProcessingFailure);
             throw new IOException(e.getMessage(), e);
         }
     }
@@ -292,6 +296,7 @@ public class CStoreService extends BasicCStoreSCP {
                     importer.setNamer(namer);
                 }
                 importer.call();
+                rsp.setInt(Tag.Status, VR.US, Status.Success); // Status.SUCCESS = 0x0000
             } catch (final ClientException e) {
                 log.error("C-STORE operation failed", e);
                 throw new IOException(e.getMessage());
