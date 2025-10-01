@@ -16,9 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
-import org.dcm4che2.data.UID;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
+import org.dcm4che3.data.UID;
 import org.dcm4che3.data.VR;
 import org.dcm4che3.io.DicomInputStream;
 import org.dcm4che3.io.DicomOutputStream;
@@ -37,7 +37,6 @@ import org.nrg.dicom.mizer.objects.DicomObjectI;
 import org.nrg.dicom.mizer.service.MizerService;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
-import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.ArcProject;
@@ -80,8 +79,10 @@ import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -140,9 +141,10 @@ public class GradualDicomImporter extends ImporterHandlerA {
         final SeriesImportFilter siteFilter = getDicomFilterService().getSeriesImportFilter();
         final int lastTag = Math.max(getMaxFilterTag(siteFilter), Math.max(dicomObjectIdentifier.getTags().last(), Tag.SeriesDescription))+ 1;
         try (final BufferedInputStream bis = new BufferedInputStream(_fileWriter.getInputStream());
-             final DicomInputStream dis = null == _transferSyntax ? new ResumableDicomInputStream(bis) : new ResumableDicomInputStream(bis, _transferSyntax)) {
+             final DicomInputStream dis = new ResumableDicomInputStream(bis)) {
             log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
             final Attributes dicom = dis.readFileMetaInformation();
+            final String transferSyntaxUID = null == _transferSyntax ? dis.getTransferSyntax() : _transferSyntax;
             dis.readAttributes(dicom, -1, lastTag + 1);
             dis.reset();
             if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AT_BEGINNING_AFTER_DICOM_OBJECT_IS_READ, dicom, null)) {
@@ -341,11 +343,9 @@ public class GradualDicomImporter extends ImporterHandlerA {
 
             final String source = getString(_parameters, SENDER_ID_PARAM, _user.getLogin());
 
-            final String transferSyntaxUID = null == _transferSyntax ? DicomUtils.getTransferSyntaxUID(dicom) : _transferSyntax;
             if (_parameters.containsKey(SENDER_AE_TITLE_PARAM)) {
                 dicom.setString(Tag.SourceApplicationEntityTitle, VR.AE, (String) _parameters.get(SENDER_AE_TITLE_PARAM));
             }
-
 
             final File sessionFolder = new File(session.getUrl());
             final File outputFile = getSafeFile(sessionFolder, scan, name, dicom,
@@ -567,7 +567,13 @@ public class GradualDicomImporter extends ImporterHandlerA {
                         }
                     }
                 } catch (ClassNotFoundException e) {
-                    log.error("unable to apply archive processor " + processorInstance.getLabel(), e);
+                    final String label = processorInstance.getLabel();;
+                    if (!missingArchiveProcessors.contains(label)) {
+                        // only notify once(ish) for each processor where the class is missing
+                        // this is an obscure failure that probably only happens in dev
+                        missingArchiveProcessors.add(label);
+                        log.error("unable to apply archive processor " + label, e);
+                    }
                 }
             }
         }
@@ -733,6 +739,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
         try (final FileOutputStream fos = new FileOutputStream(outputFile);
              final BufferedOutputStream bos = new BufferedOutputStream(fos);
              final DicomOutputStream dos = new DicomOutputStream(bos, UID.ExplicitVRLittleEndian)) {
+                // open stream with Explicit VR Little Endian because that's the required TS for FMI.
+                // stream object will switch to our provided TS after writing FMI.
                 dos.writeDataset(fmi, attributes);
                 dos.flush();
 
@@ -763,6 +771,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
     private final ArchiveProcessorInstanceService _processorInstanceService;
     private Map<Class<? extends ArchiveProcessor>, ArchiveProcessor> _processorsMap;
     private final DirectArchiveSessionService _directArchiveSessionService;
+
+    private static final Set<String> missingArchiveProcessors = new HashSet<>();
 
     public static final String SENDER_AE_TITLE_PARAM = "Sender-AE-Title";
     public static final String RECEIVER_AE_TITLE_PARAM = "Receiver-AE-Title";
