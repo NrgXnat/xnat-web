@@ -69,7 +69,6 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -132,6 +131,25 @@ public class GradualDicomImporter extends ImporterHandlerA {
         return false;
     }
 
+    /**
+     * Archive processors and series import filters want a DicomObjectI. This object contains both FMI (when available)
+     * and the dataset, but thie combination causes havoc for regular dcm4che5 i/o.
+     * @param fmi File Metainformation
+     * @param dataset DICOM dataset (no File Meta Information)
+     * @param transferSyntaxUID inserted if Transfer Syntax UID is not present in the FMI.
+     * @return a DicomObjectI for use by archive processors, series import filters, etc.
+     */
+    private DicomObjectI copyForProcessing(final Attributes fmi, final Attributes dataset, final String transferSyntaxUID) {
+        final Attributes copy = new Attributes();
+        if (null == fmi || !fmi.contains(Tag.TransferSyntaxUID)) {
+            copy.setString(Tag.TransferSyntaxUID, VR.UI, transferSyntaxUID);
+        } else {
+            copy.addAll(fmi);
+        }
+        copy.addAll(dataset);
+        return new DicomObjectFactory.MizerDicomObject(copy);
+    }
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public List<String> call() throws ClientException {
@@ -142,13 +160,14 @@ public class GradualDicomImporter extends ImporterHandlerA {
         final int lastTag = Math.max(getMaxFilterTag(siteFilter), Math.max(dicomObjectIdentifier.getTags().last(), Tag.SeriesDescription))+ 1;
         try (final BufferedInputStream bis = new BufferedInputStream(_fileWriter.getInputStream());
              final DicomInputStream dis = new ResumableDicomInputStream(bis)) {
-            log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
-            final Attributes dicomFmi = dis.readFileMetaInformation();
-            final Attributes dicom = dicomFmi == null ? new Attributes() : dicomFmi;
+            final Attributes fmi = dis.readFileMetaInformation();
             final String transferSyntaxUID = null == _transferSyntax ? dis.getTransferSyntax() : _transferSyntax;
-            dis.readAttributes(dicom, -1, lastTag + 1);
+            final Attributes dataset = new Attributes();
+            dis.readAttributes(dataset, -1, lastTag + 1);
             dis.reset();
-            if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AT_BEGINNING_AFTER_DICOM_OBJECT_IS_READ, dicom, null)) {
+
+            DicomObjectI processingCopy = copyForProcessing(fmi, dataset, transferSyntaxUID);
+            if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AT_BEGINNING_AFTER_DICOM_OBJECT_IS_READ, processingCopy, null)) {
                 return returnEmptyList();
             }
 
@@ -156,7 +175,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             try {
                 // project identifier is expensive, so avoid if possible
                 project = getProject(PrearcUtils.identifyProject(_parameters),
-                        () -> dicomObjectIdentifier.getProject(dicom));
+                        () -> dicomObjectIdentifier.getProject(dataset));
             } catch (MalformedURLException e1) {
                 log.error("unable to parse supplied destination flag", e1);
                 throw new ClientException(Status.CLIENT_ERROR_BAD_REQUEST, e1);
@@ -166,7 +185,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             tempSession.setProject(project == null ? null : project.getId());
             tempSession.setSubject("");
             tempSession.setFolderName("");
-            if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AFTER_PROJECT_HAS_BEEN_ASSIGNED, dicom, tempSession)) {
+            if (_doCustomProcessing & !customProcessing(NAME_OF_LOCATION_AFTER_PROJECT_HAS_BEEN_ASSIGNED, processingCopy, tempSession)) {
                 return returnEmptyList();
             }
 
@@ -175,7 +194,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             final int maxProjectTag = getMaxFilterTag(projectFilter)+1;
             if (maxProjectTag > lastTag) {
                 try {  
-                    dis.readAttributes(dicom, -1, maxProjectTag+1);
+                    dis.readAttributes(dataset, -1, maxProjectTag+1);
                     dis.reset();
                 } catch (IOException e) {
                     log.error("unable to re-read DICOM data stream for project filter", e);
@@ -195,8 +214,10 @@ public class GradualDicomImporter extends ImporterHandlerA {
                     log.debug("Found no site-wide series import filter and " + (projectFilter.isEnabled() ? "enabled" : "disabled") + " series import filter for the project " + projectId);
                 }
             }
-            final DicomObjectI doi = new DicomObjectFactory.MizerDicomObject(dicom);
-            if (!(shouldIncludeDicomObject(siteFilter, doi) && shouldIncludeDicomObject(projectFilter, doi))) {
+
+            // We may have added more attributes; rebuild the processing copy.
+            processingCopy = copyForProcessing(fmi, dataset, transferSyntaxUID);
+            if (!(shouldIncludeDicomObject(siteFilter, processingCopy) && shouldIncludeDicomObject(projectFilter, processingCopy))) {
                 return returnEmptyList();
                 /* TODO: Return information to user on rejected files. Unfortunately throwing an
                  * exception causes DicomBrowser to display a panicked error message. Some way of
@@ -204,14 +225,14 @@ public class GradualDicomImporter extends ImporterHandlerA {
                  * nice, though. Possibly record the information and display on an admin page.
                  */
             }
-            if (Strings.isNullOrEmpty(dicom.getString(Tag.SOPClassUID))) {
+            if (Strings.isNullOrEmpty(dataset.getString(Tag.SOPClassUID))) {
                 throw new ClientException("object " + name + " contains no SOP Class UID");
             }
-            if (Strings.isNullOrEmpty(dicom.getString(Tag.SOPInstanceUID))) {
+            if (Strings.isNullOrEmpty(dataset.getString(Tag.SOPInstanceUID))) {
                 throw new ClientException("object " + name + " contains no SOP Instance UID");
             }
 
-            final String studyInstanceUID = dicom.getString(Tag.StudyInstanceUID);
+            final String studyInstanceUID = dataset.getString(Tag.StudyInstanceUID);
             log.trace("Looking for study {} in project {}", studyInstanceUID, null == project ? null : project.getId());
 
             String sessionLabel = null;
@@ -220,7 +241,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 log.trace("using provided experiment label {}", _parameters.get(URIManager.EXPT_LABEL));
             }
             if (sessionLabel == null) {
-                sessionLabel = StringUtils.defaultIfBlank(dicomObjectIdentifier.getSessionLabel(dicom), "dicom_upload");
+                sessionLabel = StringUtils.defaultIfBlank(dicomObjectIdentifier.getSessionLabel(dataset), "dicom_upload");
             }
 
             String folderName = null;
@@ -252,7 +273,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             if (_parameters.containsKey(URIManager.SUBJECT_ID)) {
                 subject = (String) _parameters.get(URIManager.SUBJECT_ID);
             } else {
-                subject = dicomObjectIdentifier.getSubjectLabel(dicom);
+                subject = dicomObjectIdentifier.getSubjectLabel(dataset);
             }
 
             // Fill a SessionData object in case it is the first upload
@@ -298,9 +319,9 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 initialize.setProject(project == null ? null : project.getId());
                 initialize.setVisit(visit);
                 initialize.setProtocol(subtype);
-                Date studyDate = dicom.getDate(Tag.StudyDate);
+                Date studyDate = dataset.getDate(Tag.StudyDate);
                 try {
-                    Date d2 = dicom.getDate(Tag.StudyTime);
+                    Date d2 = dataset.getDate(Tag.StudyTime);
                     if (d2 != null) {
                         studyDate.setHours(d2.getHours());
                         studyDate.setMinutes(d2.getMinutes());
@@ -322,7 +343,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 if (isAutoArchive(_parameters)) {
                     initialize.setAutoArchive(PrearchiveCode.AutoArchive);
                 }
-                session = eitherGetOrCreateSession(initialize, prearchiveRoot, project, dicom, isNew);
+                session = eitherGetOrCreateSession(initialize, prearchiveRoot, project, dataset, isNew);
             } catch (Exception e) {
                 throw new ServerException(Status.SERVER_ERROR_INTERNAL, e);
             }
@@ -332,24 +353,20 @@ public class GradualDicomImporter extends ImporterHandlerA {
 
             if (_doCustomProcessing &&
                     !customProcessing(NAME_OF_LOCATION_NEAR_END_AFTER_SESSION_HAS_BEEN_ADDED_TO_THE_PREARCHIVE_DATABASE,
-                            dicom, session, cleanupPrearcDb)
+                            processingCopy, session, cleanupPrearcDb)
             ) {
                 return returnEmptyList();
             }
 
             // Build the scan label
-            final String seriesNum = dicom.getString(Tag.SeriesNumber);
-            final String seriesUID = dicom.getString(Tag.SeriesInstanceUID);
+            final String seriesNum = dataset.getString(Tag.SeriesNumber);
+            final String seriesUID = dataset.getString(Tag.SeriesInstanceUID);
             final String scan = Restructurer.determineScanSubdir(StringUtils.startsWith(seriesNum, "+")? "_"+seriesNum.substring(1): seriesNum, seriesUID);
 
             final String source = getString(_parameters, SENDER_ID_PARAM, _user.getLogin());
 
-            if (_parameters.containsKey(SENDER_AE_TITLE_PARAM)) {
-                dicom.setString(Tag.SourceApplicationEntityTitle, VR.AE, (String) _parameters.get(SENDER_AE_TITLE_PARAM));
-            }
-
             final File sessionFolder = new File(session.getUrl());
-            final File outputFile = getSafeFile(sessionFolder, scan, name, dicom,
+            final File outputFile = getSafeFile(sessionFolder, scan, name, dataset,
                     Boolean.parseBoolean((String) _parameters.get(RENAME_PARAM)));
             outputFile.getParentFile().mkdirs();
 
@@ -366,7 +383,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
 
             try {
                 try {
-                    write(dicom, transferSyntaxUID, bis, outputFile, source);
+                    write(fmi, dataset, transferSyntaxUID, _parameters.get(SENDER_AE_TITLE_PARAM), bis, outputFile, source);
                 } catch (IOException e) {
                     throw new ServerException(Status.SERVER_ERROR_INSUFFICIENT_STORAGE, e);
                 }
@@ -406,7 +423,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
             }
 
             log.trace("Stored object {}/{}/{} as {} for {}", project, studyInstanceUID,
-                    dicom.getString(Tag.SOPInstanceUID), session.getUrl(), source);
+                    dataset.getString(Tag.SOPInstanceUID), session.getUrl(), source);
 
             // There is no direct archive commit (yet) so just return the session triple
             return _directArchive ?
@@ -513,7 +530,7 @@ public class GradualDicomImporter extends ImporterHandlerA {
      * @return true if processing success, false if the instance is rejected.
      * @throws Exception
      */
-    private boolean customProcessing(String location, Attributes dicom, SessionData session)
+    private boolean customProcessing(String location, DicomObjectI dicom, SessionData session)
             throws Exception {
         return customProcessing(location, dicom, session, () -> null);
     }
@@ -521,16 +538,16 @@ public class GradualDicomImporter extends ImporterHandlerA {
     /**
      *
      * @param location
-     * @param attributes
+     * @param dicom
      * @param session
      * @param onException
      * @return true if processing success, false if the instance is rejected.
      * @throws Exception
      */
-    private boolean customProcessing(String location, Attributes attributes, SessionData session, Callable<Void> onException)
+    private boolean customProcessing(String location, DicomObjectI dicom, SessionData session, Callable<Void> onException)
             throws Exception {
         try {
-            return iterateOverProcessorsAtLocation(location, attributes, session);
+            return iterateOverProcessorsAtLocation(location, dicom, session);
         } catch (Throwable e) {
             //If a processor throws an exception, processing should not proceed and that exception will be passed to the calling class.
             //We may be okay just passing an empty list in this case, but since I wasn't sure, I didn't want to change how it works now where if there's a problem importing part of a zip, the whole import fails.
@@ -542,14 +559,13 @@ public class GradualDicomImporter extends ImporterHandlerA {
     /**
      * See XNAT-5441 and commit 73538bf for source of this code
      * @param location
-     * @param attributes
+     * @param dicom
      * @param session
      * @return true if processing success, false if the Dicom instance is rejected.
      * @throws Exception
      */
-    private boolean iterateOverProcessorsAtLocation(String location, final Attributes attributes, final SessionData session)
+    private boolean iterateOverProcessorsAtLocation(String location, final DicomObjectI dicom, final SessionData session)
             throws Exception {
-        final DicomObjectI dicom = new DicomObjectFactory.MizerDicomObject(attributes);
         boolean continueProcessingData = true;
         Map<Class<? extends ArchiveProcessor>, ArchiveProcessor> processorsMap = getProcessorsMap();
         //Later this map will be used when iterating over the processorInstances to get the processor for the given instance
@@ -639,8 +655,8 @@ public class GradualDicomImporter extends ImporterHandlerA {
         }
         final File reqFile = Files.getImageFile(sessionDir, scan, valname);
         if (reqFile.exists()) {
-            try (final FileInputStream fin = new FileInputStream(reqFile)) {
-                final DicomObjectI o1 = read(fin, name);
+            try (final DicomInputStream fin = new DicomInputStream(reqFile)) {
+                final Attributes o1 = fin.readDataset(Tag.SOPInstanceUID + 1);
                 if (Objects.equal(o.getString(Tag.SOPInstanceUID), o1.getString(Tag.SOPInstanceUID)) &&
                         Objects.equal(o.getString(Tag.SOPClassUID), o1.getString(Tag.SOPClassUID))) {
                     return reqFile;  // object are equivalent; ok to overwrite
@@ -732,17 +748,22 @@ public class GradualDicomImporter extends ImporterHandlerA {
         }
     }
 
-    private static void write(final Attributes attributes, final String transferSyntaxUid,
+    private static void write(final Attributes originalFmi, final Attributes dataset,
+                              final String transferSyntaxUid, final Object sourceAeTitle,
                               final InputStream remainder,
                               final File outputFile, final String source)
             throws ClientException, IOException {
-        final Attributes fmi = attributes.createFileMetaInformation(transferSyntaxUid);
+        // Preserve the FMI from the received file, if present.
+        final Attributes fmi = null == originalFmi ? dataset.createFileMetaInformation(transferSyntaxUid) : originalFmi;
+        if (null != sourceAeTitle) {
+            fmi.setString(Tag.SourceApplicationEntityTitle, VR.AE, (String) sourceAeTitle);
+        }
         try (final FileOutputStream fos = new FileOutputStream(outputFile);
              final BufferedOutputStream bos = new BufferedOutputStream(fos);
              final DicomOutputStream dos = new DicomOutputStream(bos, UID.ExplicitVRLittleEndian)) {
                 // open stream with Explicit VR Little Endian because that's the required TS for FMI.
                 // stream object will switch to our provided TS after writing FMI.
-                dos.writeDataset(fmi, attributes);
+                dos.writeDataset(fmi, dataset);
                 dos.flush();
 
                 // If there's remaining data (like pixel data), append it
