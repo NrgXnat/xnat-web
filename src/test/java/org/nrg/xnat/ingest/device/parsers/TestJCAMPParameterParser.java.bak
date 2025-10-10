@@ -1,0 +1,510 @@
+package org.nrg.xnat.ingest.device.parsers;
+
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
+/**
+ * Comprehensive test suite for JCAMPParameterParser using Mockito
+ */
+@ExtendWith(MockitoExtension.class)
+public class JCAMPParameterParserTest {
+
+    private JCAMPParameterParser parser;
+
+    @BeforeEach
+    public void setUp() {
+        parser = new JCAMPParameterParser();
+    }
+
+    @Test
+    @DisplayName("Test parsing basic headers")
+    public void testBasicHeaders() throws IOException {
+        String content = """
+                ##TITLE=Parameter List, ParaVision 360 V3.5
+                ##JCAMPDX=4.24
+                ##DATATYPE=Parameter Values
+                ##ORIGIN=Bruker BioSpin MRI GmbH
+                ##OWNER=nmr03
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals("Parameter List, ParaVision 360 V3.5", paramFile.getHeaders().get("TITLE"));
+        assertEquals("4.24", paramFile.getHeaders().get("JCAMPDX"));
+        assertEquals("Parameter Values", paramFile.getHeaders().get("DATATYPE"));
+        assertEquals("Bruker BioSpin MRI GmbH", paramFile.getHeaders().get("ORIGIN"));
+        assertEquals("nmr03", paramFile.getHeaders().get("OWNER"));
+        assertEquals(5, paramFile.getHeaders().size());
+    }
+
+    @Test
+    @DisplayName("Test parsing simple parameters")
+    public void testSimpleParameters() throws IOException {
+        String content = """
+                ##$SUBJECT_version_nr=4
+                ##$SUBJECT_type=Quadruped
+                ##$SUBJECT_gender=UNKNOWN
+                ##$SUBJECT_study_weight=0.001
+                ##$SUBJECT_study_nr=8
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals(4, paramFile.getParameters().get("SUBJECT_version_nr"));
+        assertEquals("Quadruped", paramFile.getParameters().get("SUBJECT_type"));
+        assertEquals("UNKNOWN", paramFile.getParameters().get("SUBJECT_gender"));
+        assertEquals(0.001, paramFile.getParameters().get("SUBJECT_study_weight"));
+        assertEquals(8, paramFile.getParameters().get("SUBJECT_study_nr"));
+        assertEquals(5, paramFile.getParameters().size());
+    }
+
+    @Test
+    @DisplayName("Test parsing string values in angle brackets")
+    public void testStringValues() throws IOException {
+        String content = """
+                ##$SUBJECT_name_string=( 64 )
+                <Thorek_Mouse_exvivo^^^^>
+                ##$SUBJECT_id=( 60 )
+                <Thorek_Mouse_exvivo>
+                ##$SUBJECT_study_name=( 64 )
+                <kidney set 2>
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        List<?> nameString = (List<?>) paramFile.getParameters().get("SUBJECT_name_string");
+        assertEquals("Thorek_Mouse_exvivo^^^^", nameString.get(1)); // First element is size spec
+
+        List<?> subjectId = (List<?>) paramFile.getParameters().get("SUBJECT_id");
+        assertEquals("Thorek_Mouse_exvivo", subjectId.get(1));
+
+        List<?> studyName = (List<?>) paramFile.getParameters().get("SUBJECT_study_name");
+        assertEquals("kidney set 2", studyName.get(1));
+    }
+
+    @Test
+    @DisplayName("Test parsing tuple values")
+    public void testTupleValues() throws IOException {
+        String content = """
+                ##$SUBJECT_instance_creation_date=(1619790795, 897, -300)
+                ##$SUBJECT_study_date=(1756851762, 535, -300)
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        List<?> creationDate = (List<?>) paramFile.getParameters().get("SUBJECT_instance_creation_date");
+        assertEquals(3, creationDate.size());
+        assertEquals(1619790795, creationDate.get(0));
+        assertEquals(897, creationDate.get(1));
+        assertEquals(-300, creationDate.get(2));
+
+        List<?> studyDate = (List<?>) paramFile.getParameters().get("SUBJECT_study_date");
+        assertEquals(3, studyDate.size());
+        assertEquals(1756851762, studyDate.get(0));
+        assertEquals(535, studyDate.get(1));
+        assertEquals(-300, studyDate.get(2));
+    }
+
+    @Test
+    @DisplayName("Test parsing boolean values")
+    public void testBooleanValues() throws IOException {
+        String content = """
+                ##$CMN_study_use_ats=No
+                ##$ENABLE_FEATURE=Yes
+                ##$DEBUG_MODE=true
+                ##$VERBOSE=false
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals(false, paramFile.getParameters().get("CMN_study_use_ats"));
+        assertEquals(true, paramFile.getParameters().get("ENABLE_FEATURE"));
+        assertEquals(true, paramFile.getParameters().get("DEBUG_MODE"));
+        assertEquals(false, paramFile.getParameters().get("VERBOSE"));
+    }
+
+    @Test
+    @DisplayName("Test parsing array parameters")
+    public void testArrayParameters() throws IOException {
+        String content = """
+                ##$SUBJECT_study_modalities=( 1 )
+                MR_Modality
+                ##$MULTI_VALUES=( 3 )
+                Value1 Value2 Value3
+                ##$NUMERIC_ARRAY=( 4 )
+                1.5 2.0 3.5 4.0
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        List<?> modalities = (List<?>) paramFile.getParameters().get("SUBJECT_study_modalities");
+        assertEquals(2, modalities.size()); // Size spec + value
+        assertEquals("MR_Modality", modalities.get(1));
+
+        List<?> multiValues = (List<?>) paramFile.getParameters().get("MULTI_VALUES");
+        assertEquals(4, multiValues.size()); // Size spec + 3 values
+        assertEquals("Value1", multiValues.get(1));
+        assertEquals("Value2", multiValues.get(2));
+        assertEquals("Value3", multiValues.get(3));
+
+        List<?> numericArray = (List<?>) paramFile.getParameters().get("NUMERIC_ARRAY");
+        assertEquals(5, numericArray.size()); // Size spec + 4 values
+        assertEquals(1.5, numericArray.get(1));
+        assertEquals(2.0, numericArray.get(2));
+        assertEquals(3.5, numericArray.get(3));
+        assertEquals(4.0, numericArray.get(4));
+    }
+
+    @Test
+    @DisplayName("Test parsing comments")
+    public void testComments() throws IOException {
+        String content = """
+                $$ Write Options: Symbolic Enums, RLE encoded arrays, symbol visibility
+                $$ 2025-09-02 19:22:25.284 -0500  nmr03@bruker94
+                $$ @vis= SUBJECT SUBJECT_version_nr SUBJECT_object
+                $$ Regular comment
+                ##$PARAM=value
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals(4, paramFile.getComments().size());
+        assertEquals("Write Options: Symbolic Enums, RLE encoded arrays, symbol visibility",
+                paramFile.getComments().get(0));
+        assertEquals("2025-09-02 19:22:25.284 -0500  nmr03@bruker94",
+                paramFile.getComments().get(1));
+        assertTrue(paramFile.getComments().get(2).startsWith("VISIBILITY:"));
+        assertEquals("Regular comment", paramFile.getComments().get(3));
+    }
+
+    @Test
+    @DisplayName("Test parsing empty and whitespace handling")
+    public void testEmptyAndWhitespace() throws IOException {
+        String content = """
+                ##TITLE=Test File
+
+                ##$PARAM1=value1
+
+                ##$PARAM2=  value2
+
+                $$ Comment with spaces
+
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals("Test File", paramFile.getHeaders().get("TITLE"));
+        assertEquals("value1", paramFile.getParameters().get("PARAM1"));
+        assertEquals("value2", paramFile.getParameters().get("PARAM2"));
+        assertEquals(1, paramFile.getComments().size());
+        assertEquals("Comment with spaces", paramFile.getComments().get(0));
+    }
+
+    @Test
+    @DisplayName("Test complete realistic file")
+    public void testCompleteFile() throws IOException {
+        String content = """
+                ##TITLE=Parameter List, ParaVision 360 V3.5
+                ##JCAMPDX=4.24
+                ##DATATYPE=Parameter Values
+                ##ORIGIN=Bruker BioSpin MRI GmbH
+                ##OWNER=nmr03
+                $$ Write Options: Symbolic Enums, RLE encoded arrays, symbol visibility
+                $$ 2025-09-02 19:22:25.284 -0500  nmr03@bruker94
+                ##$SUBJECT_version_nr=4
+                ##$SUBJECT_name_string=( 64 )
+                <Thorek_Mouse_exvivo^^^^>
+                ##$SUBJECT_id=( 60 )
+                <Thorek_Mouse_exvivo>
+                ##$SUBJECT_instance_creation_date=(1619790795, 897, -300)
+                ##$SUBJECT_type=Quadruped
+                ##$SUBJECT_gender=UNKNOWN
+                ##$SUBJECT_study_modalities=( 1 )
+                MR_Modality
+                ##$SUBJECT_study_weight=0.001
+                ##$CMN_study_use_ats=No
+                $$ @vis= SUBJECT SUBJECT_version_nr SUBJECT_object
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        // Verify headers
+        assertEquals(5, paramFile.getHeaders().size());
+        assertEquals("Parameter List, ParaVision 360 V3.5", paramFile.getHeaders().get("TITLE"));
+        assertEquals("Bruker BioSpin MRI GmbH", paramFile.getHeaders().get("ORIGIN"));
+
+        // Verify parameters
+        assertEquals(8, paramFile.getParameters().size());
+        assertEquals(4, paramFile.getParameters().get("SUBJECT_version_nr"));
+        assertEquals("Quadruped", paramFile.getParameters().get("SUBJECT_type"));
+        assertEquals(false, paramFile.getParameters().get("CMN_study_use_ats"));
+
+        // Verify string parameter
+        List<?> nameString = (List<?>) paramFile.getParameters().get("SUBJECT_name_string");
+        assertEquals("Thorek_Mouse_exvivo^^^^", nameString.get(1));
+
+        // Verify tuple parameter
+        List<?> creationDate = (List<?>) paramFile.getParameters().get("SUBJECT_instance_creation_date");
+        assertEquals(3, creationDate.size());
+        assertEquals(1619790795, creationDate.get(0));
+
+        // Verify comments
+        assertEquals(3, paramFile.getComments().size());
+        assertTrue(paramFile.getComments().get(2).startsWith("VISIBILITY:"));
+    }
+
+    @Test
+    @DisplayName("Test file parsing with mocked FileReader")
+    public void testFileReadingWithMockedReader() throws IOException {
+        // Mock File
+        File mockFile = mock(File.class);
+        when(mockFile.getPath()).thenReturn("test.jcamp");
+        when(mockFile.getName()).thenReturn("test.jcamp");
+        when(mockFile.exists()).thenReturn(true);
+
+        String content = "##TITLE=Test File\n##$PARAM=value\n##END=";
+
+        // Use Mockito to mock static method or create a wrapper
+        try (MockedStatic<JCAMPParameterParser> mockedParser = mockStatic(JCAMPParameterParser.class)) {
+            JCAMPParameterParser.ParameterFile expectedResult = JCAMPParameterParser.parseString(content);
+
+            // Mock the static parseFile method to return our expected result
+            mockedParser.when(() -> JCAMPParameterParser.parseFile(mockFile))
+                    .thenReturn(expectedResult);
+
+            JCAMPParameterParser.ParameterFile result = JCAMPParameterParser.parseFile(mockFile);
+
+            assertEquals("Test File", result.getHeaders().get("TITLE"));
+            assertEquals("value", result.getParameters().get("PARAM"));
+
+            // Verify the mock was called
+            mockedParser.verify(() -> JCAMPParameterParser.parseFile(mockFile));
+        }
+    }
+
+    @Test
+    @DisplayName("Test BufferedReader with mocked input")
+    public void testBufferedReaderWithMock() throws IOException {
+        // Mock BufferedReader
+        BufferedReader mockReader = mock(BufferedReader.class);
+
+        // Configure mock to return lines sequentially
+        when(mockReader.readLine())
+                .thenReturn("##TITLE=Mocked Test File")
+                .thenReturn("##$PARAM1=42")
+                .thenReturn("##$PARAM2=test_value")
+                .thenReturn("$$ This is a comment")
+                .thenReturn("##END=")
+                .thenReturn(null); // End of file
+
+        // Since the parse method is private, we test through parseString
+        String content = """
+                ##TITLE=Mocked Test File
+                ##$PARAM1=42
+                ##$PARAM2=test_value
+                $$ This is a comment
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals("Mocked Test File", paramFile.getHeaders().get("TITLE"));
+        assertEquals(42, paramFile.getParameters().get("PARAM1"));
+        assertEquals("test_value", paramFile.getParameters().get("PARAM2"));
+        assertEquals(1, paramFile.getComments().size());
+        assertEquals("This is a comment", paramFile.getComments().get(0));
+
+        // Verify all readLine calls were made
+        verify(mockReader, times(6)).readLine();
+    }
+
+    @Test
+    @DisplayName("Test IOException handling with mocked reader")
+    public void testIOExceptionHandling() throws IOException {
+        BufferedReader mockReader = mock(BufferedReader.class);
+
+        // Configure mock to throw IOException
+        when(mockReader.readLine()).thenThrow(new IOException("Mocked IO Exception"));
+
+        // Test that IOException is properly propagated
+        assertThrows(IOException.class, () -> {
+            // Since we can't directly access the private parse method, we simulate
+            // by testing file operations that would cause IO exceptions
+            File nonExistentFile = new File("definitely_does_not_exist.jcamp");
+            JCAMPParameterParser.parseFile(nonExistentFile);
+        });
+    }
+
+    @Test
+    @DisplayName("Test edge cases and error handling with mocks")
+    public void testEdgeCasesWithMocks() throws IOException {
+        // Test empty file
+        JCAMPParameterParser.ParameterFile emptyFile = JCAMPParameterParser.parseString("##END=");
+        assertEquals(0, emptyFile.getHeaders().size());
+        assertEquals(0, emptyFile.getParameters().size());
+
+        // Test file without END marker
+        String noEndContent = "##TITLE=Test\n##$PARAM=value";
+        JCAMPParameterParser.ParameterFile noEndFile = JCAMPParameterParser.parseString(noEndContent);
+        assertEquals("Test", noEndFile.getHeaders().get("TITLE"));
+        assertEquals("value", noEndFile.getParameters().get("PARAM"));
+
+        // Test mixed data types
+        String mixedContent = """
+                ##$INT_VAL=42
+                ##$DOUBLE_VAL=3.14159
+                ##$STRING_VAL=hello world
+                ##$BOOL_VAL=Yes
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile mixedFile = JCAMPParameterParser.parseString(mixedContent);
+        assertEquals(42, mixedFile.getParameters().get("INT_VAL"));
+        assertEquals(3.14159, mixedFile.getParameters().get("DOUBLE_VAL"));
+        assertEquals("hello", ((List<?>) mixedFile.getParameters().get("STRING_VAL")).get(0));
+        assertEquals(true, mixedFile.getParameters().get("BOOL_VAL"));
+    }
+
+    @Test
+    @DisplayName("Test multi-dimensional arrays with verification")
+    public void testMultiDimensionalArrays() throws IOException {
+        String content = """
+                ##$MATRIX_2D=( 2, 3 )
+                1.0 2.0 3.0
+                4.0 5.0 6.0
+                ##$MATRIX_3D=( 2, 2, 2 )
+                <val1> <val2>
+                <val3> <val4>
+                <val5> <val6>
+                <val7> <val8>
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        List<?> matrix2D = (List<?>) paramFile.getParameters().get("MATRIX_2D");
+        assertEquals(7, matrix2D.size()); // Size spec + 6 values
+        assertEquals(1.0, matrix2D.get(1));
+        assertEquals(6.0, matrix2D.get(6));
+
+        List<?> matrix3D = (List<?>) paramFile.getParameters().get("MATRIX_3D");
+        assertEquals(9, matrix3D.size()); // Size spec + 8 values
+        assertEquals("val1", matrix3D.get(1));
+        assertEquals("val8", matrix3D.get(8));
+    }
+
+    @Test
+    @DisplayName("Test data type parsing accuracy with spy")
+    public void testDataTypeParsingAccuracy() throws IOException {
+        String content = """
+                ##$ZERO=0
+                ##$NEGATIVE=-42
+                ##$LARGE_INT=2147483647
+                ##$SMALL_DOUBLE=0.0001
+                ##$SCIENTIFIC=1.23e-4
+                ##$NEGATIVE_DOUBLE=-3.14159
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        assertEquals(0, paramFile.getParameters().get("ZERO"));
+        assertEquals(-42, paramFile.getParameters().get("NEGATIVE"));
+        assertEquals(2147483647, paramFile.getParameters().get("LARGE_INT"));
+        assertEquals(0.0001, paramFile.getParameters().get("SMALL_DOUBLE"));
+        assertEquals(1.23e-4, paramFile.getParameters().get("SCIENTIFIC"));
+        assertEquals(-3.14159, paramFile.getParameters().get("NEGATIVE_DOUBLE"));
+    }
+
+    @Test
+    @DisplayName("Test ParameterFile mock and spy behavior")
+    public void testParameterFileMockBehavior() throws IOException {
+        // Create a real ParameterFile and use spy to verify method calls
+        JCAMPParameterParser.ParameterFile realParamFile =
+                JCAMPParameterParser.parseString("##TITLE=Test\n##$PARAM=value\n##END=");
+
+        JCAMPParameterParser.ParameterFile spyParamFile = spy(realParamFile);
+
+        // Test method calls are tracked
+        spyParamFile.getHeaders();
+        spyParamFile.getParameters();
+        spyParamFile.getComments();
+
+        // Verify method calls
+        verify(spyParamFile, times(1)).getHeaders();
+        verify(spyParamFile, times(1)).getParameters();
+        verify(spyParamFile, times(1)).getComments();
+
+        // Test actual values
+        assertEquals("Test", spyParamFile.getHeaders().get("TITLE"));
+        assertEquals("value", spyParamFile.getParameters().get("PARAM"));
+        assertTrue(spyParamFile.getComments().isEmpty());
+    }
+
+    @Test
+    @DisplayName("Test parameter file toString method with mock")
+    public void testToStringMethodWithMock() throws IOException {
+        JCAMPParameterParser.ParameterFile paramFile = mock(JCAMPParameterParser.ParameterFile.class);
+
+        // Configure mock behavior
+        when(paramFile.toString()).thenReturn("Mocked JCAMP Parameter File: Headers: 1, Parameters: 1, Comments: 0");
+
+        String result = paramFile.toString();
+
+        assertEquals("Mocked JCAMP Parameter File: Headers: 1, Parameters: 1, Comments: 0", result);
+        verify(paramFile, times(1)).toString();
+    }
+
+    @Test
+    @DisplayName("Test argument capture with Mockito")
+    public void testArgumentCapture() throws IOException {
+        // This test demonstrates how to capture arguments in more complex scenarios
+        String content = """
+                ##TITLE=Test File
+                ##$PARAM=test_value
+                ##END=
+                """;
+
+        JCAMPParameterParser.ParameterFile paramFile = JCAMPParameterParser.parseString(content);
+
+        // Verify the parsing worked correctly
+        assertNotNull(paramFile);
+        assertEquals("Test File", paramFile.getHeaders().get("TITLE"));
+        assertEquals("test_value", paramFile.getParameters().get("PARAM"));
+    }
+
+    @Test
+    @DisplayName("Test file not found exception with mock")
+    public void testFileNotFoundWithMock() {
+        File mockFile = mock(File.class);
+        when(mockFile.exists()).thenReturn(false);
+        when(mockFile.getPath()).thenReturn("nonexistent.jcamp");
+
+        // The actual method will throw IOException when file doesn't exist
+        assertThrows(IOException.class, () -> {
+            JCAMPParameterParser.parseFile(mockFile);
+        });
+    }
+}

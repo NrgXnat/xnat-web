@@ -1,0 +1,25 @@
+{
+  "manifest_version": "1.0",
+  "variables": {
+    "project_id": "O1"
+  },
+  "templates": {
+    "imaging_session": {
+      "source_pattern": "{base_cache_path}/{session_folder}/{scan_id}",
+      "dest_pattern": "/data/projects/{project_id}/subjects/{subject_id}/sessions/{session_id}/scans/{scan_id_padded}",
+      "transformations": {
+        "subject_id": "extract_regex(session_folder, 'Mouse_exvivo_(.+?)_set')",
+        "session_id": "session_folder",
+        "scan_id_padded": "zero_pad(scan_id, 3)"
+      }
+    }
+  },
+  "copy_jobs": [
+    {
+      "template": "imaging_session",
+      "base_cache_path": "/Users/mohanaramaratnam/data/xnat/cache/USERS/5/20250910-164033",
+      "session_folder": "20250902_172242_Thorek_Mouse_exvivo_kidney_set_2_1_8",
+      "scans": ["3", "4", "5", "6", "7", "8"]
+    }
+  ]
+}

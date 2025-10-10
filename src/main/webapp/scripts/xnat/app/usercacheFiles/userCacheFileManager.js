@@ -654,6 +654,12 @@ var XNAT = getObject(XNAT);
                                  <span class="uce-folder-name">${node.name}</span>`;
 
                  if (!isRootNode && includeDelete) {
+
+                      html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
+                                                                                   style="padding: 0; color: black; border: none;  cursor: pointer;"
+                                                                                   title="Figure out my data">
+                                                                             <i class="fa fa-magic"></i>
+                                                        </button>`;
                       html +=  `<button onclick="XNAT.app.usercacheFileManager.removeFileFromCache('${folderPath}')"
                                                              style="padding: 0; color: black; border: none;  cursor: pointer;"
                                                              title="Delete from cache">
