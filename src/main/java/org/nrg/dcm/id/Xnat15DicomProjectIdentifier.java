@@ -21,7 +21,6 @@ import org.nrg.xnat.services.cache.UserProjectCache;
 
 import java.io.*;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +53,7 @@ public class Xnat15DicomProjectIdentifier extends DbBackedProjectIdentifier {
 
     private void loadFrom15Config(final Collection<Extractor> identifiers) {
         final ConfigPaths   paths         = XDAT.getContextService().getBeanSafely(ConfigPaths.class);
-        final Path          confDir       = Paths.get(XFT.GetConfDir());
+        final Path          confDir       = Path.of(XFT.GetConfDir());
         if (!paths.contains(confDir)) {
             paths.add(confDir);
         }
@@ -62,7 +61,7 @@ public class Xnat15DicomProjectIdentifier extends DbBackedProjectIdentifier {
         if (configs.isEmpty()) {
             return;
         }
-        File cfgFile = configs.get(0);
+        File cfgFile = configs.getFirst();
         if (configs.size() > 1) {
             log.warn("Multiple project identifier config files found {}, using {}", configs, cfgFile);
         }

@@ -629,7 +629,7 @@ public class ResourceSurveyServiceImpl implements ResourceSurveyService {
         if (results.isEmpty()) {
             throw new NotFoundException("The specified ID does not exist or the request can not be canceled.");
         }
-        return results.get(0);
+        return results.getFirst();
     }
 
     /**
@@ -905,7 +905,7 @@ public class ResourceSurveyServiceImpl implements ResourceSurveyService {
 
     private boolean movedResource(final ResourceSurveyRequest request) {
         List<String> projects = _jdbcTemplate.queryForList(QUERY_GET_RESOURCE_PROJECTS, new MapSqlParameterSource(PARAM_RESOURCE_IDS, Collections.singletonList(request.getResourceId())), String.class);
-        return !(CollectionUtils.isEmpty(projects) || StringUtils.equals(request.getProjectId(), projects.get(0)));
+        return !(CollectionUtils.isEmpty(projects) || StringUtils.equals(request.getProjectId(), projects.getFirst()));
     }
 
     private long queueRequest(final ResourceSurveyRequest request) {

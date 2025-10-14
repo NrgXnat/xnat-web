@@ -37,7 +37,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -230,7 +229,7 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
             this.newProject = newProject;
             this.fileSetDir = new File(this.uri);
             this.timestampDir = fileSetDir.getParentFile();
-            Path newTimestampDirPath = Paths.get( this.basePath, this.newProject, this.timestampDir.getName());
+            Path newTimestampDirPath = Path.of( this.basePath, this.newProject, this.timestampDir.getName());
             this.newTimestampDir = newTimestampDirPath.normalize().toFile();
             this.xml = new File(timestampDir, session + ".xml");
             copy = new Copy(timestampDir, newTimestampDir, session);
@@ -334,14 +333,14 @@ public class FileSystemSessionDataModifier implements SessionDataModifierI {
 
             public Void run() throws SyncFailedException {
                 try {
-                    final File scanDestination = Paths.get(_destination.toURI()).resolve("SCANS").toFile();
+                    final File scanDestination = Path.of(_destination.toURI()).resolve("SCANS").toFile();
                     if (!scanDestination.exists()) {
                         if (scanDestination.mkdirs() && logger.isDebugEnabled()) {
                             logger.debug("Created new destination scan folder " + scanDestination.getAbsolutePath());
                         }
                     }
                     for (final String scan : _scans) {
-                        final File scanSource = Paths.get(_source.toURI()).resolve("SCANS").resolve(scan).toFile();
+                        final File scanSource = Path.of(_source.toURI()).resolve("SCANS").resolve(scan).toFile();
                         if (!scanSource.exists()) {
                             throw new SyncFailedException("Couldn't find the source path for scan " + scan + " under the " + _source.getAbsolutePath() + " session folder.");
                         }

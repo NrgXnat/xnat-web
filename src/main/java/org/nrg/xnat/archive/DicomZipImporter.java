@@ -276,8 +276,8 @@ public final class DicomZipImporter extends ImporterHandlerA {
         if (value == null) {
             return false;
         }
-        if (value instanceof Boolean) {
-            return (Boolean) value;
+        if (value instanceof Boolean boolean1) {
+            return boolean1;
         }
         return Boolean.parseBoolean(value.toString());
     }

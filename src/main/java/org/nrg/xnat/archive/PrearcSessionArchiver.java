@@ -14,6 +14,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.dcm4che2.data.DicomObject;
+import org.dcm4che2.io.StopTagInputHandler;
 import org.dcm4che3.data.Attributes;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.io.DicomInputStream;
@@ -87,8 +89,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.NoSuchFileException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -770,7 +772,7 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         if (filterTags.isEmpty()) {
             return;
         }
-        final int lastTag = Math.max(filterTags.get(filterTags.size() - 1), Tag.SeriesDescription) + 1;
+        final int lastTag = Math.max(filterTags.getLast(), Tag.SeriesDescription) + 1;
         log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
         for (final XnatImagescandataI scan : src.getScans_scan()) {
             for (final File file: getAllDicomFile(scan)) {
@@ -829,11 +831,11 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         //validate files to confirm DICOM contents
         for (final XnatImagescandataI scan : src.getScans_scan()) {
             for (final XnatAbstractresourceI resource : scan.getFile()) {
-                if (resource instanceof XnatResourcecatalogI) {
+                if (resource instanceof XnatResourcecatalogI resourcecatalogI) {
                     final CatalogUtils.CatalogData catalogData;
                     try {
                         catalogData = CatalogUtils.CatalogData.getOrCreate(src.getPrearchivepath(),
-                                                                           (XnatResourcecatalogI) resource, project);
+                                                                           resourcecatalogI, project);
                     } catch (ServerException e) {
                         warn(21, "Expected a catalog file, however it was missing.");
                         continue;
@@ -841,16 +843,16 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
 
                     final List<String> unreferenced = CatalogUtils.getUnreferencedFiles(new File(catalogData.catPath), project);
                     if (unreferenced.size() > 0) {
-                        warn(20, String.format("Scan %1$s has %2$s non-%3$s (or non-parsable %3$s) files", scan.getId(), unreferenced.size(), resource.getLabel()));
+                        warn(20, "Scan %1$s has %2$s non-%3$s (or non-parsable %3$s) files".formatted(scan.getId(), unreferenced.size(), resource.getLabel()));
                     }
 
-                    if (StringUtils.equals(((XnatResourcecatalogI) resource).getFormat(), RESOURCE_FORMAT)) {
+                    if (StringUtils.equals(resourcecatalogI.getFormat(), RESOURCE_FORMAT)) {
                         //check for entries that aren't DICOM entries or don't have a UID stored
                         final CatCatalogI           catalog  = catalogData.catBean;
                         final Collection<CatEntryI> nonDicom = CatalogUtils.getEntriesByFilter(catalog, entry -> ((!(entry instanceof CatDcmentryI)) || StringUtils.isEmpty(((CatDcmentryI) entry).getUid())));
 
                         if (!nonDicom.isEmpty()) {
-                            warn(20, String.format("Scan %1$s has %2$s non-DICOM (or non-parsable DICOM) files", scan.getId(), nonDicom.size()));
+                            warn(20, "Scan %1$s has %2$s non-DICOM (or non-parsable DICOM) files".formatted(scan.getId(), nonDicom.size()));
                         }
 
                         if (XDAT.getSiteConfigPreferences().getUseSopInstanceUidToUniquelyIdentifyDicom()) {
@@ -864,8 +866,8 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
                                     .map(Map.Entry::getKey)
                                     .collect(Collectors.joining(", "));
                             if (StringUtils.isNotBlank(duplicateUids)) {
-                                warn(22, String.format("Scan %s %s catalog contains duplicated SOP instance " +
-                                        "UIDs: %3$s", scan.getId(), resource.getLabel(), duplicateUids));
+                                warn(22, ("Scan %s %s catalog contains duplicated SOP instance " +
+                                        "UIDs: %3$s").formatted(scan.getId(), resource.getLabel(), duplicateUids));
                             }
                         }
                     }
@@ -939,11 +941,11 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
 
         //process previously matched scans
         for (final List<XnatImagescandataI> preexistingMatch : preexistingMatches) {
-            final XnatImagescandataI newScan = preexistingMatch.get(0);
+            final XnatImagescandataI newScan = preexistingMatch.getFirst();
             final XnatImagescandataI match   = preexistingMatch.get(1);
 
             //use same catalog path as existing resource
-            final XnatResourcecatalog cat          = (XnatResourcecatalog) match.getFile().get(0);
+            final XnatResourcecatalog cat          = (XnatResourcecatalog) match.getFile().getFirst();
             final String              archivedPath = cat.getUri();
             final String              partialPath  = archivedPath.substring(archivedPath.lastIndexOf(SCANS_DIR));
 
@@ -971,7 +973,7 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
             final XnatResourcecatalog cat                = (XnatResourcecatalog) resource;
             final String              srcScanCatalogPath = cat.getUri();
             final File                srcCatalog         = new File(src.getPrearchivepath(), srcScanCatalogPath);
-            final String              srcScanFolderPath  = Paths.get(SCANS_DIR, srcScanId).toString();
+            final String              srcScanFolderPath  = Path.of(SCANS_DIR, srcScanId).toString();
 
             //confirm expected structure
             if (!srcCatalog.exists()) {
@@ -986,10 +988,10 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
 
             if (destScanCatalogPath == null) {
                 if (RESOURCE_LABEL_DICOM.equals(cat.getLabel())) {
-                    destScanCatalogPath = Paths.get(SCANS_DIR, destScanId, RESOURCE_LABEL_DICOM,
+                    destScanCatalogPath = Path.of(SCANS_DIR, destScanId, RESOURCE_LABEL_DICOM,
                                                     "scan_" + destScanId + "_catalog.xml").toString();
                 } else {
-                    destScanCatalogPath = Paths.get(SCANS_DIR, destScanId, cat.getLabel(),
+                    destScanCatalogPath = Path.of(SCANS_DIR, destScanId, cat.getLabel(),
                                                     "scan_" + destScanId + "_" + cat.getLabel() + "_catalog.xml").toString();
                 }
             }

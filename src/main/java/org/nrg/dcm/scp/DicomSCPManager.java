@@ -97,9 +97,9 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
         Collections.sort(sortedDicomObjectIdentifierBeanIds);
         if (StringUtils.isNotBlank(primaryBeanId)) {
             _primaryDicomObjectIdentifierBeanId = primaryBeanId;
-            sortedDicomObjectIdentifierBeanIds.add(0, _primaryDicomObjectIdentifierBeanId);
+            sortedDicomObjectIdentifierBeanIds.addFirst(_primaryDicomObjectIdentifierBeanId);
         } else {
-            _primaryDicomObjectIdentifierBeanId = sortedDicomObjectIdentifierBeanIds.get(0);
+            _primaryDicomObjectIdentifierBeanId = sortedDicomObjectIdentifierBeanIds.getFirst();
         }
 
         _dicomObjectIdentifierBeanIds = sortedDicomObjectIdentifierBeanIds.stream().filter(StringUtils::isNotBlank).collect(Collectors.toSet());
@@ -235,7 +235,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
         for (String item : whitelist) {
             final List<String> whitelistedItem = Arrays.asList(item.split("@"));
             if (whitelistedItem.size() == 2) {
-                final String whitelistedAe = whitelistedItem.get(0);
+                final String whitelistedAe = whitelistedItem.getFirst();
                 final String whitelistedIp = whitelistedItem.get(1);
                 try {
                     new IpAddressMatcher(whitelistedIp);
@@ -363,7 +363,7 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
     @Nonnull
     public DicomSCPInstance getDicomSCPInstance(final String aeTitle, final int port) throws NotFoundException {
         return _dicomSCPInstanceService.findByAETitleAndPort(aeTitle, port)
-                                       .orElseThrow(() -> new NotFoundException(String.format("No such instance with aeTitle '%s' and port %d", aeTitle, port)));
+                                       .orElseThrow(() -> new NotFoundException("No such instance with aeTitle '%s' and port %d".formatted(aeTitle, port)));
     }
 
     public List<DicomSCPInstance> getEnabledDicomSCPInstancesByPort(final int port) {
@@ -471,10 +471,10 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
     @Nullable
     public DicomObjectIdentifier<XnatProjectdata> getDicomObjectIdentifier(final String aeTitle, int port) {
         DicomSCPInstance instance = _dicomSCPInstanceService.findByAETitleAndPort(aeTitle, port)
-                                                            .orElseThrow(() -> new IllegalArgumentException(String.format("Unknown DicomSCPInstances with aeTitle '%s' and port %d", aeTitle, port)));
+                                                            .orElseThrow(() -> new IllegalArgumentException("Unknown DicomSCPInstances with aeTitle '%s' and port %d".formatted(aeTitle, port)));
         DicomObjectIdentifier<XnatProjectdata> doi = _dicomObjectIdentifierMap.get(instance.getIdentifier());
-        return doi instanceof ReceiverAwareIdentifier ?
-                ((ReceiverAwareIdentifier<? extends DicomObjectIdentifier<XnatProjectdata>>) doi).forInstance(instance) :
+        return doi instanceof ReceiverAwareIdentifier<?> rai ?
+                rai.forInstance(instance) :
                 doi;
     }
 
@@ -482,24 +482,24 @@ public class DicomSCPManager extends AbstractXnatPreferenceHandlerMethod {
     // for API
     public void resetDicomObjectIdentifier() {
         final DicomObjectIdentifier<XnatProjectdata> objectIdentifier = getDefaultDicomObjectIdentifier();
-        if (objectIdentifier instanceof CompositeDicomObjectIdentifier) {
-            ((CompositeDicomObjectIdentifier) objectIdentifier).getProjectIdentifier().reset();
+        if (objectIdentifier instanceof CompositeDicomObjectIdentifier identifier) {
+            identifier.getProjectIdentifier().reset();
         }
     }
 
     // for API
     public void resetDicomObjectIdentifier(final String beanId) {
         final DicomObjectIdentifier<XnatProjectdata> identifier = getDicomObjectIdentifier(beanId);
-        if (identifier instanceof CompositeDicomObjectIdentifier) {
-            ((CompositeDicomObjectIdentifier) identifier).getProjectIdentifier().reset();
+        if (identifier instanceof CompositeDicomObjectIdentifier objectIdentifier) {
+            objectIdentifier.getProjectIdentifier().reset();
         }
     }
 
     // for API
     public void resetDicomObjectIdentifierBeans() {
         for (final DicomObjectIdentifier<XnatProjectdata> identifier : getDicomObjectIdentifiers().values()) {
-            if (identifier instanceof CompositeDicomObjectIdentifier) {
-                ((CompositeDicomObjectIdentifier) identifier).getProjectIdentifier().reset();
+            if (identifier instanceof CompositeDicomObjectIdentifier objectIdentifier) {
+                objectIdentifier.getProjectIdentifier().reset();
             }
         }
     }
