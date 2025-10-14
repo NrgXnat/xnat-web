@@ -100,14 +100,14 @@ public class ContrastParser implements Callable<List<ContrastBolus>> {
             parsedAgents.add(agent);
             contrast.setAgent(agent);
 
-            final String embeddedRoute = parseSingularCodedMeaning(dcmObj, Tag.ContrastBolusAdministrationRouteSequence);//0018,0014
-            contrast.setRoute((embeddedRoute != null) ? embeddedRoute : dcmObj.getString(Tag.ContrastBolusRoute));//0018,1040
+            final Attributes adminRoute = seq.getFirst().getNestedDataset(Tag.ContrastBolusAdministrationRouteSequence);
+            contrast.setRoute(adminRoute.getString(Tag.CodeMeaning));
 
             parseMultipleCodedMeaning(attrs, Tag.ContrastBolusIngredientCodeSequence).forEach(s -> processIngredient(contrast, s));//0018,9338
 
-            final Attributes adminRoute = attrs.getNestedDataset(Tag.ContrastAdministrationProfileSequence);//0018,9340
-            if (adminRoute != null) {
-                processAdministrationProfile(contrast, adminRoute);
+            final Attributes adminSequence = attrs.getNestedDataset(Tag.ContrastAdministrationProfileSequence);//0018,9340
+            if (adminSequence != null) {
+                processAdministrationProfile(contrast, adminSequence);
             }
 
             contrast.setConcentration(attrs.getString(Tag.ContrastBolusIngredientConcentration));//0018,1049
@@ -119,15 +119,6 @@ public class ContrastParser implements Callable<List<ContrastBolus>> {
         }
 
         return contrasts;
-    }
-
-    private String parseSingularCodedMeaning(final Attributes parent, final int tag) {
-        final Sequence codedSequence = parent.getSequence(tag);
-        if (codedSequence == null) {
-            return null;
-        } else {
-            return parent.getString(Tag.CodeMeaning);
-        }
     }
 
     private List<String> parseMultipleCodedMeaning(final Attributes parent, final int tag) {
