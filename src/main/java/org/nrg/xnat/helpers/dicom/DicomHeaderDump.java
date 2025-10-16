@@ -11,6 +11,7 @@ package org.nrg.xnat.helpers.dicom;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringEscapeUtils;
+import org.dcm4che3.data.ElementDictionary;
 import org.dcm4che3.data.Tag;
 import org.dcm4che3.util.TagUtils;
 import org.nrg.dicom.mizer.exceptions.MizerException;
@@ -107,7 +108,7 @@ public final class DicomHeaderDump {
         final String vr = element.getVRAsString();
 
         // This fixes the unfortunate tendency of DICOM tags to use good typographical but poor programming practices.
-        final String desc = escapeHTML(TagUtils.toString(element.tag()));
+        final String desc = escapeHTML(ElementDictionary.keywordOf(element.tag(), null));
 
         final List<String> strings = new ArrayList<>(parentTag == null ? Arrays.asList(tag, "", vr, value, desc) : Arrays.asList(parentTag, tag, vr, value, desc));
         return strings.toArray(new String[0]);
