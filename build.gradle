@@ -181,6 +181,7 @@ dependencies {
     implementation "dcm4che:dcm4che-net"
     implementation "net.imagej:ij"
     implementation "org.dcm4che:dcm4che-core"
+    implementation "org.dcm4che:dcm4che-net"
     implementation "org.dcm4che:dcm4che-image"
     implementation "org.dcm4che:dcm4che-imageio"
 

@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import java.security.GeneralSecurityException;
 
 import java.io.Serial;
 
@@ -40,7 +41,7 @@ public class XNATRestletServlet extends ServerServlet {
 
         try {
             XDAT.getContextService().getBean(DicomSCPManager.class).start();
-        } catch (UnknownDicomHelperInstanceException | DicomNetworkException e) {
+        } catch (UnknownDicomHelperInstanceException | DicomNetworkException | GeneralSecurityException e) {
             throw new ServletException(e);
         }
     }

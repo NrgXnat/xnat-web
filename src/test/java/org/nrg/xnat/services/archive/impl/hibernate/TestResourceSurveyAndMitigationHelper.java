@@ -5,8 +5,12 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.Condition;
-import org.dcm4che2.io.StopTagInputHandler;
-import org.junit.*;
+import org.dcm4che3.data.Tag;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -90,7 +94,7 @@ public class TestResourceSurveyAndMitigationHelper {
 
     private SerializerService   _serializer;
     private DicomFileNamer      _dicomFileNamer;
-    private StopTagInputHandler _stopTagInputHandler;
+    private int stopTag = Tag.PixelData;
 
     public TestResourceSurveyAndMitigationHelper() throws IOException {
         final Path tempDirectory = Files.createTempDirectory("TestResourceSurveyAndMitigationHelper-");
@@ -116,9 +120,8 @@ public class TestResourceSurveyAndMitigationHelper {
         _dicomFileNamer = dicomFileNamer;
     }
 
-    @Autowired
-    public void setStopTagInputHandler(final StopTagInputHandler stopTagInputHandler) {
-        _stopTagInputHandler = stopTagInputHandler;
+    public void setStopTagInputHandler(int stopTag) {
+        this.stopTag = stopTag;
     }
 
     @Before
@@ -139,7 +142,7 @@ public class TestResourceSurveyAndMitigationHelper {
     @Ignore("Changes to workflow updates have made this difficult to get working, revisit later.")
     public void testSurveyReport() throws Exception {
         final ResourceSurveyRequest request      = getSurveyRequest();
-        final ResourceSurveyHelper  surveyHelper = new ResourceSurveyHelper(_mockEntityService, request, _serializer, _dicomFileNamer, _stopTagInputHandler);
+        final ResourceSurveyHelper  surveyHelper = new ResourceSurveyHelper(_mockEntityService, request, _serializer, _dicomFileNamer, stopTag);
         final ResourceSurveyReport  report       = surveyHelper.call();
 
         assertThat(report).isNotNull();

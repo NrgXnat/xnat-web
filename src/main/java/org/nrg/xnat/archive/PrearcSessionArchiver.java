@@ -14,15 +14,14 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.data.DicomObject;
-import org.dcm4che2.data.Tag;
-import org.dcm4che2.io.DicomInputStream;
-import org.dcm4che2.io.StopTagInputHandler;
-import org.dcm4che2.util.TagUtils;
+import org.dcm4che3.data.Attributes;
+import org.dcm4che3.data.Tag;
+import org.dcm4che3.util.TagUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.dicomtools.filters.DicomFilterService;
 import org.nrg.dicomtools.filters.SeriesImportFilter;
+import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.framework.utilities.Reflection;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.base.BaseElement;
@@ -84,8 +83,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -770,12 +769,11 @@ public class PrearcSessionArchiver extends ArchiveStatusProducer implements Call
         final int lastTag = Math.max(filterTags.getLast(), Tag.SeriesDescription) + 1;
         log.trace("reading object into memory up to {}", TagUtils.toString(lastTag));
         for (final XnatImagescandataI scan : src.getScans_scan()) {
-            for (File file: getAllDicomFile(scan)) {
-                try (DicomInputStream dis = new DicomInputStream(file)) {
-                    dis.setHandler(new StopTagInputHandler(lastTag));
-                    DicomObject dio = dis.readDicomObject();
-                    if (!projectSpecific.shouldIncludeDicomObject(dio)) {
-                        fail(22, "Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.".formatted(scan.getId()));
+            for (final File file: getAllDicomFile(scan)) {
+                try {
+                    final Attributes attributes = DicomUtils.read(file, lastTag);
+                    if (!projectSpecific.shouldIncludeDicomObject(attributes)) {
+                        fail(22, String.format("Scan %1$s is non-compliant with this project's DICOM whitelist/blacklist.", scan.getId()));
                         break;
                     }
                 } catch (IOException e) {

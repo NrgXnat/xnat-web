@@ -13,7 +13,6 @@ import com.google.common.collect.Sets;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.lang3.StringUtils;
-import org.dcm4che2.io.DicomCodingException;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
 import org.nrg.framework.constants.PrearchiveCode;

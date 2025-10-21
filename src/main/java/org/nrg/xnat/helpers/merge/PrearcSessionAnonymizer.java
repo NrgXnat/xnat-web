@@ -9,7 +9,7 @@
 
 package org.nrg.xnat.helpers.merge;
 
-import org.dcm4che2.iod.module.macro.Code;
+import org.dcm4che3.data.Code;
 import org.nrg.config.entities.Configuration;
 import org.nrg.dicomtools.utilities.DicomUtils;
 import org.nrg.xdat.XDAT;
@@ -98,9 +98,9 @@ public class PrearcSessionAnonymizer extends AnonymizerA {
         } catch (Exception e) {
             logger.error("An error occurred trying to retrieve the prearchive sessions for path " + file.getAbsolutePath(), e);
         }
-        final Code[] codes = DicomUtils.getCodes(file);
-        if (codes != null && codes.length != 0) {
-            final Code          last          = codes[codes.length - 1];
+        final List<Code> codes = DicomUtils.getCodes(file);
+        if (codes != null && !codes.isEmpty()) {
+            final Code          last          = codes.get(codes.size() - 1);
             final Configuration configuration = getScript();
             if (configuration != null && last.getCodeValue().equals(Long.toString(configuration.getId()))) {
                 return false;

@@ -1,7 +1,6 @@
 package org.nrg.xnat.snapshot.generator.impl;
 
 import lombok.extern.slf4j.Slf4j;
-import org.dcm4che2.imageioimpl.plugins.dcm.DicomImageReader;
 import org.nrg.dicom.mizer.exceptions.MizerException;
 import org.nrg.xapi.exceptions.InitializationException;
 
@@ -95,7 +94,7 @@ public class MontageGenerator extends DicomImageRenderer {
                     // if/when we encounter non RGB data
                     // TODO: Redesign this entire process to account for different color models within one DICOM series.
                     //       This will not happen very often (if ever), but it is worth a rewrite when time permits.
-                    montageBufferedImage = DicomImageReader.createRGBBufferedImage(montageDimensions.cols, montageDimensions.rows);
+                    montageBufferedImage = new BufferedImage(montageDimensions.cols, montageDimensions.rows, BufferedImage.TYPE_INT_RGB);
                 } else {
                     montageBufferedImage = new BufferedImage(montageDimensions.cols, montageDimensions.rows, bis.getFirst().getType());
                 }
