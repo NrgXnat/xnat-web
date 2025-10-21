@@ -116,22 +116,20 @@ public final class DicomSummaryHeaderDump {
     /**
      * Convert a tag into a row of the XFTTable.
      *
-     * @param o Necessary so we can get to the description of the tag
-     * @param e The current DICOM element
+     * @param dicomElement The current DICOM element
      * @param parentTag If non null, this is a nested DICOM tag.
-     * @param maxLen The maximum number of characters to read from the description and value
      * @return the string[]
      */
-    String[] makeRow(DicomObjectI o, DicomElementI e, String parentTag , int maxLen) {
-        String tag = TagUtils.toString(e.tag());
+    String[] makeRow(DicomElementI dicomElement, String parentTag) {
+        String tag = TagUtils.toString(dicomElement.tag());
         String value = "";
 
         // If this element has nested tags it doesn't have a value and trying to 
         // extract one using dcm4che will result in an UnsupportedOperationException 
         // so check first.
         try {
-            if (!e.hasItems()) {
-                value = e.getValueAsString();
+            if (!dicomElement.hasItems()) {
+                value = dicomElement.getValueAsString();
             }
             else {
                 value = "";
@@ -140,8 +138,8 @@ public final class DicomSummaryHeaderDump {
             value = "UnsupportedBinarySequence";
         }
 
-        String vr = e.getVRAsString();
-        String desc = TagUtils.toString(e.tag());
+        String vr = dicomElement.getVRAsString();
+        String desc = TagUtils.toString(dicomElement.tag());
         List<String> l = new ArrayList<String>();
         if (parentTag == null) {
             String[] _s = {tag,"",vr,value,desc};
@@ -238,13 +236,12 @@ public final class DicomSummaryHeaderDump {
         for (File file : this.files) {
 			DicomObjectI header = this.getHeader(file);
 	        // dcm4che3 - DicomObjectToStringParam removed, using maxLen directly
-	        // DicomObjectToStringParam formatParams = DicomObjectToStringParam.getDefaultParam();
 	        int maxLen = 255;
 	
 	        for (Iterator<DicomElementI> it = header.iterator(); it.hasNext();) {
 	            DicomElementI e = it.next();
 	            try {
-		            write( t, header, maxLen, e);
+		            write( t, header,e);
 	            }catch(Exception ex){
 	                logger.error("Error reading dicom tag,"+ e.tag(),ex);
 	            }
@@ -259,27 +256,25 @@ public final class DicomSummaryHeaderDump {
      *
      * @param t the t
      * @param header the header
-     * @param e the e
+     * @param element the dicomElement
      */
-    public void write(XFTTable t,DicomObjectI header,int maxLen,DicomElementI e){
+    public void write(XFTTable t,DicomObjectI header,DicomElementI element){
         // dcm4che3 - header is already DicomObjectI, no need to wrap
-        // DicomObjectI doi= DicomObjectFactory.newInstance(header);
-        DicomObjectI doi = header;
-        DicomElementI dei = doi.getElement(e.tag());
-    	if (fields.isEmpty() || fields.containsKey(e.tag())) {
-            if (e.hasItems()) {
-                for (int i = 0; i < e.countItems(); i++) {
-                    DicomObjectI o = e.getDicomObject(i);
-                    t.insertRow(makeRow(header, e, TagUtils.toString(e.tag()), maxLen));
+        DicomElementI dei = header.getElement(element.tag());
+    	if (fields.isEmpty() || fields.containsKey(element.tag())) {
+            if (element.hasItems()) {
+                for (int i = 0; i < element.countItems(); i++) {
+                    DicomObjectI o = element.getDicomObject(i);
+                    t.insertRow(makeRow(element, TagUtils.toString(element.tag())));
                     for (Iterator<DicomElementI> it1 = o.iterator(); it1.hasNext();) {
                         DicomElementI e1 = it1.next();
-                        write( t, header, maxLen, e1);
+                        write( t, header, e1);
                     }
                 }
-            } else if (SiemensShadowHeader.isShadowHeader(doi, dei)) {
-                SiemensShadowHeader.addRows(t, doi, dei, fields.get(e.tag()));
+            } else if (SiemensShadowHeader.isShadowHeader(header, dei)) {
+                SiemensShadowHeader.addRows(t, header, dei, fields.get(element.tag()));
             } else {
-                t.insertRow(makeRow(header, e, null, maxLen));		
+                t.insertRow(makeRow(element, null));
             }
     	}
     }

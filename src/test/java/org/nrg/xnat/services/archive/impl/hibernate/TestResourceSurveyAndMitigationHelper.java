@@ -120,7 +120,6 @@ public class TestResourceSurveyAndMitigationHelper {
         _dicomFileNamer = dicomFileNamer;
     }
 
-//    @Autowired
     public void setStopTagInputHandler(int stopTag) {
         this.stopTag = stopTag;
     }

@@ -134,17 +134,6 @@ public final class DicomHeaderDump {
         }
 
         DicomObjectI header = this.getHeader(new File(this.file));
-        // dcm4che3 - DicomObjectToStringParam removed, using maxLen directly
-        // DicomObjectToStringParam formatParams = DicomObjectToStringParam.getDefaultParam();
-        // DicomObjectToStringParam DEFAULT_PARAM = DicomObjectToStringParam.getDefaultParam();
-        // DicomObjectToStringParam formatParams = new DicomObjectToStringParam(
-        // 		DEFAULT_PARAM.name, 			// name
-        // 		255,							// valueLength;
-        // 		DEFAULT_PARAM.numItems,			// numItems;
-        // 		DEFAULT_PARAM.lineLength,		// lineLength;
-        // 		DEFAULT_PARAM.numLines, 		// numLines;
-        // 		DEFAULT_PARAM.indent,			// indent
-        // 		DEFAULT_PARAM.lineSeparator);	// line separator
         int maxLen = 255;
 
         for (Iterator<DicomElementI> it = header.iterator(); it.hasNext();) {
@@ -159,9 +148,7 @@ public final class DicomHeaderDump {
     }
     public void write(XFTTable t,DicomObjectI header,int maxLen,DicomElementI e){
         // dcm4che3 - header is already DicomObjectI, no need to wrap
-        // DicomObjectI doi= DicomObjectFactory.newInstance(header);
-        DicomObjectI doi = header;
-        DicomElementI dei = doi.getElement(e.tag());
+        DicomElementI dei = header.getElement(e.tag());
         if (fields.isEmpty() || fields.containsKey(e.tag())) {
             if (e.hasItems()) {
                 for (int i = 0; i < e.countItems(); i++) {
@@ -172,8 +159,8 @@ public final class DicomHeaderDump {
                         t.insertRow(makeRow(header, e1, TagUtils.toString(e.tag()), maxLen));
                     }
                 }
-            } else if (SiemensShadowHeader.isShadowHeader(doi, dei)) {
-                SiemensShadowHeader.addRows(t, doi, dei, fields.get(e.tag()));
+            } else if (SiemensShadowHeader.isShadowHeader(header, dei)) {
+                SiemensShadowHeader.addRows(t, header, dei, fields.get(e.tag()));
             } else {
                 t.insertRow(makeRow(header, e, null, maxLen));		
             }
