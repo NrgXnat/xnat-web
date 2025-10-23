@@ -1,0 +1,91 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+$page.setTitle("DermoscopySession Details")
+$page.setLinkColor($ui.alink)
+$page.setVlinkColor($ui.vlink)
+#if ($turbineUtils.GetPassedParameter("popup", $data))
+	#set ($popup = $turbineUtils.GetPassedParameter("popup", data) )
+	#set ($popup = "false")
+#end
+<TABLE width="100%">
+	<TR>
+		<TD>
+			<table width="100%">
+				<TR>
+					<TD align="left" valign="middle">
+						<font face="$ui.sansSerifFonts" size="3"><b>DermoscopySession Details</b></font>
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD>
+			<TABLE width="100%">
+				<TR>
+					<TD valign="top">
+						<TABLE>
+							<TR><TD>scanner</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/scanner")</TD></TR>
+							<TR><TD>scanner/manufacturer</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/scanner/manufacturer")</TD></TR>
+							<TR><TD>scanner/model</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/scanner/model")</TD></TR>
+							<TR><TD>operator</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/operator")</TD></TR>
+							<TR><TD>prearchivePath</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/prearchivePath")</TD></TR>
+							<TR><TD>dcmAccessionNumber</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/dcmAccessionNumber")</TD></TR>
+							<TR><TD>dcmPatientId</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/dcmPatientId")</TD></TR>
+							<TR><TD>dcmPatientName</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/dcmPatientName")</TD></TR>
+							<TR><TD>dcmPatientBirthDate</TD><TD>$!item.getProperty("xnat:dmsSessionData/dcmPatientBirthDate")</TD></TR>
+							<TR><TD>session_type</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/session_type")</TD></TR>
+							<TR><TD>modality</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/modality")</TD></TR>
+							<TR><TD>UID</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/UID")</TD></TR>
+							<TR><TD>subject_ID</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/subject_ID")</TD></TR>
+							<TR><TD>age</TD><TD>$!item.getDoubleProperty("xnat:dmsSessionData/age")</TD></TR>
+							<TR><TD>date</TD><TD>$!item.getProperty("xnat:dmsSessionData/date")</TD></TR>
+							<TR><TD>time</TD><TD>$!item.getProperty("xnat:dmsSessionData/time")</TD></TR>
+							<TR><TD>duration</TD><TD>$!item.getProperty("xnat:dmsSessionData/duration")</TD></TR>
+							<TR><TD>delay</TD><TD>$!item.getIntegerProperty("xnat:dmsSessionData/delay")</TD></TR>
+							<TR><TD>delay/ref_expt_id</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/delay/ref_expt_id")</TD></TR>
+							<TR><TD>note</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/note")</TD></TR>
+							<TR><TD>acquisition_site</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/acquisition_site")</TD></TR>
+							<TR><TD>ID</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/ID")</TD></TR>
+							<TR><TD>project</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/project")</TD></TR>
+							<TR><TD>visit_id</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/visit_id")</TD></TR>
+							<TR><TD>visit</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/visit")</TD></TR>
+							<TR><TD>version</TD><TD>$!item.getIntegerProperty("xnat:dmsSessionData/version")</TD></TR>
+							<TR><TD>original</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/original")</TD></TR>
+							<TR><TD>protocol</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/protocol")</TD></TR>
+							<TR><TD>label</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/label")</TD></TR>
+							<TR><TD colspan='2'><b>Dermoscopy-Specific Fields</b></TD></TR>
+							<TR><TD>skinRegion</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/skinRegion")</TD></TR>
+							<TR><TD>targetMelanoma</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/targetMelanoma")</TD></TR>
+							<TR><TD>clinicalIndication</TD><TD>$!item.getStringProperty("xnat:dmsSessionData/clinicalIndication")</TD></TR>
+						</TABLE>
+					</TD>
+					<TD valign="top" align="right">
+						#parse($turbineUtils.getTemplateName("actions",$om.getXSIType(),$project))
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD>
+<!-- BEGIN xnat:dmsSessionData -->
+			<TABLE>
+				<TR><TH align="left"><font face="$ui.sansSerifFonts" size="2">Related Items</font></TH></TR>
+				<TR>
+					<TD align="left" valign="top">
+						<TABLE>
+						</TABLE>
+					</TD>
+				</TR>
+				<TR>
+					<TD align="left" valign="top">
+						#foreach ($scan in $item.getScans())
+							$scan.toElementXML()
+						#end
+					</TD>
+				</TR>
+			</TABLE>
+<!-- END xnat:dmsSessionData -->
+		</TD>
+	</TR>
+</TABLE>

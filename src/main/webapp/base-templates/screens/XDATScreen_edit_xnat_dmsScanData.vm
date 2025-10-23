@@ -1,0 +1,72 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+$page.setTitle("XDAT")
+$page.setLinkColor($ui.alink)
+$page.setVlinkColor($ui.vlink)
+#set($months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"])
+#set($days = [ 1..31 ])
+#set($years = [ $!turbineUtils.getYear()..1900])
+#if ($data.message)
+<font color="red" size="3">$data.message</font>
+#end
+<p>
+<form ID="form1" name="form1" method="post" action="$link.setAction("ModifyItem")">
+<input type="hidden" name="project" value="$!{project}" >
+#if($vr)
+	<font color="red">Invalid parameters:<BR>$vr.toHTML()</font>
+<HR>
+#end
+
+<TABLE width="100%">
+	<TR>
+		<TD>
+			<table width="100%">
+				<TR>
+					<TD align="left" valign="middle">
+						<DIV class="edit_title">DermatoscopyScan Details</DIV>
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD>
+			<TABLE width="100%">
+				<TR>
+					<TD valign="top">
+						<TABLE>
+							<TR><TD>image_session_ID</TD><TD>#xdatStringBox("xnat:dmsScanData/image_session_ID" $item "" $vr)</TD></TR>
+							<TR><TD>note</TD><TD>#xdatStringBox("xnat:dmsScanData/note" $item "" $vr)</TD></TR>
+							<TR><TD>quality</TD><TD>#xdatStringBox("xnat:dmsScanData/quality" $item "" $vr)</TD></TR>
+							<TR><TD>condition</TD><TD>#xdatStringBox("xnat:dmsScanData/condition" $item "" $vr)</TD></TR>
+							<TR><TD>series_description</TD><TD>#xdatStringBox("xnat:dmsScanData/series_description" $item "" $vr)</TD></TR>
+							<TR><TD>documentation</TD><TD>#xdatStringBox("xnat:dmsScanData/documentation" $item "" $vr)</TD></TR>
+							<TR><TD>scanner</TD><TD>#xdatStringBox("xnat:dmsScanData/scanner" $item "" $vr)</TD></TR>
+							<TR><TD>scanner/manufacturer</TD><TD>#xdatStringBox("xnat:dmsScanData/scanner/manufacturer" $item "" $vr)</TD></TR>
+							<TR><TD>scanner/model</TD><TD>#xdatStringBox("xnat:dmsScanData/scanner/model" $item "" $vr)</TD></TR>
+							<TR><TD>modality</TD><TD>#xdatStringBox("xnat:dmsScanData/modality" $item "" $vr)</TD></TR>
+							<TR><TD>frames</TD><TD>#xdatTextBox("xnat:dmsScanData/frames" $item "" $vr)</TD></TR>
+							<TR><TD>operator</TD><TD>#xdatStringBox("xnat:dmsScanData/operator" $item "" $vr)</TD></TR>
+							<TR><TD>startTime</TD><TD>#xdatTextBox("xnat:dmsScanData/startTime" $item "" $vr)</TD></TR>
+							<TR><TD>ID</TD><TD>#xdatStringBox("xnat:dmsScanData/ID" $item "" $vr)</TD></TR>
+							<TR><TD>type</TD><TD>#xdatStringBox("xnat:dmsScanData/type" $item "" $vr)</TD></TR>
+							<TR><TD>UID</TD><TD>#xdatStringBox("xnat:dmsScanData/UID" $item "" $vr)</TD></TR>
+							<TR><TD>project</TD><TD>#xdatStringBox("xnat:dmsScanData/project" $item "" $vr)</TD></TR>
+													#xdatHiddenBox("xnat:dmsScanData/xnat_imageScanData_id" $item "")
+							<TR><TD colspan='2'><b>Dermoscopy-Specific Fields</b></TD></TR>
+							<TR><TD>magnification</TD><TD>#xdatStringBox("xnat:dmsScanData/magnification" $item "" $vr)</TD></TR>
+							<TR><TD>lightSource</TD><TD>#xdatStringBox("xnat:dmsScanData/lightSource" $item "" $vr)</TD></TR>
+							<TR><TD>dermatoscope</TD><TD>#xdatStringBox("xnat:dmsScanData/dermatoscope" $item "" $vr)</TD></TR>
+						</TABLE>
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD align="center">
+			<input type="submit" name="eventSubmit_doSave" value="Save">
+			<input type="reset" value="Reset">
+		</TD>
+	</TR>
+</TABLE>
+</form>

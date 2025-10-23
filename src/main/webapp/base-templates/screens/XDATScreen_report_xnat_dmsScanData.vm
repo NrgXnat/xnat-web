@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+$page.setTitle("DermatoscopyScan Details")
+$page.setLinkColor($ui.alink)
+$page.setVlinkColor($ui.vlink)
+#if ($turbineUtils.GetPassedParameter("popup", $data))
+	#set ($popup = $turbineUtils.GetPassedParameter("popup", data) )
+	#set ($popup = "false")
+#end
+<TABLE width="100%">
+	<TR>
+		<TD>
+			<table width="100%">
+				<TR>
+					<TD align="left" valign="middle">
+						<font face="$ui.sansSerifFonts" size="3"><b>DermatoscopyScan Details</b></font>
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD>
+			<TABLE width="100%">
+				<TR>
+					<TD valign="top">
+						<TABLE>
+							<TR><TD>image_session_ID</TD><TD>$!item.getStringProperty("xnat:dmsScanData/image_session_ID")</TD></TR>
+							<TR><TD>note</TD><TD>$!item.getStringProperty("xnat:dmsScanData/note")</TD></TR>
+							<TR><TD>quality</TD><TD>$!item.getStringProperty("xnat:dmsScanData/quality")</TD></TR>
+							<TR><TD>condition</TD><TD>$!item.getStringProperty("xnat:dmsScanData/condition")</TD></TR>
+							<TR><TD>series_description</TD><TD>$!item.getStringProperty("xnat:dmsScanData/series_description")</TD></TR>
+							<TR><TD>documentation</TD><TD>$!item.getStringProperty("xnat:dmsScanData/documentation")</TD></TR>
+							<TR><TD>scanner</TD><TD>$!item.getStringProperty("xnat:dmsScanData/scanner")</TD></TR>
+							<TR><TD>scanner/manufacturer</TD><TD>$!item.getStringProperty("xnat:dmsScanData/scanner/manufacturer")</TD></TR>
+							<TR><TD>scanner/model</TD><TD>$!item.getStringProperty("xnat:dmsScanData/scanner/model")</TD></TR>
+							<TR><TD>modality</TD><TD>$!item.getStringProperty("xnat:dmsScanData/modality")</TD></TR>
+							<TR><TD>frames</TD><TD>$!item.getIntegerProperty("xnat:dmsScanData/frames")</TD></TR>
+							<TR><TD>operator</TD><TD>$!item.getStringProperty("xnat:dmsScanData/operator")</TD></TR>
+							<TR><TD>startTime</TD><TD>$!item.getProperty("xnat:dmsScanData/startTime")</TD></TR>
+							<TR><TD>ID</TD><TD>$!item.getStringProperty("xnat:dmsScanData/ID")</TD></TR>
+							<TR><TD>type</TD><TD>$!item.getStringProperty("xnat:dmsScanData/type")</TD></TR>
+							<TR><TD>UID</TD><TD>$!item.getStringProperty("xnat:dmsScanData/UID")</TD></TR>
+							<TR><TD>project</TD><TD>$!item.getStringProperty("xnat:dmsScanData/project")</TD></TR>
+							<TR><TD colspan='2'><b>Dermoscopy-Specific Fields</b></TD></TR>
+							<TR><TD>magnification</TD><TD>$!item.getStringProperty("xnat:dmsScanData/magnification")</TD></TR>
+							<TR><TD>lightSource</TD><TD>$!item.getStringProperty("xnat:dmsScanData/lightSource")</TD></TR>
+							<TR><TD>dermatoscope</TD><TD>$!item.getStringProperty("xnat:dmsScanData/dermatoscope")</TD></TR>
+						</TABLE>
+					</TD>
+					<TD valign="top" align="right">
+						#parse($turbineUtils.getTemplateName("actions",$om.getXSIType(),$project))
+					</TD>
+				</TR>
+			</TABLE>
+		</TD>
+	</TR>
+	<TR>
+		<TD>
+<!-- BEGIN xnat:dmsScanData -->
+			<TABLE>
+				<TR><TH align="left"><font face="$ui.sansSerifFonts" size="2">Resources</font></TH></TR>
+				<TR>
+					<TD align="left" valign="top">
+						#foreach ($resource in $item.getResources())
+							<TABLE>
+								<TR><TH align="left"><font face="$ui.sansSerifFonts" size="2">Resource: $resource.getLabel()</font></TH></TR>
+								<TR>
+									<TD align="left" valign="top">
+										<TABLE>
+											<TR><TD>Label</TD><TD>$!resource.getLabel()</TD></TR>
+											<TR><TD>Catalog</TD><TD>$!resource.getCatalog()</TD></TR>
+											<TR><TD>Format</TD><TD>$!resource.getFormat()</TD></TR>
+											<TR><TD>Description</TD><TD>$!resource.getDescription()</TD></TR>
+											<TR><TD>URI</TD><TD>$!resource.getUri()</TD></TR>
+										</TABLE>
+									</TD>
+								</TR>
+							</TABLE>
+						#end
+					</TD>
+				</TR>
+			</TABLE>
+<!-- END xnat:dmsScanData -->
+		</TD>
+	</TR>
+</TABLE>
