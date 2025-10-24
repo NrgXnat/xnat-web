@@ -3,7 +3,6 @@ $displayManager.getSingularDisplayNameForImageSession().toUpperCase() ID:   $!it
 $displayManager.getSingularDisplayNameForSubject().toUpperCase() ID:   $!item.getSubjectData().getId() 
 AGE:          $!item.getSubjectAge()
 GENDER:       $!item.SubjectData.GenderText
-HANDEDNESS:   $!item.SubjectData.HandedText
 ACQ. DATE:    $!item.Date
 SCANNER:      $!item.Scanner
 INVESTIGATOR: $!item.Investigator.Firstname $!item.Investigator.Lastname
@@ -20,9 +19,6 @@ $!item.Note
 SCAN NUMBER: $!scan.Id
 TYPE:        $!scan.Type
 Quality:     $!scan.Quality
-Vox res (mm):$!scan.Parameters_voxelres_x x $!scan.Parameters_voxelres_y x $!scan.Parameters_voxelres_z
-Rect. Fov:   $!scan.Parameters_fov_x/$!scan.Parameters_fov_y
-Orientation: $!scan.Parameters_orientation
 Time:        $!scan.startTime
 Note:        $!scan.Note
 

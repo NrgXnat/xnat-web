@@ -3,7 +3,6 @@ $displayManager.getSingularDisplayNameForImageSession().toUpperCase() ID:   $!it
 $displayManager.getSingularDisplayNameForSubject().toUpperCase() ID:   $!item.getSubjectData().getId() 
 AGE:          $!item.getSubjectAge()
 GENDER:       $!item.SubjectData.GenderText
-HANDEDNESS:   $!item.SubjectData.HandedText
 ACQ. DATE:    $!item.Date
 SCANNER:      $!item.Scanner
 INVESTIGATOR: $!item.Investigator.Firstname $!item.Investigator.Lastname
