@@ -1,5 +1,5 @@
-<div class="edit_title">CT Session Summary</div>
-	<!-- TODO: put in CT-specific fields -->
+<div class="edit_title">Dermoscopy Session Summary</div>
+	<!-- TODO: put in Dermoscopy-specific fields -->
 	<table>
 		<tr>
 			<td>Patient name</td>

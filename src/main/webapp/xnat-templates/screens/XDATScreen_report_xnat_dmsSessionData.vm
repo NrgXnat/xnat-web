@@ -3,7 +3,7 @@
 #* @vtlvariable name="ui" type="org.apache.turbine.services.pull.util.UIManager" *#
 #* @vtlvariable name="data" type="org.apache.turbine.util.RunData" *#
 #* @vtlvariable name="item" type="org.nrg.xft.XFTItem" *#
-#* @vtlvariable name="om" type="org.nrg.xdat.om.XnatCtsessiondata" *#
+#* @vtlvariable name="om" type="org.nrg.xdat.om.XnatDmssessiondata" *#
 #* @vtlvariable name="project" type="java.lang.String" *#
 $page.setLinkColor($ui.alink)
 $page.setVlinkColor($ui.vlink)

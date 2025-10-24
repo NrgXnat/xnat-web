@@ -32,13 +32,13 @@
 
 <script type="text/javascript" src="$content.getURI("scripts/imageScanData/scan_tools.js")"></script>
 <script type="text/javascript">
-    console.log('CT scans JS');
+    console.log('DMS scans JS');
     jq(function(){
         jq('body').addClass('scans');
     });
 
     function addScan(_button){
-        var tempScan = window.classMapping.newInstance("xnat:ctScanData");
+        var tempScan = window.classMapping.newInstance("xnat:dmsScanData");
         window.scanSet.new_scans.push(tempScan);
         window.scanSet.onLoad.fire();
     }
@@ -58,7 +58,7 @@
         }
         return false;
     };
-        #set($scanTypes = $data.getSession().getAttribute("userHelper").getQueryResultsAsArrayList("select DISTINCT isd.type from xnat_ctsessiondata mr LEFT JOIN xnat_experimentData expt ON mr.id=expt.id LEFT JOIN xnat_imagescandata isd ON mr.id=isd.image_session_id LEFT JOIN xdat_meta_element xme ON isd.extension=xme.xdat_meta_element_id WHERE expt.project='$project' AND xme.element_name='xnat:dmsScanData'"))
+        #set($scanTypes = $data.getSession().getAttribute("userHelper").getQueryResultsAsArrayList("select DISTINCT isd.type from xnat_dmssessiondata mr LEFT JOIN xnat_experimentData expt ON mr.id=expt.id LEFT JOIN xnat_imagescandata isd ON mr.id=isd.image_session_id LEFT JOIN xdat_meta_element xme ON isd.extension=xme.xdat_meta_element_id WHERE expt.project='$project' AND xme.element_name='xnat:dmsScanData'"))
         #if($scanTypes.size()>0)
             #foreach($scanT in $scanTypes)
                 #define($scanT0)#escapeAllUnescapeParam("$!scanT.get(0)")#end
@@ -151,4 +151,4 @@
 
     window.scanSet.onLoad.fire();
 </script>
-<!-- END /xnat-templates/screens/xnat_ctSessionData/edit/scans.vm -->
+<!-- END /xnat-templates/screens/xnat_dmsSessionData/edit/scans.vm -->
