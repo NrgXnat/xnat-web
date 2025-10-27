@@ -1,4 +1,13 @@
-## XC Scan Data Template
-## xnat_xcSessionData/edit/validate.vm
+<script type="text/javascript" LANGUAGE="JavaScript" src="$content.getURI('scripts/omUtils.js')"></SCRIPT>
+<script type="text/javascript" LANGUAGE="JavaScript" src="$content.getURI('scripts/imageSessionData/validation.js')"></SCRIPT>
+<script type="text/javascript">
+function validateForm(){
+  if(confirmValues())
+  {
+     return true;
+  }else{
+     return false;
+  }
+}
 
-## Scan-level template content
+</script>
