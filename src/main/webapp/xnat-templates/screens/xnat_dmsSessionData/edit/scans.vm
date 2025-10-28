@@ -1,137 +1,148 @@
-#* @vtlvariable name="content" type="org.apache.turbine.services.pull.tools.ContentTool" *#
 #* @vtlvariable name="siteConfig" type="org.nrg.xdat.preferences.SiteConfigPreferences" *#
-#* @vtlvariable name="turbineUtils" type="org.nrg.xdat.turbine.utils.TurbineUtils" *#
 #* @vtlvariable name="user" type="org.nrg.xdat.security.XDATUser" *#
-#* @vtlvariable name="om" type="org.nrg.xdat.om.XnatDmssessiondata" *#
-#* @vtlvariable name="scan" type="org.nrg.xdat.om.XnatImagescandata" *#
+#* @vtlvariable name="scan" type="org.nrg.xdat.om.XnatDmsscandataBean" *#
 <!-- BEGIN /xnat-templates/screens/xnat_dmsSessionData/edit/scans.vm -->
+<script type="text/javascript">
+XNAT.app.scans={};
+</script>
+<DIV class="edit_header1" style="margin-bottom:16px">Scans &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
 #if($siteConfig.uiAllowScanAddition)
-<DIV class="edit_header1" style="margin-bottom:16px">Scans <input type="button" value="Add Scan" onclick="addScan(this)" style="margin-left: 2em;" />
-</DIV>
+<input type="button" value="Add Scan" onclick="addScan(this)"/>
 #end
-<TABLE>
-    <thead>
-    <TR>
-        <TH align=left></TH>
-        <TH align=left>Scan</TH>
-        <TH align=left>Type
-            <a onclick="xmodal.message('Scan Type', 'If the required value is not in the list, select MORE to show additional options or CUSTOM to add your own value.');">
-                <i class="fa fa-question-circle" style="font-size: 16px;"></i></a></TH>
-        <TH align=left>Quality</TH>
-        <TH align=left>Note</TH>
-    </TR>
-    </thead>
-    #set ($scanCounter = 0)
-    <tbody id="scan_tbody"></tbody>
+</DIV>
+
+				<TABLE>
+				 <thead>
+	  <TR>
+	  	  <TH align=left></TH>
+	  	  <TH align=left>Scan</TH>
+	  	  <TH align=left>Type <a onclick="xmodal.message('Scan Type', 'If the required value is not in the list, select MORE to show additional options or CUSTOM to add your own value.');"><i class="fa fa-question-circle" style="font-size: 16px;"></i></TH>
+	  	  <TH align=left>Quality</TH>
+	  	  <TH align=left>Note</TH>
+	  </TR>
+	 </thead>
+#set ($scanCounter = 0)
+ <tbody id="scan_tbody">
+ </tbody>
 </TABLE>
-
-<p id="prearchiveSessionTotals"></p>
-
-<div id="scans" style="position:absolute;top:50px;left:50px;"></div>
-
-
+				<DIV id="scans" style="position: absolute;top:50;left:50;">
+</DIV>
 <script type="text/javascript" src="$content.getURI("scripts/imageScanData/scan_tools.js")"></script>
 <script type="text/javascript">
-    jq(function(){
-        jq('body').addClass('scans');
-    });
 
-    function addScan(_button){
-        var tempScan = window.classMapping.newInstance("xnat:dmsScanData");
-        window.scanSet.new_scans.push(tempScan);
-        window.scanSet.onLoad.fire();
-    }
+  function getDefaultScanXSIType(){
+  	   if(XNAT.app.scans.default_scan_xsi_type==undefined){
+  		   	   return "xnat:dmsScanData";
+  		   	}else{
+  		   	   return XNAT.app.scans.default_scan_xsi_type;
+  		   	}
+  }
 
-    var options = new Object();
-    options.session_id="$!om.getId()";
+  function getDefaultScanSQLName(){
+  		   if(XNAT.app.scans.default_scan_sql_name==undefined){
+  		   	   return "xnat_dmsscandataBean";
+  		   	}else{
+  		   	   return XNAT.app.scans.default_scan_sql_name;
+  		   	}
+  }
+
+  function addScan(_button){
+    var tempScan = window.classMapping.newInstance(getDefaultScanXSIType());
+    window.scanSet.new_scans.push(tempScan);
+    window.scanSet.onLoad.fire();
+  }
+
+  var options = new Object();
+  options.session_id="$!om.getId()";
 
     options.types=new Object();
-    options.types["xnat:dmsScanData"]=new Object();
-    options.types["xnat:dmsScanData"].values = new Array();
-    options.types["xnat:dmsScanData"].uri=serverRoot + "/REST/scan_types?table=xnat_dmsScanData";
-    options.types["xnat:dmsScanData"].containsValue=function(_v){
-        for(var tC=0;tC<this.values.length;tC++){
-            if(this.values[tC].value==_v){
-                return true;
-            }
+    options.types[getDefaultScanXSIType()]=new Object();
+    options.types[getDefaultScanXSIType()].values = new Array();
+    options.types[getDefaultScanXSIType()].uri=serverRoot + "/REST/scan_types?table=xnat_dmsscandataBean";
+    options.types[getDefaultScanXSIType()].containsValue=function(_v){
+      for(var tC=0;tC<this.values.length;tC++){
+        if(this.values[tC].value==_v){
+          return true;
         }
-        return false;
+      }
+      return false;
     };
-        #set($scanTypes = $data.getSession().getAttribute("userHelper").getQueryResultsAsArrayList("select DISTINCT isd.type from xnat_dmssessiondata dms LEFT JOIN xnat_experimentData expt ON dms.id=expt.id LEFT JOIN xnat_imagescandata isd ON dms.id=isd.image_session_id LEFT JOIN xdat_meta_element xme ON isd.extension=xme.xdat_meta_element_id WHERE expt.project='$project' AND xme.element_name='xnat:dmsScanData'"))
-        #if($scanTypes.size()>0)
-            #foreach($scanT in $scanTypes)
-                #define($scanT0)#escapeAllUnescapeParam("$!scanT.get(0)")#end
-            options.types["xnat:dmsScanData"].values.push({"value":'$scanT0',"display":'$scanT0'});
-            #end
-        #end
-
-        #if($allowDataDeletion)
-        options.allowDataDeletion="$allowDataDeletion";
-        #else
-        options.allowDataDeletion="true";
-        #end
-
-    window.scanSet=new ScanSet(options);
-    if(window.classMapping==undefined)window.classMapping=new ClassMapping();
-
-        #set($numScans = $om.getSortedScans().size())
-        #if ($numScans > 0)
-            #set ($TOP_SCAN = $numScans - 1)
-
-            #foreach ($scani in [0..$TOP_SCAN])
-
-                #set($scan = $om.getSortedScans().get($scani))
-
-                #define($scanIdEsc)#escapeAll("$!scan.getId()")#end
-
-                #set($scanIdTrim = $!scanIdEsc.toString().trim())
-
-            var tempScan = window.classMapping.newInstance("$!scan.getXSIType()");
-            tempScan.setProperty("ID", '#escapeAllUnescapeParam("$!{scan.getId()}")');
-                #if($scan.getType())
-                tempScan.setProperty("type", '#escapeAllUnescapeParam("$!scan.getType()")');
-                #else
-                tempScan.setProperty("type", '#escapeAllUnescapeParam("$!scan.getSeriesDescription()")');
-                #end
-            tempScan.setProperty("quality", '#escapeAllUnescapeParam("$!scan.getQuality()")');
-            tempScan.setProperty("note", '#escapeAllUnescapeParam("$!scan.getNote()")');
-            tempScan.setProperty("series_description", '#escapeAllUnescapeParam("$!scan.getSeriesDescription()")');
-            tempScan.setProperty("startTime", '#escapeAllUnescapeParam("$!scan.getStarttime()")');
-                #if($om.getId())
-                tempScan.stats = '$!scan.getFormattedReadableFileStats($user)';
-                #else
-                tempScan.stats = '<div id="scan${scanIdTrim}Actions" data-scan-id="${scanIdTrim}" class="scanActions"></div>';
-                #end
-            tempScan.setProperty("xnat_imageScanData_id", '#escapeAllUnescapeParam("$!scan.getProperty('xnat_imagescandata_id')")');
-            tempScan.setProperty("project", '#escapeAll($!turbineUtils.unescapeParam("$!om.getProject()"))');
-
-            window.scanSet.scans.push(tempScan);
-
-            if (!options.types["xnat:dmsScanData"].containsValue('#escapeAllUnescapeParam("$!scan.getType()")')){
-                options.types["xnat:dmsScanData"].values.push({ "value": '#escapeAllUnescapeParam("$!scan.getType()")', "display": '#escapeAllUnescapeParam("$!scan.getType()")' });
-            }
-            #end
-        #end
-
-    window.scanSet.onLoad.subscribe(function(obj){
-        var listing=new scanListingEditor("scan_tbody",this);
-        listing.render();
-    });
 
 
-        #if($siteConfig.uiAllowScanAddition)
+#if($allowDataDeletion)
+   options.allowDataDeletion="$allowDataDeletion";
+#else
+   options.allowDataDeletion="true";
+#end
 
-        if(window.scanSet.scans.length==0){
-            for(var newC=0;newC<5;newC++){
-                var tempScan = window.classMapping.newInstance("xnat:dmsScanData");
-                tempScan.setProperty("project", '#escapeAll($!turbineUtils.unescapeParam("$!om.getProject()"))');
-                window.scanSet.new_scans.push(tempScan);
-            }
+  window.scanSet=new ScanSet(options);
+
+  if (window.classMapping==undefined) {
+      window.classMapping = new ClassMapping();
+  }
+
+  #set($numScans = $om.getSortedScans().size())
+  #if($numScans>0)
+      #set ($TOP_SCAN = $numScans - 1)
+      #foreach($scani in [0..$TOP_SCAN])
+
+          #set ($scan = $om.getSortedScans().get($scani))
+          #set ($scanId = "$!scan.getId()")
+
+          var tempScan = window.classMapping.newInstance("$!scan.getXSIType()");
+
+          tempScan.setProperty("ID", '#escapeAll("$!turbineUtils.unescapeParam($scanId)")');
+
+          #if($scan.getType())
+          tempScan.setProperty("type", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getType()"))');
+          #else
+          tempScan.setProperty("type", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getSeriesDescription()"))');
+          #end
+
+          tempScan.setProperty("quality", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getQuality()"))');
+          tempScan.setProperty("note", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getNote()"))');
+          tempScan.setProperty("series_description", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getSeriesDescription()"))');
+
+          #if ($om.getId())
+          tempScan.stats = '$!scan.getFormattedReadableFileStats($user)';
+          #else
+          tempScan.stats = '<div id="scan${scanId}Actions" data-scan-id="${scanId}" class="scanActions"></div>';
+          #end
+
+
+          tempScan.setProperty("project", '#escapeAll($!turbineUtils.unescapeParam("$!om.getProject()"))');
+          tempScan.setProperty("xnat_dmsscandataBean_id", '#escapeAll($!turbineUtils.unescapeParam("$!scan.getProperty('xnat_dmsscandatabean_id')"))');
+
+          window.scanSet.scans.push(tempScan);
+
+          if (!options.types[getDefaultScanXSIType()].containsValue('#escapeAll($!turbineUtils.unescapeParam("$!scan.getType()"))')) {
+              options.types[getDefaultScanXSIType()].values.push({ "value": '#escapeAll($!turbineUtils.unescapeParam("$!scan.getType()"))', "display": '#escapeAll($!turbineUtils.unescapeParam("$!scan.getType()"))' });
+          }
+
+          #end
+      #end
+
+  window.scanSet.onLoad.subscribe(function(obj){
+    var listing=new scanListingEditor("scan_tbody",this);
+    listing.render();
+  });
+
+
+  #if($siteConfig.uiAllowScanAddition)
+      if(window.scanSet.scans.length==0){
+        for(var newC=0;newC<5;newC++){
+          var tempScan = window.classMapping.newInstance(getDefaultScanXSIType());
+          tempScan.setProperty("project", '#escapeAll($!turbineUtils.unescapeParam("$!om.getProject()"))');
+          window.scanSet.new_scans.push(tempScan);
         }
-        #end
+      }
+  #end
 
-    XNAT.app.sTMod=$siteConfig.uiAllowScanTypeModification;
+  XNAT.app.sTMod=$siteConfig.uiAllowScanTypeModification;
 
-    window.scanSet.onLoad.fire();
+  window.scanSet.onLoad.fire();
 </script>
+
+
 <!-- END /xnat-templates/screens/xnat_dmsSessionData/edit/scans.vm -->
