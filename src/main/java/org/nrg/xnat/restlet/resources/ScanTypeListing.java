@@ -66,7 +66,9 @@ public class ScanTypeListing  extends SecureResource {
 				|| scan_table.equalsIgnoreCase("xnat_paScanData")
 				|| scan_table.equalsIgnoreCase("xnat_posScanData")
 				|| scan_table.equalsIgnoreCase("xnat_respScanData")
-				|| scan_table.equalsIgnoreCase("xnat_xcScanData"))){
+				|| scan_table.equalsIgnoreCase("xnat_xcScanData")
+				|| scan_table.equalsIgnoreCase("xnat_annScanData")
+				|| scan_table.equalsIgnoreCase("xnat_mtlScanData"))){
 				AdminUtils.sendAdminEmail(user,"Possible SQL Injection attempt.", "User passed "+ scan_table+" as a table name.");
 				this.getResponse().setStatus(Status.CLIENT_ERROR_FORBIDDEN);
         		return null;
