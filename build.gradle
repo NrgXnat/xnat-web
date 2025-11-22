@@ -38,6 +38,15 @@ repositories {
     maven { url = "https://nrgxnat.jfrog.io/nrgxnat/libs-snapshot" }
     mavenCentral()
     maven { url = "https://maven.dcm4che.org" }
+
+    //adding this temporarily due to failure to pull a dicom4che dependency reliably
+    maven {
+        url = "https://raw.githubusercontent.com/nroduit/mvn-repo/master"
+        metadataSources {
+            mavenPom()
+            artifact()
+        }
+    }
 }
 
 war.archiveBaseName.set hasProperty("archiveName") ? (archiveName.endsWith(".war") ? archiveName : "${archiveName}.war") : "xnat-web"
