@@ -3,7 +3,6 @@ package org.nrg.xnat.ingest.services.components;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.ingest.device.handler.DeviceHandler;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -16,6 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import org.nrg.xdat.XDAT;
 
 @Service
 @Slf4j
@@ -27,10 +27,9 @@ public class DeviceHandlerManager implements DeviceHandlerRegistryInterface {
     public DeviceHandlerManager() {}
 
     // Automatically discover and register all DeviceHandler beans after application startup
-    @EventListener(ApplicationReadyEvent.class)
     public void initializeHandlers() {
         // Get all DeviceHandler beans from Spring context
-        Collection<DeviceHandler> handlerBeans = applicationContext.getBeansOfType(DeviceHandler.class).values();
+        Collection<DeviceHandler> handlerBeans = XDAT.getContextService().getBeansOfType(DeviceHandler.class).values();
 
         for (DeviceHandler handler : handlerBeans) {
             registerHandler(handler);
@@ -57,7 +56,12 @@ public class DeviceHandlerManager implements DeviceHandlerRegistryInterface {
 
     @Override
     public Optional<DeviceHandler> findHandler(Path deviceFolder) {
-        if (deviceFolder == null || !deviceFolder.exists() || !deviceFolder.isDirectory()) {
+        if (deviceFolder == null ) {
+            return Optional.empty();
+        }
+
+        File deviceFolderFile = deviceFolder.toFile();
+        if (!deviceFolderFile.exists() || !deviceFolderFile.isDirectory()) {
             return Optional.empty();
         }
 

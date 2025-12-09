@@ -12,8 +12,8 @@ public class DeviceHandlerConfiguration {
         return new DeviceHandlerManager();
     }
 
-    @Bean
-    public DynamicDeviceHandlerRegistrar dynamicRegistrar(DeviceHandlerManager manager) {
-        return new DynamicDeviceHandlerRegistrar(manager);
-    }
+//    @Bean
+//    public DynamicDeviceHandlerRegistrar dynamicRegistrar(DeviceHandlerManager manager) {
+//        return new DynamicDeviceHandlerRegistrar(manager);
+//    }
 }

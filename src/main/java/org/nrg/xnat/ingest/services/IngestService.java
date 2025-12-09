@@ -11,7 +11,7 @@ import java.nio.file.Path;
 @Slf4j
 public class IngestService {
 
-        private final DeviceHandlerRegistry handlerRegistry;
+/*        private final DeviceHandlerRegistry handlerRegistry;
         private final DynamicDeviceHandlerRegistrar dynamicRegistrar;
 
         @Autowired
@@ -73,5 +73,5 @@ public class IngestService {
         }
         return null;
     }
-
+*/
 }
