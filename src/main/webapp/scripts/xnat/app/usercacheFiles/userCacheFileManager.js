@@ -593,6 +593,30 @@ var XNAT = getObject(XNAT);
            return userData['scan_resources'][scanUri] || [];
         }
 
+       usercacheFileManager.submitToIngest = async function(jsonData) {
+         try {
+             const response = await fetch('/xapi/ingest', {
+               method: 'POST',
+               headers: {
+                 'Content-Type': 'application/json',
+               },
+               body: JSON.stringify(jsonData)
+             });
+
+             if (!response.ok) {
+               throw new Error(`HTTP error! status: ${response.status}`);
+             }
+
+             const result = await response.json();
+             console.log('Success:', result);
+             return result;
+           } catch (error) {
+             console.error('Error submitting data:', error);
+             throw error;
+           }
+       }
+
+
    // State management
         let expandedSourceFolders = new Set();
         let expandedDestinationFolders = new Set();
@@ -1303,6 +1327,17 @@ usercacheFileManager.convertToTree2 = function(jsonArray) {
                     usercacheFileManager.ingest();
                 });
 
+        usercacheFileManager.ingest = function() {
+           let populatedJsonArray = usercacheFileManager.populateFolderChildren(droppedFiles);
+           console.log("To ingest " + JSON.stringify(populatedJsonArray));
+           usercacheFileManager.submitToIngest(populatedJsonArray)
+             .then(result => {
+               console.log('Ingestion completed:', result);
+             })
+             .catch(error => {
+               console.error('Ingestion failed:', error);
+             });
+        }
 
 // Cache for loaded data
         usercacheFileManager.updateDestinationTree = async function() {
