@@ -3,7 +3,6 @@ package org.nrg.xnat.ingest.utils;
 import lombok.extern.slf4j.Slf4j;
 import org.nrg.xnat.ingest.model.pojo.FileItem;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -14,7 +13,6 @@ import java.util.regex.Pattern;
 
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
-import org.python.modules._bytecodetools;
 
 @Slf4j
 public class FileCopyUtils {
@@ -102,12 +100,9 @@ public class FileCopyUtils {
 
     private String translatePathToArchivePath(final String destinationPath) {
         XnatUriComponents uriComponents = parseUriWithRegex(destinationPath);
-        
-        PathBuilder pathBuilder = new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
-                .append(uriComponents.getProjectId());
-        if (uriComponents.getSubjectId() != null) {
-            pathBuilder.append(uriComponents.getSubjectId())
-        }
+
+        return new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
+                .append(uriComponents.getProjectId())
                 .append("subjects")
                 .append("S1")
                 .append("experiments")
@@ -118,7 +113,6 @@ public class FileCopyUtils {
                 .append("DICOM")
                 .append("file.dcm")
                 .build();
-        return pathToDestination;
     }
 
     private XnatUriComponents parseUriWithRegex(String uri) {

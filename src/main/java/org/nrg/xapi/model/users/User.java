@@ -10,6 +10,7 @@
 package org.nrg.xapi.model.users;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.nrg.xapi.exceptions.NotFoundException;
 import org.nrg.xdat.entities.UserAuthI;
+import org.nrg.xdat.entities.XdatUserAuth;
 import org.nrg.xdat.om.XdatUser;
 import org.nrg.xft.utils.DateUtils;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -104,6 +106,7 @@ public class User {
      * The user's authorization record used when logging in.
      **/
     @ApiModelProperty(value = "The user's authorization record used when logging in.")
+    @JsonDeserialize(as = XdatUserAuth.class)
     public UserAuthI getAuthorization() {
         return getSecuredProperty(_authorization);
     }
