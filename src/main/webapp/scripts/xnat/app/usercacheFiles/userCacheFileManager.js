@@ -217,7 +217,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-
     //Upload Widget
     let isUploading = false;
     let isMinimized = false;
@@ -462,25 +461,23 @@ var XNAT = getObject(XNAT);
         }
     });
 
-
     //Left Panel
-
     userCacheFileManager.fetchData = function(url) {
-    let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
-    var responseData = {};
-    responseData["ResultSet"] = {};
-    responseData["ResultSet"]["Result"] = [];
-    XNAT.xhr.get({
-        url: dataUrl,
-        async: false,
-        success: function (data) {
-            responseData = data;
-        },
-        fail: function (e) {
-            errorHandler(e);
-        }
-    });
-    return responseData;
+        let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
+        var responseData = {};
+        responseData["ResultSet"] = {};
+        responseData["ResultSet"]["Result"] = [];
+        XNAT.xhr.get({
+            url: dataUrl,
+            async: false,
+            success: function (data) {
+                responseData = data;
+            },
+            fail: function (e) {
+                errorHandler(e);
+            }
+        });
+        return responseData;
     }
 
     // API functions (replace with actual API calls)
@@ -528,7 +525,6 @@ var XNAT = getObject(XNAT);
         });
     }
 
-
     userCacheFileManager.fetchSubjects =   function(projectUri) {
         if (!userData['subjects'].hasOwnProperty(projectUri)) {
             let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
@@ -549,7 +545,6 @@ var XNAT = getObject(XNAT);
         return userData['subject_resources'][subjectUri] || [];
     }
 
-
     userCacheFileManager.fetchSessions =  function(subjectUri) {
         if (!userData['sessions'].hasOwnProperty(subjectUri)) {
             let response = userCacheFileManager.fetchData(subjectUri + '/experiments');
@@ -569,7 +564,6 @@ var XNAT = getObject(XNAT);
         }
         return userData['session_resources'][experimentUri] || [];
     }
-
 
     userCacheFileManager.fetchScans =  function(experimentUri) {
         if (!userData['scans'].hasOwnProperty(experimentUri)) {
@@ -613,7 +607,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-
    // State management
     let expandedSourceFolders = new Set();
     let expandedDestinationFolders = new Set();
@@ -641,7 +634,6 @@ var XNAT = getObject(XNAT);
         };
         return icons[ext] || '<i class="fa  fa-file"></i>';
     }
-
 
     userCacheFileManager.renderTree = function(node, enableDrag, path = "", level = 0) {
         let html = '';
@@ -730,7 +722,6 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.isScansResourceNode = function(node) {
         return  node.xnatType === SCANS_ROOT_NODE ;
     }
-
 
     userCacheFileManager.validateForm = function() {
         const resourceLevel = document.getElementById('resourceLevel').value;
@@ -860,7 +851,6 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.updateFileCount();
         userCacheFileManager.showStatus(`${fileData.name} associated to ${destinationPath}`, 'success');
     }
-
 
     userCacheFileManager.updateAssociatedFileTree = function() {
         let populatedJsonArray = userCacheFileManager.populateFolderChildren(droppedFiles);
