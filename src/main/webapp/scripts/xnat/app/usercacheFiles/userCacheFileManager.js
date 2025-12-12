@@ -617,22 +617,22 @@ var XNAT = getObject(XNAT);
     function getFileIcon(fileName) {
         const ext = fileName.split('.').pop().toLowerCase();
         const icons = {
-            'txt': '<i class="fa  fa-file-text-o"></i>',
-            'pdf': '<i class="fa  fa-file-pdf-o"></i>',
+            'txt': '<i class="fa fa-file-text-o"></i>',
+            'pdf': '<i class="fa fa-file-pdf-o"></i>',
             'html': '<i class="fa fa-file-text-o"></i>',
-            'css': '<i class="fa  fa-file-text-o"></i>',
-            'js': '<i class="fa  fa-file-text-o"></i>',
-            'jpg': '<i class="fa  fa-file-image-o"></i>',
-            'png': '<i class="fa  fa-file-image-o"></i>',
-            'gif': '<i class="fa  fa-file-image-o"></i>',
-            'docx': '<i class="fa  fa-file-word-o"></i>',
-            'pptx': '<i class="fa  fa-file-ppt-o"></i>',
-            'xlsx': '<i class="fa  fa-file-xls-o"></i>',
-            'json': '<i class="fa  fa-file-text-o"></i>',
-            'zip': '<i class="fa  fa-file-zip-0"></i>',
-            'exe': '<i class="fa  fa-file-code-o"></i>'
+            'css': '<i class="fa fa-file-text-o"></i>',
+            'js': '<i class="fa fa-file-text-o"></i>',
+            'jpg': '<i class="fa fa-file-image-o"></i>',
+            'png': '<i class="fa fa-file-image-o"></i>',
+            'gif': '<i class="fa fa-file-image-o"></i>',
+            'docx': '<i class="fa fa-file-word-o"></i>',
+            'pptx': '<i class="fa fa-file-ppt-o"></i>',
+            'xlsx': '<i class="fa fa-file-xls-o"></i>',
+            'json': '<i class="fa fa-file-text-o"></i>',
+            'zip': '<i class="fa fa-file-zip-o"></i>',
+            'exe': '<i class="fa fa-file-code-o"></i>'
         };
-        return icons[ext] || '<i class="fa  fa-file"></i>';
+        return icons[ext] || '<i class="fa fa-file"></i>';
     }
 
     userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
@@ -651,41 +651,24 @@ var XNAT = getObject(XNAT);
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode || isScansNode || isScanLeafNode;
             const toggleIcon = isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>';
 
-//            html += `
-//                <div class="uce-folder-item ${isExpanded ? 'expanded' : ''}"
-//                    data-path="${folderPath}"
-//                    data-filename="${node.name}"
-//                    data-type="${node.type}"
-//                    dataAbsolutePath="${node.absolutePath}"
-//                    ${draggable}
-//                    ${enableFileDragOptions}>
-//                     <span class="uce-folder-toggle" onclick="XNAT.app.userCacheFileManager.toggleFolder(event, '${folderPath}', ${enableDrag})">
-//                          ${toggleIcon}
-//                     </span>
-//                     <span class="uce-folder-name">${node.name}</span>`;
-            folderDiv = spawn('div', {'class': '"uce-folder-item" + isExpanded ? "expanded" : ""', 'data-path': folderPath,
-                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
-                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions});
-            folderDiv.append(spawn('span', {
+            let folderDiv = spawn('div');
+            let className = "uce-folder-item" + (isExpanded ? " expanded" : "");
+            $(folderDiv).attr({'class': className, 'data-path': folderPath,
+               'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
+               'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
+            folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
                     XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag);
                 },
-                'class': 'uce-folder-toggle',
+                style: {cursor: 'pointer'},
                 'html': toggleIcon
             }));
-            folderDiv.append(spawn('span', {
-                'class': 'uce-folder-name',
+            folderDiv.append(spawn('span|class=uce-folder-name', {
                 'html': node.name
             }));
 
             if (!isRootNode && includeDelete) {
-//                html +=  `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-//                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-//                    title="Figure out my data">
-//                    <i class="fa fa-magic"></i>
-//                </button>`;
-
-                deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+                let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
                     onclick: function (e) {
                         XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
                     },
@@ -693,39 +676,30 @@ var XNAT = getObject(XNAT);
                     style: {color: 'black', border: 'none', cursor: 'pointer'}
                 }, [spawn('i.fa.fa-trash')]);
                 folderDiv.append(deleteButton);
-//                `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-//                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-//                    title="Delete from cache">
-//                    <i class="fa fa-trash"></i>
-//                </button>`;
             }
-            currentLevelDiv.append(folderDiv);
 
+            currentLevelDiv.append(folderDiv);
             if (isExpanded && node.children) {
-                expandedDiv = spawn('div', {'class': 'uce-children'});
-                node.children.forEach(child => {
-                    expandedDiv.append(userCacheFileManager.renderSourceTree(child, enableDrag, path + node.name + '/', level + 1));
-                });
-                currentLevelDiv.append(expandedDiv);
+                let childrenDiv = spawn('div|class=uce-children');
+                for (let i = 0; i < node.children.length; i++){
+                    let child = node.children[i];
+                    $(childrenDiv).append(userCacheFileManager.renderSourceTree(child, enableDrag, path + node.name + '/', level + 1))
+                }
+                $(currentLevelDiv).append(childrenDiv);
             }
         } else  {
-            fileDiv = spawn('div', {'class': "uce-file-item", 'data-path': path + node.name,
+            let fileDiv = spawn('div');
+            $(fileDiv).attr({'class': "uce-file-item", 'data-path': path + node.name,
                 'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
-                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions});
-            fileDiv.append(spawn('span', {
-                'class': 'uce-icon',
+                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
+            fileDiv.append(spawn('span|class=uce-icon', {
                 'html': getFileIcon(node.name)
             }));
-            fileDiv.append(spawn('span', {
+            fileDiv.append(spawn('span|class=uce-file-name', {
                 'html': node.name
             }));
             if (includeDelete) {
-//                html += `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-//                    style="padding:0; color: black; border: none; cursor: pointer;"
-//                    title="Delete from cache">
-//                    <i class="fa fa-trash"></i>
-//                    </button>`;
-                deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+                let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
                     onclick: function (e) {
                         XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
                     },
@@ -734,25 +708,6 @@ var XNAT = getObject(XNAT);
                 }, [spawn('i.fa.fa-trash')]);
                 fileDiv.append(deleteButton);
             }
-//            html += `
-//                <div class="uce-file-item"
-//                    ${draggable}
-//                    data-filename="${node.name}"
-//                    data-path="${path + node.name}"
-//                    data-type="${node.type}"
-//                    dataAbsolutePath="${node.absolutePath}"
-//                    ${enableFileDragOptions}
-//                    >
-//                    <span class="uce-icon">${getFileIcon(node.name)}</span>
-//                    <span>${node.name}</span>`;
-//                    if (includeDelete) {
-//                        html += `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-//                            style="padding:0; color: black; border: none; cursor: pointer;"
-//                            title="Delete from cache">
-//                            <i class="fa fa-trash"></i>
-//                            </button>`;
-//                    }
-//                html += `</div>`;
             currentLevelDiv.append(fileDiv);
         }
         return currentLevelDiv;
@@ -1259,7 +1214,8 @@ var XNAT = getObject(XNAT);
             } else {
                 expandedSourceFolders.add(folderPath);
             }
-            $('#sourceTree.className:first-child').replaceWith(userCacheFileManager.renderSourceTree(sourceStructure, true));
+            $('#sourceTree').empty();
+            $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
         }
         folderElement.style.backgroundColor = '#e8f4fd';
     }
@@ -1766,7 +1722,6 @@ var XNAT = getObject(XNAT);
 
     // Start the application
     userCacheFileManager.init();
-
     return XNAT.app.userCacheFileManager = userCacheFileManager;
 
 }))
