@@ -1594,7 +1594,6 @@ var XNAT = getObject(XNAT);
         return false;
     }
 
-
     /**
     * Finds a node and returns both the node reference and its parent for advanced modification
     * @param {Object|Array} data - The JSON data structure to search in
