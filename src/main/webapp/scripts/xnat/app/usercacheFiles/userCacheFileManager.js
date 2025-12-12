@@ -635,6 +635,16 @@ var XNAT = getObject(XNAT);
         return icons[ext] || '<i class="fa fa-file"></i>';
     }
 
+    userCacheFileManager.createDeleteButton() {
+        let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+            onclick: function (e) {
+                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
+            },
+            title: "Delete from cache",
+            style: {color: 'black', border: 'none', cursor: 'pointer'}
+        }, [spawn('i.fa.fa-trash')]);
+    }
+
     userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
         let currentLevelDiv = spawn('div');
         let enableFileDragOptions = "";
@@ -643,17 +653,14 @@ var XNAT = getObject(XNAT);
         if (enableDrag) {
             enableFileDragOptions =  'ondragstart="XNAT.app.userCacheFileManager.handleDragStart(event)" ondragend="XNAT.app.userCacheFileManager.handleDragEnd(event)"';
         }
-
         if (node.type === 'folder') {
             const isRootNode = userCacheFileManager.isRootNode(node.name);
             const isScansNode = node.xnatType === SCANS_NODE;
             const isScanLeafNode = node.nodeType === SCANS_RESOURCE_NODE;
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode || isScansNode || isScanLeafNode;
-            const toggleIcon = isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>';
 
             let folderDiv = spawn('div');
-            let className = "uce-folder-item" + (isExpanded ? " expanded" : "");
-            $(folderDiv).attr({'class': className, 'data-path': folderPath,
+            $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
@@ -661,21 +668,14 @@ var XNAT = getObject(XNAT);
                     XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag);
                 },
                 style: {cursor: 'pointer'},
-                'html': toggleIcon
+                'html': isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>'
             }));
             folderDiv.append(spawn('span|class=uce-folder-name', {
                 'html': node.name
             }));
 
             if (!isRootNode && includeDelete) {
-                let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
-                    onclick: function (e) {
-                        XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
-                    },
-                    title: "Delete from cache",
-                    style: {color: 'black', border: 'none', cursor: 'pointer'}
-                }, [spawn('i.fa.fa-trash')]);
-                folderDiv.append(deleteButton);
+                folderDiv.append(userCacheFileManager.createDeleteButton());
             }
 
             currentLevelDiv.append(folderDiv);
@@ -699,14 +699,7 @@ var XNAT = getObject(XNAT);
                 'html': node.name
             }));
             if (includeDelete) {
-                let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
-                    onclick: function (e) {
-                        XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
-                    },
-                    title: "Delete from cache",
-                    style: {color: 'black', border: 'none', cursor: 'pointer'}
-                }, [spawn('i.fa.fa-trash')]);
-                fileDiv.append(deleteButton);
+                fileDiv.append(userCacheFileManager.createDeleteButton());
             }
             currentLevelDiv.append(fileDiv);
         }
@@ -1712,7 +1705,6 @@ var XNAT = getObject(XNAT);
 
         return oldNode;
     }
-
 
     // Initialize
     userCacheFileManager.init = async function() {
