@@ -635,8 +635,8 @@ var XNAT = getObject(XNAT);
         return icons[ext] || '<i class="fa fa-file"></i>';
     }
 
-    userCacheFileManager.createDeleteButton() {
-        let deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+    userCacheFileManager.createDeleteButton = function(folderPath) {
+        return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
                 XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
             },
@@ -675,7 +675,7 @@ var XNAT = getObject(XNAT);
             }));
 
             if (!isRootNode && includeDelete) {
-                folderDiv.append(userCacheFileManager.createDeleteButton());
+                folderDiv.append(userCacheFileManager.createDeleteButton(folderPath));
             }
 
             currentLevelDiv.append(folderDiv);
@@ -699,7 +699,7 @@ var XNAT = getObject(XNAT);
                 'html': node.name
             }));
             if (includeDelete) {
-                fileDiv.append(userCacheFileManager.createDeleteButton());
+                fileDiv.append(userCacheFileManager.createDeleteButton(folderPath));
             }
             currentLevelDiv.append(fileDiv);
         }
@@ -1304,7 +1304,7 @@ var XNAT = getObject(XNAT);
         var projects = await userCacheFileManager.fetchProjects();
         const treeContainer = document.getElementById('destinationTree');
         destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree();
-        treeContainer.innerHTML = userCacheFileManager.renderDestinationTree(destinationStructure);
+        treeContainer.append(userCacheFileManager.renderDestinationTree(destinationStructure));
     }
 
     userCacheFileManager.convertXnatUserDataToFileTree =  function() {
@@ -1316,74 +1316,79 @@ var XNAT = getObject(XNAT);
         return fileTree;
     }
 
+    userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon) {
+        let destButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+            onclick: function (e) {
+                buttonAction(this);
+            },
+            title: "Delete from cache",
+            style: {color: 'black', border: 'none', cursor: 'pointer'},
+        }, [spawn(icon)]);
+        $(destButton).attr({'data-uri': 'node.uri'})
+        return destButton;
+    }
+
     userCacheFileManager.renderDestinationTree = function(node, path = "", level = 0) {
-        let html = '';
+        let currentLevelDiv = spawn('div');
         const folderPath = path + node.name;
 
         if (node.type === 'folder') {
             const isRootNode = userCacheFileManager.isRootNode(node.name);
             const isExpanded = expandedDestinationFolders.has(path + node.name)  || isRootNode ||  userCacheFileManager.isScansRootNode(node);
-            const toggleIcon = isExpanded ?  '<i class="fa fa-minus"></i>'  : '<i class="fa fa-plus"></i>';
 
-            html += `
-            <div class="uce-destination-folder-item ${isExpanded ? 'expanded' : ''}"
-                data-path="${folderPath}" data-uri="${node.uri}" data-name="${node.name}" data-xnatType="${node.xnatType}"
-                 <span class="uce-folder-toggle" onclick="XNAT.app.userCacheFileManager.toggleDestinationFolder(event, '${folderPath}')">
-                      ${toggleIcon}
-                 </span>
-                 <span class="uce-folder-name">${node.name}</span>`;
+            let folderDiv = spawn('div');
+            $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+               'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
+            folderDiv.append(spawn('span|class=uce-folder-toggle', {
+                onclick: function (e) {
+                    XNAT.app.userCacheFileManager.toggleDestinationFolder(event, folderPath);
+                },
+                'html': isExpanded ? '<i class="fa fa-minus"></i>' : '<i class="fa fa-plus"></i>'
+            }));
+            folderDiv.append(spawn('span|class=uce-folder-name', {
+                'html': node.name
+            }));
             if (node.xnatType === 'resources') {
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.addNewResource(this)" data-uri="${node.uri}"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Add Resource">
-                    <i class="fa fa-folder"></i>
-                    </button>`;
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder'))
             } else if (node.xnatType === 'subjects') {
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.addNewSubject(this)" data-uri="${node.uri}"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Add Subject">
-                    <i class="fa fa-user-plus"></i>
-                    </button>`;
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus'))
             }  else if (node.xnatType === 'experiments') {
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.addNewExperiment(this)" data-uri="${node.uri}"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Add Experiment">
-                    <i class="fa fa-flask" ></i>
-                    </button>`;
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask'))
             }  else if (node.xnatType === 'scans') {
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.addNewScan(this)" data-uri="${node.uri}"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Add Scan">
-                    <i class="fa fa-search" ></i>
-                    </button>`;
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-search'))
             }
+            currentLevelDiv.append(folderDiv);
 
-            html += `</div>`;
             if (isExpanded && node.children) {
-                html += '<div class="uce-children">';
-                node.children.forEach(child => {
-                    html += userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1);
-                });
-                html += '</div>';
+                let childrenDiv = spawn('div|class=uce-children');
+                for (let i = 0; i < node.children.length; i++){
+                    let child = node.children[i];
+                    $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1))
+                }
+                $(currentLevelDiv).append(childrenDiv);
             }
         } else {
-            html += `
-                <div class="uce-drop-zone"
-                data-filename="${node.name}"
-                data-path="${path + node.name}" data-uri="${node.uri}"
-                >
-                <span class="uce-dropbox-icon"><i class="fa fa-dropbox"></i></span>
-                <span class="uce-drop-zone-tooltip" style="display:none">${node.uri}</span>
-                <br>
-                <span class="uce-dropbox-icon">Drop files here for ${node.name}</span>
-                </div>`;
+            let fileDiv = spawn('div');
+            $(fileDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
+                'data-filename': node.name, 'data-uri': node.uri})
+            fileDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': 'fa fa-dropbox'
+            }));
+            fileDiv.append(spawn('span|class=uce-drop-zone-tooltip', {
+                style: {display:'none'},
+                'html': node.uri
+            }));
+            fileDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': 'Drop files here for ' + node.name
+            }));
+            currentLevelDiv.append(fileDiv);
         }
-        return html;
+        return currentLevelDiv;
     }
 
     userCacheFileManager.toggleDestinationFolder = function(event, folderPath) {
         event.preventDefault();
-        const folderElement = event.currentTarget;
+        const folderElement = event.currentTarget.parentElement;
         const isExpanded = folderElement.getAttribute('data-expanded') === 'true';
 
         if (isExpanded) {
@@ -1401,8 +1406,8 @@ var XNAT = getObject(XNAT);
             userCacheFileManager.loadNode(folderElement);
             expandedDestinationFolders.add(folderPath);
         }
-        const treeContainer = document.getElementById('destinationTree');
-        treeContainer.innerHTML = userCacheFileManager.renderDestinationTree(destinationStructure);
+        $('#destinationTree').empty();
+        $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
         userCacheFileManager.setupDropZone();
         folderElement.style.backgroundColor = '#e8f4fd';
     }
@@ -1415,7 +1420,7 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.loadNode =  function(folderElement) {
         //Based on the type of the node, get the data
         //Update the destinationStructure and render
-        const nodeXnatType = folderElement.getAttribute('data-xnatType');
+        const nodeXnatType = folderElement.getAttribute('data-xnat-type');
         const nodeName = folderElement.getAttribute('data-name');
         const nodeUri = folderElement.getAttribute('data-uri');
         let isAlreadyLoaded = userCacheFileManager.isNodeLoaded(destinationStructure, nodeUri, );
@@ -1424,27 +1429,27 @@ var XNAT = getObject(XNAT);
         }
         switch(nodeXnatType) {
             case 'project':
-            var resources = userCacheFileManager.fetchProjectResources(nodeUri);
-            var subjects =  userCacheFileManager.fetchSubjects(nodeUri);
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
-            break;
+                var resources = userCacheFileManager.fetchProjectResources(nodeUri);
+                var subjects =  userCacheFileManager.fetchSubjects(nodeUri);
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
+                break;
             case 'project_subject':
-            var resources = userCacheFileManager.fetchSubjectResources(nodeUri);
-            var experiments =  userCacheFileManager.fetchSessions(nodeUri);
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
-            break;
+                var resources = userCacheFileManager.fetchSubjectResources(nodeUri);
+                var experiments =  userCacheFileManager.fetchSessions(nodeUri);
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
+                break;
             case 'project_subject_experiment':
-            var resources = userCacheFileManager.fetchSessionResources(nodeUri);
-            var scans =  userCacheFileManager.fetchScans(nodeUri);
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
-            break;
+                var resources = userCacheFileManager.fetchSessionResources(nodeUri);
+                var scans =  userCacheFileManager.fetchScans(nodeUri);
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
+                break;
             case 'project_subject_experiment_scan':
-            var resources = userCacheFileManager.fetchScanResources(nodeUri);
-            userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-            break;
+                var resources = userCacheFileManager.fetchScanResources(nodeUri);
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
+                break;
         }
     }
 
