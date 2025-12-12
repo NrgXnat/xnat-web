@@ -635,15 +635,13 @@ var XNAT = getObject(XNAT);
         return icons[ext] || '<i class="fa  fa-file"></i>';
     }
 
-    userCacheFileManager.renderTree = function(node, enableDrag, path = "", level = 0) {
-        let html = '';
+    userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
+        let currentLevelDiv = spawn('div');
         let enableFileDragOptions = "";
         const folderPath = path + node.name;
         let includeDelete = enableDrag;
-        let draggable = "";
         if (enableDrag) {
             enableFileDragOptions =  'ondragstart="XNAT.app.userCacheFileManager.handleDragStart(event)" ondragend="XNAT.app.userCacheFileManager.handleDragEnd(event)"';
-            draggable = 'draggable="true"';
         }
 
         if (node.type === 'folder') {
@@ -653,62 +651,111 @@ var XNAT = getObject(XNAT);
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode || isScansNode || isScanLeafNode;
             const toggleIcon = isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>';
 
-            html += `
-                <div class="uce-folder-item ${isExpanded ? 'expanded' : ''}"
-                    data-path="${folderPath}"
-                    data-filename="${node.name}"
-                    data-type="${node.type}"
-                    dataAbsolutePath="${node.absolutePath}"
-                    ${draggable}
-                    ${enableFileDragOptions}>
-                     <span class="uce-folder-toggle" onclick="XNAT.app.userCacheFileManager.toggleFolder(event, '${folderPath}', ${enableDrag})">
-                          ${toggleIcon}
-                     </span>
-                     <span class="uce-folder-name">${node.name}</span>`;
+//            html += `
+//                <div class="uce-folder-item ${isExpanded ? 'expanded' : ''}"
+//                    data-path="${folderPath}"
+//                    data-filename="${node.name}"
+//                    data-type="${node.type}"
+//                    dataAbsolutePath="${node.absolutePath}"
+//                    ${draggable}
+//                    ${enableFileDragOptions}>
+//                     <span class="uce-folder-toggle" onclick="XNAT.app.userCacheFileManager.toggleFolder(event, '${folderPath}', ${enableDrag})">
+//                          ${toggleIcon}
+//                     </span>
+//                     <span class="uce-folder-name">${node.name}</span>`;
+            folderDiv = spawn('div', {'class': '"uce-folder-item" + isExpanded ? "expanded" : ""', 'data-path': folderPath,
+                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
+                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions});
+            folderDiv.append(spawn('span', {
+                onclick: function (e) {
+                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag);
+                },
+                'class': 'uce-folder-toggle',
+                'html': toggleIcon
+            }));
+            folderDiv.append(spawn('span', {
+                'class': 'uce-folder-name',
+                'html': node.name
+            }));
 
             if (!isRootNode && includeDelete) {
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Figure out my data">
-                    <i class="fa fa-magic"></i>
-                </button>`;
-                html +=  `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-                    style="padding: 0; color: black; border: none;  cursor: pointer;"
-                    title="Delete from cache">
-                    <i class="fa fa-trash"></i>
-                </button>`;
+//                html +=  `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
+//                    style="padding: 0; color: black; border: none;  cursor: pointer;"
+//                    title="Figure out my data">
+//                    <i class="fa fa-magic"></i>
+//                </button>`;
+
+                deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+                    onclick: function (e) {
+                        XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
+                    },
+                    title: "Delete from cache",
+                    style: {color: 'black', border: 'none', cursor: 'pointer'}
+                }, [spawn('i.fa.fa-trash')]);
+                folderDiv.append(deleteButton);
+//                `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
+//                    style="padding: 0; color: black; border: none;  cursor: pointer;"
+//                    title="Delete from cache">
+//                    <i class="fa fa-trash"></i>
+//                </button>`;
             }
-            html += `</div>`;
+            currentLevelDiv.append(folderDiv);
 
             if (isExpanded && node.children) {
-                html += '<div class="uce-children">';
+                expandedDiv = spawn('div', {'class': 'uce-children'});
                 node.children.forEach(child => {
-                    html += userCacheFileManager.renderTree(child, enableDrag, path + node.name + '/', level + 1);
+                    expandedDiv.append(userCacheFileManager.renderSourceTree(child, enableDrag, path + node.name + '/', level + 1));
                 });
-                html += '</div>';
+                currentLevelDiv.append(expandedDiv);
             }
         } else  {
-            html += `
-                <div class="uce-file-item"
-                    ${draggable}
-                    data-filename="${node.name}"
-                    data-path="${path + node.name}"
-                    data-type="${node.type}"
-                    dataAbsolutePath="${node.absolutePath}"
-                    ${enableFileDragOptions}
-                    >
-                    <span class="uce-icon">${getFileIcon(node.name)}</span>
-                    <span>${node.name}</span>`;
-                    if (includeDelete) {
-                        html += `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
-                            style="padding:0; color: black; border: none; cursor: pointer;"
-                            title="Delete from cache">
-                            <i class="fa fa-trash"></i>
-                            </button>`;
-                    }
-                html += `</div>`;
+            fileDiv = spawn('div', {'class': "uce-file-item", 'data-path': path + node.name,
+                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
+                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions});
+            fileDiv.append(spawn('span', {
+                'class': 'uce-icon',
+                'html': getFileIcon(node.name)
+            }));
+            fileDiv.append(spawn('span', {
+                'html': node.name
+            }));
+            if (includeDelete) {
+//                html += `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
+//                    style="padding:0; color: black; border: none; cursor: pointer;"
+//                    title="Delete from cache">
+//                    <i class="fa fa-trash"></i>
+//                    </button>`;
+                deleteButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+                    onclick: function (e) {
+                        XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
+                    },
+                    title: "Delete from cache",
+                    style: {color: 'black', border: 'none', cursor: 'pointer'}
+                }, [spawn('i.fa.fa-trash')]);
+                fileDiv.append(deleteButton);
+            }
+//            html += `
+//                <div class="uce-file-item"
+//                    ${draggable}
+//                    data-filename="${node.name}"
+//                    data-path="${path + node.name}"
+//                    data-type="${node.type}"
+//                    dataAbsolutePath="${node.absolutePath}"
+//                    ${enableFileDragOptions}
+//                    >
+//                    <span class="uce-icon">${getFileIcon(node.name)}</span>
+//                    <span>${node.name}</span>`;
+//                    if (includeDelete) {
+//                        html += `<button onclick="XNAT.app.userCacheFileManager.removeFileFromCache('${folderPath}')"
+//                            style="padding:0; color: black; border: none; cursor: pointer;"
+//                            title="Delete from cache">
+//                            <i class="fa fa-trash"></i>
+//                            </button>`;
+//                    }
+//                html += `</div>`;
+            currentLevelDiv.append(fileDiv);
         }
-        return html;
+        return currentLevelDiv;
     }
 
     userCacheFileManager.isRootNode = function(nodeName) {
@@ -779,7 +826,7 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.updateSourceTree = function() {
         userCacheFileManager.fetchUserCacheFiles();
         const treeContainer = document.getElementById('sourceTree');
-        treeContainer.innerHTML = userCacheFileManager.renderTree(sourceStructure, true);
+        treeContainer.append(userCacheFileManager.renderSourceTree(sourceStructure, true));
     }
 
     userCacheFileManager.handleDragStart = function(e) {
@@ -913,33 +960,32 @@ var XNAT = getObject(XNAT);
         return pathParts[pathParts.length - 1];
     }
 
-userCacheFileManager.populateFolderChildren = function(jsonArray) {
-    let updatedJsonArray = [];
-    jsonArray.forEach(item => {
-        if (item.type === 'folder') {
-            // Look up children from sourceStructure using absolutePath
-            if (item.absolutePath && sourceStructure) {
-                const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
-                const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
-                if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
-                    // Process each child
-                    folderChildren.forEach(child => {
-                        // Create the child's full destination path
-                        const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
-                        const childItem = {
-                            ...child,
-                            destPath: childDestPath
-                        };
-                        item.children.push(childItem);
-                    });
+    userCacheFileManager.populateFolderChildren = function(jsonArray) {
+        let updatedJsonArray = [];
+        jsonArray.forEach(item => {
+            if (item.type === 'folder') {
+                // Look up children from sourceStructure using absolutePath
+                if (item.absolutePath && sourceStructure) {
+                    const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
+                    const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
+                    if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
+                        // Process each child
+                        folderChildren.forEach(child => {
+                            // Create the child's full destination path
+                            const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
+                            const childItem = {
+                                ...child,
+                                destPath: childDestPath
+                            };
+                            item.children.push(childItem);
+                        });
+                    }
                 }
             }
-        }
-        updatedJsonArray.push(item);
-    });
-    return updatedJsonArray;
-}
-
+            updatedJsonArray.push(item);
+        });
+        return updatedJsonArray;
+    }
 
     userCacheFileManager.convertToTree2 = function(jsonArray) {
         const tree = {};
@@ -1213,8 +1259,7 @@ userCacheFileManager.populateFolderChildren = function(jsonArray) {
             } else {
                 expandedSourceFolders.add(folderPath);
             }
-            const treeContainer = document.getElementById('sourceTree');
-            treeContainer.innerHTML = userCacheFileManager.renderTree(sourceStructure, true);
+            $('#sourceTree.className:first-child').replaceWith(userCacheFileManager.renderSourceTree(sourceStructure, true));
         }
         folderElement.style.backgroundColor = '#e8f4fd';
     }
