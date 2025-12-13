@@ -370,13 +370,11 @@ var XNAT = getObject(XNAT);
             uploadWidget.classList.add('uce-minimized');
             minimizeBtn.innerHTML = '<i class="fa fa-plus-circle"></i>';
             minimizeBtn.title = 'Maximize';
-            userCacheFileManager.showStatus('Upload widget minimized');
         } else {
             uploadContent.classList.remove('uce-minimized');
             uploadWidget.classList.remove('uce-minimized');
             minimizeBtn.innerHTML = '<i class="fa fa-minus-circle"></i>';
             minimizeBtn.title = 'Minimize';
-            userCacheFileManager.showStatus('Upload widget maximized');
         }
     }
 
@@ -1316,15 +1314,15 @@ var XNAT = getObject(XNAT);
         return fileTree;
     }
 
-    userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon) {
-        let destButton =  spawn('button.btn.btn-sm.delete-cache-element', {
+    userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon, title) {
+        let destButton =  spawn('button.btn.btn-sm', {
             onclick: function (e) {
                 buttonAction(this);
             },
-            title: "Delete from cache",
+            title: title,
             style: {color: 'black', border: 'none', cursor: 'pointer'},
         }, [spawn(icon)]);
-        $(destButton).attr({'data-uri': 'node.uri'})
+        $(destButton).attr({'data-uri': nodeUri})
         return destButton;
     }
 
@@ -1349,13 +1347,13 @@ var XNAT = getObject(XNAT);
                 'html': node.name
             }));
             if (node.xnatType === 'resources') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder'))
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder', 'Add Resource'))
             } else if (node.xnatType === 'subjects') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus'))
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus', 'Add Subject'))
             }  else if (node.xnatType === 'experiments') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask'))
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask', 'Add Experiment'))
             }  else if (node.xnatType === 'scans') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-search'))
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-search', 'Add Scan'))
             }
             currentLevelDiv.append(folderDiv);
 
