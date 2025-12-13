@@ -478,6 +478,29 @@ var XNAT = getObject(XNAT);
         return responseData;
     }
 
+    userCacheFileManager.sortAlphabetically = function(data) {
+        data.sort((a, b) => {
+            var nameA, nameB;
+            if (a.name) {
+                nameA = a.name.toUpperCase();
+                nameB = b.name.toUpperCase();
+            } else if (a.label) {
+                nameA = a.label.toUpperCase();
+                nameB = b.label.toUpperCase();
+            } else {
+                nameA = a.ID.toUpperCase();
+                nameB = b.ID.toUpperCase();
+            }
+            if (nameA < nameB) {
+                return -1;
+            }
+            if (nameA > nameB) {
+                return 1;
+            }
+            return 0; // names must be equal
+        });
+    }
+
     // API functions (replace with actual API calls)
     userCacheFileManager.fetchProjects = async function() {
         if (userData['projects'].length == 0) {
@@ -498,30 +521,6 @@ var XNAT = getObject(XNAT);
         return userData['project_resources'][projectUri] || [];
     }
 
-    userCacheFileManager.sortAlphabetically = function(data) {
-        data.sort((a, b) => {
-            var nameA, nameB;
-            try {
-                nameA = a.name.toUpperCase(); // Ignore case for consistent sorting
-                nameB = b.name.toUpperCase();
-            } catch(error) {
-                try {
-                    nameA = a.label.toUpperCase(); // Ignore case for consistent sorting
-                    nameB = b.label.toUpperCase();
-                } catch(error1) {
-                    nameA = a.ID.toUpperCase(); // Ignore case for consistent sorting
-                    nameB = b.ID.toUpperCase();
-                }
-            }
-            if (nameA < nameB) {
-                return -1;
-            }
-            if (nameA > nameB) {
-                return 1;
-            }
-            return 0; // names must be equal
-        });
-    }
 
     userCacheFileManager.fetchSubjects =   function(projectUri) {
         if (!userData['subjects'].hasOwnProperty(projectUri)) {
