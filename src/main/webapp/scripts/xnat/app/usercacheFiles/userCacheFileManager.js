@@ -521,7 +521,6 @@ var XNAT = getObject(XNAT);
         return userData['project_resources'][projectUri] || [];
     }
 
-
     userCacheFileManager.fetchSubjects =   function(projectUri) {
         if (!userData['subjects'].hasOwnProperty(projectUri)) {
             let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
@@ -662,7 +661,7 @@ var XNAT = getObject(XNAT);
                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
-                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag);
+                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag, expandedSourceFolders);
                 },
                 style: {cursor: 'pointer'},
                 'html': isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>'
@@ -1184,28 +1183,35 @@ var XNAT = getObject(XNAT);
         totalFilesSpan.innerHTML = droppedFiles.length +  " files";
     }
 
-    userCacheFileManager.toggleFolder = function(event, folderPath, isSourcePane) {
+    userCacheFileManager.toggleFolder = function(event, folderPath, isSourcePane, expandedFoldersList) {
         event.preventDefault();
-        const folderElement = event.currentTarget;
+        const folderElement = event.currentTarget.parentElement;
         const isExpanded = folderElement.getAttribute('data-expanded') === 'true';
 
         if (isExpanded) {
             userCacheFileManager.collapseFolder(folderElement, folderPath);
         } else {
-            userCacheFileManager.expandFolder(folderElement, folderPath, isSourcePane);
+            userCacheFileManager.expandFolder(folderElement, folderPath, isSourcePane, expandedFoldersList);
         }
     }
 
-    userCacheFileManager.expandFolder = function(folderElement, folderPath, isSourcePane) {
+    userCacheFileManager.expandFolder = function(folderElement, folderPath, isSourcePane, expandedFoldersList) {
         folderElement.setAttribute('data-expanded', 'true');
-        if (isSourcePane) {
-            if (expandedSourceFolders.has(folderPath)) {
-                expandedSourceFolders.delete(folderPath);
-            } else {
-                expandedSourceFolders.add(folderPath);
+        if (expandedFoldersList.has(folderPath)) {
+                expandedFoldersList.delete(folderPath);
+        } else {
+            expandedFoldersList.add(folderPath);
+            if (!isSourcePane) {
+                userCacheFileManager.loadNode(folderElement);
             }
+        }
+        if (isSourcePane) {
             $('#sourceTree').empty();
             $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+        } else {
+            $('#destinationTree').empty();
+            $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
+            userCacheFileManager.setupDropZone();
         }
         folderElement.style.backgroundColor = '#e8f4fd';
     }
@@ -1338,7 +1344,7 @@ var XNAT = getObject(XNAT);
                'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
-                    XNAT.app.userCacheFileManager.toggleDestinationFolder(event, folderPath);
+                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, false, expandedDestinationFolders);
                 },
                 'html': isExpanded ? '<i class="fa fa-minus"></i>' : '<i class="fa fa-plus"></i>'
             }));
@@ -1381,37 +1387,6 @@ var XNAT = getObject(XNAT);
             currentLevelDiv.append(fileDiv);
         }
         return currentLevelDiv;
-    }
-
-    userCacheFileManager.toggleDestinationFolder = function(event, folderPath) {
-        event.preventDefault();
-        const folderElement = event.currentTarget.parentElement;
-        const isExpanded = folderElement.getAttribute('data-expanded') === 'true';
-
-        if (isExpanded) {
-            userCacheFileManager.collapseDestinationFolder(folderElement, folderPath);
-        } else {
-            userCacheFileManager.expandDestinationFolder(folderElement, folderPath);
-        }
-    }
-
-    userCacheFileManager.expandDestinationFolder = function(folderElement, folderPath) {
-        folderElement.setAttribute('data-expanded', 'true');
-        if (expandedDestinationFolders.has(folderPath)) {
-            expandedDestinationFolders.delete(folderPath);
-        } else {
-            userCacheFileManager.loadNode(folderElement);
-            expandedDestinationFolders.add(folderPath);
-        }
-        $('#destinationTree').empty();
-        $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
-        userCacheFileManager.setupDropZone();
-        folderElement.style.backgroundColor = '#e8f4fd';
-    }
-
-    userCacheFileManager.collapseDestinationFolder = function(folderElement, folderPath) {
-        folderElement.setAttribute('data-expanded', 'false');
-        folderElement.style.backgroundColor = '';
     }
 
     userCacheFileManager.loadNode =  function(folderElement) {
