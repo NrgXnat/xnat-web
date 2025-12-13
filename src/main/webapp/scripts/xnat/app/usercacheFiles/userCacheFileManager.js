@@ -427,7 +427,6 @@ var XNAT = getObject(XNAT);
         }
     });
 
-    //Left Panel
     userCacheFileManager.fetchData = function(url) {
         let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
         var responseData = {};
@@ -751,7 +750,6 @@ var XNAT = getObject(XNAT);
         e.target.classList.remove('dragging');
     }
 
-    // Drop zone handlers
     userCacheFileManager.setupDropZone = function() {
         const dropZoneDivs = document.querySelectorAll('.uce-drop-zone');
 
@@ -825,7 +823,7 @@ var XNAT = getObject(XNAT);
             }
         } else {
             // Handle case where sourceStructure is a single object
-            const result = userCacheFileManager.searchNodeByAbsolutePath (sourceStructure, absolutePath);
+            const result = userCacheFileManager.searchNodeByAbsolutePath(sourceStructure, absolutePath);
             if (result) {
                 return result;
             }
@@ -853,7 +851,6 @@ var XNAT = getObject(XNAT);
         // Remove trailing slash if present
         const cleanPath = absolutePath.replace(/\/$/, '');
         const pathParts = cleanPath.split('/');
-        // Return the last part (which is the parent folder name)
         return pathParts[pathParts.length - 1];
     }
 
@@ -1320,8 +1317,6 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.loadNode =  function(folderElement) {
-        //Based on the type of the node, get the data
-        //Update the destinationStructure and render
         const nodeXnatType = folderElement.getAttribute('data-xnat-type');
         const nodeName = folderElement.getAttribute('data-name');
         const nodeUri = folderElement.getAttribute('data-uri');
@@ -1431,7 +1426,6 @@ var XNAT = getObject(XNAT);
                 return data;
             }
 
-            // Search in children array if it exists
             if (data.children && Array.isArray(data.children)) {
                 for (const child of data.children) {
                     const result = userCacheFileManager.findNodeByUri(child, targetUri);
@@ -1441,7 +1435,6 @@ var XNAT = getObject(XNAT);
                 }
             }
 
-            // Search in all other properties that might contain nested objects or arrays
             for (const key in data) {
                 if (key !== 'uri' && key !== 'name' && key !== 'type' && key !== 'size' && key !== 'last') {
                     const result = userCacheFileManager.findNodeByUri(data[key], targetUri);
@@ -1499,12 +1492,10 @@ var XNAT = getObject(XNAT);
     * @returns {Object|null} - Object with {node, parent, parentKey, path} or null if not found
     */
     userCacheFileManager.findNodeWithParent = function(data, targetUri, parent = null, parentKey = null, path = []) {
-        // Handle null or undefined data
         if (!data) {
             return null;
         }
 
-        // If data is an array, search through each element
         if (Array.isArray(data)) {
             for (let i = 0; i < data.length; i++) {
                 const result = userCacheFileManager.findNodeWithParent(data[i], targetUri, data, i, [...path, i]);
@@ -1525,7 +1516,6 @@ var XNAT = getObject(XNAT);
                 };
             }
 
-            // Search in children array if it exists
             if (data.children && Array.isArray(data.children)) {
                 for (let i = 0; i < data.children.length; i++) {
                     const result = userCacheFileManager.findNodeWithParent(data.children[i], targetUri, data.children, i, [...path, 'children', i]);
@@ -1535,7 +1525,6 @@ var XNAT = getObject(XNAT);
                 }
             }
 
-            // Search in all other properties that might contain nested objects or arrays
             for (const key in data) {
                 if (key !== 'uri' && key !== 'name' && key !== 'type' && key !== 'size' && key !== 'last') {
                     const result = userCacheFileManager.findNodeWithParent(data[key], targetUri, data, key, [...path, key]);
@@ -1607,7 +1596,6 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.updateDestinationTree();
     }
 
-    // Start the application
     userCacheFileManager.init();
     return XNAT.app.userCacheFileManager = userCacheFileManager;
 }))
