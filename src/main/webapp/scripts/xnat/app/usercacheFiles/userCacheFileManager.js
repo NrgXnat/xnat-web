@@ -1372,7 +1372,7 @@ var XNAT = getObject(XNAT);
             $(fileDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
                 'data-filename': node.name, 'data-uri': node.uri})
             fileDiv.append(spawn('span|class=uce-dropbox-icon', {
-                'html': 'fa fa-dropbox'
+                'html': '<i class="fa fa-dropbox"></i>'
             }));
             fileDiv.append(spawn('span|class=uce-drop-zone-tooltip', {
                 style: {display:'none'},

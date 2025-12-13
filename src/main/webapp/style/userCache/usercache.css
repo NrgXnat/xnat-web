@@ -283,7 +283,6 @@ div#uploadWidget {
 .uce-panels-container {
     display: flex;
     height: 500px;
-    width: 920px;
 }
 
 .uce-panel {
