@@ -25,12 +25,10 @@ var XNAT = getObject(XNAT);
     XNAT.app = getObject(XNAT.app || {});
     XNAT.app.userCacheFileManager = userCacheFileManager = getObject(XNAT.app.userCacheFileManager || {});
 
-    // Sample source folder structure
     var sourceStructure;
     var destinationStructure;
     const CACHE_TREE_ROOT_NODE = "My Uploads";
     const ARCHIVE_TREE_ROOT_NODE = "Projects";
-    const SCANS = "Scans";
     var associatedTreeStructure = {};
     var userData = {};
 
@@ -108,7 +106,6 @@ var XNAT = getObject(XNAT);
             // Expand/collapse icon
             const expandIcon = document.createElement('span');
             expandIcon.className = `expand-icon ${hasChildren ? (isExpanded ? 'expanded fa fa-minus' : ' fa fa-plus') : 'no-children'}`;
-            //expandIcon.class = hasChildren ? (isExpanded ? '−' : '+') : '';
 
             if (hasChildren) {
                 expandIcon.addEventListener('click', (e) => {
@@ -118,16 +115,13 @@ var XNAT = getObject(XNAT);
                 });
             }
 
-            // File/folder icon
             const icon = document.createElement('span');
             icon.className = isFolder ? 'folder-icon fa fa-folder' : 'file-icon fa fa-file';
 
-            // Name
             const name = document.createElement('span');
             name.className = 'item-name';
             name.textContent = node.name;
 
-            // Info (size, date, etc.)
             const info = document.createElement('span');
             info.className = `item-info ${isFolder ? '' : 'file-info'}`;
 
@@ -144,7 +138,6 @@ var XNAT = getObject(XNAT);
 
             nodeDiv.appendChild(itemDiv);
 
-            // Add path info for detailed view
             if (node.destPath) {
                 const pathDiv = document.createElement('div');
                 pathDiv.className = 'tree-path';
@@ -152,7 +145,6 @@ var XNAT = getObject(XNAT);
                 nodeDiv.appendChild(pathDiv);
             }
 
-            // Children container
             if (hasChildren) {
                 const childrenDiv = document.createElement('div');
                 childrenDiv.className = `tree-children ${isExpanded ? 'expanded' : ''}`;
@@ -214,11 +206,9 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    //Upload Widget
     let isUploading = false;
     let isMinimized = false;
 
-    // Status message system
     userCacheFileManager.showStatus = function(message, type = 'success') {
         const statusEl = document.getElementById('statusMessage');
         statusEl.textContent = message;
@@ -228,7 +218,6 @@ var XNAT = getObject(XNAT);
         }, 3000);
     }
 
-    // File size formatter
     userCacheFileManager.formatFileSize = function(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -237,8 +226,7 @@ var XNAT = getObject(XNAT);
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // Generate XNAME (datestamp)
-    userCacheFileManager.generateXName = function() {
+    userCacheFileManager.generateTimestamp = function() {
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -250,7 +238,6 @@ var XNAT = getObject(XNAT);
         return `${year}${month}${day}-${hours}${minutes}${seconds}`;
     }
 
-    // Update progress display
     userCacheFileManager.updateProgress = function(percentage, status) {
         const progressFill = document.getElementById('progressFill');
         const progressStatus = document.getElementById('progressStatus');
@@ -261,7 +248,6 @@ var XNAT = getObject(XNAT);
         progressPercentage.textContent = `${Math.round(percentage)}%`;
     }
 
-    // Show/hide upload controls
     userCacheFileManager.toggleUploadControls = function(show) {
         const controls = document.getElementById('uploadControls');
         const progress = document.getElementById('progressContainer');
@@ -274,7 +260,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    // Upload file to API
     userCacheFileManager.uploadFileToAPI = async function(file) {
         if (isUploading) return;
 
@@ -283,17 +268,15 @@ var XNAT = getObject(XNAT);
         const uploadBtn = document.getElementById('uploadBtn');
         const progressContainer = document.getElementById('progressContainer');
 
-        // Update UI
         uploadArea.classList.add('uce-uploading');
         uploadBtn.disabled = true;
         progressContainer.classList.add('uce-show');
         userCacheFileManager.updateProgress(0, 'Preparing upload...');
 
         try {
-            // Generate XNAME and construct endpoint
-            const xname = userCacheFileManager.generateXName();
+            const timestamp = userCacheFileManager.generateTimestamp();
             const filename = encodeURIComponent(file.name);
-            const endpoint = `${serverRoot}/data/user/cache/resources/${xname}/files/${filename}`;
+            const endpoint = `${serverRoot}/data/user/cache/resources/${timestamp}/files/${filename}`;
             let uploadUrl = XNAT.url.csrfUrl(endpoint,{extract: true},false,false);
             // Use Fetch API with file in body
             const formData = new FormData();
@@ -319,7 +302,6 @@ var XNAT = getObject(XNAT);
            console.error('Upload error:', error);
            userCacheFileManager.updateProgress(0, 'Upload failed');
 
-           // Handle different error types
            let errorMessage = 'Upload failed';
            if (error.name === 'TypeError' && error.message.includes('fetch')) {
                errorMessage = 'Network error - check your connection';
@@ -331,14 +313,12 @@ var XNAT = getObject(XNAT);
 
            userCacheFileManager.showStatus(errorMessage, 'error');
 
-           // Reset after delay
            setTimeout(() => {
                userCacheFileManager.resetUploadWidget();
            }, 3000);
         }
     }
 
-    // Reset upload widget
     userCacheFileManager.resetUploadWidget = function() {
         isUploading = false;
         selectedZipFile = null;
@@ -354,7 +334,6 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.toggleUploadControls(false);
     }
 
-    // Toggle minimize state
     userCacheFileManager.toggleMinimize = function() {
         const uploadWidget = document.getElementById('uploadWidget');
         const uploadContent = document.getElementById('uploadContent');
@@ -375,7 +354,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    // Update selected file display
     userCacheFileManager.updateSelectedFileDisplay = function(file) {
         const fileNameEl = document.getElementById('selectedFileName');
         const fileSizeEl = document.getElementById('selectedFileSize');
@@ -384,14 +362,12 @@ var XNAT = getObject(XNAT);
         fileSizeEl.textContent = userCacheFileManager.formatFileSize(file.size);
         userCacheFileManager.toggleUploadControls(true);
 
-        // Auto-expand if minimized when file is selected
         if (isMinimized) {
             userCacheFileManager.toggleMinimize();
             userCacheFileManager.showStatus(`File selected: ${file.name}. Widget expanded for upload.`);
         }
     }
 
-    // ZIP file upload
     document.getElementById('zipFile').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -401,7 +377,6 @@ var XNAT = getObject(XNAT);
         }
     });
 
-    // Upload button click
     document.getElementById('uploadBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         if (selectedZipFile && !isUploading) {
@@ -409,13 +384,11 @@ var XNAT = getObject(XNAT);
         }
     });
 
-    // Minimize button click
     document.getElementById('minimizeBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         userCacheFileManager.toggleMinimize();
     });
 
-    // Upload widget drag and drop
     const uploadArea = document.querySelector('.uce-upload-area');
     uploadArea.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -427,7 +400,6 @@ var XNAT = getObject(XNAT);
     });
 
     uploadArea.addEventListener('click', (e) => {
-        // Prevent file dialog if widget is minimized
         if (isMinimized) {
             e.preventDefault();
             e.stopPropagation();
@@ -447,7 +419,6 @@ var XNAT = getObject(XNAT);
             userCacheFileManager.updateSelectedFileDisplay(selectedZipFile);
             userCacheFileManager.showStatus(`ZIP file "${selectedZipFile.name}" selected. Click upload to send to server.`);
 
-            // Update file input
             const dt = new DataTransfer();
             dt.items.add(selectedZipFile);
             document.getElementById('zipFile').files = dt.files;
@@ -494,7 +465,7 @@ var XNAT = getObject(XNAT);
             if (nameA > nameB) {
                 return 1;
             }
-            return 0; // names must be equal
+            return 0;
         });
     }
 
@@ -600,7 +571,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-   // State management
     let expandedSourceFolders = new Set();
     let expandedDestinationFolders = new Set();
     let selectedPath = {};
@@ -785,7 +755,6 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.setupDropZone = function() {
         const dropZoneDivs = document.querySelectorAll('.uce-drop-zone');
 
-        // Iterate through the found elements
         dropZoneDivs.forEach(dropZoneDiv => {
             dropZoneDiv.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -799,11 +768,11 @@ var XNAT = getObject(XNAT);
             });
             dropZoneDiv.addEventListener('mouseenter', () => {
                 const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
-                tooltip.style.display = 'block'; // Show the tooltip
+                tooltip.style.display = 'block';
             });
             dropZoneDiv.addEventListener('mouseleave', () => {
                 const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
-                tooltip.style.display = 'none'; // Hide the tooltip
+                tooltip.style.display = 'none';
             });
             dropZoneDiv.addEventListener('drop', (e) => {
                 e.preventDefault();
@@ -865,12 +834,10 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.searchNodeByAbsolutePath = function(node, targetAbsolutePath) {
-        // Check if current node matches the target path
         if (node.absolutePath === targetAbsolutePath) {
             return node.children || [];
         }
 
-        // If this node has children, search through them
         if (node.children && Array.isArray(node.children)) {
             for (let child of node.children) {
                 const result = userCacheFileManager.searchNodeByAbsolutePath(child, targetAbsolutePath);
@@ -885,7 +852,6 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.getParentFolderName = function (absolutePath) {
         // Remove trailing slash if present
         const cleanPath = absolutePath.replace(/\/$/, '');
-        // Split by path separator
         const pathParts = cleanPath.split('/');
         // Return the last part (which is the parent folder name)
         return pathParts[pathParts.length - 1];
@@ -895,14 +861,11 @@ var XNAT = getObject(XNAT);
         let updatedJsonArray = [];
         jsonArray.forEach(item => {
             if (item.type === 'folder') {
-                // Look up children from sourceStructure using absolutePath
                 if (item.absolutePath && sourceStructure) {
                     const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
                     const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                     if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
-                        // Process each child
                         folderChildren.forEach(child => {
-                            // Create the child's full destination path
                             const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
                             const childItem = {
                                 ...child,
@@ -922,13 +885,10 @@ var XNAT = getObject(XNAT);
         const tree = {};
 
         jsonArray.forEach(item => {
-            // Split the destPath into segments
             const pathSegments = item.destPath.split('/');
             let currentNode = tree;
 
-            // Navigate through each path segment
             pathSegments.forEach((segment, index) => {
-                // If this segment doesn't exist, create it
                 if (!currentNode[segment]) {
                     currentNode[segment] = {
                         type: 'folder',
@@ -937,10 +897,8 @@ var XNAT = getObject(XNAT);
                     };
                 }
 
-                // If this is the last segment
                 if (index === pathSegments.length - 1) {
                     if (item.type === 'folder') {
-                        // For folders, ensure the node exists and update its properties
                         currentNode[segment].name = item.name;
                         currentNode[segment].type = item.type;
                         currentNode[segment].sourcePath = item.sourcePath;
@@ -948,28 +906,22 @@ var XNAT = getObject(XNAT);
                         currentNode[segment].status = item.status;
                         currentNode[segment].absolutePath = item.absolutePath;
 
-
-                        // Look up children from sourceStructure using absolutePath
                         if (item.absolutePath && sourceStructure) {
                             const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
                             const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                             if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
-                                // Process each child
                                 folderChildren.forEach(child => {
-                                    // Create the child's full destination path
                                     const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
                                     const childItem = {
                                         ...child,
                                         destPath: childDestPath
                                     };
 
-                                    // Add child to the array for processing
                                     jsonArray.push(childItem);
                                 });
                             }
                         }
                     } else {
-                        // For files, add to the files array
                         currentNode[segment].files.push({
                             name: item.name,
                             type: item.type,
@@ -980,7 +932,6 @@ var XNAT = getObject(XNAT);
                         });
                     }
                 } else {
-                    // Move to the next level
                     currentNode = currentNode[segment].children;
                 }
             });
@@ -991,13 +942,10 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.convertToTree1 = function(jsonArray) {
         const tree = {};
         jsonArray.forEach(item => {
-            // Split the destPath into segments
             const pathSegments = item.destPath.split('/');
             let currentNode = tree;
 
-            // Navigate through each path segment
             pathSegments.forEach((segment, index) => {
-                // If this segment doesn't exist, create it
                 if (!currentNode[segment]) {
                     currentNode[segment] = {
                     type: 'folder',
@@ -1016,7 +964,6 @@ var XNAT = getObject(XNAT);
                         status: item.status
                     });
                 } else {
-                    // Move to the next level
                     currentNode = currentNode[segment].children;
                 }
             });
@@ -1255,14 +1202,12 @@ var XNAT = getObject(XNAT);
     const addMoreBtn = document.getElementById('continueBtn');
     const ingestBtn = document.getElementById('ingestBtn');
 
-    // Review button click handler
     reviewBtn.addEventListener('click', function() {
         userCacheFileManager.updateAssociatedFileTree();
         reviewRow.classList.add('hidden');
         actionRow.classList.remove('hidden');
     });
 
-    // Add More button click handler
     continueBtn.addEventListener('click', function() {
         actionRow.classList.add('hidden');
         reviewRow.classList.remove('hidden');
@@ -1272,7 +1217,6 @@ var XNAT = getObject(XNAT);
 
     });
 
-    // Ingest button click handler
     ingestBtn.addEventListener('click', function() {
         userCacheFileManager.ingest();
     });
@@ -1289,7 +1233,6 @@ var XNAT = getObject(XNAT);
             });
     }
 
-    // Cache for loaded data
     userCacheFileManager.updateDestinationTree = async function() {
         var projects = await userCacheFileManager.fetchProjects();
         const treeContainer = document.getElementById('destinationTree');
@@ -1444,7 +1387,7 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.appendScansToNode = function(parentNodeUri, scans) {
         var scansUri =  parentNodeUri + "/scans";
-        var fileTree = {name: SCANS, type: "folder", xnatType: 'scan', uri: scansUri};
+        var fileTree = {name: "Scans", type: "folder", xnatType: 'scan', uri: scansUri};
         fileTree.children = [];
         scans.forEach(scan => {
             fileTree.children.push({name: scan.ID, type: "folder", xnatType: "scan", uri: scansUri + "/" + scan.ID});
@@ -1460,7 +1403,6 @@ var XNAT = getObject(XNAT);
         }
 
         if (typeof modifications === 'function') {
-            // If modifications is a function, call it with the node
             modifications(node);
         } else if (typeof modifications === 'object' && modifications !== null) {
             // If modifications is an object, merge properties
@@ -1470,12 +1412,10 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.findNodeByUri = function(data, targetUri) {
-        // Handle null or undefined data
         if (!data) {
             return null;
         }
 
-        // If data is an array, search through each element
         if (Array.isArray(data)) {
             for (const item of data) {
                 const result = userCacheFileManager.findNodeByUri(item, targetUri);
@@ -1486,11 +1426,9 @@ var XNAT = getObject(XNAT);
             return null;
         }
 
-        // If data is an object
         if (typeof data === 'object') {
-            // Check if this node has the matching URI
             if (data.uri === targetUri) {
-                return data; // Return reference to original object
+                return data;
             }
 
             // Search in children array if it exists
@@ -1530,7 +1468,6 @@ var XNAT = getObject(XNAT);
             return false;
         }
 
-        // Ensure children array exists
         if (!node.children) {
             node.children = [];
         } else if (!Array.isArray(node.children)) {
@@ -1578,9 +1515,7 @@ var XNAT = getObject(XNAT);
             return null;
         }
 
-        // If data is an object
         if (typeof data === 'object') {
-            // Check if this node has the matching URI
             if (data.uri === targetUri) {
                 return {
                     node: data,
@@ -1630,11 +1565,9 @@ var XNAT = getObject(XNAT);
         const { node, parent, parentKey } = result;
 
         if (Array.isArray(parent)) {
-            // Remove from array
             const removedNode = parent.splice(parentKey, 1)[0];
             return removedNode;
         } else if (typeof parent === 'object') {
-            // Remove from object
             const removedNode = parent[parentKey];
             delete parent[parentKey];
             return removedNode;
@@ -1669,7 +1602,6 @@ var XNAT = getObject(XNAT);
         return oldNode;
     }
 
-    // Initialize
     userCacheFileManager.init = async function() {
         userCacheFileManager.updateSourceTree();
         userCacheFileManager.updateDestinationTree();
@@ -1678,5 +1610,4 @@ var XNAT = getObject(XNAT);
     // Start the application
     userCacheFileManager.init();
     return XNAT.app.userCacheFileManager = userCacheFileManager;
-
 }))
