@@ -32,8 +32,6 @@ var XNAT = getObject(XNAT);
     const ARCHIVE_TREE_ROOT_NODE = "Projects";
     const SCANS = "Scans";
     const SCANS_ROOT_NODE = "scans";
-    const SCANS_NODE = "project_subject_experiment_scan";
-    const SCANS_RESOURCE_NODE = "project_subject_experiment_scan_resource";
     var associatedTreeStructure = {};
     var userData = {};
 
@@ -651,9 +649,7 @@ var XNAT = getObject(XNAT);
         }
         if (node.type === 'folder') {
             const isRootNode = userCacheFileManager.isRootNode(node.name);
-            const isScansNode = node.xnatType === SCANS_NODE;
-            const isScanLeafNode = node.nodeType === SCANS_RESOURCE_NODE;
-            const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode || isScansNode || isScanLeafNode;
+            const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode;
 
             let folderDiv = spawn('div');
             $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
@@ -704,14 +700,6 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.isRootNode = function(nodeName) {
         return nodeName === CACHE_TREE_ROOT_NODE || nodeName === ARCHIVE_TREE_ROOT_NODE;
-    }
-
-    userCacheFileManager.isScansRootNode = function(node) {
-        return  node.xnatType === SCANS_ROOT_NODE ;
-    }
-
-    userCacheFileManager.isScansResourceNode = function(node) {
-        return  node.xnatType === SCANS_ROOT_NODE ;
     }
 
     userCacheFileManager.validateForm = function() {
@@ -1337,7 +1325,7 @@ var XNAT = getObject(XNAT);
 
         if (node.type === 'folder') {
             const isRootNode = userCacheFileManager.isRootNode(node.name);
-            const isExpanded = expandedDestinationFolders.has(path + node.name)  || isRootNode ||  userCacheFileManager.isScansRootNode(node);
+            const isExpanded = expandedDestinationFolders.has(path + node.name)  || isRootNode;
 
             let folderDiv = spawn('div');
             $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
@@ -1406,19 +1394,19 @@ var XNAT = getObject(XNAT);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
                 break;
-            case 'project_subject':
+            case 'subject':
                 var resources = userCacheFileManager.fetchSubjectResources(nodeUri);
                 var experiments =  userCacheFileManager.fetchSessions(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
                 break;
-            case 'project_subject_experiment':
+            case 'experiment':
                 var resources = userCacheFileManager.fetchSessionResources(nodeUri);
                 var scans =  userCacheFileManager.fetchScans(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
                 break;
-            case 'project_subject_experiment_scan':
+            case 'scan':
                 var resources = userCacheFileManager.fetchScanResources(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 break;
@@ -1440,7 +1428,7 @@ var XNAT = getObject(XNAT);
         var fileTree = {name: "Subjects", type: "folder", xnatType: "subjects", uri: subjectsUri};
         fileTree.children = [];
         subjects.forEach(subject => {
-            fileTree.children.push({name: subject.label, type: "folder", xnatType: "project_subject", uri: subjectsUri + "/" + subject.label});
+            fileTree.children.push({name: subject.label, type: "folder", xnatType: "subject", uri: subjectsUri + "/" + subject.label});
         });
         return fileTree;
     }
@@ -1450,7 +1438,7 @@ var XNAT = getObject(XNAT);
            var fileTree = {name: "Experiments", type: "folder", xnatType: "experiments", uri: experimentsUri};
            fileTree.children = [];
            experiments.forEach(exp => {
-                fileTree.children.push({name: exp.label, type: "folder", xnatType: "project_subject_experiment", uri: experimentsUri + "/" + exp.label});
+                fileTree.children.push({name: exp.label, type: "folder", xnatType: "experiment", uri: experimentsUri + "/" + exp.label});
             });
             return fileTree;
         }
@@ -1460,7 +1448,7 @@ var XNAT = getObject(XNAT);
         var fileTree = {name: SCANS, type: "folder", xnatType: SCANS_ROOT_NODE, uri: scansUri};
         fileTree.children = [];
         scans.forEach(scan => {
-            fileTree.children.push({name: scan.ID, type: "folder", xnatType: "project_subject_experiment_scan", uri: scansUri + "/" + scan.ID});
+            fileTree.children.push({name: scan.ID, type: "folder", xnatType: "scan", uri: scansUri + "/" + scan.ID});
         });
         return fileTree;
     }
