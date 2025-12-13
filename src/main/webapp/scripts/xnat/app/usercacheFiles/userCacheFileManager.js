@@ -936,38 +936,6 @@ var XNAT = getObject(XNAT);
         return tree;
     }
 
-    userCacheFileManager.convertToTree1 = function(jsonArray) {
-        const tree = {};
-        jsonArray.forEach(item => {
-            const pathSegments = item.destPath.split('/');
-            let currentNode = tree;
-
-            pathSegments.forEach((segment, index) => {
-                if (!currentNode[segment]) {
-                    currentNode[segment] = {
-                    type: 'folder',
-                    children: {},
-                    files: []
-                    };
-                }
-
-                // If this is the last segment, add the file here
-                if (index === pathSegments.length - 1) {
-                    currentNode[segment].files.push({
-                        name: item.name,
-                        type: item.type,
-                        sourcePath: item.sourcePath,
-                        destPath: item.destPath,
-                        status: item.status
-                    });
-                } else {
-                    currentNode = currentNode[segment].children;
-                }
-            });
-        });
-        return tree;
-    }
-
     userCacheFileManager.displayTree = function(tree, indent = '') {
         let result = '';
         let folderIcon = '<i class="fa fa-folder"></i>';
@@ -1536,7 +1504,6 @@ var XNAT = getObject(XNAT);
         }
     return null;
     }
-
 
     /**
      * Removes a node with the given URI from its parent
