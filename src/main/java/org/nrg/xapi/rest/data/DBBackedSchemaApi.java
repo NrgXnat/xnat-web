@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.xapi.rest.AbstractXapiRestController;
 import org.nrg.xapi.rest.XapiRequestMapping;
+import org.nrg.xdat.display.DisplayManager;
 import org.nrg.xdat.display.transport.entities.ElementDisplayDB;
 import org.nrg.xdat.display.transport.services.ElementDisplayStorageService;
 import org.nrg.xdat.schema.SchemaElement;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.APPLICATION_XML_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.DELETE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
@@ -141,6 +143,8 @@ public class DBBackedSchemaApi extends AbstractXapiRestController {
                 if (elementDisplay != null) {
                     log.debug("Deleting ElementDisplay for element: {}", elementName);
                     _elementDisplayStorageService.delete(elementDisplay);
+
+                    DisplayManager.GetInstance().getElements().remove(elementDisplay.getElementName());
                 } else {
                     log.debug("No ElementDisplay found for element: {}", elementName);
                 }
@@ -230,6 +234,44 @@ public class DBBackedSchemaApi extends AbstractXapiRestController {
             log.error("Error loading schema with ID: " + id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("{\"error\":\"Failed to load schema: " + e.getMessage() + "\"}");
+        }
+    }
+
+    /**
+     * Downloads the schema XSD content for a database-backed schema.
+     * Returns the XSD schema content as XML for download.
+     *
+     * @param id The ID of the schema to download
+     * @return ResponseEntity with schema XSD content
+     */
+    @XapiRequestMapping(value = "/{id}/schema", produces = APPLICATION_XML_VALUE, method = GET, restrictTo = Admin)
+    public ResponseEntity<String> downloadSchema(@PathVariable Long id) {
+        log.debug("User {} is requesting to download schema XSD for ID: {}", getSessionUser().getUsername(), id);
+
+        try {
+            DBBackedSchema schema = _dbBackedSchemaService.get(id);
+            if (schema == null) {
+                log.warn("Schema with ID {} not found", id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("<?xml version=\"1.0\"?><error>Schema not found with ID: " + id + "</error>");
+            }
+
+            String content = schema.getContent();
+            if (content == null || content.trim().isEmpty()) {
+                log.warn("Schema with ID {} has no content", id);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("<?xml version=\"1.0\"?><error>Schema has no content</error>");
+            }
+
+            log.debug("Returning schema XSD for: {}", schema.getName());
+            return ResponseEntity.ok()
+                    .header("Content-Disposition", "attachment; filename=\"" + schema.getName() + ".xsd\"")
+                    .body(content);
+
+        } catch (Exception e) {
+            log.error("Error downloading schema with ID: " + id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("<?xml version=\"1.0\"?><error>Failed to download schema: " + e.getMessage() + "</error>");
         }
     }
 
