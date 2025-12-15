@@ -251,6 +251,11 @@ public class SearchFieldListResource extends SecureResource{
 			showGenerated=false;
 		}
 
+		Boolean showCustomForms  =true ;
+		if(isQueryVariableFalse("showCustomForms")){
+			showCustomForms=false;
+		}
+
 		ArrayList<String> elementNames=XftStringUtils.CommaDelimitedStringToArrayList(elementName);
 		for(String en : elementNames)
         {
@@ -270,7 +275,7 @@ public class SearchFieldListResource extends SecureResource{
 
 				   if(showHidden || df.isSearchable()){
 					   String id = df.getId();
-					   if (customFormDisplayFieldHelper.isCustomFieldDisplayField(id, en)) {
+					   if (!showCustomForms && customFormDisplayFieldHelper.isCustomFieldDisplayField(id, en)) {
 						   continue;
 					   }
 					   String summary = df.getSummary();
