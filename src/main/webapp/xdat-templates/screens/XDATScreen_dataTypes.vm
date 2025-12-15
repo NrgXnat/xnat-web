@@ -1094,6 +1094,17 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
             manager.valuePopup.destroy();
         };
 
+        // Override loadFields to validate element selection before loading
+        var originalLoadFields = window.managerFields.loadFields;
+        window.managerFields.loadFields = function() {
+            var elementName = jq("#selectElements").val();
+            if(!elementName) {
+                showMessage("page_body", "Error", "Please select an element.");
+                return;
+            }
+            originalLoadFields.call(this);
+        };
+
         window.managerFields.init();
     }
 
@@ -1142,6 +1153,13 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
         window.handleValueCancel = function() {
             manager.newField = null;
             manager.valuePopup.destroy();
+        };
+
+        // Override addFieldAndUpdate to enable save button when a field is added
+        var originalAddFieldAndUpdate = window.managerViews.addFieldAndUpdate;
+        window.managerViews.addFieldAndUpdate = function(newField) {
+            originalAddFieldAndUpdate.call(this, newField);
+            enableSaveButton();
         };
 
         // Override init to use buttons instead of dropdown
@@ -1742,6 +1760,9 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
                         row += "<button class='btn1 btn-sm' onclick='reloadDynamicDataType(" +
                                schema.id + ", \"" + (schema.name || "").replace(/"/g, "&quot;") +
                                "\"); return false;' style='margin-right: 5px;'>ReLoad</button>";
+                        row += "<button class='btn1 btn-sm' onclick='downloadSchema(" +
+                               schema.id + ", \"" + (schema.name || "").replace(/"/g, "&quot;") +
+                               "\"); return false;' style='margin-right: 5px;'>Download Schema</button>";
                         row += "<button class='btn1 btn-sm' onclick='deleteDynamicDataType(" +
                                schema.id + ", \"" + (schema.name || "").replace(/"/g, "&quot;") +
                                "\"); return false;'>Delete</button>";
@@ -1815,7 +1836,7 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
             type: "DELETE",
             dataType: "json",
             success: function(response) {
-                showMessage("page_body", "Success", "Data type '" + schemaName + "' has been deleted successfully.");
+                showMessage("page_body", "Success", "Data type '" + schemaName + "' has been deleted successfully.  Some references may remain until the next Tomcat restart.");
                 // Reload the data types table
                 loadDynamicDataTypes();
             },
@@ -1834,5 +1855,10 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
                 jq("#dynamicDatatypesTableBody button").prop("disabled", false);
             }
         });
+    }
+
+    // Download Schema XSD
+    function downloadSchema(schemaId, schemaName) {
+        window.location.href = serverRoot + "/xapi/dbschemas/" + schemaId + "/schema";
     }
 </script>
