@@ -487,36 +487,6 @@ var XNAT = getObject(XNAT);
         return userData[inputDataLevel][inputUri] || [];
     }
 
-//    userCacheFileManager.fetchSubjects = function(projectUri) {
-//        if (!userData['subjects'].hasOwnProperty(projectUri)) {
-//            let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
-//            userData['subjects'][projectUri] = [];
-//            userData['subjects'][projectUri].push(...response['ResultSet']['Result']);
-//            userCacheFileManager.sortAlphabetically(userData['subjects'][projectUri]);
-//        }
-//        return userData['subjects'][projectUri] || [];
-//    }
-//
-//    userCacheFileManager.fetchSessions = function(subjectUri) {
-//        if (!userData['sessions'].hasOwnProperty(subjectUri)) {
-//            let response = userCacheFileManager.fetchData(subjectUri + '/experiments');
-//            userData['sessions'][subjectUri] = [];
-//            userData['sessions'][subjectUri].push(...response['ResultSet']['Result']);
-//            userCacheFileManager.sortAlphabetically(userData['sessions'][subjectUri]);
-//        }
-//        return userData['sessions'][subjectUri] || [];
-//    }
-//
-//    userCacheFileManager.fetchScans = function(experimentUri) {
-//        if (!userData['scans'].hasOwnProperty(experimentUri)) {
-//            let response = userCacheFileManager.fetchData(experimentUri + '/scans');
-//            userData['scans'][experimentUri] = [];
-//            userData['scans'][experimentUri].push(...response['ResultSet']['Result']);
-//            userCacheFileManager.sortAlphabetically(userData['session_resources'][experimentUri]);
-//        }
-//        return userData['scans'][experimentUri] || [];
-//    }
-
     userCacheFileManager.fetchResourcesAtLevel = function(uri, input_resource_level) {
         if(!userData[input_resource_level].hasOwnProperty(uri)) {
             let response = userCacheFileManager.fetchData(uri +  '/resources');
