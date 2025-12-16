@@ -725,7 +725,6 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.handleDragEnd = function(e) {
-        e.target.setAttribute("draggable", false);
         e.target.classList.remove('dragging');
     }
 
