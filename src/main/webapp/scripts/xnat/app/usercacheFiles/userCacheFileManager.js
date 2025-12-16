@@ -468,7 +468,6 @@ var XNAT = getObject(XNAT);
         });
     }
 
-    // API functions (replace with actual API calls)
     userCacheFileManager.fetchProjects = async function() {
         if (userData['projects'].length == 0) {
           let response = userCacheFileManager.fetchData('/data/projects');
@@ -480,7 +479,7 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.fetchProjectResources =  function(projectUri) {
         if (!userData['project_resources'].hasOwnProperty(projectUri)) {
-            let response = userCacheFileManager.fetchData( projectUri + '/resources');
+            let response = userCacheFileManager.fetchData(projectUri + '/resources');
             userData['project_resources'][projectUri] = [];
             userData['project_resources'][projectUri].push(...response['ResultSet']['Result']);
             userCacheFileManager.sortAlphabetically(userData['project_resources'][projectUri]);
@@ -764,14 +763,6 @@ var XNAT = getObject(XNAT);
                 dropZoneDiv.style.borderColor = '#ddd';
                 dropZoneDiv.style.background = 'transparent';
             });
-            dropZoneDiv.addEventListener('mouseenter', () => {
-                const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
-                tooltip.style.display = 'block';
-            });
-            dropZoneDiv.addEventListener('mouseleave', () => {
-                const tooltip = dropZoneDiv.querySelector('.uce-drop-zone-tooltip');
-                tooltip.style.display = 'none';
-            });
             dropZoneDiv.addEventListener('drop', (e) => {
                 e.preventDefault();
                 dropZoneDiv.style.borderColor = '#667eea';
@@ -878,7 +869,7 @@ var XNAT = getObject(XNAT);
         return updatedJsonArray;
     }
 
-    userCacheFileManager.convertToTree2 = function(jsonArray) {
+    userCacheFileManager.convertToTree = function(jsonArray) {
         const tree = {};
 
         jsonArray.forEach(item => {
@@ -1268,13 +1259,9 @@ var XNAT = getObject(XNAT);
         } else {
             let fileDiv = spawn('div');
             $(fileDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
-                'data-filename': node.name, 'data-uri': node.uri})
+                'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
             fileDiv.append(spawn('span|class=uce-dropbox-icon', {
                 'html': '<i class="fa fa-dropbox"></i>'
-            }));
-            fileDiv.append(spawn('span|class=uce-drop-zone-tooltip', {
-                style: {display:'none'},
-                'html': node.uri
             }));
             fileDiv.append(spawn('span|class=uce-dropbox-icon', {
                 'html': 'Drop files here for ' + node.name
