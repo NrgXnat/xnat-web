@@ -82,7 +82,7 @@
 
                      <!-- Row 2: Add More and Ingest Buttons -->
                      <div id="actionRow" class="button-row hidden">
-                         <button id="continueBtn" class="btn continue-btn">
+                         <button id="addMoreBtn" class="btn add-more-btn">
                            <span class="uce-review-icon"></span>
                            <span class="uce-review-text">Add More</span>
                          </button>
