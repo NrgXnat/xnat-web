@@ -832,14 +832,6 @@ div#uploadWidget {
     background-color: #0056b3;
 }
 
-.new-resource-button {
-    padding: 8px 24px;
-    margin: 4px;
-    float: right;
-    border: none;
-    cursor: pointer
-}
-
 .hidden {
     display: none;
 }

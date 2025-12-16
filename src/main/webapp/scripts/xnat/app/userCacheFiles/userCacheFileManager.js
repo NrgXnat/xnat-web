@@ -561,8 +561,8 @@ var XNAT = getObject(XNAT);
         const folderPath = path + node.name;
         let includeDelete = enableDrag;
         if (node.type === 'folder') {
-            const isRootNode = userCacheFileManager.isRootNode(node.name);
-            const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode;
+            const isRootNode = node.name === CACHE_TREE_ROOT_NODE;
+            const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) );
 
             let folderDiv = spawn('div');
             $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
@@ -625,10 +625,6 @@ var XNAT = getObject(XNAT);
         return currentLevelDiv;
     }
 
-    userCacheFileManager.isRootNode = function(nodeName) {
-        return nodeName === CACHE_TREE_ROOT_NODE || nodeName === ARCHIVE_TREE_ROOT_NODE;
-    }
-
     userCacheFileManager.validateForm = function() {
         const resourceLevel = document.getElementById('resourceLevel').value;
         const project = document.getElementById('projectSelect').value;
@@ -685,6 +681,7 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.updateSourceTree = function() {
         userCacheFileManager.fetchUserCacheFiles();
         const treeContainer = document.getElementById('sourceTree');
+        expandedSourceFolders.add(CACHE_TREE_ROOT_NODE);
         treeContainer.append(userCacheFileManager.renderSourceTree(sourceStructure, true));
     }
 
@@ -1151,6 +1148,7 @@ var XNAT = getObject(XNAT);
         var projects = await userCacheFileManager.fetchProjects();
         const treeContainer = document.getElementById('destinationTree');
         destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree();
+        expandedDestinationFolders.add(ARCHIVE_TREE_ROOT_NODE);
         treeContainer.append(userCacheFileManager.renderDestinationTree(destinationStructure));
     }
 
@@ -1180,8 +1178,7 @@ var XNAT = getObject(XNAT);
         const folderPath = path + node.name;
 
         if (node.type === 'folder') {
-            const isRootNode = userCacheFileManager.isRootNode(node.name);
-            const isExpanded = expandedDestinationFolders.has(path + node.name)  || isRootNode;
+            const isExpanded = expandedDestinationFolders.has(path + node.name);
 
             let folderDiv = spawn('div');
             $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
