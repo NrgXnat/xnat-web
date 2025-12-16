@@ -1202,7 +1202,7 @@ var XNAT = getObject(XNAT);
             }  else if (node.name === 'Experiments') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask', 'Add Experiment'))
             }  else if (node.name === 'Scans') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-search', 'Add Scan'))
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-qrcode', 'Add Scan'))
             }
             currentLevelDiv.append(folderDiv);
 
