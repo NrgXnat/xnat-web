@@ -477,17 +477,7 @@ var XNAT = getObject(XNAT);
         return userData['projects'] || [];
     }
 
-    userCacheFileManager.fetchProjectResources =  function(projectUri) {
-        if (!userData['project_resources'].hasOwnProperty(projectUri)) {
-            let response = userCacheFileManager.fetchData(projectUri + '/resources');
-            userData['project_resources'][projectUri] = [];
-            userData['project_resources'][projectUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['project_resources'][projectUri]);
-        }
-        return userData['project_resources'][projectUri] || [];
-    }
-
-    userCacheFileManager.fetchSubjects =   function(projectUri) {
+    userCacheFileManager.fetchSubjects = function(projectUri) {
         if (!userData['subjects'].hasOwnProperty(projectUri)) {
             let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
             userData['subjects'][projectUri] = [];
@@ -497,17 +487,7 @@ var XNAT = getObject(XNAT);
         return userData['subjects'][projectUri] || [];
     }
 
-    userCacheFileManager.fetchSubjectResources =   function(subjectUri) {
-        if (!userData['subject_resources'].hasOwnProperty(subjectUri)) {
-            let response = userCacheFileManager.fetchData(subjectUri + '/resources');
-            userData['subject_resources'][subjectUri] = [];
-            userData['subject_resources'][subjectUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['subject_resources'][subjectUri]);
-        }
-        return userData['subject_resources'][subjectUri] || [];
-    }
-
-    userCacheFileManager.fetchSessions =  function(subjectUri) {
+    userCacheFileManager.fetchSessions = function(subjectUri) {
         if (!userData['sessions'].hasOwnProperty(subjectUri)) {
             let response = userCacheFileManager.fetchData(subjectUri + '/experiments');
             userData['sessions'][subjectUri] = [];
@@ -517,17 +497,7 @@ var XNAT = getObject(XNAT);
         return userData['sessions'][subjectUri] || [];
     }
 
-    userCacheFileManager.fetchSessionResources =  function(experimentUri) {
-        if (!userData['session_resources'].hasOwnProperty(experimentUri)) {
-            let response = userCacheFileManager.fetchData(experimentUri + '/resources');
-            userData['session_resources'][experimentUri] = [];
-            userData['session_resources'][experimentUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['session_resources'][experimentUri]);
-        }
-        return userData['session_resources'][experimentUri] || [];
-    }
-
-    userCacheFileManager.fetchScans =  function(experimentUri) {
+    userCacheFileManager.fetchScans = function(experimentUri) {
         if (!userData['scans'].hasOwnProperty(experimentUri)) {
             let response = userCacheFileManager.fetchData(experimentUri + '/scans');
             userData['scans'][experimentUri] = [];
@@ -537,13 +507,13 @@ var XNAT = getObject(XNAT);
         return userData['scans'][experimentUri] || [];
     }
 
-    userCacheFileManager.fetchScanResources =  function(scanUri) {
-        if (!userData['scan_resources'].hasOwnProperty(scanUri)) {
-            let response = userCacheFileManager.fetchData(scanUri +  '/resources');
-            userData['scan_resources'][scanUri] = [];
-            userData['scan_resources'][scanUri].push(...response['ResultSet']['Result']);
+    userCacheFileManager.fetchResourcesAtLevel = function(uri, input_resource_level) {
+        if(!userData[input_resource_level].hasOwnProperty(uri)) {
+            let response = userCacheFileManager.fetchData(uri +  '/resources');
+            userData[input_resource_level][uri] = [];
+            userData[input_resource_level][uri].push(...response['ResultSet']['Result']);
         }
-        return userData['scan_resources'][scanUri] || [];
+        return userData[input_resource_level][uri] || [];
     }
 
     userCacheFileManager.submitToIngest = async function(jsonData) {
@@ -1301,28 +1271,28 @@ var XNAT = getObject(XNAT);
         }
         switch(nodeXnatType) {
             case 'project':
-                var resources = userCacheFileManager.fetchProjectResources(nodeUri);
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "project_resources");
                 resources.push("create_new");
                 var subjects =  userCacheFileManager.fetchSubjects(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
                 break;
             case 'subject':
-                var resources = userCacheFileManager.fetchSubjectResources(nodeUri);
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
                 resources.push("create_new");
                 var experiments =  userCacheFileManager.fetchSessions(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
                 break;
             case 'experiment':
-                var resources = userCacheFileManager.fetchSessionResources(nodeUri);
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
                 resources.push("create_new");
                 var scans =  userCacheFileManager.fetchScans(nodeUri);
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
                 break;
             case 'scan':
-                var resources = userCacheFileManager.fetchScanResources(nodeUri);
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "scan_resources");
                 resources.push("create_new");
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 break;
