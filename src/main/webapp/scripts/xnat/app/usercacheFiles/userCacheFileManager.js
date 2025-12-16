@@ -608,20 +608,23 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
         let currentLevelDiv = spawn('div');
-        let enableFileDragOptions = "";
         const folderPath = path + node.name;
         let includeDelete = enableDrag;
-        if (enableDrag) {
-            enableFileDragOptions =  'ondragstart="XNAT.app.userCacheFileManager.handleDragStart(event)" ondragend="XNAT.app.userCacheFileManager.handleDragEnd(event)"';
-        }
         if (node.type === 'folder') {
             const isRootNode = userCacheFileManager.isRootNode(node.name);
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) ) || isRootNode;
 
             let folderDiv = spawn('div');
             $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
-               'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
-               'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
+               'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
+            if (enableDrag) {
+                folderDiv.addEventListener('dragstart', (e) => {
+                    XNAT.app.userCacheFileManager.handleDragStart(event)
+                });
+                folderDiv.addEventListener('dragend', (e) => {
+                    XNAT.app.userCacheFileManager.handleDragEnd(event)
+                });
+            }
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
                     XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag, expandedSourceFolders);
@@ -648,9 +651,16 @@ var XNAT = getObject(XNAT);
             }
         } else  {
             let fileDiv = spawn('div');
-            $(fileDiv).attr({'class': "uce-file-item", 'data-path': path + node.name,
-                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath,
-                'draggable': enableDrag, 'enableFileDragOptions': enableFileDragOptions})
+            $(fileDiv).attr({'class': "uce-file-item", 'data-path': path + node.name, 'data-filename': node.name,
+                'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
+            if (enableDrag) {
+                fileDiv.addEventListener('dragstart', (e) => {
+                    XNAT.app.userCacheFileManager.handleDragStart(event)
+                });
+                fileDiv.addEventListener('dragend', (e) => {
+                    XNAT.app.userCacheFileManager.handleDragEnd(event)
+                });
+            }
             fileDiv.append(spawn('span|class=uce-icon', {
                 'html': getFileIcon(node.name)
             }));
@@ -751,7 +761,6 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.setupDropZone = function() {
         const dropZoneDivs = document.querySelectorAll('.uce-drop-zone');
-
         dropZoneDivs.forEach(dropZoneDiv => {
             dropZoneDiv.addEventListener('dragover', (e) => {
                 e.preventDefault();
