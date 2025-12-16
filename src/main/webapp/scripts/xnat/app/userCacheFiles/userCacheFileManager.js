@@ -1195,13 +1195,13 @@ var XNAT = getObject(XNAT);
             folderDiv.append(spawn('span|class=uce-folder-name', {
                 'html': node.name
             }));
-            if (node.xnatType === 'resource') {
+            if (node.name === 'Resources') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder', 'Add Resource'))
-            } else if (node.xnatType === 'subject') {
+            } else if (node.name === 'Subjects') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus', 'Add Subject'))
-            }  else if (node.xnatType === 'experiment') {
+            }  else if (node.name === 'Experiments') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask', 'Add Experiment'))
-            }  else if (node.xnatType === 'scan') {
+            }  else if (node.name === 'Scans') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-search', 'Add Scan'))
             }
             currentLevelDiv.append(folderDiv);
@@ -1215,27 +1215,16 @@ var XNAT = getObject(XNAT);
                 $(currentLevelDiv).append(childrenDiv);
             }
         } else {
-            if (!node.name) {
-                let newResourceBtn = spawn('button.btn.btn-primary|class=btn new-resource-button', {
-                onclick: function (e) {
-                    console.log("BLahh");
-                },
-                title: "Add a new resource folder",
-                }, "Add Resource");
-                currentLevelDiv.style.overflow= 'hidden';
-                currentLevelDiv.append(newResourceBtn);
-            } else {
-                let dropZoneDiv = spawn('div');
-                $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
-                    'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
-                dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
-                    'html': '<i class="fa fa-dropbox"></i>'
-                }));
-                dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
-                    'html': 'Drop files here for ' + node.name
-                }));
-                currentLevelDiv.append(dropZoneDiv);
-            }
+            let dropZoneDiv = spawn('div');
+            $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
+                'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
+            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': '<i class="fa fa-dropbox"></i>'
+            }));
+            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': 'Drop files here for ' + node.name
+            }));
+            currentLevelDiv.append(dropZoneDiv);
         }
         return currentLevelDiv;
     }
@@ -1251,28 +1240,24 @@ var XNAT = getObject(XNAT);
         switch(nodeXnatType) {
             case 'project':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "project_resources");
-                resources.push("create_new");
                 var subjects =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'subjects', '/subjects');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, subjects, '/subjects', 'Subjects', 'subject', 'folder'));
                 break;
             case 'subject':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
-                resources.push("create_new");
                 var experiments =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'sessions', '/experiments');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, experiments, '/experiments', 'Experiments', 'experiment', 'folder'));
                 break;
             case 'experiment':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
-                resources.push("create_new");
                 var scans =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'scans', '/scans');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, scans, '/scans', 'Scans', 'scan', 'folder'));
                 break;
             case 'scan':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "scan_resources");
-                resources.push("create_new");
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
                 break;
         }
