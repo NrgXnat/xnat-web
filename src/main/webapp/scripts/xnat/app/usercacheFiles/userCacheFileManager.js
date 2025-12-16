@@ -1241,8 +1241,8 @@ var XNAT = getObject(XNAT);
                     console.log("BLahh");
                 },
                 title: "Add a new resource folder",
-                style: {color: 'black', border: 'none', cursor: 'pointer'},
                 }, "Add Resource");
+                currentLevelDiv.style.overflow= 'hidden';
                 currentLevelDiv.append(newResourceBtn);
             } else {
                 let dropZoneDiv = spawn('div');

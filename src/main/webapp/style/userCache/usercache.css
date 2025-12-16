@@ -835,6 +835,9 @@ div#uploadWidget {
 .new-resource-button {
     padding: 8px 24px;
     margin: 4px;
+    float: right;
+    border: none;
+    cursor: pointer
 }
 
 .hidden {
