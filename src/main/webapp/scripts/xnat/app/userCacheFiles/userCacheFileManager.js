@@ -477,35 +477,45 @@ var XNAT = getObject(XNAT);
         return userData['projects'] || [];
     }
 
-    userCacheFileManager.fetchSubjects = function(projectUri) {
-        if (!userData['subjects'].hasOwnProperty(projectUri)) {
-            let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
-            userData['subjects'][projectUri] = [];
-            userData['subjects'][projectUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['subjects'][projectUri]);
+    userCacheFileManager.fetchXnatDataAtLevel = function(inputUri, inputDataLevel, apiBaseUrl) {
+        if(!userData[inputDataLevel].hasOwnProperty(inputUri)) {
+            let response = userCacheFileManager.fetchData(inputUri + apiBaseUrl)
+            userData[inputDataLevel][inputUri] = [];
+            userData[inputDataLevel][inputUri].push(...response['ResultSet']['Result']);
+            userCacheFileManager.sortAlphabetically(userData[inputDataLevel][inputUri]);
         }
-        return userData['subjects'][projectUri] || [];
+        return userData[inputDataLevel][inputUri] || [];
     }
 
-    userCacheFileManager.fetchSessions = function(subjectUri) {
-        if (!userData['sessions'].hasOwnProperty(subjectUri)) {
-            let response = userCacheFileManager.fetchData(subjectUri + '/experiments');
-            userData['sessions'][subjectUri] = [];
-            userData['sessions'][subjectUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['sessions'][subjectUri]);
-        }
-        return userData['sessions'][subjectUri] || [];
-    }
-
-    userCacheFileManager.fetchScans = function(experimentUri) {
-        if (!userData['scans'].hasOwnProperty(experimentUri)) {
-            let response = userCacheFileManager.fetchData(experimentUri + '/scans');
-            userData['scans'][experimentUri] = [];
-            userData['scans'][experimentUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData['session_resources'][experimentUri]);
-        }
-        return userData['scans'][experimentUri] || [];
-    }
+//    userCacheFileManager.fetchSubjects = function(projectUri) {
+//        if (!userData['subjects'].hasOwnProperty(projectUri)) {
+//            let response =  userCacheFileManager.fetchData(projectUri + '/subjects');
+//            userData['subjects'][projectUri] = [];
+//            userData['subjects'][projectUri].push(...response['ResultSet']['Result']);
+//            userCacheFileManager.sortAlphabetically(userData['subjects'][projectUri]);
+//        }
+//        return userData['subjects'][projectUri] || [];
+//    }
+//
+//    userCacheFileManager.fetchSessions = function(subjectUri) {
+//        if (!userData['sessions'].hasOwnProperty(subjectUri)) {
+//            let response = userCacheFileManager.fetchData(subjectUri + '/experiments');
+//            userData['sessions'][subjectUri] = [];
+//            userData['sessions'][subjectUri].push(...response['ResultSet']['Result']);
+//            userCacheFileManager.sortAlphabetically(userData['sessions'][subjectUri]);
+//        }
+//        return userData['sessions'][subjectUri] || [];
+//    }
+//
+//    userCacheFileManager.fetchScans = function(experimentUri) {
+//        if (!userData['scans'].hasOwnProperty(experimentUri)) {
+//            let response = userCacheFileManager.fetchData(experimentUri + '/scans');
+//            userData['scans'][experimentUri] = [];
+//            userData['scans'][experimentUri].push(...response['ResultSet']['Result']);
+//            userCacheFileManager.sortAlphabetically(userData['session_resources'][experimentUri]);
+//        }
+//        return userData['scans'][experimentUri] || [];
+//    }
 
     userCacheFileManager.fetchResourcesAtLevel = function(uri, input_resource_level) {
         if(!userData[input_resource_level].hasOwnProperty(uri)) {
@@ -1272,21 +1282,21 @@ var XNAT = getObject(XNAT);
             case 'project':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "project_resources");
                 resources.push("create_new");
-                var subjects =  userCacheFileManager.fetchSubjects(nodeUri);
+                var subjects =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'subjects', '/subjects');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
                 break;
             case 'subject':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
                 resources.push("create_new");
-                var experiments =  userCacheFileManager.fetchSessions(nodeUri);
+                var experiments =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'sessions', '/experiments');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
                 break;
             case 'experiment':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
                 resources.push("create_new");
-                var scans =  userCacheFileManager.fetchScans(nodeUri);
+                var scans =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'scans', '/scans');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
                 break;
