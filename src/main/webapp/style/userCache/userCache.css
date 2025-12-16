@@ -1,5 +1,5 @@
 /*
- * web: usercache.css
+ * web: userCache.css
  * XNAT http://www.xnat.org
 */
 * {
@@ -304,12 +304,12 @@ div#uploadWidget {
 }
 
 .uce-panel h3 {
-        margin-bottom: 20px;
-        color: #333;
-        font-size: 20px;
-        text-align: center;
-        padding-bottom: 15px;
-        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    color: #333;
+    font-size: 20px;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .uce-pane-header {
