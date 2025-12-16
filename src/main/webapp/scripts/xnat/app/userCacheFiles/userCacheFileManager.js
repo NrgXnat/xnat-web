@@ -1254,21 +1254,21 @@ var XNAT = getObject(XNAT);
                 resources.push("create_new");
                 var subjects =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'subjects', '/subjects');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSubjectsToNode(nodeUri, subjects));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, subjects, '/subjects', 'Subjects', 'subject'));
                 break;
             case 'subject':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
                 resources.push("create_new");
                 var experiments =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'sessions', '/experiments');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendSessionsToNode(nodeUri, experiments));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, experiments, '/experiments', 'Experiments', 'experiment'));
                 break;
             case 'experiment':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
                 resources.push("create_new");
                 var scans =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'scans', '/scans');
                 userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendResourcesToNode(nodeUri, resources, nodeXnatType));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendScansToNode(nodeUri, scans));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, scans, '/scans', 'Scans', 'scan'));
                 break;
             case 'scan':
                 var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "scan_resources");
@@ -1288,32 +1288,13 @@ var XNAT = getObject(XNAT);
         return fileTree;
     }
 
-    userCacheFileManager.appendSubjectsToNode = function(parentNodeUri, subjects) {
-        var subjectsUri =  parentNodeUri + "/subjects";
-        var fileTree = {name: "Subjects", type: "folder", xnatType: "subject", uri: subjectsUri};
+    userCacheFileManager.appendElementsToNode = function(parentNodeUri, elements, elementUri, elementName, elementXnatType) {
+        var fullUri =  parentNodeUri + elementUri;
+        var fileTree = {name: elementName, type: "folder", xnatType: elementXnatType, uri: fullUri};
         fileTree.children = [];
-        subjects.forEach(subject => {
-            fileTree.children.push({name: subject.label, type: "folder", xnatType: "subject", uri: subjectsUri + "/" + subject.label});
-        });
-        return fileTree;
-    }
-
-     userCacheFileManager.appendSessionsToNode = function(parentNodeUri, experiments) {
-           var experimentsUri =  parentNodeUri + "/experiments";
-           var fileTree = {name: "Experiments", type: "folder", xnatType: "experiment", uri: experimentsUri};
-           fileTree.children = [];
-           experiments.forEach(exp => {
-                fileTree.children.push({name: exp.label, type: "folder", xnatType: "experiment", uri: experimentsUri + "/" + exp.label});
-            });
-            return fileTree;
-        }
-
-    userCacheFileManager.appendScansToNode = function(parentNodeUri, scans) {
-        var scansUri =  parentNodeUri + "/scans";
-        var fileTree = {name: "Scans", type: "folder", xnatType: 'scan', uri: scansUri};
-        fileTree.children = [];
-        scans.forEach(scan => {
-            fileTree.children.push({name: scan.ID, type: "folder", xnatType: "scan", uri: scansUri + "/" + scan.ID});
+        elements.forEach(element => {
+            let label = (elementXnatType === "scan") ? element.ID : element.label;
+            fileTree.children.push({name: label, type: "folder", xnatType: elementXnatType, uri: fullUri + "/" + label});
         });
         return fileTree;
     }
