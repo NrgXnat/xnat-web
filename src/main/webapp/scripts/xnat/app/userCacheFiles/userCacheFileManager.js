@@ -247,7 +247,7 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    userCacheFileManager.uploadFileToAPI = async function(file) {
+    userCacheFileManager.uploadFileToCache = async function(file) {
         if (isUploading) return;
 
         isUploading = true;
@@ -371,7 +371,7 @@ var XNAT = getObject(XNAT);
     document.getElementById('uploadBtn').addEventListener('click', (e) => {
         e.stopPropagation();
         if (selectedZipFile && !isUploading) {
-            userCacheFileManager.uploadFileToAPI(selectedZipFile);
+            userCacheFileManager.uploadFileToCache(selectedZipFile);
         }
     });
 
@@ -421,7 +421,7 @@ var XNAT = getObject(XNAT);
             dt.items.add(selectedZipFile);
             document.getElementById('zipFile').files = dt.files;
         } else {
-            XNAT.ui.banner.top(3000, 'Please drop ZIP files only', 'error');
+            XNAT.ui.banner.top(3000, 'Please only place ZIP files into the upload area.', 'error');
         }
     });
 
@@ -1268,22 +1268,6 @@ var XNAT = getObject(XNAT);
             fileTree.children.push({name: label, type: childType, xnatType: elementXnatType, uri: fullUri + "/" + label});
         });
         return fileTree;
-    }
-
-    userCacheFileManager.modifyNodeByUri = function (data, targetUri, modifications) {
-        const node = userCacheFileManager.findNodeByUri(data, targetUri);
-
-        if (!node) {
-            return false;
-        }
-
-        if (typeof modifications === 'function') {
-            modifications(node);
-        } else if (typeof modifications === 'object' && modifications !== null) {
-            // If modifications is an object, merge properties
-            Object.assign(node, modifications);
-        }
-        return true;
     }
 
     userCacheFileManager.findNodeByUri = function(data, targetUri) {
