@@ -732,9 +732,21 @@ var XNAT = getObject(XNAT);
             children: [],
             status: 'Associated'
         };
-        droppedFiles.push(fileInfo);
-        userCacheFileManager.updateFileCount();
-        XNAT.ui.banner.top(3000, fileData.name  + ' associated to ' + destinationPath, 'success');
+
+        let fileAlreadyAssociated = false;
+        droppedFiles.forEach(file => {
+            if (file.absolutePath === fileInfo.absolutePath && file.destPath === fileInfo.destPath) {
+                fileAlreadyAssociated = true;
+            }
+        })
+
+        if (!fileAlreadyAssociated) {
+            droppedFiles.push(fileInfo);
+            userCacheFileManager.updateFileCount();
+            XNAT.ui.banner.top(3000, fileData.name  + ' associated with ' + destinationPath, 'success');
+        } else {
+            XNAT.ui.banner.top(3000, fileData.name  + ' has already been associated with ' + destinationPath + '. Please check the file tree for further information.', 'error');
+        }
     }
 
     userCacheFileManager.updateAssociatedFileTree = function() {
