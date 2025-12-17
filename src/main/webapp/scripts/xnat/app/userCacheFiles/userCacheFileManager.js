@@ -209,15 +209,6 @@ var XNAT = getObject(XNAT);
     let isUploading = false;
     let isMinimized = false;
 
-    userCacheFileManager.showStatus = function(message, type = 'success') {
-        const statusEl = document.getElementById('statusMessage');
-        statusEl.textContent = message;
-        statusEl.className = `status-message ${type} show`;
-        setTimeout(() => {
-            statusEl.classList.remove('show');
-        }, 3000);
-    }
-
     userCacheFileManager.formatFileSize = function(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -293,7 +284,7 @@ var XNAT = getObject(XNAT);
             }
 
             userCacheFileManager.updateProgress(100, 'Upload complete!');
-            userCacheFileManager.showStatus(`File uploaded successfully to ${endpoint}`, 'success');
+            XNAT.ui.banner.top(2000,'File uploaded successfully to ' + endpoint,'success');
             userCacheFileManager.updateSourceTree();
             console.log('Upload of file ' + filename + ' to user cache successful');
             userCacheFileManager.resetUploadWidget();
@@ -308,10 +299,10 @@ var XNAT = getObject(XNAT);
            } else if (error.message.includes('status')) {
                errorMessage = error.message;
            } else {
-               errorMessage = `Upload failed: ${error.message}`;
+               errorMessage = 'Upload failed: ' + error.message;
            }
 
-           userCacheFileManager.showStatus(errorMessage, 'error');
+           XNAT.ui.banner.top(2000, errorMessage, 'error');
 
            setTimeout(() => {
                userCacheFileManager.resetUploadWidget();
@@ -364,7 +355,7 @@ var XNAT = getObject(XNAT);
 
         if (isMinimized) {
             userCacheFileManager.toggleMinimize();
-            userCacheFileManager.showStatus(`File selected: ${file.name}. Widget expanded for upload.`);
+            XNAT.ui.banner.top(2000,'File selected: ' + file.name + '. Widget expanded for upload.','success');
         }
     }
 
@@ -373,7 +364,7 @@ var XNAT = getObject(XNAT);
         if (file) {
             selectedZipFile = file;
             userCacheFileManager.updateSelectedFileDisplay(file);
-            userCacheFileManager.showStatus(`ZIP file "${file.name}" selected. Click upload to send to server.`);
+            XNAT.ui.banner.top(2000,'ZIP file ' + file.name + ' selected. Click upload to send to server.','success');
         }
     });
 
@@ -417,13 +408,13 @@ var XNAT = getObject(XNAT);
         if (zipFiles.length > 0) {
             selectedZipFile = zipFiles[0];
             userCacheFileManager.updateSelectedFileDisplay(selectedZipFile);
-            userCacheFileManager.showStatus(`ZIP file "${selectedZipFile.name}" selected. Click upload to send to server.`);
+            XNAT.ui.banner.top(2000,'ZIP file ' + selectedZipFile.name + ' selected. Click upload to send to server.','success');
 
             const dt = new DataTransfer();
             dt.items.add(selectedZipFile);
             document.getElementById('zipFile').files = dt.files;
         } else {
-            userCacheFileManager.showStatus('Please drop ZIP files only', 'error');
+            XNAT.ui.banner.top(2000, 'Please drop ZIP files only', 'error');
         }
     });
 
@@ -740,7 +731,7 @@ var XNAT = getObject(XNAT);
         };
         droppedFiles.push(fileInfo);
         userCacheFileManager.updateFileCount();
-        userCacheFileManager.showStatus(`${fileData.name} associated to ${destinationPath}`, 'success');
+        XNAT.ui.banner.top(2000, fileData.name  + ' associated to ' + destinationPath,'success');
     }
 
     userCacheFileManager.updateAssociatedFileTree = function() {
