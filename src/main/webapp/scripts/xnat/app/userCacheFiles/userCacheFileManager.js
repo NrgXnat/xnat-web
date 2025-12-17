@@ -285,7 +285,7 @@ var XNAT = getObject(XNAT);
 
             userCacheFileManager.updateProgress(100, 'Upload complete!');
             XNAT.ui.banner.top(3000,'File uploaded successfully to ' + endpoint,'success');
-            userCacheFileManager.updateSourceTree();
+            userCacheFileManager.updateSourceTree(false);
             console.log('Upload of file ' + filename + ' to user cache successful');
             userCacheFileManager.resetUploadWidget();
 
@@ -549,7 +549,7 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.createDeleteButton = function(folderPath) {
         return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
-                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, currentTarget.parentElement)
+                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, e.currentTarget.parentElement.dataset.absolutePath);
             },
             title: "Delete from cache",
             style: {color: 'black', border: 'none', cursor: 'pointer'}
@@ -645,15 +645,6 @@ var XNAT = getObject(XNAT);
         document.getElementById('ingestBtn').disabled = !isValid;
     }
 
-    userCacheFileManager.toggleSourceFolder = function(folderPath) {
-        if (expandedSourceFolders.has(folderPath)) {
-            expandedSourceFolders.delete(folderPath);
-        } else {
-            expandedSourceFolders.add(folderPath);
-        }
-        userCacheFileManager.updateSourceTree();
-    }
-
     userCacheFileManager.fetchUserCacheFiles = function() {
         let userCacheFileUrl = XNAT.url.restUrl('data/user/cache/resources?format=treeJson',{},false,false);
         XNAT.xhr.get({
@@ -668,11 +659,13 @@ var XNAT = getObject(XNAT);
         });
     }
 
-    userCacheFileManager.updateSourceTree = function() {
+    userCacheFileManager.updateSourceTree = function(initialRendering) {
         userCacheFileManager.fetchUserCacheFiles();
-        const treeContainer = document.getElementById('sourceTree');
         expandedSourceFolders.add(CACHE_TREE_ROOT_NODE);
-        treeContainer.append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+        if (!initialRendering) {
+            $('#sourceTree').empty();
+        }
+        $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
     }
 
     userCacheFileManager.handleDragStart = function(e) {
@@ -935,7 +928,7 @@ var XNAT = getObject(XNAT);
         };
     }
 
-    userCacheFileManager.removeFileFromCache = function(filePath, fileUiElement) {
+    userCacheFileManager.removeFileFromCache = function(filePath, absolutePath) {
         let urlTail = 'data/user/cache/resources/';
         let xnatFullPath = filePath.replace(CACHE_TREE_ROOT_NODE + '/', '');
         let partsArr = xnatFullPath.split('/');
@@ -962,7 +955,7 @@ var XNAT = getObject(XNAT);
                             async: false,
                             success: function (data) {
                                 XNAT.ui.banner.top(3000,'Successfully removed file: ' + filePath + ' from cache.','success');
-                                XNAT.app.userCacheFileManager.updateSourceTree();
+                                XNAT.app.userCacheFileManager.updateSourceTree(false);
                             },
                             fail: function (e) {
                                 errorHandler(e);
@@ -1459,7 +1452,7 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.init = async function() {
-        userCacheFileManager.updateSourceTree();
+        userCacheFileManager.updateSourceTree(true);
         userCacheFileManager.updateDestinationTree();
     }
 
