@@ -537,6 +537,15 @@ var XNAT = getObject(XNAT);
         return icons[ext] || '<i class="fa fa-file"></i>';
     }
 
+    userCacheFileManager.createDragEvents = function(div) {
+        div.addEventListener('dragstart', (e) => {
+            XNAT.app.userCacheFileManager.handleDragStart(event)
+        });
+        div.addEventListener('dragend', (e) => {
+            XNAT.app.userCacheFileManager.handleDragEnd(event)
+        });
+    }
+
     userCacheFileManager.createDeleteButton = function(folderPath) {
         return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
@@ -559,12 +568,7 @@ var XNAT = getObject(XNAT);
             $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
             if (enableDrag) {
-                folderDiv.addEventListener('dragstart', (e) => {
-                    XNAT.app.userCacheFileManager.handleDragStart(event)
-                });
-                folderDiv.addEventListener('dragend', (e) => {
-                    XNAT.app.userCacheFileManager.handleDragEnd(event)
-                });
+                userCacheFileManager.createDragEvents(folderDiv);
             }
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
@@ -595,12 +599,7 @@ var XNAT = getObject(XNAT);
             $(fileDiv).attr({'class': "uce-file-item", 'data-path': path + node.name, 'data-filename': node.name,
                 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
             if (enableDrag) {
-                fileDiv.addEventListener('dragstart', (e) => {
-                    XNAT.app.userCacheFileManager.handleDragStart(event)
-                });
-                fileDiv.addEventListener('dragend', (e) => {
-                    XNAT.app.userCacheFileManager.handleDragEnd(event)
-                });
+                userCacheFileManager.createDragEvents(fileDiv);
             }
             fileDiv.append(spawn('span|class=uce-icon', {
                 'html': getFileIcon(node.name)
@@ -731,7 +730,7 @@ var XNAT = getObject(XNAT);
         };
         droppedFiles.push(fileInfo);
         userCacheFileManager.updateFileCount();
-        XNAT.ui.banner.top(2000, fileData.name  + ' associated to ' + destinationPath,'success');
+        XNAT.ui.banner.top(2000, fileData.name  + ' associated to ' + destinationPath, 'success');
     }
 
     userCacheFileManager.updateAssociatedFileTree = function() {
