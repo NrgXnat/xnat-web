@@ -328,21 +328,6 @@ div#uploadWidget {
     background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
 }
 
-.uce-pane-content {
-   border: 3px dashed #ccc;
-   border-radius: 15px;
-   padding: 40px;
-   text-align: center;
-   min-height: 300px;
-   display: flex;
-   flex-direction: column;
-   justify-content: center;
-   align-items: center;
-   transition: all 0.3s ease;
-   background: rgba(255, 255, 255, 0.3);
-   backdrop-filter: blur(5px);
-}
-
 .uce-folder-tree {
     user-select: none;
 }

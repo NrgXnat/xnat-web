@@ -257,10 +257,12 @@ var XNAT = getObject(XNAT);
         isUploading = true;
         const uploadArea = document.querySelector('.uce-upload-area');
         const uploadBtn = document.getElementById('uploadBtn');
+        const cancelUploadButton = document.getElementById('cancelUploadButton');
         const progressContainer = document.getElementById('progressContainer');
 
         uploadArea.classList.add('uce-uploading');
         uploadBtn.disabled = true;
+        cancelUploadButton.disabled = true;
         progressContainer.classList.add('uce-show');
         userCacheFileManager.updateProgress(0, 'Preparing upload...');
 
@@ -316,10 +318,12 @@ var XNAT = getObject(XNAT);
 
         const uploadArea = document.querySelector('.uce-upload-area');
         const uploadBtn = document.getElementById('uploadBtn');
+        const cancelUploadButton = document.getElementById('cancelUploadButton');
         const zipFileInput = document.getElementById('zipFile');
 
         uploadArea.classList.remove('uce-uploading');
         uploadBtn.disabled = false;
+        cancelUploadButton.disabled = false;
         zipFileInput.value = '';
 
         userCacheFileManager.toggleUploadControls(false);
@@ -372,6 +376,13 @@ var XNAT = getObject(XNAT);
         e.stopPropagation();
         if (selectedZipFile && !isUploading) {
             userCacheFileManager.uploadFileToAPI(selectedZipFile);
+        }
+    });
+
+    document.getElementById('cancelUploadButton').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (selectedZipFile && !isUploading) {
+            userCacheFileManager.resetUploadWidget();
         }
     });
 
