@@ -234,9 +234,9 @@ var XNAT = getObject(XNAT);
         const progressStatus = document.getElementById('progressStatus');
         const progressPercentage = document.getElementById('progressPercentage');
 
-        progressFill.style.width = `${percentage}%`;
+        progressFill.style.width = percentage;
         progressStatus.textContent = status;
-        progressPercentage.textContent = `${Math.round(percentage)}%`;
+        progressPercentage.textContent = Math.round(percentage);
     }
 
     userCacheFileManager.toggleUploadControls = function(show) {
@@ -267,7 +267,7 @@ var XNAT = getObject(XNAT);
         try {
             const timestamp = userCacheFileManager.generateTimestamp();
             const filename = encodeURIComponent(file.name);
-            const endpoint = `${serverRoot}/data/user/cache/resources/${timestamp}/files/${filename}`;
+            const endpoint = serverRoot + '/data/user/cache/resources/' + timestamp + '/files/' + filename;
             let uploadUrl = XNAT.url.csrfUrl(endpoint,{extract: true},false,false);
             // Use Fetch API with file in body
             const formData = new FormData();
@@ -284,7 +284,7 @@ var XNAT = getObject(XNAT);
             }
 
             userCacheFileManager.updateProgress(100, 'Upload complete!');
-            XNAT.ui.banner.top(2000,'File uploaded successfully to ' + endpoint,'success');
+            XNAT.ui.banner.top(3000,'File uploaded successfully to ' + endpoint,'success');
             userCacheFileManager.updateSourceTree();
             console.log('Upload of file ' + filename + ' to user cache successful');
             userCacheFileManager.resetUploadWidget();
@@ -302,7 +302,7 @@ var XNAT = getObject(XNAT);
                errorMessage = 'Upload failed: ' + error.message;
            }
 
-           XNAT.ui.banner.top(2000, errorMessage, 'error');
+           XNAT.ui.banner.top(3000, errorMessage, 'error');
 
            setTimeout(() => {
                userCacheFileManager.resetUploadWidget();
@@ -355,7 +355,7 @@ var XNAT = getObject(XNAT);
 
         if (isMinimized) {
             userCacheFileManager.toggleMinimize();
-            XNAT.ui.banner.top(2000,'File selected: ' + file.name + '. Widget expanded for upload.','success');
+            XNAT.ui.banner.top(3000,'File selected: ' + file.name + '. Widget expanded for upload.','success');
         }
     }
 
@@ -364,7 +364,7 @@ var XNAT = getObject(XNAT);
         if (file) {
             selectedZipFile = file;
             userCacheFileManager.updateSelectedFileDisplay(file);
-            XNAT.ui.banner.top(2000,'ZIP file ' + file.name + ' selected. Click upload to send to server.','success');
+            XNAT.ui.banner.top(3000,'ZIP file ' + file.name + ' selected. Click upload to send to server.','success');
         }
     });
 
@@ -408,13 +408,13 @@ var XNAT = getObject(XNAT);
         if (zipFiles.length > 0) {
             selectedZipFile = zipFiles[0];
             userCacheFileManager.updateSelectedFileDisplay(selectedZipFile);
-            XNAT.ui.banner.top(2000,'ZIP file ' + selectedZipFile.name + ' selected. Click upload to send to server.','success');
+            XNAT.ui.banner.top(3000,'ZIP file ' + selectedZipFile.name + ' selected. Click upload to send to server.','success');
 
             const dt = new DataTransfer();
             dt.items.add(selectedZipFile);
             document.getElementById('zipFile').files = dt.files;
         } else {
-            XNAT.ui.banner.top(2000, 'Please drop ZIP files only', 'error');
+            XNAT.ui.banner.top(3000, 'Please drop ZIP files only', 'error');
         }
     });
 
@@ -549,7 +549,7 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.createDeleteButton = function(folderPath) {
         return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
-                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath)
+                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, currentTarget.parentElement)
             },
             title: "Delete from cache",
             style: {color: 'black', border: 'none', cursor: 'pointer'}
@@ -730,7 +730,7 @@ var XNAT = getObject(XNAT);
         };
         droppedFiles.push(fileInfo);
         userCacheFileManager.updateFileCount();
-        XNAT.ui.banner.top(2000, fileData.name  + ' associated to ' + destinationPath, 'success');
+        XNAT.ui.banner.top(3000, fileData.name  + ' associated to ' + destinationPath, 'success');
     }
 
     userCacheFileManager.updateAssociatedFileTree = function() {
@@ -935,7 +935,7 @@ var XNAT = getObject(XNAT);
         };
     }
 
-    userCacheFileManager.removeFileFromCache = function(filePath) {
+    userCacheFileManager.removeFileFromCache = function(filePath, fileUiElement) {
         let urlTail = 'data/user/cache/resources/';
         let xnatFullPath = filePath.replace(CACHE_TREE_ROOT_NODE + '/', '');
         let partsArr = xnatFullPath.split('/');
@@ -957,7 +957,17 @@ var XNAT = getObject(XNAT);
                     isDefault: true,
                     close: true,
                     action: function(){
-                        userCacheFileManager.deleteCacheFile(deleteUrl);
+                        XNAT.xhr.delete({
+                            url: deleteUrl,
+                            async: false,
+                            success: function (data) {
+                                XNAT.ui.banner.top(3000,'Successfully removed file: ' + filePath + ' from cache.','success');
+                                XNAT.app.userCacheFileManager.updateSourceTree();
+                            },
+                            fail: function (e) {
+                                errorHandler(e);
+                            }
+                        });
                     }
                 },
                 {
@@ -992,19 +1002,6 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.addNewScan = function(element) {
         console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
-    }
-
-    userCacheFileManager.deleteCacheFile = function(deleteUrl) {
-        XNAT.xhr.delete({
-            url: deleteUrl,
-            async: false,
-            success: function (data) {
-                XNAT.app.userCacheFileManager.updateSourceTree();
-            },
-            fail: function (e) {
-                errorHandler(e);
-            }
-        });
     }
 
     userCacheFileManager.getRelativePath = function(fullPath) {

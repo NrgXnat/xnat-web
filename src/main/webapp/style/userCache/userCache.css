@@ -101,10 +101,10 @@ body {
 .uce-upload-content {
     transition: all 0.3s ease;
     opacity: 1;
-    max-height: 200px;
+    max-height: 300px;
 }
 
-.uce-upload-widget.minimized .upload-content {
+.uce-upload-widget.minimized.upload-content {
     opacity: 0;
     max-height: 0;
     margin: 0;
@@ -221,7 +221,7 @@ body {
 }
 
 .uce-progress-container.uce-show {
-    display: block;
+    display: flex;
 }
 
 .uce-progress-bar {
@@ -275,7 +275,7 @@ body {
 }
 
 div#uploadWidget {
-      max-height: 200px; /* Adjust this value as needed */
+      max-height: 400px;
     }
 
 #zipFile {

@@ -25,6 +25,7 @@
                         <div class="uce-file-size" id="selectedFileSize"></div>
                     </div>
                     <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"></i> Upload</button>
+                    <button class="uce-upload-btn" id="cancelUploadButton"><i class="fa fa-upload"></i> Cancel</button>
                 </div>
 
                 <div class="uce-progress-container" id="progressContainer">
