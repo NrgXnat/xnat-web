@@ -3,10 +3,6 @@
  * XNAT http://www.xnat.org
  */
 
-/*!
- * Facilitate user cache file manipulation
- */
-
 var XNAT = getObject(XNAT);
 
 (function(factory){
@@ -63,7 +59,7 @@ var XNAT = getObject(XNAT);
                 size /= 1024;
                 unit++;
             }
-            return `${size.toFixed(1)} ${units[unit]}`;
+            return String(size.toFixed(1) + units[unit]);
         }
 
         formatDate(dateString) {
@@ -88,7 +84,7 @@ var XNAT = getObject(XNAT);
         }
 
         generateNodeId(node, path = '') {
-            return `${path}/${node.name}`.replace(/^\//, '');
+            return (path + '/' + node.name + '-' + node.destPath).replace(/^\//, '');
         }
 
         createTreeNode(node, path = '', level = 0) {
@@ -123,7 +119,7 @@ var XNAT = getObject(XNAT);
             name.textContent = node.name;
 
             const info = document.createElement('span');
-            info.className = `item-info ${isFolder ? '' : 'file-info'}`;
+            info.className = 'item-info ' + (isFolder ? '' : 'file-info');
 
             let infoText = [];
             if (node.size) infoText.push(this.formatSize(node.size));
@@ -147,7 +143,7 @@ var XNAT = getObject(XNAT);
 
             if (hasChildren) {
                 const childrenDiv = document.createElement('div');
-                childrenDiv.className = `tree-children ${isExpanded ? 'expanded' : ''}`;
+                childrenDiv.className = 'tree-children ' + (isExpanded ? 'expanded' : '');
 
                 node.children.forEach(child => {
                     const childNode = this.createTreeNode(child, nodeId, level + 1);
@@ -282,7 +278,7 @@ var XNAT = getObject(XNAT);
             userCacheFileManager.updateProgress(90, 'Processing response...');
 
             if (!response.ok) {
-                throw new Error(`Upload failed with status ${response.status}: ${response.statusText}`);
+                throw new Error('Upload failed with status ' + response.status + ' : ' + response.statusText);
             }
 
             userCacheFileManager.updateProgress(100, 'Upload complete!');
@@ -441,7 +437,7 @@ var XNAT = getObject(XNAT);
                 responseData = data;
             },
             fail: function (e) {
-                errorHandler(e);
+                XNAT.ui.banner.top(5000, 'Unable to fetch data from: ' + url, 'error');
             }
         });
         return responseData;
@@ -509,7 +505,7 @@ var XNAT = getObject(XNAT);
             });
 
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error('HTTP error! status: ' + response.status);
             }
 
             const result = await response.json();
@@ -665,7 +661,7 @@ var XNAT = getObject(XNAT);
                 sourceStructure = data;
             },
             fail: function (e) {
-                errorHandler(e);
+                XNAT.ui.banner.top(5000, 'Unable to fetch user cache files.', 'error');
             }
         });
     }
@@ -935,7 +931,7 @@ var XNAT = getObject(XNAT);
         };
 
         if (!patterns[component]) {
-            console.error(`Invalid component: ${component}. Must be 'project', 'subject', or 'experiment' or 'scan'`);
+            console.error('Invalid component: ' + component + '. Must be "project", "subject", or "experiment" or "scan."');
             return null;
         }
         const match = path.match(patterns[component]);
@@ -981,7 +977,7 @@ var XNAT = getObject(XNAT);
                                 XNAT.app.userCacheFileManager.updateSourceTree(false);
                             },
                             fail: function (e) {
-                                errorHandler(e);
+                                XNAT.ui.banner.top(5000, 'Unable to remove the file: ' + filePath + ' from the user cache.', 'error');
                             }
                         });
                     }
