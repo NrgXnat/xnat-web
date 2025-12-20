@@ -18,6 +18,7 @@ import org.apache.turbine.util.RunData;
 import org.apache.velocity.context.Context;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.model.XnatProjectparticipantI;
+import org.nrg.xdat.om.XnatCtsessiondata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.turbine.modules.screens.SecureReport;
@@ -37,7 +38,7 @@ public class XDATScreen_report_xnat_subjectData extends SecureReport {
         final UserI user = XDAT.getUserDetails();
         assert user != null;
 
-        final XnatSubjectdata subject = new XnatSubjectdata(item);
+        final XnatSubjectdata subject = (om instanceof XnatSubjectdata)? (XnatSubjectdata)om : new XnatSubjectdata(item);;
         context.put("subject", subject);
 
         if (context.get("project") == null) {

@@ -16,6 +16,7 @@ import org.nrg.xdat.model.XnatExperimentdataShareI;
 import org.nrg.xdat.model.XnatImagescandataI;
 import org.nrg.xdat.om.XnatCtsessiondata;
 import org.nrg.xdat.om.XnatImagescandata;
+import org.nrg.xdat.om.XnatMrsessiondata;
 import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.turbine.modules.screens.SecureReport;
 import org.slf4j.Logger;
@@ -35,7 +36,7 @@ public class XDATScreen_report_xnat_ctSessionData extends SecureReport {
      */
     public void finalProcessing(RunData data, Context context) {
         try {
-            XnatCtsessiondata ct = new XnatCtsessiondata(item);
+            XnatCtsessiondata ct = (om instanceof XnatCtsessiondata)? (XnatCtsessiondata)om : new XnatCtsessiondata(item);;
             context.put("ct", ct);
             context.put("workflows", ct.getWorkflows());
             if(context.get("project")==null) {

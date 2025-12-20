@@ -34,7 +34,7 @@ public class XDATScreen_report_xnat_mrSessionData extends SecureReport {
      */
     public void finalProcessing(RunData data, Context context) {
         try {
-            XnatMrsessiondata mr = new XnatMrsessiondata(item);
+            XnatMrsessiondata mr = (om instanceof XnatMrsessiondata)? (XnatMrsessiondata)om : new XnatMrsessiondata(item);
             context.put("mr",mr);
             
             
