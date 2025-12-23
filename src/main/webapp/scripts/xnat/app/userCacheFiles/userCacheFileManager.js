@@ -590,7 +590,7 @@ var XNAT = getObject(XNAT);
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) );
 
             let folderDiv = spawn('div');
-            $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+            $(folderDiv).attr({'class': "uce-folder-item source-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
             if (enableDrag) {
                 userCacheFileManager.createDragEvents(folderDiv);
@@ -677,7 +677,7 @@ var XNAT = getObject(XNAT);
             const isExpanded = expandedDestinationFolders.has(path + node.name);
 
             let folderDiv = spawn('div');
-            $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+            $(folderDiv).attr({'class': "uce-folder-item destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {

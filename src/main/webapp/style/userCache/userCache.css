@@ -257,10 +257,6 @@ div#uploadWidget {
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
-.uce-pane-header.remote {
-    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-}
-
 .uce-folder-tree {
     user-select: none;
 }
@@ -278,26 +274,17 @@ div#uploadWidget {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.uce-destination-folder-item {
-    padding: 8px 12px;
-    margin: 2px 0;
-    border-radius: 8px;
-    transition: all 0.3s ease;
-    display: flex;
+.uce-folder-item.destination-folder-item {
     cursor: pointer;
-    align-items: center;
-    gap: 8px;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.uce-folder-item:hover {
+.uce-folder-item.source-folder-item:hover {
     background: rgba(79, 172, 254, 0.2);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.uce-folder-item.expanded {
+.uce-folder-item.source-folder-item.expanded {
     background: rgba(79, 172, 254, 0.3);
     font-weight: 600;
 }
@@ -348,18 +335,6 @@ div#uploadWidget {
     text-align: right;
 }
 
-.uce-destination-folder {
-    position: relative;
-    transition: all 0.3s ease;
-}
-
-.uce-destination-folder.drag-over {
-    background: rgba(250, 112, 154, 0.3) !important;
-    border: 2px solid #fa709a !important;
-    transform: scale(1.02);
-    box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);
-}
-
 .uce-file-count {
     font-size: 12px;
     color: #666;
@@ -406,10 +381,6 @@ div#uploadWidget {
     cursor: pointer;
     transition: all 0.2s ease;
     margin-left: 5px;
-}
-
-.uce-destination-folder:hover .uce-edit-button {
-    opacity: 1;
 }
 
 .uce-edit-button:hover {
@@ -625,19 +596,6 @@ div#uploadWidget {
 
 .uce-folder-toggle:active {
     background-color: #d0d0d0;
-}
-
-.uce-folder-icon {
-    margin-right: 8px;
-    color: #ffa500;
-    cursor: pointer;
-    padding: 2px;
-    border-radius: 3px;
-    transition: background-color 0.2s ease;
-}
-
-.uce-folder-icon:hover {
-    background-color: #e8e8e8;
 }
 
 .uce-pane.sticky-button {
