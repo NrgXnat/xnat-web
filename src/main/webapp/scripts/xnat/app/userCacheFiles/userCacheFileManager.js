@@ -225,25 +225,13 @@ var XNAT = getObject(XNAT);
         return `${year}${month}${day}-${hours}${minutes}${seconds}`;
     }
 
-    userCacheFileManager.updateProgress = function(percentage, status) {
-        const progressFill = document.getElementById('progressFill');
-        const progressStatus = document.getElementById('progressStatus');
-        const progressPercentage = document.getElementById('progressPercentage');
-
-        progressFill.style.width = percentage;
-        progressStatus.textContent = status;
-        progressPercentage.textContent = Math.round(percentage);
-    }
-
     userCacheFileManager.toggleUploadControls = function(show) {
         const controls = document.getElementById('uploadControls');
-        const progress = document.getElementById('progressContainer');
 
         if (show) {
             controls.classList.add('uce-show');
         } else {
             controls.classList.remove('uce-show');
-            progress.classList.remove('uce-show');
         }
     }
 
@@ -254,13 +242,11 @@ var XNAT = getObject(XNAT);
         const uploadArea = document.querySelector('.uce-upload-area');
         const uploadBtn = document.getElementById('uploadBtn');
         const cancelUploadButton = document.getElementById('cancelUploadButton');
-        const progressContainer = document.getElementById('progressContainer');
 
         uploadArea.classList.add('uce-uploading');
         uploadBtn.disabled = true;
         cancelUploadButton.disabled = true;
-        progressContainer.classList.add('uce-show');
-        userCacheFileManager.updateProgress(0, 'Preparing upload...');
+        xmodal.loading.open({ title: 'Uploading data to cache...'});
 
         try {
             const timestamp = userCacheFileManager.generateTimestamp();
@@ -275,13 +261,12 @@ var XNAT = getObject(XNAT);
                 body: formData
             });
 
-            userCacheFileManager.updateProgress(90, 'Processing response...');
+            xmodal.loading.close();
 
             if (!response.ok) {
                 throw new Error('Upload failed with status ' + response.status + ' : ' + response.statusText);
             }
 
-            userCacheFileManager.updateProgress(100, 'Upload complete!');
             XNAT.ui.banner.top(3000,'File uploaded successfully to ' + endpoint,'success');
             userCacheFileManager.updateSourceTree(false);
             console.log('Upload of file ' + filename + ' to user cache successful');
@@ -289,7 +274,7 @@ var XNAT = getObject(XNAT);
 
         } catch (error) {
            console.error('Upload error:', error);
-           userCacheFileManager.updateProgress(0, 'Upload failed');
+           xmodal.loading.close();
 
            let errorMessage = 'Upload failed';
            if (error.name === 'TypeError' && error.message.includes('fetch')) {
@@ -553,6 +538,50 @@ var XNAT = getObject(XNAT);
         });
     }
 
+    userCacheFileManager.validateForm = function() {
+        const resourceLevel = document.getElementById('resourceLevel').value;
+        const project = document.getElementById('projectSelect').value;
+        const subject = document.getElementById('subjectSelect').value;
+        const session = document.getElementById('sessionSelect').value;
+        const scan = document.getElementById('scanSelect').value;
+        const resourceName = document.getElementById('resourceSelect').value.trim();
+
+        let isValid = false;
+
+        if (resourceLevel && project && resourceName) {
+            switch (resourceLevel) {
+                case 'project':
+                    isValid = true;
+                    break;
+                case 'subject':
+                    isValid = subject !== '';
+                    break;
+                case 'session':
+                    isValid = subject !== '' && session !== '';
+                    break;
+                case 'scan':
+                    isValid = subject !== '' && session !== '' && scan !== '';
+                    break;
+            }
+        }
+
+        document.getElementById('ingestBtn').disabled = !isValid;
+    }
+
+    userCacheFileManager.fetchUserCacheFiles = function() {
+        let userCacheFileUrl = XNAT.url.restUrl('data/user/cache/resources?format=treeJson',{},false,false);
+        XNAT.xhr.get({
+            url: userCacheFileUrl,
+            async: false,
+            success: function (data) {
+                sourceStructure = data;
+            },
+            fail: function (e) {
+                XNAT.ui.banner.top(5000, 'Unable to fetch user cache files.', 'error');
+            }
+        });
+    }
+
     userCacheFileManager.createDeleteButton = function(folderPath) {
         return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
@@ -561,6 +590,15 @@ var XNAT = getObject(XNAT);
             title: "Delete from cache",
             style: {color: 'black', border: 'none', cursor: 'pointer'}
         }, [spawn('i.fa.fa-trash')]);
+    }
+
+    userCacheFileManager.updateSourceTree = function(initialRendering) {
+        userCacheFileManager.fetchUserCacheFiles();
+        expandedSourceFolders.add(CACHE_TREE_ROOT_NODE);
+        if (!initialRendering) {
+            $('#sourceTree').empty();
+        }
+        $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
     }
 
     userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
@@ -622,58 +660,126 @@ var XNAT = getObject(XNAT);
         return currentLevelDiv;
     }
 
-    userCacheFileManager.validateForm = function() {
-        const resourceLevel = document.getElementById('resourceLevel').value;
-        const project = document.getElementById('projectSelect').value;
-        const subject = document.getElementById('subjectSelect').value;
-        const session = document.getElementById('sessionSelect').value;
-        const scan = document.getElementById('scanSelect').value;
-        const resourceName = document.getElementById('resourceSelect').value.trim();
-
-        let isValid = false;
-
-        if (resourceLevel && project && resourceName) {
-            switch (resourceLevel) {
-                case 'project':
-                    isValid = true;
-                    break;
-                case 'subject':
-                    isValid = subject !== '';
-                    break;
-                case 'session':
-                    isValid = subject !== '' && session !== '';
-                    break;
-                case 'scan':
-                    isValid = subject !== '' && session !== '' && scan !== '';
-                    break;
-            }
-        }
-
-        document.getElementById('ingestBtn').disabled = !isValid;
+    userCacheFileManager.updateDestinationTree = async function() {
+        var projects = await userCacheFileManager.fetchProjects();
+        const treeContainer = document.getElementById('destinationTree');
+        destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree();
+        expandedDestinationFolders.add(ARCHIVE_TREE_ROOT_NODE);
+        treeContainer.append(userCacheFileManager.renderDestinationTree(destinationStructure));
     }
 
-    userCacheFileManager.fetchUserCacheFiles = function() {
-        let userCacheFileUrl = XNAT.url.restUrl('data/user/cache/resources?format=treeJson',{},false,false);
-        XNAT.xhr.get({
-            url: userCacheFileUrl,
-            async: false,
-            success: function (data) {
-                sourceStructure = data;
-            },
-            fail: function (e) {
-                XNAT.ui.banner.top(5000, 'Unable to fetch user cache files.', 'error');
-            }
+    userCacheFileManager.convertXnatUserDataToFileTree =  function() {
+        var fileTree = {name: ARCHIVE_TREE_ROOT_NODE, type: "folder", xnatType: "archive", uri: ""};
+        fileTree.children = [];
+        userData['projects'].forEach(project => {
+            fileTree.children.push({name: project.name, type: "folder", xnatType: "project", uri: project.URI});
         });
+        return fileTree;
     }
 
-    userCacheFileManager.updateSourceTree = function(initialRendering) {
-        userCacheFileManager.fetchUserCacheFiles();
-        expandedSourceFolders.add(CACHE_TREE_ROOT_NODE);
-        if (!initialRendering) {
-            $('#sourceTree').empty();
-        }
-        $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+    userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon, title) {
+        let destButton =  spawn('button.btn.btn-sm', {
+            onclick: function (e) {
+                buttonAction(this);
+            },
+            title: title,
+            style: {color: 'black', border: 'none', cursor: 'pointer'},
+        }, [spawn(icon)]);
+        $(destButton).attr({'data-uri': nodeUri})
+        return destButton;
     }
+
+    userCacheFileManager.renderDestinationTree = function(node, path = "", level = 0) {
+        let currentLevelDiv = spawn('div');
+        const folderPath = path + node.name;
+
+        if (node.type === 'folder') {
+            const isExpanded = expandedDestinationFolders.has(path + node.name);
+
+            let folderDiv = spawn('div');
+            $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+               'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
+            folderDiv.append(spawn('span|class=uce-folder-toggle', {
+                onclick: function (e) {
+                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, false, expandedDestinationFolders);
+                },
+                'html': isExpanded ? '<i class="fa fa-minus"></i>' : '<i class="fa fa-plus"></i>'
+            }));
+            folderDiv.append(spawn('span|class=uce-folder-name', {
+                'html': node.name
+            }));
+            if (node.name === 'Resources') {
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder', 'Add Resource'))
+            } else if (node.name === 'Subjects') {
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus', 'Add Subject'))
+            }  else if (node.name === 'Experiments') {
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask', 'Add Experiment'))
+            }  else if (node.name === 'Scans') {
+                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-qrcode', 'Add Scan'))
+            }
+            currentLevelDiv.append(folderDiv);
+
+            if (isExpanded && node.children) {
+                let childrenDiv = spawn('div|class=uce-children');
+                for (let i = 0; i < node.children.length; i++){
+                    let child = node.children[i];
+                    $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1))
+                }
+                $(currentLevelDiv).append(childrenDiv);
+            }
+        } else {
+            let dropZoneDiv = spawn('div');
+            $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
+                'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
+            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': '<i class="fa fa-dropbox"></i>'
+            }));
+            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
+                'html': 'Drop files here for ' + node.name
+            }));
+            currentLevelDiv.append(dropZoneDiv);
+        }
+        return currentLevelDiv;
+    }
+
+    userCacheFileManager.toggleFolder = function(event, folderPath, isSourcePane, expandedFoldersList) {
+        event.preventDefault();
+        const folderElement = event.currentTarget.parentElement;
+        const isExpanded = folderElement.getAttribute('data-expanded') === 'true';
+
+        if (isExpanded) {
+            userCacheFileManager.collapseFolder(folderElement, folderPath);
+        } else {
+            userCacheFileManager.expandFolder(folderElement, folderPath, isSourcePane, expandedFoldersList);
+        }
+    }
+
+    userCacheFileManager.expandFolder = function(folderElement, folderPath, isSourcePane, expandedFoldersList) {
+        folderElement.setAttribute('data-expanded', 'true');
+        if (expandedFoldersList.has(folderPath)) {
+                expandedFoldersList.delete(folderPath);
+        } else {
+            expandedFoldersList.add(folderPath);
+            if (!isSourcePane) {
+                userCacheFileManager.loadNode(folderElement);
+            }
+        }
+        if (isSourcePane) {
+            $('#sourceTree').empty();
+            $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+        } else {
+            $('#destinationTree').empty();
+            $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
+            userCacheFileManager.setupDropZone();
+        }
+        folderElement.style.backgroundColor = '#e8f4fd';
+    }
+
+    userCacheFileManager.collapseFolder = function(folderElement, folderPath) {
+        folderElement.setAttribute('data-expanded', 'false');
+        folderElement.style.backgroundColor = '';
+    }
+
 
     userCacheFileManager.handleDragStart = function(e) {
         const fileName = e.target.dataset.filename;
@@ -961,22 +1067,27 @@ var XNAT = getObject(XNAT);
 
         XNAT.ui.dialog.open({
             title: 'Confirm Deletion',
+            id: 'delete_cache_element',
             width: 350,
             content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
             buttons: [
                 {
                     label: 'Confirm Delete',
                     isDefault: true,
-                    close: true,
+                    close: false,
                     action: function(){
+                        xmodal.loading.open({ title: 'Deleting element from cache...'});
+                        XNAT.ui.dialog.close("delete_cache_element");
                         XNAT.xhr.delete({
                             url: deleteUrl,
                             async: false,
                             success: function (data) {
+                                xmodal.loading.close();
                                 XNAT.ui.banner.top(3000,'Successfully removed file: ' + filePath + ' from cache.','success');
                                 XNAT.app.userCacheFileManager.updateSourceTree(false);
                             },
                             fail: function (e) {
+                                xmodal.loading.close();
                                 XNAT.ui.banner.top(5000, 'Unable to remove the file: ' + filePath + ' from the user cache.', 'error');
                             }
                         });
@@ -1027,44 +1138,6 @@ var XNAT = getObject(XNAT);
         totalFilesSpan.innerHTML = droppedFiles.length +  " files";
     }
 
-    userCacheFileManager.toggleFolder = function(event, folderPath, isSourcePane, expandedFoldersList) {
-        event.preventDefault();
-        const folderElement = event.currentTarget.parentElement;
-        const isExpanded = folderElement.getAttribute('data-expanded') === 'true';
-
-        if (isExpanded) {
-            userCacheFileManager.collapseFolder(folderElement, folderPath);
-        } else {
-            userCacheFileManager.expandFolder(folderElement, folderPath, isSourcePane, expandedFoldersList);
-        }
-    }
-
-    userCacheFileManager.expandFolder = function(folderElement, folderPath, isSourcePane, expandedFoldersList) {
-        folderElement.setAttribute('data-expanded', 'true');
-        if (expandedFoldersList.has(folderPath)) {
-                expandedFoldersList.delete(folderPath);
-        } else {
-            expandedFoldersList.add(folderPath);
-            if (!isSourcePane) {
-                userCacheFileManager.loadNode(folderElement);
-            }
-        }
-        if (isSourcePane) {
-            $('#sourceTree').empty();
-            $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
-        } else {
-            $('#destinationTree').empty();
-            $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
-            userCacheFileManager.setupDropZone();
-        }
-        folderElement.style.backgroundColor = '#e8f4fd';
-    }
-
-    userCacheFileManager.collapseFolder = function(folderElement, folderPath) {
-        folderElement.setAttribute('data-expanded', 'false');
-        folderElement.style.backgroundColor = '';
-    }
-
     userCacheFileManager.deleteFolderAction = function(folderPath, folderData) {
         const parsedData = JSON.parse(folderData.replace(/&quot;/g, '"'));
         let fileCount = 0;
@@ -1103,9 +1176,6 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    /*********************************************
-    / Code for Destination panel */
-
     const reviewRow = document.getElementById('reviewRow');
     const actionRow = document.getElementById('actionRow');
     const reviewBtn = document.getElementById('reviewBtn');
@@ -1141,88 +1211,6 @@ var XNAT = getObject(XNAT);
             .catch(error => {
                 console.error('Ingestion failed:', error);
             });
-    }
-
-    userCacheFileManager.updateDestinationTree = async function() {
-        var projects = await userCacheFileManager.fetchProjects();
-        const treeContainer = document.getElementById('destinationTree');
-        destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree();
-        expandedDestinationFolders.add(ARCHIVE_TREE_ROOT_NODE);
-        treeContainer.append(userCacheFileManager.renderDestinationTree(destinationStructure));
-    }
-
-    userCacheFileManager.convertXnatUserDataToFileTree =  function() {
-        var fileTree = {name: ARCHIVE_TREE_ROOT_NODE, type: "folder", xnatType: "archive", uri: ""};
-        fileTree.children = [];
-        userData['projects'].forEach(project => {
-            fileTree.children.push({name: project.name, type: "folder", xnatType: "project", uri: project.URI});
-        });
-        return fileTree;
-    }
-
-    userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon, title) {
-        let destButton =  spawn('button.btn.btn-sm', {
-            onclick: function (e) {
-                buttonAction(this);
-            },
-            title: title,
-            style: {color: 'black', border: 'none', cursor: 'pointer'},
-        }, [spawn(icon)]);
-        $(destButton).attr({'data-uri': nodeUri})
-        return destButton;
-    }
-
-    userCacheFileManager.renderDestinationTree = function(node, path = "", level = 0) {
-        let currentLevelDiv = spawn('div');
-        const folderPath = path + node.name;
-
-        if (node.type === 'folder') {
-            const isExpanded = expandedDestinationFolders.has(path + node.name);
-
-            let folderDiv = spawn('div');
-            $(folderDiv).attr({'class': "uce-destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
-               'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
-            folderDiv.append(spawn('span|class=uce-folder-toggle', {
-                onclick: function (e) {
-                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, false, expandedDestinationFolders);
-                },
-                'html': isExpanded ? '<i class="fa fa-minus"></i>' : '<i class="fa fa-plus"></i>'
-            }));
-            folderDiv.append(spawn('span|class=uce-folder-name', {
-                'html': node.name
-            }));
-            if (node.name === 'Resources') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder', 'Add Resource'))
-            } else if (node.name === 'Subjects') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewSubject, node.uri, 'i.fa.fa-user-plus', 'Add Subject'))
-            }  else if (node.name === 'Experiments') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewExperiment, node.uri, 'i.fa.fa-flask', 'Add Experiment'))
-            }  else if (node.name === 'Scans') {
-                folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewScan, node.uri, 'i.fa.fa-qrcode', 'Add Scan'))
-            }
-            currentLevelDiv.append(folderDiv);
-
-            if (isExpanded && node.children) {
-                let childrenDiv = spawn('div|class=uce-children');
-                for (let i = 0; i < node.children.length; i++){
-                    let child = node.children[i];
-                    $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1))
-                }
-                $(currentLevelDiv).append(childrenDiv);
-            }
-        } else {
-            let dropZoneDiv = spawn('div');
-            $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
-                'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
-            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
-                'html': '<i class="fa fa-dropbox"></i>'
-            }));
-            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
-                'html': 'Drop files here for ' + node.name
-            }));
-            currentLevelDiv.append(dropZoneDiv);
-        }
-        return currentLevelDiv;
     }
 
     userCacheFileManager.loadNode =  function(folderElement) {
@@ -1426,32 +1414,6 @@ var XNAT = getObject(XNAT);
         }
 
         return null;
-    }
-
-    /**
-     * Replaces a node with the given URI with a new node
-     * @param {Object|Array} data - The JSON data structure to search in
-     * @param {string} targetUri - The URI to search for
-     * @param {Object} newNode - The new node to replace with
-     * @returns {Object|null} - The old node that was replaced or null if not found
-     */
-    userCacheFileManager.replaceNodeByUri = function(data, targetUri, newNode) {
-        const result = userCacheFileManager.findNodeWithParent(data, targetUri);
-
-        if (!result || !result.parent) {
-            return null;
-        }
-
-        const { node, parent, parentKey } = result;
-        const oldNode = { ...node }; // Create a copy of the old node
-
-        if (Array.isArray(parent)) {
-            parent[parentKey] = newNode;
-        } else if (typeof parent === 'object') {
-            parent[parentKey] = newNode;
-        }
-
-        return oldNode;
     }
 
     userCacheFileManager.init = async function() {

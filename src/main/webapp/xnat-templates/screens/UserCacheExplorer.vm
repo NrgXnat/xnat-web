@@ -27,16 +27,6 @@
                     <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"></i> Upload</button>
                     <button class="uce-upload-btn" id="cancelUploadButton"><i class="fa fa-upload"></i> Cancel</button>
                 </div>
-
-                <div class="uce-progress-container" id="progressContainer">
-                    <div class="uce-progress-bar">
-                        <div class="uce-progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="uce-progress-text">
-                        <span class="uce-progress-status" id="progressStatus">Preparing upload...</span>
-                        <span class="uce-progress-percentage" id="progressPercentage">0%</span>
-                    </div>
-                </div>
             </div>
             <input type="file" id="zipFile" accept=".zip" />
         </div>
@@ -45,7 +35,7 @@
     <div class="uce-panels-container">
 
         <!-- Source Pane -->
-        <div class="uce-panel uce-left-panel">
+        <div class="uce-panel">
             <div class="uce-pane-header">
                 <span class="uce-icon"><i class="fa fa-folder"></i></span>
                 My Cache Folder
@@ -56,7 +46,7 @@
         </div>
 
         <!-- Destination Pane -->
-        <div class="uce-panel uce-right-panel">
+        <div class="uce-panel">
             <div class="uce-pane-header">
                 <span class="uce-icon"><i class="fa fa-folder"></i></span>
                 Destination
