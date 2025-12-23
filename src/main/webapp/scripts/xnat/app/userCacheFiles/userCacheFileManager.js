@@ -225,16 +225,6 @@ var XNAT = getObject(XNAT);
         return `${year}${month}${day}-${hours}${minutes}${seconds}`;
     }
 
-    userCacheFileManager.toggleUploadControls = function(show) {
-        const controls = document.getElementById('uploadControls');
-
-        if (show) {
-            controls.classList.add('uce-show');
-        } else {
-            controls.classList.remove('uce-show');
-        }
-    }
-
     userCacheFileManager.uploadFileToCache = async function(file) {
         if (isUploading) return;
 
@@ -267,7 +257,7 @@ var XNAT = getObject(XNAT);
                 throw new Error('Upload failed with status ' + response.status + ' : ' + response.statusText);
             }
 
-            XNAT.ui.banner.top(3000,'File uploaded successfully to ' + endpoint,'success');
+            XNAT.ui.banner.top(3000,'File uploaded successfully to: ' + endpoint,'success');
             userCacheFileManager.updateSourceTree(false);
             console.log('Upload of file ' + filename + ' to user cache successful');
             userCacheFileManager.resetUploadWidget();
@@ -286,10 +276,7 @@ var XNAT = getObject(XNAT);
            }
 
            XNAT.ui.banner.top(3000, errorMessage, 'error');
-
-           setTimeout(() => {
-               userCacheFileManager.resetUploadWidget();
-           }, 3000);
+           userCacheFileManager.resetUploadWidget();
         }
     }
 
@@ -307,7 +294,7 @@ var XNAT = getObject(XNAT);
         cancelUploadButton.disabled = false;
         zipFileInput.value = '';
 
-        userCacheFileManager.toggleUploadControls(false);
+        document.getElementById('uploadControls').classList.remove('uce-show');
     }
 
     userCacheFileManager.toggleMinimize = function() {
@@ -336,7 +323,7 @@ var XNAT = getObject(XNAT);
 
         fileNameEl.textContent = file.name;
         fileSizeEl.textContent = userCacheFileManager.formatFileSize(file.size);
-        userCacheFileManager.toggleUploadControls(true);
+        document.getElementById('uploadControls').classList.add('uce-show');
     }
 
     document.getElementById('zipFile').addEventListener('change', (e) => {
@@ -1073,13 +1060,13 @@ var XNAT = getObject(XNAT);
                             url: deleteUrl,
                             async: false,
                             success: function (data) {
-                                XNAT.ui.banner.top(3000,'Successfully removed file: ' + filePath + ' from cache.','success');
+                                XNAT.ui.banner.top(3000,'Successfully removed file ' + filePath + ' from cache.','success');
                                 XNAT.app.userCacheFileManager.updateSourceTree(false);
                                 XNAT.ui.dialog.closeAll();
                                 xmodal.loading.close();
                             },
                             fail: function (e) {
-                                XNAT.ui.banner.top(5000, 'Unable to remove the file: ' + filePath + ' from the user cache.', 'error');
+                                XNAT.ui.banner.top(5000, 'Unable to remove the file ' + filePath + ' from the user cache.', 'error');
                                 XNAT.ui.dialog.closeAll();
                                 xmodal.loading.close();
                             }
