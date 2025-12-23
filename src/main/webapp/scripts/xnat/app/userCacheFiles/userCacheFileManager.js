@@ -337,11 +337,6 @@ var XNAT = getObject(XNAT);
         fileNameEl.textContent = file.name;
         fileSizeEl.textContent = userCacheFileManager.formatFileSize(file.size);
         userCacheFileManager.toggleUploadControls(true);
-
-        if (isMinimized) {
-            userCacheFileManager.toggleMinimize();
-            XNAT.ui.banner.top(3000,'File selected: ' + file.name + '. Widget expanded for upload.','success');
-        }
     }
 
     document.getElementById('zipFile').addEventListener('change', (e) => {
@@ -349,7 +344,6 @@ var XNAT = getObject(XNAT);
         if (file) {
             selectedZipFile = file;
             userCacheFileManager.updateSelectedFileDisplay(file);
-            XNAT.ui.banner.top(3000,'ZIP file ' + file.name + ' selected. Click upload to send to server.','success');
         }
     });
 
@@ -400,7 +394,6 @@ var XNAT = getObject(XNAT);
         if (zipFiles.length > 0) {
             selectedZipFile = zipFiles[0];
             userCacheFileManager.updateSelectedFileDisplay(selectedZipFile);
-            XNAT.ui.banner.top(3000,'ZIP file ' + selectedZipFile.name + ' selected. Click upload to send to server.','success');
 
             const dt = new DataTransfer();
             dt.items.add(selectedZipFile);
@@ -1067,7 +1060,6 @@ var XNAT = getObject(XNAT);
 
         XNAT.ui.dialog.open({
             title: 'Confirm Deletion',
-            id: 'delete_cache_element',
             width: 350,
             content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
             buttons: [
@@ -1077,18 +1069,19 @@ var XNAT = getObject(XNAT);
                     close: false,
                     action: function(){
                         xmodal.loading.open({ title: 'Deleting element from cache...'});
-                        XNAT.ui.dialog.close("delete_cache_element");
                         XNAT.xhr.delete({
                             url: deleteUrl,
                             async: false,
                             success: function (data) {
-                                xmodal.loading.close();
                                 XNAT.ui.banner.top(3000,'Successfully removed file: ' + filePath + ' from cache.','success');
                                 XNAT.app.userCacheFileManager.updateSourceTree(false);
+                                XNAT.ui.dialog.closeAll();
+                                xmodal.loading.close();
                             },
                             fail: function (e) {
-                                xmodal.loading.close();
                                 XNAT.ui.banner.top(5000, 'Unable to remove the file: ' + filePath + ' from the user cache.', 'error');
+                                XNAT.ui.dialog.closeAll();
+                                xmodal.loading.close();
                             }
                         });
                     }
