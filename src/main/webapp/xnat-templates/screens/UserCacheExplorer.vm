@@ -24,8 +24,8 @@
                         <div class="uce-file-name" id="selectedFileName">No file selected</div>
                         <div class="uce-file-size" id="selectedFileSize"></div>
                     </div>
-                    <button class="uce-upload-btn" id="uploadBtn"><i class="fa fa-upload"></i> Upload</button>
-                    <button class="uce-upload-btn" id="cancelUploadButton"><i class="fa fa-upload"></i> Cancel</button>
+                    <button class="uce-upload-section-btn" id="uploadBtn"><i class="fa fa-upload"></i> Upload</button>
+                    <button class="uce-upload-section-btn" id="cancelUploadButton"><i class="fa fa-upload"></i> Cancel</button>
                 </div>
             </div>
             <input type="file" id="zipFile" accept=".zip" />

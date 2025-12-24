@@ -191,7 +191,7 @@ body {
     opacity: 0.8;
 }
 
-.uce-upload-btn {
+.uce-upload-section-btn {
     background: rgba(255, 255, 255, 0.9);
     color: #667eea;
     border: none;
@@ -203,13 +203,13 @@ body {
     font-size: 14px;
 }
 
-.uce-upload-btn:hover {
+.uce-upload-section-btn:hover {
     background: white;
     transform: translateY(-2px);
     box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
 }
 
-.uce-upload-btn:disabled {
+.uce-upload-section-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
@@ -234,15 +234,6 @@ div#uploadWidget {
     position: relative;
     overflow-y: auto;
     background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-.uce-panel h3 {
-    margin-bottom: 20px;
-    color: #333;
-    font-size: 20px;
-    text-align: center;
-    padding-bottom: 15px;
-    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 .uce-pane-header {
@@ -715,12 +706,6 @@ div#uploadWidget {
     visibility: hidden;
 }
 
-.folder-icon {
-    width: 16px;
-    height: 16px;
-    margin-right: 6px;
-    flex-shrink: 0;
-}
 
 .file-icon {
     width: 16px;
@@ -764,12 +749,6 @@ div#uploadWidget {
     color: #999;
     font-family: monospace;
     margin-top: 2px;
-}
-
-h1 {
-    color: #333;
-    margin-bottom: 20px;
-    font-size: 24px;
 }
 
 .stats {

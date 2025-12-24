@@ -112,7 +112,7 @@ var XNAT = getObject(XNAT);
             }
 
             const icon = document.createElement('span');
-            icon.className = isFolder ? 'folder-icon fa fa-folder' : 'file-icon fa fa-file';
+            icon.className = isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file';
 
             const name = document.createElement('span');
             name.className = 'item-name';
