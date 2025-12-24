@@ -621,7 +621,7 @@ var XNAT = getObject(XNAT);
             }
         } else  {
             let fileDiv = spawn('div');
-            $(fileDiv).attr({'class': "uce-file-item", 'data-path': path + node.name, 'data-filename': node.name,
+            $(fileDiv).attr({'class': "uce-folder-item source-file-item", 'data-path': path + node.name, 'data-filename': node.name,
                 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
             if (enableDrag) {
                 userCacheFileManager.createDragEvents(fileDiv);
@@ -711,11 +711,11 @@ var XNAT = getObject(XNAT);
             let dropZoneDiv = spawn('div');
             $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
                 'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
-            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
+            dropZoneDiv.append(spawn('span', {
                 'html': '<i class="fa fa-dropbox"></i>'
             }));
-            dropZoneDiv.append(spawn('span|class=uce-dropbox-icon', {
-                'html': 'Drop files here for ' + node.name
+            dropZoneDiv.append(spawn('span', {
+                'html': ' Drop files here for ' + node.name
             }));
             currentLevelDiv.append(dropZoneDiv);
         }

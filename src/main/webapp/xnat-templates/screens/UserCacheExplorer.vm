@@ -65,8 +65,7 @@
                 <!-- Row 1: Review Button -->
                 <div id="reviewRow" class="button-row review">
                     <button id="reviewBtn" class="btn ingestion-btn">
-                        <span class="uce-review-icon"></span>
-                        <span class="uce-review-text">Review and Ingest</span>
+                        <span class="uce-ingestion-text">Review and Ingest</span>
                         <span class="uce-total-files" id="totalFiles">0 files</span>
                     </button>
                 </div>
@@ -74,12 +73,10 @@
                 <!-- Row 2: Add More and Ingest Buttons -->
                 <div id="actionRow" class="button-row hidden">
                     <button id="addMoreBtn" class="btn ingestion-btn">
-                        <span class="uce-review-icon"></span>
-                        <span class="uce-review-text">Add More</span>
+                        <span class="uce-ingestion-text">Add More</span>
                     </button>
                     <button id="ingestBtn" class="btn ingestion-btn">
-                        <span class="uce-review-icon"></span>
-                        <span class="uce-review-text">Ingest</span>
+                        <span class="uce-ingestion-text">Ingest</span>
                     </button>
                 </div>
             </div>
