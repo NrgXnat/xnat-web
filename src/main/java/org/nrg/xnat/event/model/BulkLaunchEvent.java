@@ -10,6 +10,10 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.Serial;
 
+/**
+ * @deprecated As of release 1.10. It will be removed in a future version.
+ */
+@Deprecated
 public class BulkLaunchEvent implements TrackableEvent {
     @Serial
     private static final long serialVersionUID = 1;
