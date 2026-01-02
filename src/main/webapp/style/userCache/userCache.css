@@ -571,6 +571,11 @@ div#uploadWidget {
     background-color: #d0d0d0;
 }
 
+.filter-input {
+    padding: 5px 7px;
+    width: 50%;
+}
+
 .uce-pane.sticky-button {
     display: flex;
     flex-direction: column;

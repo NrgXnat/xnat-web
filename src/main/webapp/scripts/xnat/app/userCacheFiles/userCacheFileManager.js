@@ -484,6 +484,7 @@ var XNAT = getObject(XNAT);
 
     let expandedSourceFolders = new Set();
     let expandedDestinationFolders = new Set();
+    let filteredDestinationFolders = {};
     let selectedPath = {};
     let selectLevels = ['project', 'project_resource', 'subject', 'subject_resource', 'session', 'session_resource', 'scan', 'scan_resource'];
     let droppedFiles = [];
@@ -669,6 +670,21 @@ var XNAT = getObject(XNAT);
         return destButton;
     }
 
+    userCacheFileManager.createFilterElement = (event) => {
+        if (event.key != "Enter") {
+            return;
+        }
+        let filter = event.target.value;
+        let folderElementPath = event.currentTarget.parentElement.getAttribute('data-path');
+        if (filter === '') {
+            delete filteredDestinationFolders[folderElementPath];
+        } else {
+            filteredDestinationFolders[folderElementPath] = filter;
+        }
+        $('#destinationTree').empty();
+        $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
+    }
+
     userCacheFileManager.renderDestinationTree = function(node, path = "", level = 0) {
         let currentLevelDiv = spawn('div');
         const folderPath = path + node.name;
@@ -688,6 +704,21 @@ var XNAT = getObject(XNAT);
             folderDiv.append(spawn('span|class=uce-folder-name', {
                 'html': node.name
             }));
+            if (node.name === 'Resources' || node.name === 'Projects' || node.name === 'Subjects' || node.name === 'Experiments' || node.name === 'Scans') {
+                let inputFilterValue = '';
+                if (filteredDestinationFolders.hasOwnProperty(folderPath)) {
+                    inputFilterValue = filteredDestinationFolders[folderPath];
+                }
+                let filterInput = spawn('input|class=filter-input', {
+                    name: 'filter_folder',
+                    placeholder: 'Filter folder elements',
+                    title: 'Use the enter key to filter folder contents',
+                    value: inputFilterValue
+                })
+                filterInput.addEventListener('keyup', userCacheFileManager.createFilterElement);
+                folderDiv.append(filterInput);
+            }
+
             if (node.name === 'Resources') {
                 folderDiv.append(userCacheFileManager.createDestinationTreeButton(XNAT.app.userCacheFileManager.addNewResource, node.uri, 'i.fa.fa-folder', 'Add Resource'))
             } else if (node.name === 'Subjects') {
@@ -703,7 +734,13 @@ var XNAT = getObject(XNAT);
                 let childrenDiv = spawn('div|class=uce-children');
                 for (let i = 0; i < node.children.length; i++){
                     let child = node.children[i];
-                    $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1))
+                    if (filteredDestinationFolders.hasOwnProperty(folderPath)) {
+                        if (child.name.toLowerCase().includes(filteredDestinationFolders[folderPath].toLowerCase())) {
+                             $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1));
+                        }
+                    } else {
+                        $(childrenDiv).append(userCacheFileManager.renderDestinationTree(child, path + node.name + '/', level + 1));
+                    }
                 }
                 $(currentLevelDiv).append(childrenDiv);
             }
