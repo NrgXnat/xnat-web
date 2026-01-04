@@ -489,36 +489,6 @@ var XNAT = getObject(XNAT);
     let selectLevels = ['project', 'project_resource', 'subject', 'subject_resource', 'session', 'session_resource', 'scan', 'scan_resource'];
     let droppedFiles = [];
 
-    function getFileIcon(fileName) {
-        const ext = fileName.split('.').pop().toLowerCase();
-        const icons = {
-            'txt': '<i class="fa fa-file-text-o"></i>',
-            'pdf': '<i class="fa fa-file-pdf-o"></i>',
-            'html': '<i class="fa fa-file-text-o"></i>',
-            'css': '<i class="fa fa-file-text-o"></i>',
-            'js': '<i class="fa fa-file-text-o"></i>',
-            'jpg': '<i class="fa fa-file-image-o"></i>',
-            'png': '<i class="fa fa-file-image-o"></i>',
-            'gif': '<i class="fa fa-file-image-o"></i>',
-            'docx': '<i class="fa fa-file-word-o"></i>',
-            'pptx': '<i class="fa fa-file-ppt-o"></i>',
-            'xlsx': '<i class="fa fa-file-xls-o"></i>',
-            'json': '<i class="fa fa-file-text-o"></i>',
-            'zip': '<i class="fa fa-file-zip-o"></i>',
-            'exe': '<i class="fa fa-file-code-o"></i>'
-        };
-        return icons[ext] || '<i class="fa fa-file"></i>';
-    }
-
-    userCacheFileManager.createDragEvents = function(div) {
-        div.addEventListener('dragstart', (e) => {
-            XNAT.app.userCacheFileManager.handleDragStart(event)
-        });
-        div.addEventListener('dragend', (e) => {
-            XNAT.app.userCacheFileManager.handleDragEnd(event)
-        });
-    }
-
     userCacheFileManager.validateForm = function() {
         const resourceLevel = document.getElementById('resourceLevel').value;
         const project = document.getElementById('projectSelect').value;
@@ -571,6 +541,54 @@ var XNAT = getObject(XNAT);
             title: "Delete from cache",
             style: {color: 'black', border: 'none', cursor: 'pointer'}
         }, [spawn('i.fa.fa-trash')]);
+    }
+
+    userCacheFileManager.removeFileFromCache = function(filePath, absolutePath) {
+        let urlTail = 'data/user/cache/resources/';
+        let xnatFullPath = filePath.replace(CACHE_TREE_ROOT_NODE + '/', '');
+        let partsArr = xnatFullPath.split('/');
+        let resourceName = partsArr[0];
+        urlTail += resourceName;
+        let relativeFilePath = userCacheFileManager.getRelativePath(xnatFullPath);
+        if (relativeFilePath !== '') {
+            urlTail += '/files/' + relativeFilePath;
+        }
+        let deleteUrl = XNAT.url.csrfUrl(urlTail,{},false,false);
+
+        XNAT.ui.dialog.open({
+            title: 'Confirm Deletion',
+            width: 350,
+            content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
+            buttons: [
+                {
+                    label: 'Confirm Delete',
+                    isDefault: true,
+                    close: false,
+                    action: function(){
+                        xmodal.loading.open({ title: 'Deleting element from cache...'});
+                        XNAT.xhr.delete({
+                            url: deleteUrl,
+                            async: false,
+                            success: function (data) {
+                                XNAT.ui.banner.top(3000,'Successfully removed file ' + filePath + ' from cache.','success');
+                                XNAT.app.userCacheFileManager.updateSourceTree(false);
+                                XNAT.ui.dialog.closeAll();
+                                xmodal.loading.close();
+                            },
+                            fail: function (e) {
+                                XNAT.ui.banner.top(5000, 'Unable to remove the file ' + filePath + ' from the user cache.', 'error');
+                                XNAT.ui.dialog.closeAll();
+                                xmodal.loading.close();
+                            }
+                        });
+                    }
+                },
+                {
+                    label: 'Cancel',
+                    close: true
+                }
+            ]
+        })
     }
 
     userCacheFileManager.updateSourceTree = function(initialRendering) {
@@ -685,6 +703,57 @@ var XNAT = getObject(XNAT);
         $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));
     }
 
+    userCacheFileManager.parseXnatUri = function(path, component) {
+        const patterns = {
+            project: /\/projects\/([^\/]+)/,
+            subject: /\/subjects\/([^\/]+)/,
+            experiment: /\/experiments\/([^\/]+)/,
+            scan: /\/scans\/([^\/]+)/
+        };
+
+        if (!patterns[component]) {
+            console.error('Invalid component: ' + component + '. Must be "project", "subject", or "experiment" or "scan."');
+            return null;
+        }
+        const match = path.match(patterns[component]);
+        return match ? match[1] : null;
+    }
+
+    userCacheFileManager.parseUri = function(path) {
+        return {
+            project: userCacheFileManager.parseXnatUri(path, 'project'),
+            subject: userCacheFileManager.parseXnatUri(path, 'subject'),
+            experiment: userCacheFileManager.parseXnatUri(path, 'experiment'),
+            scan: userCacheFileManager.parseXnatUri(path, 'scan')
+        };
+    }
+
+    userCacheFileManager.addNewResource = function(element) {
+        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
+    }
+
+    userCacheFileManager.addNewSubject = function(element) {
+        const uriParts = userCacheFileManager.parseUri(element.getAttribute("data-uri"));
+        window.create_subject_link = "$link.setPage('XDATScreen_edit_xnat_subjectData.vm').addPathInfo('popup','true')";
+        const project = uriParts.project;
+        if ((project == null) ) {
+            xmodal.message('Create Subject', 'Please Add Yourself as a "Member" of the $displayManager.getSingularDisplayNameForProject().');
+            return;
+        }
+        window.create_subject_link += "/project/" + project + "/destination/JS_Parent_Return.vm";
+        this.subjectForm = popupCentered(window.create_subject_link,'Subject',610,800,10,'status=yes,resizable=yes,scrollbars=yes,toolbar=no');
+        if (this.subjectForm.opener == null) this.subjectForm.opener = self;
+        return this.subjectForm;
+    }
+
+    userCacheFileManager.addNewExperiment = function(element) {
+        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
+    }
+
+    userCacheFileManager.addNewScan = function(element) {
+        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
+    }
+
     userCacheFileManager.renderDestinationTree = function(node, path = "", level = 0) {
         let currentLevelDiv = spawn('div');
         const folderPath = path + node.name;
@@ -711,7 +780,7 @@ var XNAT = getObject(XNAT);
                 }
                 let filterInput = spawn('input|class=filter-input', {
                     name: 'filter_folder',
-                    placeholder: 'Filter folder elements',
+                    placeholder: 'Filter elements within folder',
                     title: 'Use the enter key to filter folder contents',
                     value: inputFilterValue
                 })
@@ -797,6 +866,14 @@ var XNAT = getObject(XNAT);
         folderElement.style.backgroundColor = '';
     }
 
+    userCacheFileManager.createDragEvents = function(div) {
+        div.addEventListener('dragstart', (e) => {
+            XNAT.app.userCacheFileManager.handleDragStart(event)
+        });
+        div.addEventListener('dragend', (e) => {
+            XNAT.app.userCacheFileManager.handleDragEnd(event)
+        });
+    }
 
     userCacheFileManager.handleDragStart = function(e) {
         const fileName = e.target.dataset.filename;
@@ -1043,105 +1120,6 @@ var XNAT = getObject(XNAT);
             item && item.sourcePath && item.sourcePath !== sourcePath);
             userCacheFileManager.updateAssociatedFileTree();
             userCacheFileManager.updateFileCount();
-    }
-
-    userCacheFileManager.parseXnatUri = function(path, component) {
-        const patterns = {
-            project: /\/projects\/([^\/]+)/,
-            subject: /\/subjects\/([^\/]+)/,
-            experiment: /\/experiments\/([^\/]+)/,
-            scan: /\/scans\/([^\/]+)/
-        };
-
-        if (!patterns[component]) {
-            console.error('Invalid component: ' + component + '. Must be "project", "subject", or "experiment" or "scan."');
-            return null;
-        }
-        const match = path.match(patterns[component]);
-        return match ? match[1] : null;
-    }
-
-    userCacheFileManager.parseUri = function(path) {
-        return {
-            project: userCacheFileManager.parseXnatUri(path, 'project'),
-            subject: userCacheFileManager.parseXnatUri(path, 'subject'),
-            experiment: userCacheFileManager.parseXnatUri(path, 'experiment'),
-            scan: userCacheFileManager.parseXnatUri(path, 'scan')
-        };
-    }
-
-    userCacheFileManager.removeFileFromCache = function(filePath, absolutePath) {
-        let urlTail = 'data/user/cache/resources/';
-        let xnatFullPath = filePath.replace(CACHE_TREE_ROOT_NODE + '/', '');
-        let partsArr = xnatFullPath.split('/');
-        let resourceName = partsArr[0];
-        urlTail += resourceName;
-        let relativeFilePath = userCacheFileManager.getRelativePath(xnatFullPath);
-        if (relativeFilePath !== '') {
-            urlTail += '/files/' + relativeFilePath;
-        }
-        let deleteUrl = XNAT.url.csrfUrl(urlTail,{},false,false);
-
-        XNAT.ui.dialog.open({
-            title: 'Confirm Deletion',
-            width: 350,
-            content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
-            buttons: [
-                {
-                    label: 'Confirm Delete',
-                    isDefault: true,
-                    close: false,
-                    action: function(){
-                        xmodal.loading.open({ title: 'Deleting element from cache...'});
-                        XNAT.xhr.delete({
-                            url: deleteUrl,
-                            async: false,
-                            success: function (data) {
-                                XNAT.ui.banner.top(3000,'Successfully removed file ' + filePath + ' from cache.','success');
-                                XNAT.app.userCacheFileManager.updateSourceTree(false);
-                                XNAT.ui.dialog.closeAll();
-                                xmodal.loading.close();
-                            },
-                            fail: function (e) {
-                                XNAT.ui.banner.top(5000, 'Unable to remove the file ' + filePath + ' from the user cache.', 'error');
-                                XNAT.ui.dialog.closeAll();
-                                xmodal.loading.close();
-                            }
-                        });
-                    }
-                },
-                {
-                    label: 'Cancel',
-                    close: true
-                }
-            ]
-        })
-    }
-
-    userCacheFileManager.addNewResource = function(element) {
-        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
-    }
-
-    userCacheFileManager.addNewSubject = function(element) {
-        const uriParts = userCacheFileManager.parseUri(element.getAttribute("data-uri"));
-        window.create_subject_link = "$link.setPage('XDATScreen_edit_xnat_subjectData.vm').addPathInfo('popup','true')";
-        const project = uriParts.project;
-        if ((project == null) ) {
-            xmodal.message('Create Subject', 'Please Add Yourself as a "Member" of the $displayManager.getSingularDisplayNameForProject().');
-            return;
-        }
-        window.create_subject_link += "/project/" + project + "/destination/JS_Parent_Return.vm";
-        this.subjectForm = popupCentered(window.create_subject_link,'Subject',610,800,10,'status=yes,resizable=yes,scrollbars=yes,toolbar=no');
-        if (this.subjectForm.opener == null) this.subjectForm.opener = self;
-        return this.subjectForm;
-    }
-
-    userCacheFileManager.addNewExperiment = function(element) {
-        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
-    }
-
-    userCacheFileManager.addNewScan = function(element) {
-        console.log(userCacheFileManager.parseUri(element.getAttribute("data-uri")));
     }
 
     userCacheFileManager.getRelativePath = function(fullPath) {
@@ -1440,4 +1418,25 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.init();
     return XNAT.app.userCacheFileManager = userCacheFileManager;
-}))
+}));
+
+function getFileIcon(fileName) {
+    const ext = fileName.split('.').pop().toLowerCase();
+    const icons = {
+        'txt': '<i class="fa fa-file-text-o"></i>',
+        'pdf': '<i class="fa fa-file-pdf-o"></i>',
+        'html': '<i class="fa fa-file-text-o"></i>',
+        'css': '<i class="fa fa-file-text-o"></i>',
+        'js': '<i class="fa fa-file-text-o"></i>',
+        'jpg': '<i class="fa fa-file-image-o"></i>',
+        'png': '<i class="fa fa-file-image-o"></i>',
+        'gif': '<i class="fa fa-file-image-o"></i>',
+        'docx': '<i class="fa fa-file-word-o"></i>',
+        'pptx': '<i class="fa fa-file-ppt-o"></i>',
+        'xlsx': '<i class="fa fa-file-xls-o"></i>',
+        'json': '<i class="fa fa-file-text-o"></i>',
+        'zip': '<i class="fa fa-file-zip-o"></i>',
+        'exe': '<i class="fa fa-file-code-o"></i>'
+    };
+    return icons[ext] || '<i class="fa fa-file"></i>';
+    }
