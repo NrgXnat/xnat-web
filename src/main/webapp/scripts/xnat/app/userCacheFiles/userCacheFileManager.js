@@ -54,6 +54,47 @@ var XNAT = getObject(XNAT);
             }
         }
 
+        deleteElementFromIngestionTree(nodeForDeletion) {
+            const traverseForDeletion = (inputNodes) => {
+                this.data.forEach(node => {
+                    if (node.children) {
+                        let nodeFound = false;
+                        let nodesWithCorrectPath = [];
+                        for(let i =0; i < node.children.length; i++) {
+                            let child = node.children[i];
+                            if (child.absolutePath === nodeForDeletion.absolutePath && child.destPath === nodeForDeletion.destPath) {
+                                delete node.children[i];
+                                nodeFound = true;
+                                break;
+                            } else if (nodeForDeletion.absolutePath.includes(child.absolutePath) && nodeForDeletion.destPath.includes(child.destPath)) {
+                                nodesWithCorrectPath.push(child);
+                            }
+                        }
+                        if (nodeFound) {
+                            this.data = droppedFiles;
+                            this.render();
+                            this.updateStats();
+                            return;
+                        } else if (nodesWithCorrectPath.length != 0){
+                            traverseForDeletion(nodesWithCorrectPath);
+                        }
+                    }
+                });
+            };
+            traverseForDeletion(droppedFiles);
+        }
+
+        createIngestionTreeDeleteButton(node) {
+            let containingObject = this;
+            return spawn('button.btn.btn-sm.delete-cache-element', {
+                onclick: function (e) {
+                    containingObject.deleteElementFromIngestionTree(node, containingObject);
+                },
+                title: "Remove from ingestion tree",
+                style: {color: 'black', border: 'none', cursor: 'pointer'}
+            }, [spawn('i.fa.fa-trash')]);
+        }
+
         createTreeNode(node, path = '', level = 0) {
             const nodeId = (path + '/' + node.name + '-' + node.destPath).replace(/^\//, '');
             const hasChildren = node.children && node.children.length > 0;
@@ -73,22 +114,20 @@ var XNAT = getObject(XNAT);
                     this.render();
                 });
             }
+            itemDiv.appendChild(expandIcon);
 
-            const icon = spawn('span|class= ' + (isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file'));
-            const name = spawn('span|class=item-name', {'html': node.name});
+            itemDiv.appendChild(spawn('span|class= ' + (isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file')));
+            itemDiv.appendChild(spawn('span|class=item-name', {'html': node.name}));
             const info = spawn('span|class=item-info ' + (isFolder ? '' : 'file-info'));
 
             let infoText = [];
             if (node.size) infoText.push(formatFileSize(node.size));
             info.textContent = infoText.join(' ');
 
-            itemDiv.appendChild(expandIcon);
-            itemDiv.appendChild(icon);
-            itemDiv.appendChild(name);
             if (infoText.length > 0) {
                 itemDiv.appendChild(info);
             }
-
+            itemDiv.append(this.createIngestionTreeDeleteButton(node));
             nodeDiv.appendChild(itemDiv);
 
             if (node.destPath) {
@@ -955,12 +994,14 @@ var XNAT = getObject(XNAT);
                     const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                     if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
                         folderChildren.forEach(child => {
-                            const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
-                            const childItem = {
-                                ...child,
-                                destPath: childDestPath
-                            };
-                            item.children.push(childItem);
+                            if (item.children.filter((cld) => cld.absolutePath == child.absolutePath).length == 0) {
+                                const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
+                                const childItem = {
+                                    ...child,
+                                    destPath: childDestPath
+                                };
+                                item.children.push(childItem);
+                            }
                         });
                     }
                 }
@@ -1109,10 +1150,10 @@ var XNAT = getObject(XNAT);
         console.log("To ingest " + JSON.stringify(populatedJsonArray));
         userCacheFileManager.submitToIngest(populatedJsonArray)
             .then(result => {
-                console.log('Ingestion completed:', result);
+                XNAT.ui.banner.top(3000,'Successfully ingested files into XNAT.' ,'success');
             })
             .catch(error => {
-                console.error('Ingestion failed:', error);
+                XNAT.ui.banner.top(3000, error, 'error');
             });
     }
 
