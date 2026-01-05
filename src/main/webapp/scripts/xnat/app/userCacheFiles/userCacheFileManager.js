@@ -1319,16 +1319,6 @@ var XNAT = getObject(XNAT);
         return true;
     }
 
-    userCacheFileManager.isNodeLoaded = function(data, targetUri) {
-        const node = userCacheFileManager.findNodeByUri(data, targetUri);
-
-        if(node || !node.children || node.children.length===0) {
-            return false;
-        }
-
-        return true;
-    }
-
     /**
     * Finds a node and returns both the node reference and its parent for advanced modification
     * @param {Object|Array} data - The JSON data structure to search in
