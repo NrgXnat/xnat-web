@@ -37,12 +37,12 @@ public class IngestApi extends AbstractXapiRestController {
     @XapiRequestMapping(value = "/ingest", method = POST)
     @ApiOperation(value = "Ingest Data")
     public ResponseEntity<Void> ingest(final @RequestBody String ingestJson) throws NotFoundException, IOException {
-        final UserI userI = getSessionUser();
+        final UserI user = getSessionUser();
         //TODO add security to access and destination
         ObjectMapper mapper = new ObjectMapper();
         FileItem[] items = mapper.readValue(ingestJson, FileItem[].class);
         FileCopyUtils fileCopyUtils = new FileCopyUtils();
-        fileCopyUtils.processJsonFile(items);
+        fileCopyUtils.processJsonFile(items, user);
         return ResponseEntity.ok().build();
     }
 

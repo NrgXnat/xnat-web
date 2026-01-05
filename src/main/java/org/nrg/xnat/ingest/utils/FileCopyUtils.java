@@ -1,6 +1,8 @@
 package org.nrg.xnat.ingest.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xft.security.UserI;
 import org.nrg.xnat.ingest.model.pojo.FileItem;
 
 import java.io.IOException;
@@ -8,6 +10,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,18 +22,25 @@ import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
 @Slf4j
 public class FileCopyUtils {
 
+    //possible data input regex patterns
+    List<String> regexPatternsForInputs = Arrays.asList(
+            ".*/projects/([^/]+)/resources/([^/]+).*",
+            ".*/projects/([^/]+)/subjects/([^/]+)/resources/([^/]+).*",
+            ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/resources/([^/]+).*",
+            ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/scans/([^/]+)/resources/([^/]+).*");
 
-    public void processJsonFile(final FileItem[] items) throws IOException {
+
+    public void processJsonFile(final FileItem[] items, UserI user) throws IOException {
         if (items ==null || items.length == 0) {
             return;
         }
 
         for (FileItem item : items) {
-            processItem(item);
+            processItem(item, user);
         }
     }
 
-    private  void processItem(FileItem item) throws IOException {
+    private  void processItem(FileItem item, UserI user) throws IOException {
         String type = item.getType();
         String absolutePath = item.getEffectiveAbsolutePath();
         String destPath = item.getDestPath();
@@ -39,7 +51,7 @@ public class FileCopyUtils {
             return;
         }
 
-        String xnatArchiveDestinationPath = translatePathToArchivePath(destPath);
+        String xnatArchiveDestinationPath = translatePathToArchivePath(destPath, user);
 
         Path source = Paths.get(absolutePath);
         Path destination = Paths.get(xnatArchiveDestinationPath);
@@ -55,7 +67,7 @@ public class FileCopyUtils {
         // Process children recursively if they exist
         if (item.getChildren() != null && !item.getChildren().isEmpty()) {
             for (FileItem child : item.getChildren()) {
-                processItem(child);
+                processItem(child, user);
             }
         }
     }
@@ -98,20 +110,19 @@ public class FileCopyUtils {
                 });
     }
 
-    private String translatePathToArchivePath(final String destinationPath) {
+    private String translatePathToArchivePath(final String destinationPath, UserI user) {
         XnatUriComponents uriComponents = parseUriWithRegex(destinationPath);
+
+        final XnatProjectdata projectData = XnatProjectdata.getProjectByIDorAlias(uriComponents.getProjectId(), user,
+                                                                                  false);
 
         return new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
                 .append(uriComponents.getProjectId())
-                .append("subjects")
-                .append("S1")
-                .append("experiments")
-                .append("77_9654603")
-                .append("scans")
-                .append("301")
-                .append("resources")
-                .append("DICOM")
-                .append("file.dcm")
+                .append(projectData.getCurrentArc())
+                .append(uriComponents.getExperimentId())
+                .append("SCANS")
+                .append(uriComponents.getScanId())
+                .append(uriComponents.getResourceId())
                 .build();
     }
 
@@ -120,7 +131,6 @@ public class FileCopyUtils {
             return null;
         }
 
-        // Regex pattern to match XNAT URI structure
         String pattern = ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/scans/([^/]+)/resources/([^/]+).*";
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(uri);
