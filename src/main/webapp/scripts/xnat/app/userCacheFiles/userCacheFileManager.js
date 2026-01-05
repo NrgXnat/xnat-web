@@ -42,37 +42,8 @@ var XNAT = getObject(XNAT);
             this.data = data;
             this.container = container;
             this.expandedNodes = new Set();
-            this.init();
-        }
-
-        init() {
             this.render();
             this.updateStats();
-        }
-
-        formatSize(bytes) {
-            if (!bytes) return '';
-            const units = ['B', 'KB', 'MB', 'GB'];
-            let size = bytes;
-            let unit = 0;
-            while (size >= 1024 && unit < units.length - 1) {
-                size /= 1024;
-                unit++;
-            }
-            return String(size.toFixed(1) + units[unit]);
-        }
-
-        formatDate(dateString) {
-            if (!dateString) return '';
-            return new Date(dateString).toLocaleDateString();
-        }
-
-        hasChildren(node) {
-            return node.children && node.children.length > 0;
-        }
-
-        isExpanded(nodeId) {
-            return this.expandedNodes.has(nodeId);
         }
 
         toggleExpand(nodeId) {
@@ -83,14 +54,10 @@ var XNAT = getObject(XNAT);
             }
         }
 
-        generateNodeId(node, path = '') {
-            return (path + '/' + node.name + '-' + node.destPath).replace(/^\//, '');
-        }
-
         createTreeNode(node, path = '', level = 0) {
-            const nodeId = this.generateNodeId(node, path);
-            const hasChildren = this.hasChildren(node);
-            const isExpanded = this.isExpanded(nodeId);
+            const nodeId = (path + '/' + node.name + '-' + node.destPath).replace(/^\//, '');
+            const hasChildren = node.children && node.children.length > 0;
+            const isExpanded = this.expandedNodes.has(nodeId);
             const isFolder = node.type === 'folder';
 
             const nodeDiv = spawn('div|class=tree-node');
@@ -107,16 +74,12 @@ var XNAT = getObject(XNAT);
                 });
             }
 
-            const icon = spawn('span');
-            $(icon).attr({'class': isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file'});
-
+            const icon = spawn('span|class= ' + (isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file'));
             const name = spawn('span|class=item-name', {'html': node.name});
-
-            const info = spawn('span');
-            $(info).attr({'class': 'item-info ' + (isFolder ? '' : 'file-info')});
+            const info = spawn('span|class=item-info ' + (isFolder ? '' : 'file-info'));
 
             let infoText = [];
-            if (node.size) infoText.push(this.formatSize(node.size));
+            if (node.size) infoText.push(formatFileSize(node.size));
             info.textContent = infoText.join(' ');
 
             itemDiv.appendChild(expandIcon);
@@ -133,14 +96,12 @@ var XNAT = getObject(XNAT);
             }
 
             if (hasChildren) {
-                const childrenDiv = document.createElement('div');
-                childrenDiv.className = 'tree-children ' + (isExpanded ? 'expanded' : '');
+                const childrenDiv = spawn('div|class=tree-children '+ (isExpanded ? 'expanded' : ''));
 
                 node.children.forEach(child => {
                     const childNode = this.createTreeNode(child, nodeId, level + 1);
                     childrenDiv.appendChild(childNode);
                 });
-
                 nodeDiv.appendChild(childrenDiv);
             }
 
@@ -187,7 +148,7 @@ var XNAT = getObject(XNAT);
            //     <strong>Summary:</strong>
            //     ${stats.folders} folders,
            //     ${stats.files} files,
-           //     Total size: ${this.formatSize(stats.totalSize)}
+           //     Total size: ${formatFileSize(stats.totalSize)}
            // `;
            console.log(JSON.stringify(stats));
         }
@@ -195,26 +156,6 @@ var XNAT = getObject(XNAT);
 
     let isUploading = false;
     let isMinimized = false;
-
-    userCacheFileManager.formatFileSize = function(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
-
-    userCacheFileManager.generateTimestamp = function() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        const seconds = String(now.getSeconds()).padStart(2, '0');
-
-        return `${year}${month}${day}-${hours}${minutes}${seconds}`;
-    }
 
     userCacheFileManager.uploadFileToCache = async function(file) {
         if (isUploading) return;
@@ -230,7 +171,7 @@ var XNAT = getObject(XNAT);
         xmodal.loading.open({ title: 'Uploading data to cache...'});
 
         try {
-            const timestamp = userCacheFileManager.generateTimestamp();
+            const timestamp = generateTimestamp();
             const filename = encodeURIComponent(file.name);
             const endpoint = serverRoot + '/data/user/cache/resources/' + timestamp + '/files/' + filename;
             let uploadUrl = XNAT.url.csrfUrl(endpoint,{extract: true},false,false);
@@ -248,7 +189,7 @@ var XNAT = getObject(XNAT);
                 throw new Error('Upload failed with status ' + response.status + ' : ' + response.statusText);
             }
 
-            XNAT.ui.banner.top(3000,'File uploaded successfully to: ' + endpoint,'success');
+            XNAT.ui.banner.top(3000,'File uploaded successfully to cache. Check the cache tree to stage it for ingestion.' ,'success');
             userCacheFileManager.updateSourceTree(false);
             console.log('Upload of file ' + filename + ' to user cache successful');
             userCacheFileManager.resetUploadWidget();
@@ -313,7 +254,7 @@ var XNAT = getObject(XNAT);
         const fileSizeEl = document.getElementById('selectedFileSize');
 
         fileNameEl.textContent = file.name;
-        fileSizeEl.textContent = userCacheFileManager.formatFileSize(file.size);
+        fileSizeEl.textContent = formatFileSize(file.size);
         document.getElementById('uploadControls').classList.add('uce-show');
     }
 
@@ -1350,6 +1291,13 @@ function getFileIcon(fileName) {
     return icons[ext] || '<i class="fa fa-file"></i>';
 }
 
+function generateTimestamp() {
+    const now = new Date();
+    return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + '-' + String(now.getHours()).padStart(2, '0') +
+        String(now.getMinutes()).padStart(2, '0') + String(now.getSeconds()).padStart(2, '0');
+}
+
 function sortAlphabetically(data) {
     data.sort((a, b) => {
         var nameA, nameB;
@@ -1373,3 +1321,10 @@ function sortAlphabetically(data) {
     });
 }
 
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
