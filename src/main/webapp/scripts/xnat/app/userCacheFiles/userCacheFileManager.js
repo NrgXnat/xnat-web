@@ -93,15 +93,11 @@ var XNAT = getObject(XNAT);
             const isExpanded = this.isExpanded(nodeId);
             const isFolder = node.type === 'folder';
 
-            const nodeDiv = document.createElement('div');
-            nodeDiv.className = 'tree-node';
+            const nodeDiv = spawn('div|class=tree-node');
+            const itemDiv = spawn('div|class=tree-item');
 
-            const itemDiv = document.createElement('div');
-            itemDiv.className = 'tree-item';
-
-            // Expand/collapse icon
-            const expandIcon = document.createElement('span');
-            expandIcon.className = `expand-icon ${hasChildren ? (isExpanded ? 'expanded fa fa-minus' : ' fa fa-plus') : 'no-children'}`;
+            const expandIcon = spawn('span');
+            $(expandIcon).attr({'class': 'expand-icon ' + (hasChildren ? (isExpanded ? 'expanded fa fa-minus' : ' fa fa-plus') : 'no-children')});
 
             if (hasChildren) {
                 expandIcon.addEventListener('click', (e) => {
@@ -111,15 +107,13 @@ var XNAT = getObject(XNAT);
                 });
             }
 
-            const icon = document.createElement('span');
-            icon.className = isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file';
+            const icon = spawn('span');
+            $(icon).attr({'class': isFolder ? 'file-icon fa fa-folder' : 'file-icon fa fa-file'});
 
-            const name = document.createElement('span');
-            name.className = 'item-name';
-            name.textContent = node.name;
+            const name = spawn('span|class=item-name', {'html': node.name});
 
-            const info = document.createElement('span');
-            info.className = 'item-info ' + (isFolder ? '' : 'file-info');
+            const info = spawn('span');
+            $(info).attr({'class': 'item-info ' + (isFolder ? '' : 'file-info')});
 
             let infoText = [];
             if (node.size) infoText.push(this.formatSize(node.size));
@@ -135,10 +129,7 @@ var XNAT = getObject(XNAT);
             nodeDiv.appendChild(itemDiv);
 
             if (node.destPath) {
-                const pathDiv = document.createElement('div');
-                pathDiv.className = 'tree-path';
-                pathDiv.textContent = node.destPath || '';
-                nodeDiv.appendChild(pathDiv);
+                nodeDiv.appendChild(spawn('div|class=tree-path', node.destPath || ''));
             }
 
             if (hasChildren) {
@@ -390,75 +381,6 @@ var XNAT = getObject(XNAT);
         }
     });
 
-    userCacheFileManager.fetchData = function(url) {
-        let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
-        var responseData = {};
-        responseData["ResultSet"] = {};
-        responseData["ResultSet"]["Result"] = [];
-        XNAT.xhr.get({
-            url: dataUrl,
-            async: false,
-            success: function (data) {
-                responseData = data;
-            },
-            fail: function (e) {
-                XNAT.ui.banner.top(5000, 'Unable to fetch data from: ' + url, 'error');
-            }
-        });
-        return responseData;
-    }
-
-    userCacheFileManager.sortAlphabetically = function(data) {
-        data.sort((a, b) => {
-            var nameA, nameB;
-            if (a.name) {
-                nameA = a.name.toUpperCase();
-                nameB = b.name.toUpperCase();
-            } else if (a.label) {
-                nameA = a.label.toUpperCase();
-                nameB = b.label.toUpperCase();
-            } else {
-                nameA = a.ID.toUpperCase();
-                nameB = b.ID.toUpperCase();
-            }
-            if (nameA < nameB) {
-                return -1;
-            }
-            if (nameA > nameB) {
-                return 1;
-            }
-            return 0;
-        });
-    }
-
-    userCacheFileManager.fetchProjects = async function() {
-        if (userData['projects'].length == 0) {
-          let response = userCacheFileManager.fetchData('/data/projects');
-          userData['projects'].push(...response['ResultSet']['Result']);
-          userCacheFileManager.sortAlphabetically(userData['projects']);
-        }
-        return userData['projects'] || [];
-    }
-
-    userCacheFileManager.fetchXnatDataAtLevel = function(inputUri, inputDataLevel, apiBaseUrl) {
-        if(!userData[inputDataLevel].hasOwnProperty(inputUri)) {
-            let response = userCacheFileManager.fetchData(inputUri + apiBaseUrl)
-            userData[inputDataLevel][inputUri] = [];
-            userData[inputDataLevel][inputUri].push(...response['ResultSet']['Result']);
-            userCacheFileManager.sortAlphabetically(userData[inputDataLevel][inputUri]);
-        }
-        return userData[inputDataLevel][inputUri] || [];
-    }
-
-    userCacheFileManager.fetchResourcesAtLevel = function(uri, input_resource_level) {
-        if(!userData[input_resource_level].hasOwnProperty(uri)) {
-            let response = userCacheFileManager.fetchData(uri +  '/resources');
-            userData[input_resource_level][uri] = [];
-            userData[input_resource_level][uri].push(...response['ResultSet']['Result']);
-        }
-        return userData[input_resource_level][uri] || [];
-    }
-
     userCacheFileManager.submitToIngest = async function(jsonData) {
         try {
             const response = await fetch('/xapi/ingest', {
@@ -621,9 +543,7 @@ var XNAT = getObject(XNAT);
                 style: {cursor: 'pointer'},
                 'html': isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>'
             }));
-            folderDiv.append(spawn('span|class=uce-folder-name', {
-                'html': node.name
-            }));
+            folderDiv.append(spawn('span|class=uce-folder-name', {'html': node.name}));
 
             if (!isRootNode && includeDelete) {
                 folderDiv.append(userCacheFileManager.createDeleteButton(folderPath));
@@ -645,12 +565,8 @@ var XNAT = getObject(XNAT);
             if (enableDrag) {
                 userCacheFileManager.createDragEvents(fileDiv);
             }
-            fileDiv.append(spawn('span|class=uce-icon', {
-                'html': getFileIcon(node.name)
-            }));
-            fileDiv.append(spawn('span|class=uce-file-name', {
-                'html': node.name
-            }));
+            fileDiv.append(spawn('span|class=uce-icon', {'html': getFileIcon(node.name)}));
+            fileDiv.append(spawn('span|class=uce-file-name', {'html': node.name}));
             if (includeDelete) {
                 fileDiv.append(userCacheFileManager.createDeleteButton(folderPath));
             }
@@ -770,9 +686,7 @@ var XNAT = getObject(XNAT);
                 },
                 'html': isExpanded ? '<i class="fa fa-minus"></i>' : '<i class="fa fa-plus"></i>'
             }));
-            folderDiv.append(spawn('span|class=uce-folder-name', {
-                'html': node.name
-            }));
+            folderDiv.append(spawn('span|class=uce-folder-name', {'html': node.name}));
             if (node.name === 'Resources' || node.name === 'Projects' || node.name === 'Subjects' || node.name === 'Experiments' || node.name === 'Scans') {
                 let inputFilterValue = '';
                 if (filteredDestinationFolders.hasOwnProperty(folderPath)) {
@@ -817,12 +731,8 @@ var XNAT = getObject(XNAT);
             let dropZoneDiv = spawn('div');
             $(dropZoneDiv).attr({'class': "uce-drop-zone", 'data-path': path + node.name,
                 'data-filename': node.name, 'data-uri': node.uri, 'title': "Drop files here to add data to: " + node.uri})
-            dropZoneDiv.append(spawn('span', {
-                'html': '<i class="fa fa-dropbox"></i>'
-            }));
-            dropZoneDiv.append(spawn('span', {
-                'html': ' Drop files here for ' + node.name
-            }));
+            dropZoneDiv.append(spawn('span', {'html': '<i class="fa fa-dropbox"></i>'}));
+            dropZoneDiv.append(spawn('span', {'html': ' Drop files here for ' + node.name}));
             currentLevelDiv.append(dropZoneDiv);
         }
         return currentLevelDiv;
@@ -859,6 +769,52 @@ var XNAT = getObject(XNAT);
             userCacheFileManager.setupDropZone();
         }
         folderElement.style.backgroundColor = '#e8f4fd';
+    }
+
+    userCacheFileManager.fetchData = function(url) {
+        let dataUrl = XNAT.url.restUrl(url,{format: 'json'},false,false);
+        var responseData = {};
+        responseData["ResultSet"] = {};
+        responseData["ResultSet"]["Result"] = [];
+        XNAT.xhr.get({
+            url: dataUrl,
+            async: false,
+            success: function (data) {
+                responseData = data;
+            },
+            fail: function (e) {
+                XNAT.ui.banner.top(5000, 'Unable to fetch data from: ' + url, 'error');
+            }
+        });
+        return responseData;
+    }
+
+    userCacheFileManager.fetchProjects = async function() {
+        if (userData['projects'].length == 0) {
+          let response = userCacheFileManager.fetchData('/data/projects');
+          userData['projects'].push(...response['ResultSet']['Result']);
+          sortAlphabetically(userData['projects']);
+        }
+        return userData['projects'] || [];
+    }
+
+    userCacheFileManager.fetchXnatDataAtLevel = function(inputUri, inputDataLevel, apiBaseUrl) {
+        if(!userData[inputDataLevel].hasOwnProperty(inputUri)) {
+            let response = userCacheFileManager.fetchData(inputUri + apiBaseUrl)
+            userData[inputDataLevel][inputUri] = [];
+            userData[inputDataLevel][inputUri].push(...response['ResultSet']['Result']);
+            sortAlphabetically(userData[inputDataLevel][inputUri]);
+        }
+        return userData[inputDataLevel][inputUri] || [];
+    }
+
+    userCacheFileManager.fetchResourcesAtLevel = function(uri, input_resource_level) {
+        if(!userData[input_resource_level].hasOwnProperty(uri)) {
+            let response = userCacheFileManager.fetchData(uri +  '/resources');
+            userData[input_resource_level][uri] = [];
+            userData[input_resource_level][uri].push(...response['ResultSet']['Result']);
+        }
+        return userData[input_resource_level][uri] || [];
     }
 
     userCacheFileManager.loadNode =  function(folderElement) {
@@ -1180,44 +1136,6 @@ var XNAT = getObject(XNAT);
         totalFilesSpan.innerHTML = droppedFiles.length +  " files";
     }
 
-    userCacheFileManager.deleteFolderAction = function(folderPath, folderData) {
-        const parsedData = JSON.parse(folderData.replace(/&quot;/g, '"'));
-        let fileCount = 0;
-        if (parsedData.__files__) {
-            fileCount += parsedData.__files__.length;
-        }
-        if (parsedData.files) {
-            fileCount += parsedData.files.length;
-        }
-
-        const confirmMessage = fileCount > 0
-        ? `Are you sure you want to delete folder "${folderPath}" and its ${fileCount} file(s)?`
-        : `Are you sure you want to delete folder "${folderPath}"?`;
-
-        if (confirm(confirmMessage)) {
-            console.log('Deleting folder:', {
-                path: folderPath,
-                data: parsedData,
-                fileCount: fileCount
-            });
-
-            // Add your folder deletion logic here:
-            // - Remove from data structure
-            // - Make API call to delete folder
-            // - Update UI
-            // - Remove from tree display
-
-            alert(`Folder "${folderPath}" has been marked for deletion.`);
-
-            // Optional: Remove from UI immediately
-            // const folderElement = document.querySelector(`[data-folder-id="${folderPath}"]`);
-            // if (folderElement) {
-            //   folderElement.style.opacity = '0.5';
-            //   folderElement.style.textDecoration = 'line-through';
-            // }
-        }
-    }
-
     const reviewRow = document.getElementById('reviewRow');
     const actionRow = document.getElementById('actionRow');
     const reviewBtn = document.getElementById('reviewBtn');
@@ -1431,3 +1349,27 @@ function getFileIcon(fileName) {
     };
     return icons[ext] || '<i class="fa fa-file"></i>';
 }
+
+function sortAlphabetically(data) {
+    data.sort((a, b) => {
+        var nameA, nameB;
+        if (a.name) {
+            nameA = a.name.toUpperCase();
+            nameB = b.name.toUpperCase();
+        } else if (a.label) {
+            nameA = a.label.toUpperCase();
+            nameB = b.label.toUpperCase();
+        } else {
+            nameA = a.ID.toUpperCase();
+            nameB = b.ID.toUpperCase();
+        }
+        if (nameA < nameB) {
+            return -1;
+        }
+        if (nameA > nameB) {
+            return 1;
+        }
+        return 0;
+    });
+}
+
