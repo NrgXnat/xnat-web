@@ -97,7 +97,7 @@ var XNAT = getObject(XNAT);
 
         createTreeNode(node, path = '', level = 0) {
             const nodeId = (path + '/' + node.name + '-' + node.destPath).replace(/^\//, '');
-            const hasChildren = node.children && node.children.length > 0;
+            const hasChildren = node.children && node.children.filter((child) => child !== undefined).length > 0;
             const isExpanded = this.expandedNodes.has(nodeId);
             const isFolder = node.type === 'folder';
 
@@ -988,20 +988,18 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.populateFolderChildren = function(jsonArray) {
         let updatedJsonArray = [];
         jsonArray.forEach(item => {
-            if (item.type === 'folder') {
+            if (item.children.length === 0 && item.type === 'folder') {
                 if (item.absolutePath && sourceStructure) {
                     const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
                     const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                     if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
                         folderChildren.forEach(child => {
-                            if (item.children.filter((cld) => cld.absolutePath == child.absolutePath).length == 0) {
-                                const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
-                                const childItem = {
-                                    ...child,
-                                    destPath: childDestPath
-                                };
-                                item.children.push(childItem);
-                            }
+                            const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
+                            const childItem = {
+                                ...child,
+                                destPath: childDestPath
+                            };
+                            item.children.push(childItem);
                         });
                     }
                 }
