@@ -780,7 +780,7 @@ var XNAT = getObject(XNAT);
                 }
                 let filterInput = spawn('input|class=filter-input', {
                     name: 'filter_folder',
-                    placeholder: 'Filter elements within folder',
+                    placeholder: 'Filter ' + node.name.toLowerCase() + ' within folder',
                     title: 'Use the enter key to filter folder contents',
                     value: inputFilterValue
                 })
@@ -859,6 +859,53 @@ var XNAT = getObject(XNAT);
             userCacheFileManager.setupDropZone();
         }
         folderElement.style.backgroundColor = '#e8f4fd';
+    }
+
+    userCacheFileManager.loadNode =  function(folderElement) {
+        const nodeXnatType = folderElement.getAttribute('data-xnat-type');
+        const nodeName = folderElement.getAttribute('data-name');
+        const nodeUri = folderElement.getAttribute('data-uri');
+
+        const alreadyLoadedNode = userCacheFileManager.findNodeByUri(destinationStructure, nodeUri);
+        if(!alreadyLoadedNode || (alreadyLoadedNode.children && alreadyLoadedNode.children.length>0)) {
+            return;
+        }
+
+        switch(nodeXnatType) {
+            case 'project':
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "project_resources");
+                var subjects =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'subjects', '/subjects');
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, subjects, '/subjects', 'Subjects', 'subject', 'folder'));
+                break;
+            case 'subject':
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
+                var experiments =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'sessions', '/experiments');
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, experiments, '/experiments', 'Experiments', 'experiment', 'folder'));
+                break;
+            case 'experiment':
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
+                var scans =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'scans', '/scans');
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, scans, '/scans', 'Scans', 'scan', 'folder'));
+                break;
+            case 'scan':
+                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "scan_resources");
+                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
+                break;
+        }
+    }
+
+    userCacheFileManager.appendElementsToNode = function(parentNodeUri, elements, elementUri, elementName, elementXnatType, childType) {
+        var fullUri =  parentNodeUri + elementUri;
+        var fileTree = {name: elementName, type: "folder", xnatType: elementXnatType, uri: fullUri};
+        fileTree.children = [];
+        elements.forEach(element => {
+            let label = (elementXnatType === "scan") ? element.ID : element.label;
+            fileTree.children.push({name: label, type: childType, xnatType: elementXnatType, uri: fullUri + "/" + label});
+        });
+        return fileTree;
     }
 
     userCacheFileManager.collapseFolder = function(folderElement, folderPath) {
@@ -1208,51 +1255,6 @@ var XNAT = getObject(XNAT);
             });
     }
 
-    userCacheFileManager.loadNode =  function(folderElement) {
-        const nodeXnatType = folderElement.getAttribute('data-xnat-type');
-        const nodeName = folderElement.getAttribute('data-name');
-        const nodeUri = folderElement.getAttribute('data-uri');
-        let isAlreadyLoaded = userCacheFileManager.isNodeLoaded(destinationStructure, nodeUri, );
-        if (isAlreadyLoaded) {
-            return;
-        }
-        switch(nodeXnatType) {
-            case 'project':
-                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "project_resources");
-                var subjects =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'subjects', '/subjects');
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, subjects, '/subjects', 'Subjects', 'subject', 'folder'));
-                break;
-            case 'subject':
-                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "subject_resources");
-                var experiments =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'sessions', '/experiments');
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, experiments, '/experiments', 'Experiments', 'experiment', 'folder'));
-                break;
-            case 'experiment':
-                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "session_resources");
-                var scans =  userCacheFileManager.fetchXnatDataAtLevel(nodeUri, 'scans', '/scans');
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, scans, '/scans', 'Scans', 'scan', 'folder'));
-                break;
-            case 'scan':
-                var resources = userCacheFileManager.fetchResourcesAtLevel(nodeUri, "scan_resources");
-                userCacheFileManager.addChildToNode(destinationStructure, nodeUri, userCacheFileManager.appendElementsToNode(nodeUri, resources, '/resources', 'Resources', nodeXnatType +'_resources', 'dropzone'));
-                break;
-        }
-    }
-
-    userCacheFileManager.appendElementsToNode = function(parentNodeUri, elements, elementUri, elementName, elementXnatType, childType) {
-        var fullUri =  parentNodeUri + elementUri;
-        var fileTree = {name: elementName, type: "folder", xnatType: elementXnatType, uri: fullUri};
-        fileTree.children = [];
-        elements.forEach(element => {
-            let label = (elementXnatType === "scan") ? element.ID : element.label;
-            fileTree.children.push({name: label, type: childType, xnatType: elementXnatType, uri: fullUri + "/" + label});
-        });
-        return fileTree;
-    }
-
     userCacheFileManager.findNodeByUri = function(data, targetUri) {
         if (!data) {
             return null;
@@ -1320,14 +1322,11 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.isNodeLoaded = function(data, targetUri) {
         const node = userCacheFileManager.findNodeByUri(data, targetUri);
 
-        if (!node) {
-            return true;
+        if(node || !node.children || node.children.length===0) {
+            return false;
         }
 
-        if (node.children && node.children.length>0) {
-            return true;
-        }
-        return false;
+        return true;
     }
 
     /**
@@ -1439,4 +1438,4 @@ function getFileIcon(fileName) {
         'exe': '<i class="fa fa-file-code-o"></i>'
     };
     return icons[ext] || '<i class="fa fa-file"></i>';
-    }
+}
