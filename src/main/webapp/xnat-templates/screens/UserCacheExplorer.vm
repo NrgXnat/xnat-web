@@ -37,8 +37,7 @@
         <!-- Source Pane -->
         <div class="uce-panel">
             <div class="uce-pane-header">
-                <span class="uce-icon"><i class="fa fa-folder"></i></span>
-                My Cache Folder
+                <span>User Cache</span>
             </div>
             <div class="uce-pane-content">
                 <div class="uce-folder-tree" id="sourceTree"></div>
@@ -48,9 +47,7 @@
         <!-- Destination Pane -->
         <div class="uce-panel">
             <div class="uce-pane-header">
-                <span class="uce-icon"><i class="fa fa-folder"></i></span>
-                Destination
-                <!-- Review Button -->
+                <span id="destinationHeader">XNAT Data</span>
             </div>
             <div class="uce-pane-content">
                 <div class="uce-folder-tree" id="destinationTree"></div>
@@ -62,7 +59,6 @@
                 </div>
             </div>
             <div class="button-container sticky-button">
-                <!-- Row 1: Review Button -->
                 <div id="reviewRow" class="button-row review">
                     <button id="reviewBtn" class="btn ingestion-btn">
                         <span class="uce-ingestion-text">Review and Ingest</span>
@@ -70,7 +66,6 @@
                     </button>
                 </div>
 
-                <!-- Row 2: Add More and Ingest Buttons -->
                 <div id="actionRow" class="button-row hidden">
                     <button id="addMoreBtn" class="btn ingestion-btn">
                         <span class="uce-ingestion-text">Add More</span>

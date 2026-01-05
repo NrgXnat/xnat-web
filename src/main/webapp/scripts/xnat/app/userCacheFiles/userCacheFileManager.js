@@ -1223,11 +1223,13 @@ var XNAT = getObject(XNAT);
     const reviewBtn = document.getElementById('reviewBtn');
     const addMoreBtn = document.getElementById('addMoreBtn');
     const ingestBtn = document.getElementById('ingestBtn');
+    const destinationHeader = document.getElementById('destinationHeader');
 
     reviewBtn.addEventListener('click', function() {
         userCacheFileManager.updateAssociatedFileTree();
         reviewRow.classList.add('hidden');
         actionRow.classList.remove('hidden');
+        destinationHeader.textContent = 'Data For Ingestion';
     });
 
     addMoreBtn.addEventListener('click', function() {
@@ -1236,7 +1238,7 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.renderDestinationTree(destinationStructure);
         userCacheFileManager.hide(document.getElementById('associatedTree'));
         userCacheFileManager.show(document.getElementById('destinationTree'));
-
+        destinationHeader.textContent = 'XNAT Data';
     });
 
     ingestBtn.addEventListener('click', function() {
