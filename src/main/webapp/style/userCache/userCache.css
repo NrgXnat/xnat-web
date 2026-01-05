@@ -754,6 +754,8 @@ div#uploadWidget {
     color: #999;
     font-family: monospace;
     margin-top: 2px;
+    margin-left: 32px;
+    word-wrap: break-word;
 }
 
 .stats {
