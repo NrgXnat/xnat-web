@@ -98,8 +98,7 @@ var XNAT = getObject(XNAT);
                 onclick: function (e) {
                     containingObject.deleteElementFromIngestionTree(node, containingObject);
                 },
-                title: "Remove from ingestion tree",
-                style: {color: 'black', border: 'none', cursor: 'pointer'}
+                title: "Remove from ingestion tree"
             }, [spawn('i.fa.fa-trash')]);
         }
 
@@ -448,8 +447,7 @@ var XNAT = getObject(XNAT);
             onclick: function (e) {
                 XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, e.currentTarget.parentElement.dataset.absolutePath);
             },
-            title: "Delete from cache",
-            style: {color: 'black', border: 'none', cursor: 'pointer'}
+            title: "Delete from cache"
         }, [spawn('i.fa.fa-trash')]);
     }
 
@@ -585,8 +583,7 @@ var XNAT = getObject(XNAT);
             onclick: function (e) {
                 buttonAction(this);
             },
-            title: title,
-            style: {color: 'black', border: 'none', cursor: 'pointer'},
+            title: title
         }, [spawn(icon)]);
         $(destButton).attr({'data-uri': nodeUri})
         return destButton;

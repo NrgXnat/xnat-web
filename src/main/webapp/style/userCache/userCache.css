@@ -316,18 +316,6 @@ div#uploadWidget {
     border-radius: 10px;
 }
 
-.uce-upload-log-item {
-    padding: 10px 15px;
-    background: rgba(250, 112, 154, 0.1);
-    border: 1px solid rgba(250, 112, 154, 0.3);
-    border-radius: 8px;
-    margin: 5px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    animation: slideIn 0.5s ease-out;
-}
-
 .uce-folder-name {
     flex: 1;
     padding: 2px 4px;
@@ -342,53 +330,6 @@ div#uploadWidget {
     color: #333;
 }
 
-.uce-edit-button {
-    opacity: 0;
-    background: rgba(250, 112, 154, 0.8);
-    border: none;
-    border-radius: 4px;
-    color: white;
-    padding: 2px 6px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    margin-left: 5px;
-}
-
-.uce-edit-button:hover {
-    background: rgba(250, 112, 154, 1);
-    transform: scale(1.05);
-}
-
-.uce-context-menu {
-    position: fixed;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
-    min-width: 120px;
-    overflow: hidden;
-}
-
-.uce-context-menu-item {
-    padding: 10px 15px;
-    cursor: pointer;
-    transition: background 0.2s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-}
-
-.uce-context-menu-item:hover {
-    background: rgba(250, 112, 154, 0.1);
-}
-
-.uce-context-menu-item:first-child {
-    border-bottom: 1px solid #eee;
-}
-
 @keyframes slideIn {
     from {
         opacity: 0;
@@ -400,21 +341,6 @@ div#uploadWidget {
     }
 }
 
-.uce-status-indicator {
-    font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 12px;
-    background: rgba(40, 167, 69, 0.2);
-    color: #28a745;
-    font-weight: 500;
-}
-
-.uce-path-display {
-    font-size: 12px;
-    color: #666;
-    margin-top: 5px;
-}
-
 .uce-expand-toggle {
     cursor: pointer;
     font-weight: bold;
@@ -424,76 +350,6 @@ div#uploadWidget {
 
 .uce-expand-toggle.expanded {
     transform: rotate(90deg);
-}
-
-.uce-search-box {
-    padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.9);
-    margin-bottom: 15px;
-    font-size: 14px;
-}
-
-.uce-search-box::placeholder {
-    color: #999;
-}
-
-.uce-select-container {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 8px 0;
-}
-
-.uce-select-level {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 8px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border-left: 4px solid #667eea;
-}
-
-.uce-select-level uce-select {
-    flex: 1;
-    padding: 8px 12px;
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    background: white;
-    font-size: 14px;
-    cursor: pointer;
-    transition: border-color 0.2s ease;
-}
-
-.uce-select-level uce-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-}
-
-.uce-select-level uce-select:disabled {
-    background: #f5f5f5;
-    cursor: not-allowed;
-    opacity: 0.6;
-}
-
-.uce-select-level-label {
-    font-weight: 600;
-    color: #333;
-    min-width: 80px;
-    font-size: 13px;
-}
-
-.uce-loading-indicator {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid #f3f3f3;
-    border-top: 2px solid #667eea;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -516,32 +372,6 @@ div#uploadWidget {
     border-color: #667eea;
     background: #f8f9ff;
     color: #667eea;
-}
-
-.uce-selected-path {
-    background: #e3f2fd;
-    padding: 8px 12px;
-    border-radius: 6px;
-    margin-top: 12px;
-    font-size: 13px;
-    color: #1565c0;
-    border-left: 3px solid #2196f3;
-}
-
-.uce-tree-item {
-  font-family: monospace;
-  line-height: 1.4;
-}
-.uce-tree-folder {
-  font-weight: bold;
-  color: #0066cc;
-}
-.uce-tree-file {
-  color: #333;
-}
-.uce-file-status {
-  color: #666;
-  font-size: 0.9em;
 }
 
 .uce-folder-toggle {
@@ -710,7 +540,6 @@ div#uploadWidget {
 .expand-icon.no-children {
     visibility: hidden;
 }
-
 
 .file-icon {
     width: 16px;
