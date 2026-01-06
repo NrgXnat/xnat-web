@@ -1009,64 +1009,6 @@ var XNAT = getObject(XNAT);
         return updatedJsonArray;
     }
 
-    userCacheFileManager.convertToTree = function(jsonArray) {
-        const tree = {};
-
-        jsonArray.forEach(item => {
-            const pathSegments = item.destPath.split('/');
-            let currentNode = tree;
-
-            pathSegments.forEach((segment, index) => {
-                if (!currentNode[segment]) {
-                    currentNode[segment] = {
-                        type: 'folder',
-                        children: {},
-                        files: []
-                    };
-                }
-
-                if (index === pathSegments.length - 1) {
-                    if (item.type === 'folder') {
-                        currentNode[segment].name = item.name;
-                        currentNode[segment].type = item.type;
-                        currentNode[segment].sourcePath = item.sourcePath;
-                        currentNode[segment].destPath = item.destPath;
-                        currentNode[segment].status = item.status;
-                        currentNode[segment].absolutePath = item.absolutePath;
-
-                        if (item.absolutePath && sourceStructure) {
-                            const folderChildren = userCacheFileManager.findChildrenByAbsolutePath(item.absolutePath);
-                            const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
-                            if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
-                                folderChildren.forEach(child => {
-                                    const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
-                                    const childItem = {
-                                        ...child,
-                                        destPath: childDestPath
-                                    };
-
-                                    jsonArray.push(childItem);
-                                });
-                            }
-                        }
-                    } else {
-                        currentNode[segment].files.push({
-                            name: item.name,
-                            type: item.type,
-                            sourcePath: item.sourcePath,
-                            destPath: item.destPath,
-                            status: item.status,
-                            absolutePath: item.absolutePath
-                        });
-                    }
-                } else {
-                    currentNode = currentNode[segment].children;
-                }
-            });
-        });
-        return tree;
-    }
-
     userCacheFileManager.displayTree = function(tree, indent = '') {
         let result = '';
         let folderIcon = '<i class="fa fa-folder"></i>';
