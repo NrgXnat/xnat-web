@@ -953,7 +953,6 @@ var XNAT = getObject(XNAT);
                 }
             }
         } else {
-            // Handle case where sourceStructure is a single object
             const result = userCacheFileManager.searchNodeByAbsolutePath(sourceStructure, absolutePath);
             if (result) {
                 return result;
@@ -1007,44 +1006,6 @@ var XNAT = getObject(XNAT);
             updatedJsonArray.push(item);
         });
         return updatedJsonArray;
-    }
-
-    userCacheFileManager.displayTree = function(tree, indent = '') {
-        let result = '';
-        let folderIcon = '<i class="fa fa-folder"></i>';
-        let fileIcon = '<i class="fa fa-file"></i>';
-        Object.keys(tree).forEach(key => {
-            if (tree[key].type === 'folder') {
-                result += `<div style="padding-left: ${indent.length * 10}px;">${folderIcon} ${key}/</div>`;
-                if (tree[key].files.length > 0) {
-                    tree[key].files.forEach(file => {
-                        var icon = fileIcon;
-                        if (file.type === 'folder') {
-                            icon = folderIcon;
-                        }
-                        result += `<div style="padding-left: ${(indent.length + 2) * 10}px;">${icon}${file.name}
-                            <button onclick="XNAT.app.userCacheFileManager.removeFile('${file.name}', '${file.sourcePath}', '${file.status}')"
-                            style="padding: 0;  color: red; border: none;  cursor: pointer;"
-                            title="Remove file">
-                            <i class="fa fa-times"></i>
-                            </button>
-                            </div>`;
-                    });
-                }
-                result += userCacheFileManager.displayTree(tree[key].children, indent + '  ');
-            } else {
-                result += `<div style="padding-left: ${indent.length * 10}px;">${fileIcon}${key}/</div>`;
-                result += userCacheFileManager.displayTree(tree[key], indent + '  ');
-            }
-        });
-        return result;
-    }
-
-    userCacheFileManager.removeFile = function(fileName, sourcePath, status) {
-        droppedFiles = droppedFiles.filter(item =>
-            item && item.sourcePath && item.sourcePath !== sourcePath);
-            userCacheFileManager.updateAssociatedFileTree();
-            userCacheFileManager.updateFileCount();
     }
 
     userCacheFileManager.getRelativePath = function(fullPath) {
