@@ -138,7 +138,13 @@ var XNAT = getObject(XNAT);
             nodeDiv.appendChild(itemDiv);
 
             if (node.destPath) {
-                nodeDiv.appendChild(spawn('div|class=tree-path', node.destPath || ''));
+                if (level > 1) {
+                    let parts = path.split("/");
+                    let lastDirectory = parts[parts.length-1];
+                    nodeDiv.appendChild(spawn('div|class=tree-path', '../' + lastDirectory));
+                } else {
+                    nodeDiv.appendChild(spawn('div|class=tree-path', node.destPath || ''));
+                }
             }
 
             if (hasChildren) {
@@ -888,18 +894,15 @@ var XNAT = getObject(XNAT);
         dropZoneDivs.forEach(dropZoneDiv => {
             dropZoneDiv.addEventListener('dragover', (e) => {
                 e.preventDefault();
-                dropZoneDiv.style.borderColor = '#667eea';
                 dropZoneDiv.style.background = '#f8f9ff';
             });
             dropZoneDiv.addEventListener('dragleave', (e) => {
                 e.preventDefault();
-                dropZoneDiv.style.borderColor = '#ddd';
                 dropZoneDiv.style.background = 'transparent';
             });
             dropZoneDiv.addEventListener('drop', (e) => {
                 e.preventDefault();
-                dropZoneDiv.style.borderColor = '#667eea';
-                dropZoneDiv.style.background = 'rgba(79, 172, 254, 0.3)';
+                dropZoneDiv.style.background = 'transparent';
                 const fileData = JSON.parse(e.dataTransfer.getData('text/plain'));
                 userCacheFileManager.handleFileDrop(fileData, dropZoneDiv.getAttribute('data-uri'));
             });
@@ -990,6 +993,17 @@ var XNAT = getObject(XNAT);
         return pathParts[pathParts.length - 1];
     }
 
+    userCacheFileManager.inputTreePaths = function(item, parentDestPath, parentAbsolutePath) {
+        item.destPath = parentDestPath  + '/' + item.name;
+        if (!item.absolutePath) {
+            item.absolutePath = parentAbsolutePath  + '/' + item.name;
+        }
+        item.children.forEach(child => {
+            userCacheFileManager.inputTreePaths(child, item.destPath, item.absolutePath);
+        });
+
+    }
+
     userCacheFileManager.populateFolderChildren = function(jsonArray) {
         let updatedJsonArray = [];
         jsonArray.forEach(item => {
@@ -999,12 +1013,8 @@ var XNAT = getObject(XNAT);
                     const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                     if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
                         folderChildren.forEach(child => {
-                            const childDestPath = item.destPath + '/' + parentFolderName + '/' + child.name;
-                            const childItem = {
-                                ...child,
-                                destPath: childDestPath
-                            };
-                            item.children.push(childItem);
+                            userCacheFileManager.inputTreePaths(child, item.destPath + '/' + parentFolderName, child.absolutePath);
+                            item.children.push(child);
                         });
                     }
                 }

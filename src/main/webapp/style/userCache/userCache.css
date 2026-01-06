@@ -265,6 +265,11 @@ div#uploadWidget {
     border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+.uce-folder-item.expanded {
+    background: rgba(79, 172, 254, 0.3);
+    font-weight: 600;
+}
+
 .uce-folder-item.destination-folder-item {
     cursor: pointer;
 }
@@ -273,11 +278,6 @@ div#uploadWidget {
     background: rgba(79, 172, 254, 0.2);
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.uce-folder-item.source-folder-item.expanded {
-    background: rgba(79, 172, 254, 0.3);
-    font-weight: 600;
 }
 
 .source-file-item:hover {
