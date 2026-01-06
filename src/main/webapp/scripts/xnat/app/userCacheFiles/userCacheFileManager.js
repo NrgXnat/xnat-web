@@ -57,6 +57,14 @@ var XNAT = getObject(XNAT);
         deleteElementFromIngestionTree(nodeForDeletion) {
             const traverseForDeletion = (inputNodes) => {
                 this.data.forEach(node => {
+                    if (node.absolutePath === nodeForDeletion.absolutePath && node.destPath === nodeForDeletion.destPath) {
+                        droppedFiles.splice(droppedFiles.indexOf(node), 1);
+                        this.data = droppedFiles;
+                        this.render();
+                        this.updateStats();
+                        userCacheFileManager.updateFileCount();
+                        return;
+                    }
                     if (node.children) {
                         let nodeFound = false;
                         let nodesWithCorrectPath = [];
@@ -928,20 +936,21 @@ var XNAT = getObject(XNAT);
         }
     }
 
-    userCacheFileManager.updateAssociatedFileTree = function() {
-        let populatedJsonArray = userCacheFileManager.populateFolderChildren(droppedFiles);
-        const associatedTree = document.getElementById('associatedTree');
-        const treeViewer = new TreeViewer(populatedJsonArray, associatedTree);
-        userCacheFileManager.show(associatedTree);
-        userCacheFileManager.hide(document.getElementById('destinationTree'));
-    }
-
     userCacheFileManager.hide = function(element) {
         element.style.display = 'none';
     }
 
     userCacheFileManager.show = function(element) {
         element.style.display = 'block';
+    }
+
+
+    userCacheFileManager.updateAssociatedFileTree = function() {
+        let populatedJsonArray = userCacheFileManager.populateFolderChildren(droppedFiles);
+        const associatedTree = document.getElementById('associatedTree');
+        const treeViewer = new TreeViewer(populatedJsonArray, associatedTree);
+        userCacheFileManager.show(associatedTree);
+        userCacheFileManager.hide(document.getElementById('destinationTree'));
     }
 
     userCacheFileManager.findChildrenByAbsolutePath = function(absolutePath) {
