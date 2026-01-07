@@ -1052,7 +1052,7 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.updateAssociatedFileTree();
         reviewRow.classList.add('hidden');
         actionRow.classList.remove('hidden');
-        destinationHeader.textContent = 'Data For Staged Ingestion';
+        destinationHeader.textContent = 'Data Staged For Ingestion';
     });
 
     addMoreBtn.addEventListener('click', function() {
