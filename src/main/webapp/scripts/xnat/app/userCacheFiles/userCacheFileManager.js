@@ -386,7 +386,7 @@ var XNAT = getObject(XNAT);
             });
 
             if (!response.ok) {
-                throw new Error('HTTP error! status: ' + response.status);
+                throw new Error('Ingest error. Status: ' + response.status);
             }
 
             const result = await response.json();

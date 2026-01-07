@@ -25,7 +25,7 @@ body {
 }
 
 .uce-upload-widget {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(150deg, #01d3e9 0%, #004b95 100%);
     padding-top: 5px;
     padding-right: 10px;
     padding-bottom: 10px;
@@ -443,12 +443,14 @@ div#uploadWidget {
 
 .ingestion-btn {
     background-color: #007bff;
-    background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(150deg, #01d3e9 0%, #004b95 100%);
     color: white;
+    margin-top: 5px;
 }
 
 .ingestion-btn:hover {
-    background-color: #0056b3;
+    background-color: #007bff;
+    background: linear-gradient(360deg, #01d3e9 0%, #004b95 100%);
 }
 
 .hidden {
