@@ -33,7 +33,6 @@
     </div>
 
     <div class="uce-panels-container">
-
         <!-- Source Pane -->
         <div class="uce-panel">
             <div class="uce-pane-header">
@@ -77,6 +76,5 @@
             </div>
         </div>
     </div>
-    <div id="statusMessage" class="status-message"></div>
 </div>
 <script type="text/javascript" src="$content.getURI('/scripts/xnat/app/userCacheFiles/userCacheFileManager.js')"></script>

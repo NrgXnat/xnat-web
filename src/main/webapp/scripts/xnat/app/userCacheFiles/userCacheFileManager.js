@@ -56,7 +56,7 @@ var XNAT = getObject(XNAT);
 
         deleteElementFromIngestionTree(nodeForDeletion) {
             const traverseForDeletion = (inputNodes) => {
-                this.data.forEach(node => {
+                inputNodes.forEach(node => {
                     if (node.absolutePath === nodeForDeletion.absolutePath && node.destPath === nodeForDeletion.destPath) {
                         droppedFiles.splice(droppedFiles.indexOf(node), 1);
                         this.data = droppedFiles;
@@ -66,6 +66,7 @@ var XNAT = getObject(XNAT);
                         return;
                     }
                     if (node.children) {
+                        node.children = node.children.filter(n=>n);
                         let nodeFound = false;
                         let nodesWithCorrectPath = [];
                         for(let i =0; i < node.children.length; i++) {
@@ -96,7 +97,7 @@ var XNAT = getObject(XNAT);
             let containingObject = this;
             return spawn('button.btn.btn-sm.delete-cache-element', {
                 onclick: function (e) {
-                    containingObject.deleteElementFromIngestionTree(node, containingObject);
+                    containingObject.deleteElementFromIngestionTree(node);
                 },
                 title: "Remove from ingestion tree"
             }, [spawn('i.fa.fa-trash')]);
@@ -669,7 +670,7 @@ var XNAT = getObject(XNAT);
             const isExpanded = expandedDestinationFolders.has(path + node.name);
 
             let folderDiv = spawn('div');
-            $(folderDiv).attr({'class': "uce-folder-item destination-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+            $(folderDiv).attr({'class': "uce-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-xnat-type': node.xnatType, 'data-uri': node.uri, 'data-name': node.name})
             folderDiv.append(spawn('span|class=uce-folder-toggle', {
                 onclick: function (e) {
@@ -994,14 +995,18 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.inputTreePaths = function(item, parentDestPath, parentAbsolutePath) {
+        item.children = item.children.filter(n=>n);
         item.destPath = parentDestPath  + '/' + item.name;
         if (!item.absolutePath) {
             item.absolutePath = parentAbsolutePath  + '/' + item.name;
         }
+        let copiedChildren = []
         item.children.forEach(child => {
-            userCacheFileManager.inputTreePaths(child, item.destPath, item.absolutePath);
+            let childCopy = {...child};
+            userCacheFileManager.inputTreePaths(childCopy, item.destPath, item.absolutePath);
+            copiedChildren.push(childCopy);
         });
-
+        item.children = copiedChildren;
     }
 
     userCacheFileManager.populateFolderChildren = function(jsonArray) {
@@ -1013,8 +1018,9 @@ var XNAT = getObject(XNAT);
                     const parentFolderName = userCacheFileManager.getParentFolderName(item.absolutePath);
                     if (folderChildren && Array.isArray(folderChildren) && folderChildren.length > 0) {
                         folderChildren.forEach(child => {
-                            userCacheFileManager.inputTreePaths(child, item.destPath + '/' + parentFolderName, child.absolutePath);
-                            item.children.push(child);
+                            let childCopy = {...child};
+                            userCacheFileManager.inputTreePaths(childCopy, item.destPath + '/' + parentFolderName, childCopy.absolutePath);
+                            item.children.push(childCopy);
                         });
                     }
                 }
@@ -1046,7 +1052,7 @@ var XNAT = getObject(XNAT);
         userCacheFileManager.updateAssociatedFileTree();
         reviewRow.classList.add('hidden');
         actionRow.classList.remove('hidden');
-        destinationHeader.textContent = 'Data For Ingestion';
+        destinationHeader.textContent = 'Data For Staged Ingestion';
     });
 
     addMoreBtn.addEventListener('click', function() {

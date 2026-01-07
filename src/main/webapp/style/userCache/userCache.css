@@ -258,7 +258,6 @@ div#uploadWidget {
     border-radius: 8px;
     transition: all 0.3s ease;
     display: flex;
-    cursor: grab;
     align-items: center;
     gap: 8px;
     background: rgba(255, 255, 255, 0.7);
@@ -270,8 +269,8 @@ div#uploadWidget {
     font-weight: 600;
 }
 
-.uce-folder-item.destination-folder-item {
-    cursor: pointer;
+.uce-folder-item.source-folder-item {
+    cursor: grab;
 }
 
 .uce-folder-item.source-folder-item:hover {
@@ -321,13 +320,6 @@ div#uploadWidget {
     padding: 2px 4px;
     border-radius: 4px;
     transition: all 0.2s ease;
-}
-
-.uce-folder-name.editing {
-    background: rgba(255, 255, 255, 0.9);
-    border: 2px solid #fa709a;
-    outline: none;
-    color: #333;
 }
 
 @keyframes slideIn {
@@ -386,10 +378,6 @@ div#uploadWidget {
     border-radius: 2px;
     transition: background-color 0.2s ease;
     vertical-align: middle;
-    -webkit-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
 }
 
 .uce-folder-toggle:hover {
@@ -509,7 +497,6 @@ div#uploadWidget {
     align-items: center;
     padding: 4px 8px;
     border-radius: 4px;
-    cursor: pointer;
     transition: background-color 0.2s;
 }
 
@@ -518,6 +505,7 @@ div#uploadWidget {
 }
 
 .expand-icon {
+    cursor: pointer;
     width: 16px;
     height: 16px;
     margin-right: 8px;
