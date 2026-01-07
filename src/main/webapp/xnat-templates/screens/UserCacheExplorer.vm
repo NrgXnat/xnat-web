@@ -50,7 +50,7 @@
             </div>
             <div class="uce-pane-content">
                 <div class="uce-folder-tree" id="destinationTree"></div>
-                <div class="uce-folder-tree" id="associatedTree" style="display:none">
+                <div class="uce-folder-tree" id="ingestTree" style="display:none">
                     <div id="stats" class="stats"></div>
                     <div class="tree-container">
                         <div id="tree"></div>
