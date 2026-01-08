@@ -1,8 +1,10 @@
 package org.nrg.xnat.ingest.device.handler;
 
+import lombok.Getter;
 
 import java.nio.file.Path;
 
+@Getter
 public  abstract class DeviceHandler {
         protected String deviceId;
         protected String deviceType;
@@ -16,9 +18,4 @@ public  abstract class DeviceHandler {
 
         public abstract boolean canHandleDevice(Path devicePath);
         public abstract ManifestEntry createManifestEntry();
-
-        public String getDeviceId() { return deviceId; }
-        public String getDeviceType() { return deviceType; }
-        public Path getDeviceRootPath() { return deviceRootPath; }
-    }
-
+}

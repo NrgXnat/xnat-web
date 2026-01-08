@@ -2,6 +2,8 @@ package org.nrg.xnat.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,6 +19,8 @@ import java.util.List;
 public class DirectoryToJsonTreeConverter {
 
     // Node class to represent file/directory structure
+    @Getter
+    @Setter
     public class TreeNode {
         private String name;
         private String type; // "file" or "folder"
@@ -32,29 +36,6 @@ public class DirectoryToJsonTreeConverter {
             this.lastModified = lastModified;
             this.absolutePath = absolutePath;
             this.children = new ArrayList<>();
-        }
-
-        // Getters and setters
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getType() { return type; }
-        public void setType(String type) { this.type = type; }
-
-        public long getSize() { return size; }
-        public void setSize(long size) { this.size = size; }
-
-        public String getLastModified() { return lastModified; }
-        public void setLastModified(String lastModified) { this.lastModified = lastModified; }
-
-        public String getAbsolutePath() { return absolutePath; }
-        public void getAbsolutePath(String getAbsolutePath) { this.absolutePath = absolutePath; }
-
-        public List<TreeNode> getChildren() { return children; }
-        public void setChildren(List<TreeNode> children) { this.children = children; }
-
-        public void addChild(TreeNode child) {
-            this.children.add(child);
         }
     }
 
@@ -80,7 +61,7 @@ public class DirectoryToJsonTreeConverter {
                         children.add(childNode);
                         totalSize += childNode.getSize();
                     } catch (IOException e) {
-                        log.error("Error processing: " + child + " - " + e.getMessage());
+                        log.error("Error processing: {} - {}", child, e.getMessage());
                     }
                 }
 
@@ -107,9 +88,6 @@ public class DirectoryToJsonTreeConverter {
         return toJson(buildDirectoryTree(path, parentNodeLabel));
     }
 
-    /**
-     * Converts TreeNode to JSON string
-     */
     public String toJson(TreeNode root) throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);

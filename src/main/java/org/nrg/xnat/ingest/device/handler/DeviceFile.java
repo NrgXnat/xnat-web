@@ -1,12 +1,16 @@
 package org.nrg.xnat.ingest.device.handler;
 
+import lombok.Getter;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
+@Getter
 public class DeviceFile {
+    // Getters and setters
     private Path filePath;
     private String fileName;
     private long fileSize;
@@ -25,15 +29,7 @@ public class DeviceFile {
         int lastDot = fileName.lastIndexOf('.');
         return lastDot > 0 ? fileName.substring(lastDot + 1).toLowerCase() : "";
     }
-
-
-    // Getters and setters
-    public Path getFilePath() { return filePath; }
-    public String getFileName() { return fileName; }
-    public long getFileSize() { return fileSize; }
-    public String getFileType() { return fileType; }
-    public Map<String, Object> getMetadata() { return metadata; }
-
+    
     public void setMetadata(String key, Object value) { metadata.put(key, value); }
     public Object getMetadata(String key) { return metadata.get(key); }
 }
