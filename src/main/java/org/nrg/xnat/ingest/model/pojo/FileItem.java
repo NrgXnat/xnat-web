@@ -6,7 +6,6 @@ import lombok.Setter;
 
 import java.util.List;
 
-// POJO Classes
 @Getter
 @Setter
 public class FileItem {
