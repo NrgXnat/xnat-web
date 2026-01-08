@@ -1066,7 +1066,7 @@ var XNAT = getObject(XNAT);
         xmodal.loading.open({ title: 'Ingesting data to XNAT...'});
         XNAT.xhr.post({
             url: serverRoot + '/xapi/ingest',
-            data: JSON.stringify(populatedJsonArray), // Submit all data, not just the item
+            data: JSON.stringify(populatedJsonArray),
             contentType: 'application/json',
             success: function (data) {
                 xmodal.loading.close();

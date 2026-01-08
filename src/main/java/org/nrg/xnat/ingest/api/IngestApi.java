@@ -45,5 +45,4 @@ public class IngestApi extends AbstractXapiRestController {
         fileCopyUtils.processJsonFile(items, user);
         return ResponseEntity.ok().build();
     }
-
 }

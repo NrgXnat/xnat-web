@@ -1,6 +1,7 @@
 package org.nrg.xnat.ingest.utils;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.ingest.model.pojo.FileItem;
@@ -30,7 +31,7 @@ public class FileCopyUtils {
 
 
     public void processJsonFile(final FileItem[] items, UserI user) throws IOException {
-        if (items ==null || items.length == 0) {
+        if (items == null) {
             return;
         }
 
@@ -46,7 +47,7 @@ public class FileCopyUtils {
 
         if (absolutePath == null || absolutePath.isEmpty() ||
                 destPath == null || destPath.isEmpty()) {
-            log.debug("Skipping item: " + item.getName() + " - missing path information");
+            log.debug("Skipping item: {} - missing path information", item.getName());
             return;
         }
 
@@ -116,14 +117,29 @@ public class FileCopyUtils {
         final XnatProjectdata projectData = XnatProjectdata.getProjectByIDorAlias(uriComponents.getProjectId(), user,
                                                                                   false);
 
-        return new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
-                .append(uriComponents.getProjectId())
-                .append(projectData.getCurrentArc())
-                .append(uriComponents.getExperimentId())
-                .append("SCANS")
-                .append(uriComponents.getScanId())
-                .append(uriComponents.getResourceId())
-                .build();
+        PathBuilder destinationPathBuilder = new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
+                .append(uriComponents.getProjectId());
+        if (StringUtils.isEmpty(uriComponents.getSubjectId())) {
+            destinationPathBuilder.append("resources")
+                    .append(uriComponents.getResourceId());
+        } else if (StringUtils.isEmpty(uriComponents.getExperimentId())) {
+            destinationPathBuilder.append("subjects")
+                    .append(uriComponents.getSubjectId())
+                    .append(uriComponents.getResourceId());
+        } else if (StringUtils.isEmpty(uriComponents.getScanId())) {
+            destinationPathBuilder.append(projectData.getCurrentArc())
+                    .append(uriComponents.getExperimentId())
+                    .append("RESOURCES")
+                    .append(uriComponents.getResourceId());
+        } else {
+            destinationPathBuilder.append(projectData.getCurrentArc())
+                    .append(uriComponents.getExperimentId())
+                    .append("SCANS")
+                    .append(uriComponents.getScanId())
+                    .append(uriComponents.getResourceId());
+        }
+
+        return destinationPathBuilder.build();
     }
 
     private XnatUriComponents parseUriWithRegex(String uri) {
@@ -131,20 +147,46 @@ public class FileCopyUtils {
             return null;
         }
 
-        String pattern = ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/scans/([^/]+)/resources/([^/]+).*";
-        Pattern p = Pattern.compile(pattern);
-        Matcher m = p.matcher(uri);
+        Matcher m = null;
 
-        if (m.matches()) {
-            return new XnatUriComponents(
-                    m.group(1),  // projectId
-                    m.group(2),  // subjectId
-                    m.group(3),  // experimentId
-                    m.group(4),  // scanId
-                    m.group(5)   // resourceId
-            );
+        for (String pattern: regexPatternsForInputs) {
+            Pattern p = Pattern.compile(pattern);
+            m = p.matcher(uri);
+            if (m.matches()) {
+                break;
+            }
         }
 
+        if (m != null) {
+            switch(m.groupCount()) {
+                case 5:
+                    return new XnatUriComponents(
+                            m.group(1),  // projectId
+                            m.group(2),  // subjectId
+                            m.group(3),  // experimentId
+                            m.group(4),  // scanId
+                            m.group(5)   // resourceId
+                    );
+                case 4:
+                    return new XnatUriComponents(
+                            m.group(1),  // projectId
+                            m.group(2),  // subjectId
+                            m.group(3),  // experimentId
+                            m.group(4)   // resourceId
+                    );
+                case 3:
+                    return new XnatUriComponents(
+                            m.group(1),  // projectId
+                            m.group(2),  // subjectId
+                            m.group(3)   // resourceId
+                    );
+                case 2:
+                    return new XnatUriComponents(
+                            m.group(1),  // projectId
+                            m.group(2)   // resourceId
+                    );
+            }
+        }
         return null;
     }
 

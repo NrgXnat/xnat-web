@@ -15,7 +15,25 @@ public class XnatUriComponents {
     private String experimentId;
     private String scanId;
     private String resourceId;
-    
+
+    public XnatUriComponents(String projectId, String resourceId) {
+        this.projectId = projectId;
+        this.resourceId = resourceId;
+    }
+
+    public XnatUriComponents(String projectId, String subjectId, String resourceId) {
+        this.projectId = projectId;
+        this.subjectId = subjectId;
+        this.resourceId = resourceId;
+    }
+
+    public XnatUriComponents(String projectId, String subjectId, String experimentId, String resourceId) {
+        this.projectId = projectId;
+        this.subjectId = subjectId;
+        this.experimentId = experimentId;
+        this.resourceId = resourceId;
+    }
+
     @Override
     public String toString() {
         return String.format(
