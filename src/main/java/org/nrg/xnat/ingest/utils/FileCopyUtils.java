@@ -39,7 +39,7 @@ public class FileCopyUtils {
         }
     }
 
-    private  void processItem(FileItem item, UserI user) throws IOException {
+    private void processItem(FileItem item, UserI user) throws IOException {
         String type = item.getType();
         String absolutePath = item.getAbsolutePath();
         String destPath = item.getDestPath();
@@ -57,10 +57,11 @@ public class FileCopyUtils {
 
         if ("folder".equalsIgnoreCase(type)) {
             copyFolder(source, destination);
-            log.debug("Copied folder: " + source + " -> " + destination);
+            log.debug("Copied folder: {} -> {}", source, destination);
         } else if ("file".equalsIgnoreCase(type)) {
+            destination = destination.resolve(source.subpath(source.getNameCount()-1, source.getNameCount()));
             copyFile(source, destination);
-            log.debug("Copied file: " + source + " -> " + destination);
+            log.debug("Copied file: {} -> {}", source, destination);
         }
 
         // Process children recursively if they exist
@@ -71,9 +72,9 @@ public class FileCopyUtils {
         }
     }
 
-    private  void copyFile(Path source, Path destination) throws IOException {
+    private void copyFile(Path source, Path destination) throws IOException {
         if (!Files.exists(source)) {
-            log.debug("Source file does not exist: " + source);
+            log.debug("Source file does not exist: {}", source);
             return;
         }
 
@@ -84,9 +85,9 @@ public class FileCopyUtils {
         Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
     }
 
-    private  void copyFolder(Path source, Path destination) throws IOException {
+    private void copyFolder(Path source, Path destination) throws IOException {
         if (!Files.exists(source)) {
-            log.error("Source folder does not exist: " + source);
+            log.error("Source folder does not exist: {}", source);
             return;
         }
 
@@ -144,7 +145,7 @@ public class FileCopyUtils {
             );
         }
 
-        return null; // URI doesn't match expected pattern
+        return null;
     }
 
 }

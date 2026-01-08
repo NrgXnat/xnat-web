@@ -1063,36 +1063,22 @@ var XNAT = getObject(XNAT);
     userCacheFileManager.ingest = function() {
         let populatedJsonArray = userCacheFileManager.populateFolderChildren(droppedFiles);
         console.log("To ingest " + JSON.stringify(populatedJsonArray));
-        userCacheFileManager.submitToIngest(populatedJsonArray)
-            .then(result => {
+        xmodal.loading.open({ title: 'Ingesting data to XNAT...'});
+        XNAT.xhr.post({
+            url: serverRoot + '/xapi/ingest',
+            data: JSON.stringify(populatedJsonArray), // Submit all data, not just the item
+            contentType: 'application/json',
+            success: function (data) {
+                xmodal.loading.close();
+                console.log('Successfully ingested files into XNAT');
                 XNAT.ui.banner.top(3000,'Successfully ingested files into XNAT.' ,'success');
-            })
-            .catch(error => {
+            },
+            error: function(e) {
+                xmodal.loading.close();
+                console.error('Error submitting data:', error);
                 XNAT.ui.banner.top(3000, error, 'error');
-            });
-    }
-
-    userCacheFileManager.submitToIngest = async function(jsonData) {
-        try {
-            const response = await fetch('/xapi/ingest', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(jsonData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Ingest error. Status: ' + response.status);
             }
-
-            const result = await response.json();
-            console.log('Success:', result);
-            return result;
-        } catch (error) {
-            console.error('Error submitting data:', error);
-            throw error;
-        }
+        });
     }
 
     userCacheFileManager.init = async function() {
