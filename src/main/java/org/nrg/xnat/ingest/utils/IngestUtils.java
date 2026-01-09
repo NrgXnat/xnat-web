@@ -12,14 +12,13 @@ import java.util.stream.Stream;
 public class IngestUtils {
 
     public static Optional<Path> findFileInFolder(Path deviceRootPath, String fileName) {
-        Path startPath = deviceRootPath;
-        try (Stream<Path> walk = Files.walk(startPath)) {
+        try (Stream<Path> walk = Files.walk(deviceRootPath)) {
             return walk
-                    .filter(Files::isRegularFile) // Filter for regular files
-                    .filter(path -> path.getFileName().toString().equals(fileName)) // Filter by file name
-                    .findFirst(); // Return the first match
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().equals(fileName))
+                    .findFirst();
         } catch (IOException e) {
-            log.error("Error while traversing directory: " + e.getMessage());
+            log.error("Error while traversing directory: {}", e.getMessage());
             return Optional.empty();
         }
     }

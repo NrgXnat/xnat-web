@@ -35,7 +35,7 @@ public class DeviceHandlerManager implements DeviceHandlerRegistryInterface {
             registerHandler(handler);
         }
 
-        log.info("Initialized " + handlers.size() + " device handlers");
+        log.info("Initialized {} device handlers", handlers.size());
     }
 
     @Override
@@ -43,7 +43,7 @@ public class DeviceHandlerManager implements DeviceHandlerRegistryInterface {
         if (handler != null) {
             String handlerName = handler.getClass().getSimpleName();
             handlers.put(handlerName, handler);
-            log.info("Registered handler: " + handlerName);
+            log.info("Registered handler: {}", handlerName);
         }
     }
 

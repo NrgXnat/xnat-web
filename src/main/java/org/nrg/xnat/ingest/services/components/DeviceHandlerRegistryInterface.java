@@ -2,7 +2,6 @@ package org.nrg.xnat.ingest.services.components;
 
 import org.nrg.xnat.ingest.device.handler.DeviceHandler;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;

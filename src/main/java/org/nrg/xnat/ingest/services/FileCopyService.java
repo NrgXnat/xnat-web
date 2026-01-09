@@ -60,8 +60,7 @@ public class FileCopyService {
         String absolutePath = item.getAbsolutePath();
         String destPath = item.getDestPath();
 
-        if (absolutePath == null || absolutePath.isEmpty() ||
-                destPath == null || destPath.isEmpty()) {
+        if (absolutePath == null || absolutePath.isEmpty() || destPath == null || destPath.isEmpty()) {
             log.debug("Skipping item: {} - missing path information", item.getName());
             return;
         }
@@ -151,7 +150,6 @@ public class FileCopyService {
         }
 
         Matcher m = null;
-
         for (String pattern: regexPatternsForInputs) {
             Pattern p = Pattern.compile(pattern);
             m = p.matcher(uri);

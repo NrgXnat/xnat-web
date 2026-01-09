@@ -10,7 +10,6 @@ import java.util.Map;
 
 @Getter
 public class DeviceFile {
-    // Getters and setters
     private Path filePath;
     private String fileName;
     private long fileSize;
