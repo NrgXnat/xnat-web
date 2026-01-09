@@ -31,7 +31,7 @@ import java.util.concurrent.Callable;
  */
 public class CreateDataTypeCallable implements Callable<CreateDataTypeResult> {
     private static final Logger logger = LoggerFactory.getLogger(CreateDataTypeCallable.class);
-    private static final List<String> ALLOWED_EXTENSIONS = Lists.newArrayList("subjectAssessorData", "imageAssessorData");
+    private static final List<String> ALLOWED_EXTENSIONS = Lists.newArrayList("subjectAssessorData", "imageAssessorData", "abstractProjectAsset");
 
     private final String prefix;
     private final String type;
