@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.antlr.runtime.tree.Tree;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -25,15 +26,13 @@ public class DirectoryToJsonTreeConverter {
         private String name;
         private String type; // "file" or "folder"
         private long size;
-        private String lastModified;
         private String absolutePath;
         private List<TreeNode> children;
 
-        public TreeNode(String name, String type, long size, String lastModified, String absolutePath) {
+        public TreeNode(String name, String type, long size, String absolutePath) {
             this.name = name;
             this.type = type;
             this.size = size;
-            this.lastModified = lastModified;
             this.absolutePath = absolutePath;
             this.children = new ArrayList<>();
         }
@@ -44,10 +43,9 @@ public class DirectoryToJsonTreeConverter {
 
         String name = rootNodeLabel == null ? path.getFileName() != null ? path.getFileName().toString() : path.toString() : rootNodeLabel;
         String type = Files.isDirectory(path) ? "folder" : "file";
-        String lastModified = attrs.lastModifiedTime().toString();
         String absolutePath = path.toAbsolutePath().toString();
 
-        TreeNode node = new TreeNode(name, type, 0, lastModified, absolutePath);
+        TreeNode node = new TreeNode(name, type, 0, absolutePath);
 
         // If it's a directory, recursively process children and calculate total size
         if (Files.isDirectory(path)) {
@@ -85,12 +83,8 @@ public class DirectoryToJsonTreeConverter {
 
     public String toJson(final String directoryPath, final String parentNodeLabel) throws IOException {
         Path path = Paths.get(directoryPath);
-        return toJson(buildDirectoryTree(path, parentNodeLabel));
-    }
-
-    public String toJson(TreeNode root) throws IOException {
+        TreeNode rootNode = buildDirectoryTree(path, parentNodeLabel);
         ObjectMapper mapper = new ObjectMapper();
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        return mapper.writeValueAsString(root);
-    }
-}
+        return mapper.writeValueAsString(rootNode);
+    }}

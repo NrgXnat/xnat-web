@@ -1,7 +1,9 @@
-package org.nrg.xnat.ingest.utils;
+package org.nrg.xnat.ingest.services;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
+import org.nrg.action.ClientException;
+import org.nrg.action.ServerException;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.ingest.model.pojo.FileItem;
@@ -12,15 +14,28 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
+import org.nrg.xnat.ingest.utils.PathBuilder;
+import org.nrg.xnat.services.archive.impl.legacy.DefaultCatalogService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
+@Service
 @Slf4j
-public class FileCopyUtils {
+public class FileCopyService {
+
+    private final DefaultCatalogService defaultCatalogService;
+
+    @Autowired
+    public FileCopyService(DefaultCatalogService defaultCatalogService) {
+        this.defaultCatalogService = defaultCatalogService;
+    }
 
     //possible data input regex patterns
     List<String> regexPatternsForInputs = Arrays.asList(
@@ -30,7 +45,7 @@ public class FileCopyUtils {
             ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/scans/([^/]+)/resources/([^/]+).*");
 
 
-    public void processJsonFile(final FileItem[] items, UserI user) throws IOException {
+    public void processJsonFile(final FileItem[] items, UserI user) throws IOException, ServerException, ClientException {
         if (items == null) {
             return;
         }
@@ -40,7 +55,7 @@ public class FileCopyUtils {
         }
     }
 
-    private void processItem(FileItem item, UserI user) throws IOException {
+    private void processItem(FileItem item, UserI user) throws IOException, ServerException, ClientException {
         String type = item.getType();
         String absolutePath = item.getAbsolutePath();
         String destPath = item.getDestPath();
@@ -59,17 +74,12 @@ public class FileCopyUtils {
         if ("folder".equalsIgnoreCase(type)) {
             copyFolder(source, destination);
             log.debug("Copied folder: {} -> {}", source, destination);
+            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
         } else if ("file".equalsIgnoreCase(type)) {
             destination = destination.resolve(source.subpath(source.getNameCount()-1, source.getNameCount()));
             copyFile(source, destination);
             log.debug("Copied file: {} -> {}", source, destination);
-        }
-
-        // Process children recursively if they exist
-        if (item.getChildren() != null && !item.getChildren().isEmpty()) {
-            for (FileItem child : item.getChildren()) {
-                processItem(child, user);
-            }
+            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
         }
     }
 
@@ -97,18 +107,18 @@ public class FileCopyUtils {
 
         // Copy all files and subdirectories recursively
         Files.walk(source)
-                .forEach(src -> {
-                    try {
-                        Path dest = destination.resolve(source.relativize(src));
-                        if (Files.isDirectory(src)) {
-                            Files.createDirectories(dest);
-                        } else {
-                            Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
-                        }
-                    } catch (IOException e) {
-                        log.error("Error copying: " + src + " - " + e.getMessage());
+            .forEach(src -> {
+                try {
+                    Path dest = destination.resolve(source.relativize(src));
+                    if (Files.isDirectory(src)) {
+                        Files.createDirectories(dest);
+                    } else {
+                        Files.copy(src, dest, StandardCopyOption.REPLACE_EXISTING);
                     }
-                });
+                } catch (IOException e) {
+                    log.error("Error copying: " + src + " - " + e.getMessage());
+                }
+            });
     }
 
     private String translatePathToArchivePath(final String destinationPath, UserI user) {
@@ -138,7 +148,6 @@ public class FileCopyUtils {
                     .append(uriComponents.getScanId())
                     .append(uriComponents.getResourceId());
         }
-
         return destinationPathBuilder.build();
     }
 

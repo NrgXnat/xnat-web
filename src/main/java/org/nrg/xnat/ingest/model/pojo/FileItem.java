@@ -18,5 +18,4 @@ public class FileItem {
     private List<FileItem> children;
     private String status;
     private Long size;
-    private String lastModified;
 }
