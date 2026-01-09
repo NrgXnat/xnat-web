@@ -29,11 +29,6 @@ width:1px;
 #parse($turbineUtils.getTemplateName("_keyFields",$om.getXSIType(),$project))
 </table>
   </td>
-  <td valign="top">
-<table>
-    <TR><TH align="left" width=200>Date: </TH><TD>$!mr.getProperty("date")</TD></TR>
-</table>
-  </td>
   </tr>
  </table>
 </div>
