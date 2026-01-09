@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
+import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
+import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.ingest.model.pojo.FileItem;
 
@@ -15,12 +17,17 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
+import org.nrg.xnat.restlet.actions.SessionImporter;
 import org.nrg.xnat.services.archive.impl.legacy.DefaultCatalogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -66,18 +73,21 @@ public class FileCopyService {
         }
 
         Path source = Paths.get(absolutePath);
-        String xnatArchiveDestinationPath = translatePathToArchivePath(destPath, user);
-        Path destination = Paths.get(xnatArchiveDestinationPath);
+        Map<Path, Path> pathsForCopy = translatePathToArchivePath(destPath, user);
+        Map.Entry<Path, Path> entry = pathsForCopy.entrySet().iterator().next();
+        Path desinationPath = entry.getKey();
+        Path resourcePath = entry.getValue();
+        String resourcePathString = "/" + resourcePath.toString();
 
         if ("folder".equalsIgnoreCase(type)) {
-            copyFolder(source, destination);
-            log.debug("Copied folder: {} -> {}", source, destination);
-//            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
+            copyFolder(source, desinationPath);
+            log.debug("Copied folder: {} -> {}", source, desinationPath);
+            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(resourcePathString));
         } else if ("file".equalsIgnoreCase(type)) {
-            destination = destination.resolve(source.subpath(source.getNameCount()-1, source.getNameCount()));
-            copyFile(source, destination);
-            log.debug("Copied file: {} -> {}", source, destination);
-//            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
+            desinationPath = desinationPath.resolve(source.subpath(source.getNameCount()-1, source.getNameCount()));
+            copyFile(source, desinationPath);
+            log.debug("Copied file: {} -> {}", source, desinationPath);
+            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(resourcePathString));
         }
     }
 
@@ -115,33 +125,44 @@ public class FileCopyService {
             });
     }
 
-    private String translatePathToArchivePath(final String destinationPath, UserI user) {
+    private Map<Path, Path> translatePathToArchivePath(final String destinationPath, UserI user) {
         XnatUriComponents uriComponents = parseUriWithRegex(destinationPath);
 
         final XnatProjectdata projectData = XnatProjectdata.getProjectByIDorAlias(uriComponents.getProjectId(), user,
                                                                                   false);
 
         Path archivePath = Paths.get(XDAT.getSiteConfigPreferences().getArchivePath(), uriComponents.getProjectId());
+        Path resourcePath = Paths.get(XDAT.getSiteConfigPreferences().getArchivePath()).getFileName();
 
         if (StringUtils.isEmpty(uriComponents.getSubjectId())) {
             archivePath = archivePath.resolve("resources").resolve(uriComponents.getResourceId());
+            resourcePath = resourcePath.resolve("projects").resolve(uriComponents.getProjectId());
         } else if (StringUtils.isEmpty(uriComponents.getExperimentId())) {
             archivePath = archivePath.resolve("subjects")
                     .resolve(uriComponents.getSubjectId())
                     .resolve(uriComponents.getResourceId());
+            String subjectId = Objects.requireNonNull(XnatSubjectdata.GetSubjectByIdOrProjectlabelCaseInsensitive(
+                    uriComponents.getProjectId(), uriComponents.getSubjectId(), user, false)).getId();
+            resourcePath = resourcePath.resolve("subjects").resolve(subjectId);
         } else if (StringUtils.isEmpty(uriComponents.getScanId())) {
             archivePath = archivePath.resolve(projectData.getCurrentArc())
                     .resolve(uriComponents.getExperimentId())
                     .resolve("RESOURCES")
                     .resolve(uriComponents.getResourceId());
+            String experimentId = Objects.requireNonNull(SessionImporter.getExperimentByIdOrLabel(
+                    uriComponents.getProjectId(), uriComponents.getExperimentId(), user)).getId();
+            resourcePath = resourcePath.resolve("experiments").resolve(experimentId);
         } else {
             archivePath = archivePath.resolve(projectData.getCurrentArc())
                     .resolve(uriComponents.getExperimentId())
                     .resolve("SCANS")
                     .resolve(uriComponents.getScanId())
                     .resolve(uriComponents.getResourceId());
+            String experimentId = Objects.requireNonNull(SessionImporter.getExperimentByIdOrLabel(
+                    uriComponents.getProjectId(), uriComponents.getExperimentId(), user)).getId();
+            resourcePath = resourcePath.resolve("experiments").resolve(experimentId);
         }
-        return archivePath.toString();
+        return Collections.singletonMap(archivePath, resourcePath);
     }
 
     private XnatUriComponents parseUriWithRegex(String uri) {

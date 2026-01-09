@@ -432,7 +432,6 @@ var XNAT = getObject(XNAT);
             const filename = encodeURIComponent(file.name);
             const endpoint = serverRoot + '/data/user/cache/resources/' + timestamp + '/files/' + filename;
             let uploadUrl = XNAT.url.csrfUrl(endpoint,{extract: true},false,false);
-            // Use Fetch API with file in body
             const formData = new FormData();
             formData.append('file', file);
             const response = await fetch(uploadUrl, {
