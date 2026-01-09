@@ -328,8 +328,9 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
                     <td>
                         <select id="datatype-extends" name="extends" required>
                             <option value="">(SELECT)</option>
-                            <option value="subjectAssessorData">subjectAssessorData</option>
-                            <option value="imageAssessorData">imageAssessorData</option>
+                            <option value="subjectAssessorData">subjectAssessorData (Subject Assessment)</option>
+                            <option value="imageAssessorData">imageAssessorData (Image Assessment)</option>
+                            <option value="abstractProjectAsset">abstractProjectAsset (Project Asset)</option>
                         </select>
                     </td>
                 </tr>
@@ -782,6 +783,8 @@ $!template.setLayoutTemplate("DefaultExptList.vm")
                     // Check if this is an imageAssessorData type
                     if (extendsValue === 'imageAssessorData') {
                         showActionBoxEntriesPrompt();
+                    } else if (extendsValue === 'abstractProjectAsset') {
+                        window.location.reload();
                     } else {
                         showCustomFormPrompt();
                     }
