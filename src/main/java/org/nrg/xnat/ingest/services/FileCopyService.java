@@ -21,7 +21,6 @@ import java.util.regex.Pattern;
 
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
-import org.nrg.xnat.ingest.utils.PathBuilder;
 import org.nrg.xnat.services.archive.impl.legacy.DefaultCatalogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -32,17 +31,18 @@ public class FileCopyService {
 
     private final DefaultCatalogService defaultCatalogService;
 
-    @Autowired
-    public FileCopyService(DefaultCatalogService defaultCatalogService) {
-        this.defaultCatalogService = defaultCatalogService;
-    }
-
     //possible data input regex patterns
     List<String> regexPatternsForInputs = Arrays.asList(
             ".*/projects/([^/]+)/resources/([^/]+).*",
             ".*/projects/([^/]+)/subjects/([^/]+)/resources/([^/]+).*",
             ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/resources/([^/]+).*",
             ".*/projects/([^/]+)/subjects/([^/]+)/experiments/([^/]+)/scans/([^/]+)/resources/([^/]+).*");
+
+
+    @Autowired
+    public FileCopyService(DefaultCatalogService defaultCatalogService) {
+        this.defaultCatalogService = defaultCatalogService;
+    }
 
 
     public void processJsonFile(final FileItem[] items, UserI user) throws IOException, ServerException, ClientException {
@@ -66,20 +66,19 @@ public class FileCopyService {
             return;
         }
 
-        String xnatArchiveDestinationPath = translatePathToArchivePath(destPath, user);
-
         Path source = Paths.get(absolutePath);
+        String xnatArchiveDestinationPath = translatePathToArchivePath(destPath, user);
         Path destination = Paths.get(xnatArchiveDestinationPath);
 
         if ("folder".equalsIgnoreCase(type)) {
             copyFolder(source, destination);
             log.debug("Copied folder: {} -> {}", source, destination);
-            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
+//            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
         } else if ("file".equalsIgnoreCase(type)) {
             destination = destination.resolve(source.subpath(source.getNameCount()-1, source.getNameCount()));
             copyFile(source, destination);
             log.debug("Copied file: {} -> {}", source, destination);
-            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
+//            defaultCatalogService.refreshResourceCatalogs(user, Collections.singletonList(destination.toString()));
         }
     }
 
@@ -89,10 +88,7 @@ public class FileCopyService {
             return;
         }
 
-        // Create parent directories if they don't exist
         Files.createDirectories(destination.getParent());
-
-        // Copy file with replace existing option
         Files.copy(source, destination, StandardCopyOption.REPLACE_EXISTING);
     }
 
@@ -102,7 +98,6 @@ public class FileCopyService {
             return;
         }
 
-        // Create destination directory
         Files.createDirectories(destination);
 
         // Copy all files and subdirectories recursively
@@ -127,28 +122,27 @@ public class FileCopyService {
         final XnatProjectdata projectData = XnatProjectdata.getProjectByIDorAlias(uriComponents.getProjectId(), user,
                                                                                   false);
 
-        PathBuilder destinationPathBuilder = new PathBuilder(XDAT.getSiteConfigPreferences().getArchivePath())
-                .append(uriComponents.getProjectId());
+        Path archivePath = Paths.get(XDAT.getSiteConfigPreferences().getArchivePath(), uriComponents.getProjectId());
+
         if (StringUtils.isEmpty(uriComponents.getSubjectId())) {
-            destinationPathBuilder.append("resources")
-                    .append(uriComponents.getResourceId());
+            archivePath = archivePath.resolve("resources").resolve(uriComponents.getResourceId());
         } else if (StringUtils.isEmpty(uriComponents.getExperimentId())) {
-            destinationPathBuilder.append("subjects")
-                    .append(uriComponents.getSubjectId())
-                    .append(uriComponents.getResourceId());
+            archivePath = archivePath.resolve("subjects")
+                    .resolve(uriComponents.getSubjectId())
+                    .resolve(uriComponents.getResourceId());
         } else if (StringUtils.isEmpty(uriComponents.getScanId())) {
-            destinationPathBuilder.append(projectData.getCurrentArc())
-                    .append(uriComponents.getExperimentId())
-                    .append("RESOURCES")
-                    .append(uriComponents.getResourceId());
+            archivePath = archivePath.resolve(projectData.getCurrentArc())
+                    .resolve(uriComponents.getExperimentId())
+                    .resolve("RESOURCES")
+                    .resolve(uriComponents.getResourceId());
         } else {
-            destinationPathBuilder.append(projectData.getCurrentArc())
-                    .append(uriComponents.getExperimentId())
-                    .append("SCANS")
-                    .append(uriComponents.getScanId())
-                    .append(uriComponents.getResourceId());
+            archivePath = archivePath.resolve(projectData.getCurrentArc())
+                    .resolve(uriComponents.getExperimentId())
+                    .resolve("SCANS")
+                    .resolve(uriComponents.getScanId())
+                    .resolve(uriComponents.getResourceId());
         }
-        return destinationPathBuilder.build();
+        return archivePath.toString();
     }
 
     private XnatUriComponents parseUriWithRegex(String uri) {
@@ -198,5 +192,4 @@ public class FileCopyService {
         }
         return null;
     }
-
 }
