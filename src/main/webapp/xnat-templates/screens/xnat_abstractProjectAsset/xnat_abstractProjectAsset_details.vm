@@ -78,23 +78,6 @@ function summaryTabManagerInit(){
 	  </td>
  </tr>
 			</table>
-            #if($item.getStringProperty("data"))
-            <table>
-                <tr>
-                    <th align="left" valign="top">Data: </th>
-                    <td valign="top" style="">
-                        <div id="item-data-field"></div>
-                        <textarea name="item-data-text" style="display:none;">$!item.getStringProperty('data')</textarea>
-                    </td>
-                </tr>
-            </table>
-                <script>
-                    const minifiedString= jq("#item-data-text").val();
-                    const obj = JSON.parse(minifiedString);
-                    const prettyJsonString = JSON.stringify(obj, null, 2);
-                    jq("#item-data-text").text(prettyJsonString);
-                </script>
-            #end
             #if($item.getStringProperty("note"))
             <table>
                 <tr>

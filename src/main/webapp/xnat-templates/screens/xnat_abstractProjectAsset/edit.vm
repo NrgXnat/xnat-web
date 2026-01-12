@@ -102,28 +102,6 @@ $page.setVlinkColor($ui.vlink)
 			<br>
 			<hr>
 
-			<div class="edit_header1">Data</div>
-
-			<br>
-
-			<table>
-				<tr>
-					#formLabel("Data")
-					<td>
-						<textarea class='' name="${om.getXSIType()}.data" rows="4" cols="50" style="text-align:left;">#escapeCleanHTML("$!item.getStringProperty('data')")</textarea>
-					</td>
-				</tr>
-			</table>
-
-			<br><br>
-		</td>
-	</tr>
-	<tr>
-		<td>
-
-			<br>
-			<hr>
-
 			<div class="edit_header1">Additional Notes</div>
 
 			<br>
