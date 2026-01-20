@@ -11,9 +11,9 @@ import lombok.Setter;
 @NoArgsConstructor
 public class XnatUriComponents {
     private String projectId;
-    private String subjectId;
-    private String experimentId;
-    private String scanId;
+    private String subjectLabel;
+    private String experimentLabel;
+    private String scanLabel;
     private String resourceId;
 
     public XnatUriComponents(String projectId, String resourceId) {
@@ -23,14 +23,14 @@ public class XnatUriComponents {
 
     public XnatUriComponents(String projectId, String subjectId, String resourceId) {
         this.projectId = projectId;
-        this.subjectId = subjectId;
+        this.subjectLabel = subjectId;
         this.resourceId = resourceId;
     }
 
     public XnatUriComponents(String projectId, String subjectId, String experimentId, String resourceId) {
         this.projectId = projectId;
-        this.subjectId = subjectId;
-        this.experimentId = experimentId;
+        this.subjectLabel = subjectId;
+        this.experimentLabel = experimentId;
         this.resourceId = resourceId;
     }
 
@@ -38,7 +38,7 @@ public class XnatUriComponents {
     public String toString() {
         return String.format(
                 "XnatUriComponents{projectId='%s', subjectId='%s', experimentId='%s', scanId='%s', resourceId='%s'}",
-                projectId, subjectId, experimentId, scanId, resourceId
+                projectId, subjectLabel, experimentLabel, scanLabel, resourceId
         );
     }
 }

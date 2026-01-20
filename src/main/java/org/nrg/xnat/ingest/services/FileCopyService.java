@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.nrg.action.ClientException;
 import org.nrg.action.ServerException;
-import org.nrg.xdat.om.XnatImagesessiondata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
 import org.nrg.xft.security.UserI;
@@ -17,13 +16,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import org.nrg.xdat.XDAT;
 import org.nrg.xnat.ingest.model.pojo.XnatUriComponents;
@@ -134,32 +131,35 @@ public class FileCopyService {
         Path archivePath = Paths.get(XDAT.getSiteConfigPreferences().getArchivePath(), uriComponents.getProjectId());
         Path resourcePath = Paths.get(XDAT.getSiteConfigPreferences().getArchivePath()).getFileName();
 
-        if (StringUtils.isEmpty(uriComponents.getSubjectId())) {
+        if (StringUtils.isEmpty(uriComponents.getSubjectLabel())) {
             archivePath = archivePath.resolve("resources").resolve(uriComponents.getResourceId());
             resourcePath = resourcePath.resolve("projects").resolve(uriComponents.getProjectId());
-        } else if (StringUtils.isEmpty(uriComponents.getExperimentId())) {
+        } else if (StringUtils.isEmpty(uriComponents.getExperimentLabel())) {
             archivePath = archivePath.resolve("subjects")
-                    .resolve(uriComponents.getSubjectId())
+                    .resolve(uriComponents.getSubjectLabel())
                     .resolve(uriComponents.getResourceId());
+
             String subjectId = Objects.requireNonNull(XnatSubjectdata.GetSubjectByIdOrProjectlabelCaseInsensitive(
-                    uriComponents.getProjectId(), uriComponents.getSubjectId(), user, false)).getId();
+                    uriComponents.getProjectId(), uriComponents.getSubjectLabel(), user, false)).getId();
             resourcePath = resourcePath.resolve("subjects").resolve(subjectId);
-        } else if (StringUtils.isEmpty(uriComponents.getScanId())) {
+        } else if (StringUtils.isEmpty(uriComponents.getScanLabel())) {
             archivePath = archivePath.resolve(projectData.getCurrentArc())
-                    .resolve(uriComponents.getExperimentId())
+                    .resolve(uriComponents.getExperimentLabel())
                     .resolve("RESOURCES")
                     .resolve(uriComponents.getResourceId());
+
             String experimentId = Objects.requireNonNull(SessionImporter.getExperimentByIdOrLabel(
-                    uriComponents.getProjectId(), uriComponents.getExperimentId(), user)).getId();
+                    uriComponents.getProjectId(), uriComponents.getExperimentLabel(), user)).getId();
             resourcePath = resourcePath.resolve("experiments").resolve(experimentId);
         } else {
             archivePath = archivePath.resolve(projectData.getCurrentArc())
-                    .resolve(uriComponents.getExperimentId())
+                    .resolve(uriComponents.getExperimentLabel())
                     .resolve("SCANS")
-                    .resolve(uriComponents.getScanId())
+                    .resolve(uriComponents.getScanLabel())
                     .resolve(uriComponents.getResourceId());
+
             String experimentId = Objects.requireNonNull(SessionImporter.getExperimentByIdOrLabel(
-                    uriComponents.getProjectId(), uriComponents.getExperimentId(), user)).getId();
+                    uriComponents.getProjectId(), uriComponents.getExperimentLabel(), user)).getId();
             resourcePath = resourcePath.resolve("experiments").resolve(experimentId);
         }
         return Collections.singletonMap(archivePath, resourcePath);
