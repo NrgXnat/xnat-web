@@ -189,7 +189,6 @@ public class FormDisplayFieldServiceImpl implements FormDisplayFieldService {
             return elementDisplay;
     }
 
-    private DisplayManager displayManagerSingleton=null;
     private final CustomVariableFormService formService;
     private final FormIOJsonService formIOJsonService;
     private final CustomFormDisplayFieldHelper displayHelper;
