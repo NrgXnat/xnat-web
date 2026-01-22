@@ -9,6 +9,7 @@
 
 package org.nrg.xnat.restlet.resources.search;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.display.DisplayField;
@@ -137,8 +138,8 @@ public class SearchFieldListResource extends SecureResource{
 						XFTItem found = XFTItem.NewItem(elementName, getUser());
 						SchemaElement se = SchemaElement.GetElement(elementName);
 
-						if (filepath != null && !filepath.equals("")) {
-							if (filepath.startsWith("fields")) {
+						if (StringUtils.isNotBlank(filepath)) {
+							if (StringUtils.startsWith(filepath,"fields")) {
 								if (this.isQueryVariableTrue("addSqlQueryValue")) {
 									//creates a copy of a SqlQueryDisplayField with the specified configuration
 									String fieldId = this.getQueryVariable("fieldId");
@@ -266,13 +267,9 @@ public class SearchFieldListResource extends SecureResource{
 
 				params.put("versions", ed.getVersionsJSON());
 
-				List<DisplayField> displays = ed.getSortedFields();
-
-				Iterator iter = displays.iterator();
-				while (iter.hasNext())
+				final List<DisplayField> displays = ed.getSortedFields();
+				for (DislayField df : displays)
 				{
-				   DisplayField df = (DisplayField)iter.next();
-
 				   if(showHidden || df.isSearchable()){
 					   String id = df.getId();
 					   if (!showCustomForms && customFormDisplayFieldHelper.isCustomFieldDisplayField(id, en)) {
@@ -284,7 +281,7 @@ public class SearchFieldListResource extends SecureResource{
 					   Boolean requiresValue= false;
 					   Object value = null;
 					   if(df instanceof SQLQueryField){
-						   if(id.indexOf("=")>-1){
+						   if(StringUtils.contains(id,"=")){
 							   value =((SQLQueryField)df).getValue();
 						   }else{
 							   requiresValue=true;
