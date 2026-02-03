@@ -54,11 +54,9 @@ public class XnatObjectIntrospectionServiceImpl implements XnatObjectIntrospecti
     @Override
     public Boolean storedInDatabase(XnatSubjectdataI subject) {
         List<Map<String, Object>> result = simpleQuery(QUERY_SUBJECTDATA, "subjectId", subject.getId());
-        if(result != null && !result.isEmpty()){
-            return true;
-        } else {
-            return false;
-        }
+        boolean stored = result != null && !result.isEmpty();
+        System.out.println(">>> storedInDatabase(XnatSubjectdataI): table=xnat_subjectdata, id=" + subject.getId() + ", resultSize=" + (result != null ? result.size() : "null") + ", stored=" + stored);
+        return stored;
     }
 
     @Override
@@ -134,7 +132,9 @@ public class XnatObjectIntrospectionServiceImpl implements XnatObjectIntrospecti
     public boolean storedInDatabase(XnatSubjectassessordataI subjectAssessor) {
         Integer result = jdbcTemplate.queryForObject(QUERY_COUNT_SUBJECTASESSORS_BY_ID,
                 new MapSqlParameterSource("subjectAssessorId", subjectAssessor.getId()), Integer.class);
-        return result > 0;
+        boolean stored = result > 0;
+        System.out.println(">>> storedInDatabase(XnatSubjectassessordataI): table=xnat_subjectassessordata, id=" + subjectAssessor.getId() + ", count=" + result + ", stored=" + stored);
+        return stored;
     }
 
     @Override
@@ -148,14 +148,18 @@ public class XnatObjectIntrospectionServiceImpl implements XnatObjectIntrospecti
     public boolean storedInDatabase(XnatProjectdataI project) {
         Integer result = jdbcTemplate.queryForObject(QUERY_COUNT_PROJECT_BY_ID,
                 new MapSqlParameterSource("projectId", project.getId()), Integer.class);
-        return result > 0;
+        boolean stored = result > 0;
+        System.out.println(">>> storedInDatabase(XnatProjectdataI): table=xnat_projectdata, id=" + project.getId() + ", count=" + result + ", stored=" + stored);
+        return stored;
     }
 
     @Override
     public boolean storedInDatabase(ArcProjectI project) {
         Integer result = jdbcTemplate.queryForObject(QUERY_COUNT_ARCPROJECT_BY_ID,
                 new MapSqlParameterSource("projectId", project.getId()), Integer.class);
-        return result > 0;
+        boolean stored = result > 0;
+        System.out.println(">>> storedInDatabase(ArcProjectI): table=arc_project, id=" + project.getId() + ", count=" + result + ", stored=" + stored);
+        return stored;
     }
 
     @Override
