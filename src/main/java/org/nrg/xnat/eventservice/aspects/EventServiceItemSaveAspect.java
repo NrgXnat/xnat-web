@@ -58,6 +58,15 @@ public class EventServiceItemSaveAspect {
             "@annotation(org.nrg.xft.utils.EventServiceTrigger) && args(item, user, .., eventMeta)")
     public Object processItemSaveTrigger(final ProceedingJoinPoint joinPoint, ItemI item, UserI user, EventMetaI eventMeta) throws Throwable {
         System.out.println(">>> EventServiceItemSaveAspect.processItemSaveTrigger called for item type: " + (item != null ? item.getXSIType() : "null"));
+        // Print stack trace for Project to debug double save issue
+        if (item != null && "arc:project".equals(item.getXSIType())) {
+            System.out.println(">>> Stack trace for arc:project save:");
+            for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+                if (ste.getClassName().contains("nrg") || ste.getClassName().contains("xnat")) {
+                    System.out.println(">>>   " + ste);
+                }
+            }
+        }
 
         if (eventService != null && eventService.getPrefs() != null && !eventService.getPrefs().getEnabled()) {
            System.out.println(">>> EventService is DISABLED, skipping");
@@ -331,6 +340,7 @@ public class EventServiceItemSaveAspect {
                     + "\n" + Arrays.toString(e.getStackTrace()));
         }
         if (proceedingReturn == null) {
+            System.out.println(">>> Line 343 FALLBACK: proceedingReturn was null, calling joinPoint.proceed() for item type: " + (item != null ? item.getXSIType() : "null"));
             proceedingReturn = joinPoint.proceed();;
         }
         return proceedingReturn;
