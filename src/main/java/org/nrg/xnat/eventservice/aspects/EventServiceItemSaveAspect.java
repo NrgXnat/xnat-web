@@ -57,8 +57,10 @@ public class EventServiceItemSaveAspect {
     @Around(value = "execution(* org.nrg.xft.utils.SaveItemHelper.save(..)) && " +
             "@annotation(org.nrg.xft.utils.EventServiceTrigger) && args(item, user, .., eventMeta)")
     public Object processItemSaveTrigger(final ProceedingJoinPoint joinPoint, ItemI item, UserI user, EventMetaI eventMeta) throws Throwable {
+        System.out.println(">>> EventServiceItemSaveAspect.processItemSaveTrigger called for item type: " + (item != null ? item.getXSIType() : "null"));
 
         if (eventService != null && eventService.getPrefs() != null && !eventService.getPrefs().getEnabled()) {
+           System.out.println(">>> EventService is DISABLED, skipping");
            return joinPoint.proceed();
         }
 
@@ -81,15 +83,18 @@ public class EventServiceItemSaveAspect {
                 boolean alreadyStored = item instanceof ArcProjectI api ? xnatObjectIntrospectionService.storedInDatabase(api) :
                         xnatObjectIntrospectionService.storedInDatabase(new ArcProject(item));
                 String projectId = item instanceof XnatProjectdataI xpi ? xpi.getId() : (item instanceof ArcProjectI api ? api.getId() : "unknown");
+                System.out.println(">>> EventService Project Check: id=" + projectId + ", alreadyStored=" + alreadyStored);
                 log.info("EventService Project Check: id={}, alreadyStored={}", projectId, alreadyStored);
                 if (!alreadyStored){
                     log.debug("New Project Data Save" + " : xsiType:" + item.getXSIType());
                     proceedingReturn = joinPoint.proceed();
                     triggerProjectCreate(item instanceof XnatProjectdataI xpi ? xpi : new XnatProjectdata(item), user);
+                    System.out.println(">>> EventService Project CREATED event triggered: id=" + projectId);
                     log.info("EventService Project CREATED event triggered: id={}", projectId);
                 } else {
                     log.debug("Existing Project Data Save" + " : xsiType:" + item.getXSIType());
                     log.debug("ProjectEvent.Status.UPDATED detected - no-op");
+                    System.out.println(">>> EventService Project SKIPPED (already stored): id=" + projectId);
                     log.info("EventService Project SKIPPED (already stored): id={}", projectId);
                 }
                 if (log.isDebugEnabled() && sw.isRunning()) {
@@ -109,6 +114,7 @@ public class EventServiceItemSaveAspect {
             } else if (isItemA(item, XnatType.SUBJECT)) {
                 XnatSubjectdataI subject = item instanceof XnatSubjectdataI xsi ? xsi : new XnatSubjectdata(item);
                 Boolean alreadyStored = xnatObjectIntrospectionService.storedInDatabase(subject);
+                System.out.println(">>> EventService Subject Check: id=" + subject.getId() + ", label=" + subject.getLabel() + ", alreadyStored=" + alreadyStored);
                 log.info("EventService Subject Check: id={}, label={}, alreadyStored={}", subject.getId(), subject.getLabel(), alreadyStored);
                 if (!alreadyStored) {
                     // New subject save
@@ -116,12 +122,14 @@ public class EventServiceItemSaveAspect {
                     // ** Proceed with save operation ** //
                     proceedingReturn = joinPoint.proceed();
                     triggerSubjectCreate(subject, user);
+                    System.out.println(">>> EventService Subject CREATED event triggered: id=" + subject.getId() + ", label=" + subject.getLabel());
                     log.info("EventService Subject CREATED event triggered: id={}, label={}", subject.getId(), subject.getLabel());
 
                 } else if (item instanceof XnatSubjectdataI &&
                         (subject.getExperiments_experiment() == null || subject.getExperiments_experiment().isEmpty())){
                     // This is an existing subject being edited
                     log.debug("SubjectEvent.Status.UPDATED detected - no-op");
+                    System.out.println(">>> EventService Subject SKIPPED (updated, no experiments): id=" + subject.getId() + ", label=" + subject.getLabel());
                     log.info("EventService Subject SKIPPED (updated, no experiments): id={}, label={}", subject.getId(), subject.getLabel());
                 } else {
                     log.debug("Existing Subject Data Save" + " : xsiType:" + item.getXSIType());
@@ -191,10 +199,12 @@ public class EventServiceItemSaveAspect {
             } else if (isItemA(item, XnatType.SUBJECT_ASSESSOR)) {
                 XnatSubjectassessordataI subjectAssessor = item instanceof XnatSubjectassessordataI xsi ? xsi : new XnatSubjectassessordata(item);
                 boolean subAssessorAlreadyStored = xnatObjectIntrospectionService.storedInDatabase(subjectAssessor);
+                System.out.println(">>> EventService SubjectAssessor Check: id=" + subjectAssessor.getId() + ", label=" + subjectAssessor.getLabel() + ", alreadyStored=" + subAssessorAlreadyStored);
                 log.info("EventService SubjectAssessor Check: id={}, label={}, alreadyStored={}", subjectAssessor.getId(), subjectAssessor.getLabel(), subAssessorAlreadyStored);
 
                 if (isItemA(item, XnatType.SESSION)) {
                     XnatImagesessiondataI session = item instanceof XnatImagesessiondataI xii ? xii : new XnatImagesessiondata(item);
+                    System.out.println(">>> EventService Session Check: id=" + session.getId() + ", label=" + session.getLabel() + ", alreadyStored=" + subAssessorAlreadyStored);
                     log.info("EventService Session Check: id={}, label={}, alreadyStored={}", session.getId(), session.getLabel(), subAssessorAlreadyStored);
                     if (!subAssessorAlreadyStored) {
                         log.debug("New Session Data Save : xsiType: {}", item.getXSIType());
@@ -202,9 +212,11 @@ public class EventServiceItemSaveAspect {
                         // ** Proceed with save operation ** //
                         proceedingReturn = joinPoint.proceed();
                         triggerSessionCreate(session, user);
+                        System.out.println(">>> EventService Session CREATED event triggered: id=" + session.getId() + ", label=" + session.getLabel());
                         log.info("EventService Session CREATED event triggered: id={}, label={}", session.getId(), session.getLabel());
                     } else {
                         log.debug("Existing Session Data Save : xsiType: {}", item.getXSIType());
+                        System.out.println(">>> EventService Session SKIPPED (already stored): id=" + session.getId() + ", label=" + session.getLabel());
                         log.info("EventService Session SKIPPED (already stored): id={}, label={}", session.getId(), session.getLabel());
                         List<String> preScanIds = xnatObjectIntrospectionService.getStoredScanIds((XnatExperimentdata) session);
 
@@ -231,9 +243,11 @@ public class EventServiceItemSaveAspect {
                 }
                 if (!subAssessorAlreadyStored) {
                     triggerSubjectAssessorCreate(subjectAssessor, user);
+                    System.out.println(">>> EventService SubjectAssessor CREATED event triggered: id=" + subjectAssessor.getId() + ", label=" + subjectAssessor.getLabel());
                     log.info("EventService SubjectAssessor CREATED event triggered: id={}, label={}", subjectAssessor.getId(), subjectAssessor.getLabel());
                 } else {
                     //Subject Assessor Updated - no-op
+                    System.out.println(">>> EventService SubjectAssessor SKIPPED (already stored): id=" + subjectAssessor.getId() + ", label=" + subjectAssessor.getLabel());
                     log.info("EventService SubjectAssessor SKIPPED (already stored): id={}, label={}", subjectAssessor.getId(), subjectAssessor.getLabel());
                 }
 
