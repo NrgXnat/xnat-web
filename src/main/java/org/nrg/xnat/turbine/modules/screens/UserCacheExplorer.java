@@ -14,5 +14,11 @@ public class UserCacheExplorer extends SecureScreen {
         if (data.getParameters().containsKey("project")) {
             context.put("project", TurbineUtils.GetPassedParameter("project", data));
         }
+        if (data.getParameters().containsKey("subject")) {
+            context.put("subject", TurbineUtils.GetPassedParameter("subject", data));
+        }
+        if (data.getParameters().containsKey("experiment")) {
+            context.put("experiment", TurbineUtils.GetPassedParameter("experiment", data));
+        }
     }
 }

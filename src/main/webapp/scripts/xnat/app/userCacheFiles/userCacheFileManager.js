@@ -1081,6 +1081,8 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.init = async function() {
+        await setupContext();
+        console.log(XNAT.app.userCacheFileManager.level);
         userCacheFileManager.updateSourceTree(true);
         userCacheFileManager.updateDestinationTree();
     }

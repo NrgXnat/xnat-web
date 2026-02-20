@@ -77,4 +77,23 @@
         </div>
     </div>
 </div>
+
+<script>
+    async function setupContext() {
+        #if($!{experiment})
+            XNAT.app.userCacheFileManager.level="Experiment";
+            XNAT.app.userCacheFileManager.baseProject="$!project";
+            XNAT.app.userCacheFileManager.baseExperiment="$!experiment";
+        #elseif($!{subject})
+            XNAT.app.userCacheFileManager.level="Subject";
+            XNAT.app.userCacheFileManager.baseProject="$!project";
+            XNAT.app.userCacheFileManager.baseSubject="$!subject";
+        #elseif($!{project})
+            XNAT.app.userCacheFileManager.level="Project";
+            XNAT.app.userCacheFileManager.baseProject="$!project";
+        #else
+            XNAT.app.userCacheFileManager.level="None";
+        #end
+    }
+</script>
 <script type="text/javascript" src="$content.getURI('/scripts/xnat/app/userCacheFiles/userCacheFileManager.js')"></script>
