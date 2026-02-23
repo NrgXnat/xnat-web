@@ -763,20 +763,39 @@ var XNAT = getObject(XNAT);
         return currentLevelDiv;
     }
 
-    userCacheFileManager.convertXnatUserDataToFileTree =  function() {
-        var fileTree = {name: ARCHIVE_TREE_ROOT_NODE, type: "folder", xnatType: "archive", uri: ""};
-        fileTree.children = [];
-        userData['projects'].forEach(project => {
-            fileTree.children.push({name: project.name, type: "folder", xnatType: "project", uri: project.URI});
-        });
+    userCacheFileManager.convertXnatUserDataToFileTree = function(baseLevel) {
+        if (baseLevel === 'Project') {
+            project = userData['projects'][0];
+            var fileTree = {name: project.ID, type: "folder", xnatType: "project", uri: project.URI};
+            fileTree.children = [];
+        } else if (baseLevel === "Subject") {
+            subject = userData['subjects'][0];
+            var fileTree = {name: subject.ID, type: "folder", xnatType: "subject", uri: subject.URI};
+            fileTree.children = [];
+        } else if (baseLevel === "Experiment") {
+            experiment = userData['experiments'][0];
+            var fileTree = {name: experiment.ID, type: "folder", xnatType: "experiment", uri: experiment.URI};
+            fileTree.children = [];
+        } else {
+            var fileTree = {name: ARCHIVE_TREE_ROOT_NODE, type: "folder", xnatType: "archive", uri: ""};
+            fileTree.children = [];
+            userData['projects'].forEach(project => {
+                fileTree.children.push({name: project.ID, type: "folder", xnatType: "project", uri: project.URI});
+            });
+        }
         return fileTree;
     }
 
-    userCacheFileManager.updateDestinationTree = async function() {
-        var projects = await userCacheFileManager.fetchProjects();
+    userCacheFileManager.updateDestinationTree = async function(baseLevel) {
+        if (baseLevel === "None") {
+            isSingleElement = true;
+            var projects = await userCacheFileManager.fetchProjects();
+            expandedDestinationFolders.add(ARCHIVE_TREE_ROOT_NODE);
+        } else {
+            userCacheFileManager.createBaseSingleLevel(baseLevel);
+        }
         const treeContainer = document.getElementById('destinationTree');
-        destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree();
-        expandedDestinationFolders.add(ARCHIVE_TREE_ROOT_NODE);
+        destinationStructure = userCacheFileManager.convertXnatUserDataToFileTree(baseLevel);
         treeContainer.append(userCacheFileManager.renderDestinationTree(destinationStructure));
     }
 
@@ -836,13 +855,30 @@ var XNAT = getObject(XNAT);
         return responseData;
     }
 
-    userCacheFileManager.fetchProjects = async function() {
+    userCacheFileManager.fetchProjects = async function(id) {
         if (userData['projects'].length == 0) {
-          let response = userCacheFileManager.fetchData('/data/projects');
-          userData['projects'].push(...response['ResultSet']['Result']);
-          sortAlphabetically(userData['projects']);
+            var response = userCacheFileManager.fetchData('/data/projects');
+            userData['projects'].push(...response['ResultSet']['Result']);
+            sortAlphabetically(userData['projects']);
         }
         return userData['projects'] || [];
+    }
+
+    userCacheFileManager.createBaseSingleLevel = function(level) {
+        let baseProject = XNAT.app.userCacheFileManager.baseProject;
+        if (level === "Project") {
+            userData['projects'] = [];
+            userData['projects'].push({ID: baseProject, URI: '/data/projects/' + baseProject});
+        } else if (level === "Subject") {
+            userData['subjects'] = [];
+            let baseSubject = XNAT.app.userCacheFileManager.baseSubject;
+            userData['subjects'].push({ID: baseSubject, URI: '/data/projects/' + baseProject + '/subjects/' + baseSubject});
+        } else if (level === "Experiment") {
+            userData['experiments'] = [];
+            let baseSubject = XNAT.app.userCacheFileManager.baseSubject;
+            let baseExperiment = XNAT.app.userCacheFileManager.baseExperiment;
+            userData['experiments'].push({ID: baseExperiment, URI: '/data/projects/' + baseProject + '/subjects/' + baseSubject + '/experiments/' + baseExperiment});
+        }
     }
 
     userCacheFileManager.fetchXnatDataAtLevel = function(inputUri, inputDataLevel, apiBaseUrl) {
@@ -1082,9 +1118,8 @@ var XNAT = getObject(XNAT);
 
     userCacheFileManager.init = async function() {
         await setupContext();
-        console.log(XNAT.app.userCacheFileManager.level);
         userCacheFileManager.updateSourceTree(true);
-        userCacheFileManager.updateDestinationTree();
+        userCacheFileManager.updateDestinationTree(XNAT.app.userCacheFileManager.level);
     }
 
     userCacheFileManager.init();

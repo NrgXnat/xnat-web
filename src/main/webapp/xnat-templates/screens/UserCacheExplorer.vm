@@ -83,6 +83,7 @@
         #if($!{experiment})
             XNAT.app.userCacheFileManager.level="Experiment";
             XNAT.app.userCacheFileManager.baseProject="$!project";
+            XNAT.app.userCacheFileManager.baseSubject="$!subject";
             XNAT.app.userCacheFileManager.baseExperiment="$!experiment";
         #elseif($!{subject})
             XNAT.app.userCacheFileManager.level="Subject";

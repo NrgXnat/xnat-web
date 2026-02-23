@@ -1,7 +1,7 @@
 #if($user.checkFeature($om,"configurable_resource_uploader"))
     #if($om.canEdit($user))
         <li class="yuimenuitem">
-                <a href="$link.setPage("UserCacheExplorer.vm").addPathInfo("project", $project).addPathInfo("experiment", $om.getId())"">
+                <a href="$link.setPage("UserCacheExplorer.vm").addPathInfo("project", $project).addPathInfo("subject", $om.getSubjectId()).addPathInfo("experiment", $om.getId())"">
                     Non-Dicom Uploader
                 </a>
         </li>
