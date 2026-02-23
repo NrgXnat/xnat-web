@@ -57,7 +57,6 @@ var XNAT = getObject(XNAT);
             this.container = container;
             this.expandedNodes = new Set();
             this.render();
-            this.updateStats();
         }
 
         toggleExpand(nodeId) {
@@ -75,7 +74,6 @@ var XNAT = getObject(XNAT);
                         droppedFiles.splice(droppedFiles.indexOf(node), 1);
                         this.data = droppedFiles;
                         this.render();
-                        this.updateStats();
                         userCacheFileManager.updateFileCount();
                         return;
                     }
@@ -96,7 +94,6 @@ var XNAT = getObject(XNAT);
                         if (nodeFound) {
                             this.data = droppedFiles;
                             this.render();
-                            this.updateStats();
                             return;
                         } else if (nodesWithCorrectPath.length != 0){
                             traverseForDeletion(nodesWithCorrectPath);
@@ -181,43 +178,6 @@ var XNAT = getObject(XNAT);
                 const treeNode = this.createTreeNode(rootNode);
                 this.container.appendChild(treeNode);
             });
-        }
-
-        countNodes(nodes) {
-            let folders = 0;
-            let files = 0;
-            let totalSize = 0;
-
-            const traverse = (nodeList) => {
-                nodeList.forEach(node => {
-                    if (node.type === 'folder') {
-                        folders++;
-                    } else {
-                        files++;
-                    }
-                    if (node.size) {
-                        totalSize += node.size;
-                    }
-                    if (node.children) {
-                        traverse(node.children);
-                    }
-                });
-            };
-
-            traverse(nodes);
-            return { folders, files, totalSize };
-        }
-
-        updateStats() {
-            const stats = this.countNodes(this.data);
-           // const statsDiv = document.getElementById('stats');
-           // statsDiv.innerHTML = `
-           //     <strong>Summary:</strong>
-           //     ${stats.folders} folders,
-           //     ${stats.files} files,
-           //     Total size: ${formatFileSize(stats.totalSize)}
-           // `;
-           console.log(JSON.stringify(stats));
         }
     }
 
