@@ -25,6 +25,7 @@ var XNAT = getObject(XNAT);
     var destinationStructure;
     const CACHE_TREE_ROOT_NODE = "My Uploads";
     const ARCHIVE_TREE_ROOT_NODE = "Projects";
+    const CATALOG_FOLDER_NAME = "catalogs";
 
     var userData = {};
     userData.projects = [];
@@ -49,7 +50,6 @@ var XNAT = getObject(XNAT);
     const addMoreBtn = document.getElementById('addMoreBtn');
     const ingestBtn = document.getElementById('ingestBtn');
     const destinationHeader = document.getElementById('destinationHeader');
-
 
     class TreeViewer {
         constructor(data, container) {
@@ -517,6 +517,9 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
+        if (node.name === CATALOG_FOLDER_NAME) {
+            return;
+        }
         let currentLevelDiv = spawn('div');
         const folderPath = path + node.name;
         let includeDelete = enableDrag;
