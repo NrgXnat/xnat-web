@@ -37,10 +37,11 @@ var XNAT = getObject(XNAT);
     userData.scans = [];
     userData.scan_resources = [];
 
-    let expandedSourceFolders = new Set();
-    let expandedDestinationFolders = new Set();
-    let filteredDestinationFolders = {};
-    let droppedFiles = [];
+    var expandedSourceFolders = new Set();
+    var expandedDestinationFolders = new Set();
+    var filteredDestinationFolders = {};
+    var droppedFiles = [];
+    var disabledSourceElements = [];
 
     let isUploading = false;
     let isUploadAreaMinimized = false;
@@ -367,6 +368,12 @@ var XNAT = getObject(XNAT);
 
         if (!fileAlreadyAssociated) {
             droppedFiles.push(fileInfo);
+            disabledSourceElements.push(fileInfo.sourcePath);
+            if (expandedSourceFolders.has(fileInfo.sourcePath)) {
+                expandedSourceFolders.delete(fileInfo.sourcePath);
+            }
+            userCacheFileManager.updateSourceTree(false);
+            currentDraggedDiv = null;
             userCacheFileManager.updateFileCount();
             XNAT.ui.banner.top(3000, fileData.name  + ' associated with ' + destinationPath, 'success');
         } else {
@@ -516,28 +523,39 @@ var XNAT = getObject(XNAT);
         }, [spawn('i.fa.fa-trash')]);
     }
 
-    userCacheFileManager.renderSourceTree = function(node, enableDrag, path = "", level = 0) {
+    userCacheFileManager.renderSourceTree = function(node, path = "", level = 0) {
         if (node.name === CATALOG_FOLDER_NAME) {
             return;
         }
         let currentLevelDiv = spawn('div');
         const folderPath = path + node.name;
+        let enableDrag = !disabledSourceElements.includes(folderPath)
         let includeDelete = enableDrag;
         if (node.type === 'folder') {
             const isRootNode = node.name === CACHE_TREE_ROOT_NODE;
             const isExpanded = (enableDrag ? expandedSourceFolders.has(path + node.name) : expandedDestinationFolders.has(path + node.name) );
 
             let folderDiv = spawn('div');
-            $(folderDiv).attr({'class': "uce-folder-item source-folder-item" + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
-               'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag})
+            let folderClass = ' source-folder-item';
+            let toggleClass = 'uce-folder-toggle'
+            if (!enableDrag) {
+                folderClass = ' inactive';
+                toggleClass += ' inactive';
+            }
+            $(folderDiv).attr({'class': 'uce-folder-item' +  folderClass + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
+               'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag});
+            let cursorStyle = 'no-drop';
             if (enableDrag) {
                 userCacheFileManager.createDragEvents(folderDiv);
+                cursorStyle = 'pointer';
             }
-            folderDiv.append(spawn('span|class=uce-folder-toggle', {
+            folderDiv.append(spawn('span|' + toggleClass, {
                 onclick: function (e) {
-                    XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag, expandedSourceFolders);
+                    if (enableDrag) {
+                        XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag, expandedSourceFolders);
+                    }
                 },
-                style: {cursor: 'pointer'},
+                style: {cursor: cursorStyle},
                 'html': isExpanded ? '<i class="fa fa-folder-open"></i>' : '<i class="fa fa-folder"></i>'
             }));
             folderDiv.append(spawn('span|class=uce-folder-name', {'html': node.name}));
@@ -551,7 +569,7 @@ var XNAT = getObject(XNAT);
                 let childrenDiv = spawn('div|class=uce-children');
                 for (let i = 0; i < node.children.length; i++){
                     let child = node.children[i];
-                    $(childrenDiv).append(userCacheFileManager.renderSourceTree(child, enableDrag, path + node.name + '/', level + 1))
+                    $(childrenDiv).append(userCacheFileManager.renderSourceTree(child, path + node.name + '/', level + 1))
                 }
                 $(currentLevelDiv).append(childrenDiv);
             }
@@ -578,7 +596,7 @@ var XNAT = getObject(XNAT);
         if (!initialRendering) {
             $('#sourceTree').empty();
         }
-        $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+        $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure));
     }
 
     userCacheFileManager.createDestinationTreeButton = function(buttonAction, nodeUri, icon, title) {
@@ -779,7 +797,7 @@ var XNAT = getObject(XNAT);
         }
         if (isSourcePane) {
             $('#sourceTree').empty();
-            $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure, true));
+            $('#sourceTree').append(userCacheFileManager.renderSourceTree(sourceStructure));
         } else {
             $('#destinationTree').empty();
             $('#destinationTree').append(userCacheFileManager.renderDestinationTree(destinationStructure));

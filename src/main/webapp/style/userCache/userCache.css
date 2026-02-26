@@ -269,6 +269,10 @@ div#uploadWidget {
     font-weight: 600;
 }
 
+.uce-folder-item.inactive {
+    background: rgba(128, 128, 128, 0.7);
+}
+
 .uce-folder-item.source-folder-item {
     cursor: grab;
 }
@@ -378,6 +382,9 @@ div#uploadWidget {
     border-radius: 2px;
     transition: background-color 0.2s ease;
     vertical-align: middle;
+}
+
+uce-folder-toggle.inactive:hover {
 }
 
 .uce-folder-toggle:hover {
