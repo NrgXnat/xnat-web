@@ -103,6 +103,10 @@ var XNAT = getObject(XNAT);
                 });
             };
             traverseForDeletion(droppedFiles);
+            if (disabledSourceElements.includes(nodeForDeletion.sourcePath)) {
+                disabledSourceElements.splice(disabledSourceElements.indexOf(nodeForDeletion.sourcePath), 1);
+                userCacheFileManager.updateSourceTree(false);
+            }
         }
 
         createIngestionTreeDeleteButton(node) {
@@ -537,10 +541,10 @@ var XNAT = getObject(XNAT);
 
             let folderDiv = spawn('div');
             let folderClass = ' source-folder-item';
-            let toggleClass = 'uce-folder-toggle'
+            let toggleElement = '';
             if (!enableDrag) {
                 folderClass = ' inactive';
-                toggleClass += ' inactive';
+                toggleElement = ' inactive';
             }
             $(folderDiv).attr({'class': 'uce-folder-item' +  folderClass + (isExpanded ? " expanded" : ""), 'data-path': folderPath,
                'data-filename': node.name, 'data-type': node.type, 'data-absolute-path': node.absolutePath, 'draggable': enableDrag});
@@ -549,7 +553,7 @@ var XNAT = getObject(XNAT);
                 userCacheFileManager.createDragEvents(folderDiv);
                 cursorStyle = 'pointer';
             }
-            folderDiv.append(spawn('span|' + toggleClass, {
+            folderDiv.append(spawn('span|class=uce-folder-toggle' + toggleElement, {
                 onclick: function (e) {
                     if (enableDrag) {
                         XNAT.app.userCacheFileManager.toggleFolder(event, folderPath, enableDrag, expandedSourceFolders);
@@ -1077,6 +1081,10 @@ var XNAT = getObject(XNAT);
     }
 
     userCacheFileManager.ingest = function() {
+        if (droppedFiles.length === 0) {
+            XNAT.ui.banner.top(3000, "You must have at least one element to ingest.", 'error');
+            return;
+        }
         let populatedJsonArray = userCacheFileManager.populateFolderChildren(droppedFiles);
         console.log("To ingest " + JSON.stringify(populatedJsonArray));
         xmodal.loading.open({ title: 'Ingesting data to XNAT...'});
@@ -1114,7 +1122,6 @@ function hide(element) {
 function show(element) {
     element.style.display = 'block';
 }
-
 
 function getFileIcon(fileName) {
     const ext = fileName.split('.').pop().toLowerCase();
