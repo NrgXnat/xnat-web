@@ -544,9 +544,9 @@ var XNAT = getObject(XNAT);
             let toggleElement = '';
             let folderTitle = ''
             if (!enableDrag) {
-                folderClass = ' inactive';
-                toggleElement = ' inactive';
-                folderTitle = 'This element has already been mapped to an XNAT element. Remove it from the ingestion tree to associate it somewhere else.'
+                folderClass = ' notActive';
+                toggleElement = ' notActive';
+                folderTitle = 'This cache element has already been mapped to an XNAT element. Remove it from the ingestion tree to associate it somewhere else.'
             }
             $(folderDiv).attr({'class': 'uce-folder-item' +  folderClass + (isExpanded ? " expanded" : ""),
                 'data-path': folderPath, 'data-filename': node.name, 'data-type': node.type,
@@ -555,7 +555,6 @@ var XNAT = getObject(XNAT);
             if (enableDrag) {
                 userCacheFileManager.createDragEvents(folderDiv);
                 cursorStyle = 'pointer';
-
             }
             folderDiv.append(spawn('span|class=uce-folder-toggle' + toggleElement, {
                 onclick: function (e) {

@@ -269,7 +269,7 @@ div#uploadWidget {
     font-weight: 600;
 }
 
-.uce-folder-item.inactive {
+.uce-folder-item.notActive {
     background: rgba(128, 128, 128, 0.7);
 }
 
@@ -384,12 +384,13 @@ div#uploadWidget {
     vertical-align: middle;
 }
 
-uce-folder-toggle.inactive:hover {
-}
-
 .uce-folder-toggle:hover {
     background-color: #e8e8e8;
     color: #333;
+}
+
+.uce-folder-toggle.notActive:hover {
+    background: rgba(128, 128, 128, 0.7);
 }
 
 .uce-folder-toggle:active {
