@@ -470,7 +470,7 @@ var XNAT = getObject(XNAT);
         });
     }
 
-    userCacheFileManager.removeFileFromCache = function(filePath, absolutePath) {
+    userCacheFileManager.removeFileFromCache = function(filePath, confirmUserForDeletion) {
         let urlTail = 'data/user/cache/resources/';
         let xnatFullPath = filePath.replace(CACHE_TREE_ROOT_NODE + '/', '');
         let partsArr = xnatFullPath.split('/');
@@ -482,46 +482,58 @@ var XNAT = getObject(XNAT);
         }
         let deleteUrl = XNAT.url.csrfUrl(urlTail,{},false,false);
 
-        XNAT.ui.dialog.open({
-            title: 'Confirm Deletion',
-            width: 350,
-            content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
-            buttons: [
-                {
-                    label: 'Confirm Delete',
-                    isDefault: true,
-                    close: false,
-                    action: function(){
-                        xmodal.loading.open({ title: 'Deleting element from cache...'});
-                        XNAT.xhr.delete({
-                            url: deleteUrl,
-                            async: false,
-                            success: function (data) {
-                                XNAT.ui.banner.top(3000,'Successfully removed file ' + filePath + ' from cache.','success');
-                                XNAT.app.userCacheFileManager.updateSourceTree(false);
-                                XNAT.ui.dialog.closeAll();
-                                xmodal.loading.close();
-                            },
-                            fail: function (e) {
-                                XNAT.ui.banner.top(5000, 'Unable to remove the file ' + filePath + ' from the user cache.', 'error');
-                                XNAT.ui.dialog.closeAll();
-                                xmodal.loading.close();
-                            }
-                        });
+        if (confirmUserForDeletion) {
+            XNAT.ui.dialog.open({
+                title: 'Confirm Deletion',
+                width: 350,
+                content: '<p>Are you sure you want to permanently delete <strong>'+ xnatFullPath +'</strong>? This operation cannot be undone.</p>',
+                buttons: [
+                    {
+                        label: 'Confirm Delete',
+                        isDefault: true,
+                        close: false,
+                        action: function(){
+                            xmodal.loading.open({ title: 'Deleting element from cache...'});
+                            userCacheFileManager.performDeletionFromCache(deleteUrl, filePath, confirmUserForDeletion);
+                        }
+                    },
+                    {
+                        label: 'Cancel',
+                        close: true
                     }
-                },
-                {
-                    label: 'Cancel',
-                    close: true
+                ]
+            })
+        } else {
+            userCacheFileManager.performDeletionFromCache(deleteUrl, filePath, confirmUserForDeletion);
+        }
+    }
+
+    userCacheFileManager.performDeletionFromCache = function(deleteUrl, filePath, confirmUserForDeletion) {
+        XNAT.xhr.delete({
+            url: deleteUrl,
+            async: false,
+            success: function (data) {
+                if (confirmUserForDeletion) {
+                    XNAT.ui.banner.top(3000,'Successfully removed file ' + filePath + ' from cache.','success');
                 }
-            ]
-        })
+                XNAT.app.userCacheFileManager.updateSourceTree(false);
+                XNAT.ui.dialog.closeAll();
+                xmodal.loading.close();
+            },
+            fail: function (e) {
+                if (confirmUserForDeletion) {
+                    XNAT.ui.banner.top(5000, 'Unable to remove the file ' + filePath + ' from the user cache.', 'error');
+                }
+                XNAT.ui.dialog.closeAll();
+                xmodal.loading.close();
+            }
+        });
     }
 
     userCacheFileManager.createDeleteButton = function(folderPath) {
         return spawn('button.btn.btn-sm.delete-cache-element', {
             onclick: function (e) {
-                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, e.currentTarget.parentElement.dataset.absolutePath);
+                XNAT.app.userCacheFileManager.removeFileFromCache(folderPath, true);
             },
             title: "Delete from cache"
         }, [spawn('i.fa.fa-trash')]);
@@ -1098,6 +1110,10 @@ var XNAT = getObject(XNAT);
             success: function (data) {
                 xmodal.loading.close();
                 console.log('Successfully ingested files into XNAT');
+                disabledSourceElements.forEach(element => {
+                    userCacheFileManager.removeFileFromCache(element, false);
+                });
+                disabledSourceElements = [];
                 XNAT.ui.banner.top(3000,'Successfully ingested files into XNAT.' ,'success');
             },
             error: function(e) {
