@@ -287,12 +287,7 @@ var XNAT = getObject(XNAT);
     });
 
     addMoreBtn.addEventListener('click', function() {
-        actionRow.classList.add('hidden');
-        reviewRow.classList.remove('hidden');
-        userCacheFileManager.renderDestinationTree(destinationStructure);
-        hide(document.getElementById('ingestTree'));
-        show(document.getElementById('destinationTree'));
-        destinationHeader.textContent = 'XNAT Data';
+        userCacheFileManager.returnToSourceDestinationTwoColumn();
     });
 
     ingestBtn.addEventListener('click', function() {
@@ -383,6 +378,15 @@ var XNAT = getObject(XNAT);
         } else {
             XNAT.ui.banner.top(3000, fileData.name  + ' has already been associated with ' + destinationPath + '. Please check the file tree for further information.', 'error');
         }
+    }
+
+    userCacheFileManager.returnToSourceDestinationTwoColumn = function(){
+        actionRow.classList.add('hidden');
+        reviewRow.classList.remove('hidden');
+        userCacheFileManager.renderDestinationTree(destinationStructure);
+        hide(document.getElementById('ingestTree'));
+        show(document.getElementById('destinationTree'));
+        destinationHeader.textContent = 'XNAT Data';
     }
 
     userCacheFileManager.uploadFileToCache = async function(file) {
@@ -1113,7 +1117,10 @@ var XNAT = getObject(XNAT);
                 disabledSourceElements.forEach(element => {
                     userCacheFileManager.removeFileFromCache(element, false);
                 });
+                droppedFiles = [];
                 disabledSourceElements = [];
+                userCacheFileManager.returnToSourceDestinationTwoColumn();
+                userCacheFileManager.updateFileCount();
                 XNAT.ui.banner.top(3000,'Successfully ingested files into XNAT.' ,'success');
             },
             error: function(e) {
