@@ -41,6 +41,8 @@ import org.nrg.xnat.restlet.util.FileWriterWrapperI;
 import org.nrg.xnat.restlet.util.RequestUtil;
 import org.nrg.xnat.services.messaging.prearchive.PrearchiveOperationRequest;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -61,6 +63,7 @@ import static org.nrg.xnat.archive.Operation.Rebuild;
 import static org.nrg.xnat.archive.Operation.Separate;
 
 @ImporterHandler(handler = ImporterHandlerA.DICOM_ZIP_IMPORTER)
+@Slf4j
 public final class DicomZipImporter extends ImporterHandlerA {
 
     private static final String ACTION = "action";
@@ -219,6 +222,7 @@ public final class DicomZipImporter extends ImporterHandlerA {
 
     private Set<String> xmlBuild(Set<String> uris) throws ClientException {
         Set<String> archiveUrls = new HashSet<>();
+        final List<Exception> errors = new ArrayList<>();
         final boolean override = isBooleanParameter(PrearchiveOperationRequest.PARAM_OVERRIDE_EXCEPTIONS);
         final boolean appendMerge = isBooleanParameter(PrearchiveOperationRequest.PARAM_ALLOW_SESSION_MERGE);
         PrearchiveOperationHandlerResolver resolver = XDAT.getContextService().getBean(PrearchiveOperationHandlerResolver.class);
@@ -230,33 +234,32 @@ public final class DicomZipImporter extends ImporterHandlerA {
                 PrearchiveRebuildHandler handler = (PrearchiveRebuildHandler) resolver.getHandler(request);
                 boolean buildSuccessful = handler.rebuild();
                 if (buildSuccessful) {
-                    try {
-                        final boolean isSeparatePetMr = handler.needToHandleSeparablePetMrSession();
-                        if (isSeparatePetMr) {
-                            PrearchiveOperationRequest separateRequest = new PrearchiveOperationRequest(u, Separate, sessionData, new File(sessionData.getUrl()), populateAdditionalValues(params));
-                            PrearchiveSeparatePetMrHandler separatePetMrHandler = (PrearchiveSeparatePetMrHandler) resolver.getHandler(separateRequest);
-                            List<PrearchiveOperationRequest> requestList= separatePetMrHandler.separate();
-                            if (requestList != null) {
-                                for (PrearchiveOperationRequest r: requestList) {
-                                    if (isAutoArchive(params)) {
-                                        archiveSession(archiveUrls, override, appendMerge, r);
-                                    }
+                    final boolean isSeparatePetMr = handler.needToHandleSeparablePetMrSession();
+                    if (isSeparatePetMr) {
+                        PrearchiveOperationRequest separateRequest = new PrearchiveOperationRequest(u, Separate, sessionData, new File(sessionData.getUrl()), populateAdditionalValues(params));
+                        PrearchiveSeparatePetMrHandler separatePetMrHandler = (PrearchiveSeparatePetMrHandler) resolver.getHandler(separateRequest);
+                        List<PrearchiveOperationRequest> requestList= separatePetMrHandler.separate();
+                        if (requestList != null) {
+                            for (PrearchiveOperationRequest r: requestList) {
+                                if (isAutoArchive(params)) {
+                                    archiveSession(archiveUrls, override, appendMerge, r);
                                 }
                             }
-                        } else {
-                            handler.postBuild();
-                            if (isAutoArchive(params)) {
-                                archiveSession(archiveUrls, override, appendMerge, request);
-                            }
                         }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    } else {
+                        handler.postBuild();
+                        if (isAutoArchive(params)) {
+                            archiveSession(archiveUrls, override, appendMerge, request);
+                        }
                     }
                 }
-
             } catch (Exception e) {
-                throw new ClientException("unable to archive for the Prearchive session", e);
+                log.error("Failed to build/archive prearchive session {}", session, e);
+                errors.add(e);
             }
+        }
+        if (!errors.isEmpty()) {
+            throw new ClientException("Failed to archive " + errors.size() + " of " + uris.size() + " session(s)", errors.get(0));
         }
         return archiveUrls;
     }

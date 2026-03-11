@@ -152,6 +152,7 @@
         formDataArchive.delete("image_archive");
         formDataArchive.append("src", usrResPath);
         formDataArchive.append("http-session-listener", uploadID);
+        formDataArchive.append("SOURCE", "uploader");
         let ignoreUnparsable = document.getElementById("Ignore-UnparsableUI");
         let handler = document.getElementById('import-handler').value;
         if (handler !== "DICOM-zip") {
