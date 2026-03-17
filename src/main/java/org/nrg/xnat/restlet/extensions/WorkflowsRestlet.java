@@ -285,7 +285,7 @@ public class WorkflowsRestlet extends SecureResource {
 
     private String formatParameter(final String name, final Object value) {
         final String formattedName = StringUtils.rightPad(name, 20);
-        if (value instanceof String && StringUtils.isNotBlank((String)value)) {
+		if (value instanceof String string && StringUtils.isNotBlank(string)) {
             return " * %s: %s\r".formatted(formattedName, value);
         } else if (value instanceof Map) {
             @SuppressWarnings("unchecked")
