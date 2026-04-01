@@ -145,6 +145,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Bean
+    @Primary
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
         return new OnXnatLogin(_template);
     }
