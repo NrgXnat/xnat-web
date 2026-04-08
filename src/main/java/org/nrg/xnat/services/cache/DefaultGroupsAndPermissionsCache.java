@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DurationFormatUtils;
@@ -101,6 +102,7 @@ import static org.nrg.xnat.services.cache.extractors.DataExtractor.PARAM_EXPERIM
 import static org.nrg.xnat.services.cache.extractors.DataExtractor.PARAM_PROJECT_ID;
 import static org.nrg.xnat.services.cache.extractors.DataExtractor.PARAM_USERNAME;
 
+@SuppressWarnings({"NullableProblems", "LoggingSimilarMessage", "unused"})
 @Service(GroupsAndPermissionsCache.CACHE_NAME)
 @Slf4j
 public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEventHandlerMethod implements GroupsAndPermissionsCache, Initializing, GroupsAndPermissionsCache.Provider {
@@ -127,7 +129,6 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private static final String EVENT_SHARE     = XftItemEventI.SHARE;
     private static final String EVENT_MOVE      = XftItemEventI.MOVE;
     private static final String EVENT_OPERATION = XftItemEventI.OPERATION;
-
 
     private static final List<String> USER_CACHES                          = Arrays.asList(CACHE_ACCESS_MANAGERS,
             CACHE_BROWSEABLES,
@@ -249,7 +250,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private final NamedParameterJdbcTemplate _template;
     private final JmsTemplate                _jmsTemplate;
     private final DatabaseHelper             _helper;
-    private  Map<String, Long>          _totalCounts;
+    private final Map<String, Long>          _totalCounts;
     private final AtomicBoolean              _initialized;
 
     private Listener _listener;
@@ -1034,16 +1035,31 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         final Set<String> users = getProjectUsers(projectIds);
         for (final String username : users) {
             final Map<String, Long> cachedCounts = getReadableCountsCache().get(username);
-            if (cachedCounts == null || cachedCounts.isEmpty()) {
-                initReadableCountsForUser(username);
-            } else if (StringUtils.equals(EVENT_CREATE, action) && (!cachedCounts.containsKey(dataType) || cachedCounts.get(dataType) == 0)) {
-                //we only need to worry about this if it is null or 0
-                initReadableCountsForUser(username);
-            } else if (StringUtils.equals(EVENT_DELETE, action)) {
-                //do we need this?  Only if its going from 1 to 0, but we don't know that if counts aren't refreshed as they get closer to 1
-                //leaving it, but if it becomes an issue in profiling, then we could consider removing it.
-                initReadableCountsForUser(username);
+            if (MapUtils.isNotEmpty(cachedCounts)) {
+                if (StringUtils.equals(EVENT_CREATE, action)) {
+                    adjustXsiTypeCount(cachedCounts, dataType, 1);
+                } else if (StringUtils.equals(EVENT_DELETE, action)) {
+                    adjustXsiTypeCount(cachedCounts, dataType, -1);
+                }
             }
+        }
+    }
+
+    private void adjustXsiTypeCount(final Map<String, Long> cachedCounts, final String dataType, final int adjustment) {
+        final Long current = cachedCounts.get(dataType);
+        // If we have no items or don't have an existing count for the current data type...
+        if (current == null || current == 0L) {
+            // If this was a delete then that's weird, we *should* have an existing count that's not 0...
+            if (adjustment == -1) {
+                // But we can't have a negative count so just set it to 0.
+                cachedCounts.put(dataType, 0L);
+            } else {
+                // With zero or no count and adding 1, just set it to 1.
+                cachedCounts.put(dataType, 1L);
+            }
+        } else {
+            // Otherwise set the count to whatever it is plus the adjustment (which is -1 for delete)
+            cachedCounts.put(dataType, current + adjustment);
         }
     }
 
@@ -1242,7 +1258,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
      * @return Returns true if the user has all-data-access, false otherwise.
      */
     private boolean hasAllDataAccess(final String username) {
-        return _template.queryForObject(QUERY_HAS_ALL_DATA_ACCESS, new MapSqlParameterSource(PARAM_USERNAME, username), Boolean.class);
+        return Boolean.TRUE.equals(_template.queryForObject(QUERY_HAS_ALL_DATA_ACCESS, new MapSqlParameterSource(PARAM_USERNAME, username), Boolean.class));
     }
 
     /**
@@ -1253,7 +1269,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
      * @return Returns true if the user has all-data-admin, false otherwise.
      */
     private boolean hasAllDataAdmin(final String username) {
-        return _template.queryForObject(QUERY_HAS_ALL_DATA_ADMIN, new MapSqlParameterSource(PARAM_USERNAME, username), Boolean.class);
+        return Boolean.TRUE.equals(_template.queryForObject(QUERY_HAS_ALL_DATA_ADMIN, new MapSqlParameterSource(PARAM_USERNAME, username), Boolean.class));
     }
 
     private void resetTotalCounts(Runnable runnable) {
@@ -1286,7 +1302,8 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                 tempCounts.put(elementName, count);
             }
         }
-        _totalCounts = tempCounts;
+        _totalCounts.clear();
+        _totalCounts.putAll(tempCounts);
     }
 
 
