@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_READABLE_COUNTS;
 
@@ -113,10 +114,10 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
         log.info("Extracting readable counts for user '{}'", username);
 
         try {
-            final Map<String, Long> readableCounts   = new HashMap<>();
+            final Map<String, Long> readableCounts   = new ConcurrentHashMap<>();
             final List<String>      readableProjects = getUserReadableProjects(username);
             readableCounts.put(XnatProjectdata.SCHEMA_ELEMENT_NAME, (long) readableProjects.size());
-            readableCounts.put(WrkWorkflowdata.SCHEMA_ELEMENT_NAME, getUserReadableWorkflowCount(username));
+            readableCounts.put(WrkWorkflowdata.SCHEMA_ELEMENT_NAME, Optional.ofNullable(getUserReadableWorkflowCount(username)).orElse(0L));
             readableCounts.putAll(getUserReadableSubjectsAndExperiments(readableProjects, Arrays.asList(Users.getUserId(username), Users.getUserId(Users.DEFAULT_GUEST_USERNAME))));
 
             if (log.isDebugEnabled()) {

@@ -250,7 +250,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
     private final NamedParameterJdbcTemplate _template;
     private final JmsTemplate                _jmsTemplate;
     private final DatabaseHelper             _helper;
-    private final Map<String, Long>          _totalCounts;
+    private volatile Map<String, Long>       _totalCounts;
     private final AtomicBoolean              _initialized;
 
     private Listener _listener;
@@ -1036,31 +1036,32 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         for (final String username : users) {
             final Map<String, Long> cachedCounts = getReadableCountsCache().get(username);
             if (MapUtils.isNotEmpty(cachedCounts)) {
-                if (StringUtils.equals(EVENT_CREATE, action)) {
-                    adjustXsiTypeCount(cachedCounts, dataType, 1);
-                } else if (StringUtils.equals(EVENT_DELETE, action)) {
-                    adjustXsiTypeCount(cachedCounts, dataType, -1);
+                if (StringUtils.equals(EVENT_CREATE, action) || StringUtils.equals(EVENT_DELETE, action)) {
+                    final int adjustment = StringUtils.equals(EVENT_CREATE, action) ? 1 : -1;
+                    final long newCount = adjustXsiTypeCount(cachedCounts, dataType, adjustment);
+                    // Only evict browseables when a data type crosses the zero
+                    // boundary (appears in or disappears from the browse menu). This
+                    // matches the XNAT-8336 optimization: archiving another MR session
+                    // when MR sessions already exist doesn't change Browse > Data.
+                    // CREATE newCount==1: first item of this type (0→1).
+                    // DELETE newCount==0: last item of this type removed (1→0).
+                    if ((adjustment == 1 && newCount == 1) || (adjustment == -1 && newCount == 0)) {
+                        evict(CACHE_BROWSEABLES, username);
+                    }
+                    getUserLastUpdateCache().put(username, new Date());
                 }
             }
         }
     }
 
-    private void adjustXsiTypeCount(final Map<String, Long> cachedCounts, final String dataType, final int adjustment) {
-        final Long current = cachedCounts.get(dataType);
-        // If we have no items or don't have an existing count for the current data type...
-        if (current == null || current == 0L) {
-            // If this was a delete then that's weird, we *should* have an existing count that's not 0...
-            if (adjustment == -1) {
-                // But we can't have a negative count so just set it to 0.
-                cachedCounts.put(dataType, 0L);
-            } else {
-                // With zero or no count and adding 1, just set it to 1.
-                cachedCounts.put(dataType, 1L);
-            }
-        } else {
-            // Otherwise set the count to whatever it is plus the adjustment (which is -1 for delete)
-            cachedCounts.put(dataType, current + adjustment);
-        }
+    /**
+     * Atomically adjusts the count for the given data type and returns the new count.
+     */
+    private long adjustXsiTypeCount(final Map<String, Long> cachedCounts, final String dataType, final int adjustment) {
+        // Use compute() for atomic read-modify-write on the ConcurrentHashMap.
+        // This avoids the race condition of a separate get() then put() where
+        // concurrent events for the same dataType could lose updates.
+        return cachedCounts.compute(dataType, (key, current) -> Math.max((current != null ? current : 0L) + adjustment, 0L));
     }
 
     private void initReadableCountsForUser(final String username) {
@@ -1280,7 +1281,10 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
         }
     }
     public synchronized void resetTotalCounts() {
-        //modified this to be a bit more safe to being re-run.  i.e. don't clear the _totalCounts until the new values have been calculated.
+        // Build the new map completely before publishing it. The volatile write
+        // to _totalCounts makes the swap atomic from the reader's perspective:
+        // they see either the old complete map or the new complete map, never
+        // partial state (which clear()/putAll() could expose).
         final Map<String, Long> tempCounts = new ConcurrentHashMap<>();
         resetProjectCount(tempCounts);
         resetSubjectCount(tempCounts);
@@ -1302,8 +1306,7 @@ public class DefaultGroupsAndPermissionsCache extends AbstractXftItemAndCacheEve
                 tempCounts.put(elementName, count);
             }
         }
-        _totalCounts.clear();
-        _totalCounts.putAll(tempCounts);
+        _totalCounts = tempCounts;
     }
 
 
