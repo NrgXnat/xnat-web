@@ -3,6 +3,7 @@ package org.nrg.xnat.services.cache.extractors;
 import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.xdat.om.WrkWorkflowdata;
 import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatSubjectdata;
@@ -16,6 +17,8 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.cache.expiry.Duration;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -24,12 +27,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static org.nrg.xnat.services.cache.DefaultGroupsAndPermissionsCache.CACHE_READABLE_COUNTS;
 
 @Component
 @Slf4j
 public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDataExtractor<String, Map<String, Long>> {
+    /**
+     * Cache TTL for readable counts. Event handlers keep counts accurate via
+     * in-place adjustments (XNAT-8659), so this is a safety net for missed
+     * events (SHARE/MOVE, dropped event, etc). Extended from the 10-minute
+     * default to avoid the expensive extraction SQL running unnecessarily.
+     */
+    private static final Duration READABLE_COUNTS_TTL = new Duration(TimeUnit.HOURS, 4);
+
     private static final String QUERY_USER_READABLE_WORKFLOW_COUNT   = "SELECT greatest(reltuples::bigint, 0) AS COUNT " +
                                                                        "FROM pg_class " +
                                                                        "WHERE oid = 'public.wrk_workflowdata'::regclass";
@@ -100,6 +112,14 @@ public class ReadableCountsExtractor extends AbstractGroupsAndPermissionsCacheDa
     @Autowired
     public ReadableCountsExtractor(final @Lazy GroupsAndPermissionsCache cache, final NamedParameterJdbcTemplate template) {
         super(cache, CACHE_READABLE_COUNTS, template);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String, Object> getCacheProperties() {
+        return ImmutableMap.of(JCacheHelper.CONFIG_EXPIRY, READABLE_COUNTS_TTL);
     }
 
     /**
