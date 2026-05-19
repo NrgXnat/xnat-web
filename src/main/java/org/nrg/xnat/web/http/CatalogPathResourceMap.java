@@ -21,8 +21,8 @@ import org.nrg.framework.exceptions.NrgServiceError;
 import org.nrg.framework.exceptions.NrgServiceRuntimeException;
 import org.nrg.xdat.model.*;
 import org.nrg.xdat.om.XnatImageresource;
+import org.nrg.xdat.om.XnatProjectdata;
 import org.nrg.xdat.om.XnatResource;
-import org.nrg.xdat.turbine.utils.AccessLogger;
 import org.nrg.xdat.turbine.utils.FileAccessLogger;
 import org.nrg.xft.security.UserI;
 import org.nrg.xnat.helpers.uri.URIManager;
@@ -31,6 +31,7 @@ import org.nrg.xnat.helpers.uri.archive.ResourceURII;
 import org.nrg.xnat.services.archive.PathResourceMap;
 import org.nrg.xnat.services.archive.impl.legacy.DownloadArchiveOptions;
 import org.nrg.xnat.utils.CatalogUtils;
+import org.nrg.xnat.utils.FileUtils;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 
@@ -42,6 +43,7 @@ import java.io.PrintWriter;
 import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.EmptyStackException;
 import java.util.List;
@@ -130,11 +132,6 @@ public class CatalogPathResourceMap implements PathResourceMap<String, Resource>
         throw new EmptyStackException();
     }
 
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("remove");
-    }
-
     private boolean refresh() {
         if (!_resources.isEmpty()) {
             return true;
@@ -179,6 +176,11 @@ public class CatalogPathResourceMap implements PathResourceMap<String, Resource>
 
             // Create a data URI from the entry URI.
             final URIManager.DataURIA raw = UriParserUtils.parseURI(currentEntry.getUri());
+            if (raw == null) {
+                log.warn("A URI for catalog {} is invalid: {}", _catalogId, currentEntry.getUri());
+                return;
+            }
+
             log.info("{}: Got a DataURIA of type {}", _catalogId, raw.getClass());
 
             if (raw instanceof ResourceURII uri) {
@@ -219,15 +221,25 @@ public class CatalogPathResourceMap implements PathResourceMap<String, Resource>
                         return;
                     }
 
-                    final CatCatalogI catalog     = catalogData.catBean;
-                    final List<Mapping<String, Resource>> entries = Lists.transform(CatalogUtils.getFiles(catalog, catalogData.catPath, catalogData.project), new Function<File, Mapping<String, Resource>>() {
+                    final CatCatalogI     catalog   = catalogData.catBean;
+                    final String          projectId = catalogData.project;
+                    final XnatProjectdata project   = XnatProjectdata.getXnatProjectdatasById(projectId, _user, false);
+                    if (project == null) {
+                        // This shouldn't ever happen, but just in case...
+                        throw new NrgServiceRuntimeException(NrgServiceError.ConfigurationError, "Could not find project with ID " + projectId + ", but it's specified as the parent of catalog " + catalog.getId());
+                    }
+                    final Path projectArchivePath = Paths.get(project.getArchiveRootPath());
+
+                    final List<Mapping<String, Resource>> entries = Lists.transform(CatalogUtils.getFiles(catalog, catalogData.catPath, projectId), new Function<>() {
                         @Nullable
                         @Override
                         public Mapping<String, Resource> apply(@Nullable final File file) {
                             if (file == null) {
                                 return null;
                             }
-
+                            if (!FileUtils.isChild(projectArchivePath, file.toPath())) {
+                                throw new CrossProjectResourceException(_user.getUsername(), resourceName, projectId, catalogData.catFile.getAbsolutePath(), file.getAbsolutePath());
+                            }
                             log.debug("{}: Resource entry {} with name {}: {}", _catalogId, _resourceCount.incrementAndGet(), getResourceName(resourceName, file), resourceUri);
                             return new CatalogPathResourceMapping(resourceName, file);
                         }
@@ -296,7 +308,7 @@ public class CatalogPathResourceMap implements PathResourceMap<String, Resource>
         private final File   _file;
     }
 
-    private static final Predicate<String> IGNORED_PATH_COMPONENT = new Predicate<String>() {
+    private static final Predicate<String> IGNORED_PATH_COMPONENT = new Predicate<>() {
         @Override
         public boolean apply(@Nullable final String input) {
             return !_ignored.contains(input);
@@ -310,11 +322,12 @@ public class CatalogPathResourceMap implements PathResourceMap<String, Resource>
     private final Stack<Mapping<String, Resource>> _resources     = new Stack<>();
     private final AtomicLong                       _resourceCount = new AtomicLong();
 
-    private final String  _catalogId;
-    private final String  _archiveRoot;
-    private final boolean _projectIncludedInPath;
-    private final boolean _subjectIncludedInPath;
-    private final File    _testFile;
-    private UserI _user;
-    private HttpServletRequest _request;
+    private final String             _catalogId;
+    private final String             _archiveRoot;
+    private final boolean            _projectIncludedInPath;
+    private final boolean            _subjectIncludedInPath;
+    private final UserI              _user;
+    private final HttpServletRequest _request;
+
+    private final File               _testFile;
 }
