@@ -1,0 +1,51 @@
+name: Build non-root XNAT image
+
+# Manually-dispatched build of the non-root xnat-web container image. Wraps a
+# PUBLISHED war (pulled from JFrog by docker/build.sh, so container bytes ==
+# the metal/file install) and publishes to GHCR. Version-agnostic: pass the
+# war_url + image_tag + the matching Tomcat base, so this one workflow on master
+# builds any line (1.9.x on JDK8, 1.10 on JDK21).
+
+on:
+  workflow_dispatch:
+    inputs:
+      war_url:
+        description: "Published WAR URL to wrap (JFrog libs-release)"
+        required: true
+      image_tag:
+        description: "Image version tag, e.g. 1.9.3.5"
+        required: true
+      tomcat_image:
+        description: "Tomcat base (JDK8 for 1.9.x, jdk21 for 1.10)"
+        required: false
+        default: tomcat:9.0-jdk8-temurin-noble
+      push:
+        description: "Push to GHCR (false = build-only dry run)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        if: ${{ inputs.push }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build (and optionally push) the non-root image
+        run: |
+          bash docker/build.sh \
+            --image "ghcr.io/${{ github.repository_owner }}/xnat-web:${{ inputs.image_tag }}" \
+            --war-url "${{ inputs.war_url }}" \
+            --tomcat-image "${{ inputs.tomcat_image }}" \
+            ${{ inputs.push && '--push' || '' }}
