@@ -17,9 +17,10 @@ ARG XNAT_DATASOURCE_PASSWORD=xnat
 ARG XNAT_ACTIVEMQ=xnat-activemq
 # Published WAR to wrap (JFrog) -- supplied by build.sh / the workflow.
 ARG XNAT_WAR_URL
-# Non-root runtime uid: numeric (so K8s runAsNonRoot can verify it is non-zero)
-# and high (avoids host/system uid collisions).
-ARG XNAT_UID=10001
+# Non-root runtime uid. 1000 = the chart's `tomcat` user -- its securityContext
+# default, the /etc/passwd entry, and the home/Tomcat chowns all key off this, so
+# the image is a drop-in for the chart with no runAsUser override needed.
+ARG XNAT_UID=1000
 
 ENV XNAT_HOME=${XNAT_HOME} TZ=Etc/UTC \
     XNAT_DATASOURCE_DRIVER=${XNAT_DATASOURCE_DRIVER} XNAT_DATASOURCE_URL=${XNAT_DATASOURCE_URL} \
