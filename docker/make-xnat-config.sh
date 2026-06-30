@@ -1,8 +1,10 @@
 #!/bin/sh
+set -eu
 
-# generate xnat config
-if [ ! -f $XNAT_HOME/config/xnat-conf.properties ]; then
-  cat > $XNAT_HOME/config/xnat-conf.properties << EOF
+# Generate xnat-conf.properties from the environment, unless one already exists
+# (a conf mounted by the chart/operator wins).
+if [ ! -f "$XNAT_HOME/config/xnat-conf.properties" ]; then
+  cat > "$XNAT_HOME/config/xnat-conf.properties" << EOF
 datasource.driver=$XNAT_DATASOURCE_DRIVER
 datasource.url=$XNAT_DATASOURCE_URL
 datasource.username=$XNAT_DATASOURCE_USERNAME
@@ -23,6 +25,3 @@ spring.http.multipart.max-file-size=1073741824
 spring.http.multipart.max-request-size=1073741824
 EOF
 fi
-
-mkdir -p /usr/local/share/xnat
-find $XNAT_HOME/config -mindepth 1 -maxdepth 1 -type f -exec cp {} /usr/local/share/xnat \;
