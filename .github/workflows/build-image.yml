@@ -57,6 +57,7 @@ jobs:
           PUSH: ${{ inputs.push }}
           REPO_OWNER: ${{ github.repository_owner }}
         run: |
+          REPO_OWNER="${REPO_OWNER,,}"   # GHCR repository paths must be lowercase
           args=(--image "ghcr.io/${REPO_OWNER}/xnat-web:${IMAGE_TAG}" --war-url "$WAR_URL" --tomcat-image "$TOMCAT_IMAGE")
           [ -n "$WAR_SHA256" ] && args+=(--war-sha256 "$WAR_SHA256")
           [ "$PUSH" = "true" ] && args+=(--push)
