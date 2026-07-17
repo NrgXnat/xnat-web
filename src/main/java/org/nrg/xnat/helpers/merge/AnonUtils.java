@@ -38,6 +38,23 @@ public interface AnonUtils {
 
     String getSiteWideScript() throws ConfigServiceException;
 
+    /**
+     * Sets the site-wide anonymization script and/or its enabled state as a single operation. This is the
+     * canonical write path for the site-wide settings: it writes the config service copy (the copy that is
+     * actually applied to incoming DICOM) with the submitted user, preserves or sets the enabled status
+     * explicitly, invalidates the local script cache, and mirrors the values to the site-config preferences
+     * so that preference consumers and other nodes (via the preference events) stay consistent.
+     *
+     * @param login  The user setting the script.
+     * @param script The new script contents, or null to leave the script unchanged.
+     * @param enable The new enabled state, or null to preserve the current state.
+     */
+    void setSiteWideSettings(String login, String script, Boolean enable) throws ConfigServiceException;
+
+    /**
+     * Equivalent to {@link #setSiteWideSettings(String, String, Boolean)} with the current enabled state
+     * preserved.
+     */
     void setSiteWideScript(String login, String script) throws ConfigServiceException;
 
     void enableSiteWide(String login) throws ConfigServiceException;
