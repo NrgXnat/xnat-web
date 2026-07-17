@@ -170,10 +170,12 @@ public class PreferencesApi extends AbstractXapiRestController {
             try {
                 if (StringUtils.equals(preference, AnonUtils.SITEWIDE_ANONYMIZATION_SCRIPT)) {
                     _anonUtils.setSiteWideScript(getSessionUser().getUsername(), value);
-                } else if (StringUtils.equalsAnyIgnoreCase(value, "true", "false")) {
-                    _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), null, Boolean.parseBoolean(value));
                 } else {
-                    throw new DataFormatException("The " + AnonUtils.ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT + " value must be either true or false: " + value);
+                    // The guard above restricts this branch to ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT.
+                    if (!StringUtils.equalsAnyIgnoreCase(value, "true", "false")) {
+                        throw new DataFormatException("The " + AnonUtils.ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT + " value must be either true or false: " + value);
+                    }
+                    _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), null, Boolean.parseBoolean(value));
                 }
             } catch (ConfigServiceException e) {
                 log.error("The user {} tried to set the {} preference, but an error occurred", getSessionUser().getUsername(), preference, e);
