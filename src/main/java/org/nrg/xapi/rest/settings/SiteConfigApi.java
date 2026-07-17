@@ -60,6 +60,8 @@ import java.util.stream.Collectors;
 
 import static org.nrg.xdat.preferences.SiteConfigPreferences.SITE_URL;
 import static org.nrg.xdat.security.helpers.AccessLevel.Admin;
+import static org.nrg.xnat.helpers.merge.AnonUtils.ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT;
+import static org.nrg.xnat.helpers.merge.AnonUtils.SITEWIDE_ANONYMIZATION_SCRIPT;
 import static org.nrg.xdat.security.helpers.AccessLevel.Authorizer;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED_VALUE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
@@ -198,11 +200,11 @@ public class SiteConfigApi extends AbstractXapiRestController {
     }
 
     private void setAnonymizationProperties(final Map<String, Object> properties) throws InitializationException {
-        if (!properties.containsKey(SITEWIDE_ANON_SCRIPT) && !properties.containsKey(ENABLE_SITEWIDE_ANON_SCRIPT)) {
+        if (!properties.containsKey(SITEWIDE_ANONYMIZATION_SCRIPT) && !properties.containsKey(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT)) {
             return;
         }
-        final String  script = properties.containsKey(SITEWIDE_ANON_SCRIPT) ? String.valueOf(properties.remove(SITEWIDE_ANON_SCRIPT)) : null;
-        final Boolean enable = properties.containsKey(ENABLE_SITEWIDE_ANON_SCRIPT) ? Boolean.parseBoolean(String.valueOf(properties.remove(ENABLE_SITEWIDE_ANON_SCRIPT))) : null;
+        final String  script = properties.containsKey(SITEWIDE_ANONYMIZATION_SCRIPT) ? String.valueOf(properties.remove(SITEWIDE_ANONYMIZATION_SCRIPT)) : null;
+        final Boolean enable = properties.containsKey(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT) ? Boolean.parseBoolean(String.valueOf(properties.remove(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT))) : null;
         try {
             _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), script, enable);
         } catch (ConfigServiceException e) {
@@ -261,10 +263,10 @@ public class SiteConfigApi extends AbstractXapiRestController {
 
         if (StringUtils.equals("initialized", property) && StringUtils.equals("true", value)) {
             _preferences.setInitialized(true);
-        } else if (StringUtils.equalsAny(property, SITEWIDE_ANON_SCRIPT, ENABLE_SITEWIDE_ANON_SCRIPT)) {
+        } else if (StringUtils.equalsAny(property, SITEWIDE_ANONYMIZATION_SCRIPT, ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT)) {
             // Route through the anonymization service: see setAnonymizationProperties() for the rationale.
             try {
-                if (StringUtils.equals(property, SITEWIDE_ANON_SCRIPT)) {
+                if (StringUtils.equals(property, SITEWIDE_ANONYMIZATION_SCRIPT)) {
                     _anonUtils.setSiteWideScript(getSessionUser().getUsername(), value);
                 } else {
                     _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), null, Boolean.parseBoolean(value));
@@ -382,10 +384,8 @@ public class SiteConfigApi extends AbstractXapiRestController {
         return BooleanUtils.toBoolean(initialized.toString());
     }
 
-    private static final String                      EMAIL_UPDATE               = "UPDATE xdat_user SET email = :adminEmail WHERE login IN ('admin', 'guest')";
-    private static final List<? extends Set<String>> PREFS_GROUPS               = Collections.singletonList(ImmutableSet.of("enableSitewideSeriesImportFilter", "sitewideSeriesImportFilterMode", "sitewideSeriesImportFilter"));
-    private static final String                      SITEWIDE_ANON_SCRIPT       = "sitewideAnonymizationScript";
-    private static final String                      ENABLE_SITEWIDE_ANON_SCRIPT = "enableSitewideAnonymizationScript";
+    private static final String                      EMAIL_UPDATE = "UPDATE xdat_user SET email = :adminEmail WHERE login IN ('admin', 'guest')";
+    private static final List<? extends Set<String>> PREFS_GROUPS = Collections.singletonList(ImmutableSet.of("enableSitewideSeriesImportFilter", "sitewideSeriesImportFilterMode", "sitewideSeriesImportFilter"));
 
     private final AnonUtils                  _anonUtils;
     private final SiteConfigPreferences      _preferences;

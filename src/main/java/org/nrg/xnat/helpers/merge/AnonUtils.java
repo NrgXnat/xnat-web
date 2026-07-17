@@ -18,6 +18,16 @@ import java.util.List;
  * Defines the interface for managing XNAT's DICOM anonymization scripts.
  */
 public interface AnonUtils {
+    /**
+     * The site-config preference IDs for the site-wide anonymization script and its enabled flag. These
+     * are also the field names the site-admin anonymization panel submits and the keys REST clients use
+     * with /xapi/siteConfig and /xapi/anonymize/settings, so renaming the values is a breaking change.
+     * They'd fit naturally alongside SITE_URL on SiteConfigPreferences, but live here so the definition
+     * stays within xnat-web.
+     */
+    String SITEWIDE_ANONYMIZATION_SCRIPT        = "sitewideAnonymizationScript";
+    String ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT = "enableSitewideAnonymizationScript";
+
     Configuration getSiteWideScriptConfiguration();
 
     Configuration getProjectScriptConfiguration(String projectId);

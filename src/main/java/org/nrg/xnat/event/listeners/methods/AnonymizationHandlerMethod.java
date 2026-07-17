@@ -35,7 +35,7 @@ import org.springframework.stereotype.Component;
 public class AnonymizationHandlerMethod extends AbstractXnatPreferenceHandlerMethod {
     @Autowired
     public AnonymizationHandlerMethod(final SiteConfigPreferences preferences, final AnonUtils anonUtils) {
-        super(ENABLE_SITEWIDE_SCRIPT, SITEWIDE_ANONYMIZATION_SCRIPT);
+        super(AnonUtils.ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT, AnonUtils.SITEWIDE_ANONYMIZATION_SCRIPT);
         _preferences = preferences;
         _anonUtils = anonUtils;
     }
@@ -70,9 +70,6 @@ public class AnonymizationHandlerMethod extends AbstractXnatPreferenceHandlerMet
             log.debug("Unable to compare the site-wide anonymization script stores", e);
         }
     }
-
-    private static final String ENABLE_SITEWIDE_SCRIPT        = "enableSitewideAnonymizationScript";
-    private static final String SITEWIDE_ANONYMIZATION_SCRIPT = "sitewideAnonymizationScript";
 
     private final SiteConfigPreferences _preferences;
     private final AnonUtils             _anonUtils;

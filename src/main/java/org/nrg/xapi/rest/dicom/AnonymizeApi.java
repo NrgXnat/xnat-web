@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.nrg.xdat.security.helpers.AccessLevel.*;
+import static org.nrg.xnat.helpers.merge.AnonUtils.ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT;
+import static org.nrg.xnat.helpers.merge.AnonUtils.SITEWIDE_ANONYMIZATION_SCRIPT;
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 import static org.springframework.web.bind.annotation.RequestMethod.GET;
@@ -105,8 +107,8 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
     public Map<String, String> getSiteWideAnonSettings() {
         final Configuration       configuration = _anonUtils.getSiteWideScriptConfiguration();
         final Map<String, String> settings      = new HashMap<>();
-        settings.put(SITEWIDE_SCRIPT, configuration != null ? StringUtils.defaultString(configuration.getContents()) : "");
-        settings.put(ENABLE_SITEWIDE_SCRIPT, Boolean.toString(configuration != null && StringUtils.equals(configuration.getStatus(), Configuration.ENABLED_STRING)));
+        settings.put(SITEWIDE_ANONYMIZATION_SCRIPT, configuration != null ? StringUtils.defaultString(configuration.getContents()) : "");
+        settings.put(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT, Boolean.toString(configuration != null && StringUtils.equals(configuration.getStatus(), Configuration.ENABLED_STRING)));
         return settings;
     }
 
@@ -116,8 +118,8 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "settings", consumes = APPLICATION_JSON_VALUE, method = POST, restrictTo = Admin)
     public void setSiteWideAnonSettings(@RequestBody final Map<String, Object> settings) throws InitializationException {
-        final String  script = settings.containsKey(SITEWIDE_SCRIPT) ? String.valueOf(settings.get(SITEWIDE_SCRIPT)) : null;
-        final Boolean enable = settings.containsKey(ENABLE_SITEWIDE_SCRIPT) ? Boolean.parseBoolean(String.valueOf(settings.get(ENABLE_SITEWIDE_SCRIPT))) : null;
+        final String  script = settings.containsKey(SITEWIDE_ANONYMIZATION_SCRIPT) ? String.valueOf(settings.get(SITEWIDE_ANONYMIZATION_SCRIPT)) : null;
+        final Boolean enable = settings.containsKey(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT) ? Boolean.parseBoolean(String.valueOf(settings.get(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT))) : null;
         try {
             _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), script, enable);
         } catch (ConfigServiceException e) {
@@ -208,9 +210,6 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
             _anonUtils.disableProjectSpecific(getSessionUser().getUsername(), projectId);
         }
     }
-
-    private static final String SITEWIDE_SCRIPT        = "sitewideAnonymizationScript";
-    private static final String ENABLE_SITEWIDE_SCRIPT = "enableSitewideAnonymizationScript";
 
     private final AnonUtils             _anonUtils;
     private final SiteConfigPreferences _preferences;
