@@ -55,11 +55,26 @@ public interface AnonUtils {
      * explicitly, invalidates the local script cache, and mirrors the values to the site-config preferences
      * so that preference consumers and other nodes (via the preference events) stay consistent.
      *
+     * <p>The default implementation delegates to the individual operations for source compatibility with
+     * implementations that predate this method; real implementations should override it, as
+     * DefaultAnonUtils does, to apply the write ordering and mirroring invariants as a single operation.
+     *
      * @param login  The user setting the script.
      * @param script The new script contents, or null to leave the script unchanged.
      * @param enable The new enabled state, or null to preserve the current state.
      */
-    void setSiteWideSettings(String login, String script, Boolean enable) throws ConfigServiceException;
+    default void setSiteWideSettings(String login, String script, Boolean enable) throws ConfigServiceException {
+        if (script != null) {
+            setSiteWideScript(login, script);
+        }
+        if (enable != null) {
+            if (enable) {
+                enableSiteWide(login);
+            } else {
+                disableSiteWide(login);
+            }
+        }
+    }
 
     /**
      * Equivalent to {@link #setSiteWideSettings(String, String, Boolean)} with the current enabled state

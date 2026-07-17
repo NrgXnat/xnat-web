@@ -16,12 +16,12 @@ import org.nrg.config.entities.Configuration;
 import org.nrg.config.exceptions.ConfigServiceException;
 import org.nrg.framework.annotations.XapiRestController;
 import org.nrg.framework.exceptions.NrgServiceException;
+import org.nrg.xapi.exceptions.DataFormatException;
 import org.nrg.xapi.exceptions.InitializationException;
 import org.nrg.xapi.exceptions.NoContentException;
 import org.nrg.xapi.rest.AbstractXapiProjectRestController;
 import org.nrg.xapi.rest.Project;
 import org.nrg.xapi.rest.XapiRequestMapping;
-import org.nrg.xdat.preferences.SiteConfigPreferences;
 import org.nrg.xdat.security.services.RoleHolder;
 import org.nrg.xdat.security.services.UserManagementServiceI;
 import org.nrg.xnat.helpers.merge.AnonUtils;
@@ -51,10 +51,9 @@ import static org.springframework.web.bind.annotation.RequestMethod.PUT;
 @Slf4j
 public class AnonymizeApi extends AbstractXapiProjectRestController {
     @Autowired
-    public AnonymizeApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final AnonUtils anonUtils, final SiteConfigPreferences preferences) {
+    public AnonymizeApi(final UserManagementServiceI userManagementService, final RoleHolder roleHolder, final AnonUtils anonUtils) {
         super(userManagementService, roleHolder);
         _anonUtils = anonUtils;
-        _preferences = preferences;
     }
 
     @ApiOperation(value = "Gets the default anonymization script.", response = String.class)
@@ -112,14 +111,19 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
         return settings;
     }
 
-    @ApiOperation(value = "Sets the site-wide anonymization settings.", notes = "Accepts the sitewideAnonymizationScript and enableSitewideAnonymizationScript values as a map. Omitted values are left unchanged. The values are written to the config service with the current user and mirrored to the site-config preferences.")
+    @ApiOperation(value = "Sets the site-wide anonymization settings.", notes = "Accepts the sitewideAnonymizationScript and enableSitewideAnonymizationScript values as a map. Omitted or null values are left unchanged. The values are written to the config service with the current user and mirrored to the site-config preferences.")
     @ApiResponses({@ApiResponse(code = 200, message = "Successfully stored the site-wide anonymization settings."),
+                   @ApiResponse(code = 400, message = "The enableSitewideAnonymizationScript value was not a boolean."),
                    @ApiResponse(code = 403, message = "Insufficient permissions to modify the site-wide anonymization settings."),
                    @ApiResponse(code = 500, message = "An unexpected error occurred.")})
     @XapiRequestMapping(value = "settings", consumes = APPLICATION_JSON_VALUE, method = POST, restrictTo = Admin)
-    public void setSiteWideAnonSettings(@RequestBody final Map<String, Object> settings) throws InitializationException {
-        final String  script = settings.containsKey(SITEWIDE_ANONYMIZATION_SCRIPT) ? String.valueOf(settings.get(SITEWIDE_ANONYMIZATION_SCRIPT)) : null;
-        final Boolean enable = settings.containsKey(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT) ? Boolean.parseBoolean(String.valueOf(settings.get(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT))) : null;
+    public void setSiteWideAnonSettings(@RequestBody final Map<String, Object> settings) throws DataFormatException, InitializationException {
+        // JSON null values are treated the same as omitted keys — "leave unchanged" — so clients that
+        // serialize absent fields as explicit nulls can't accidentally clear the script or disable
+        // anonymization.
+        final Object  scriptValue = settings.get(SITEWIDE_ANONYMIZATION_SCRIPT);
+        final String  script      = scriptValue != null ? scriptValue.toString() : null;
+        final Boolean enable      = parseEnable(settings.get(ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT));
         try {
             _anonUtils.setSiteWideSettings(getSessionUser().getUsername(), script, enable);
         } catch (ConfigServiceException e) {
@@ -211,6 +215,24 @@ public class AnonymizeApi extends AbstractXapiProjectRestController {
         }
     }
 
-    private final AnonUtils             _anonUtils;
-    private final SiteConfigPreferences _preferences;
+    /**
+     * Strictly parses the enable flag: null (absent or JSON null) means "leave unchanged", and anything
+     * other than true/false is rejected rather than silently coerced to false — this flag turns
+     * de-identification of incoming DICOM on and off.
+     */
+    private static Boolean parseEnable(final Object value) throws DataFormatException {
+        if (value == null) {
+            return null;
+        }
+        final String text = value.toString();
+        if ("true".equalsIgnoreCase(text)) {
+            return Boolean.TRUE;
+        }
+        if ("false".equalsIgnoreCase(text)) {
+            return Boolean.FALSE;
+        }
+        throw new DataFormatException("The " + ENABLE_SITEWIDE_ANONYMIZATION_SCRIPT + " value must be either true or false: " + text);
+    }
+
+    private final AnonUtils _anonUtils;
 }

@@ -235,10 +235,18 @@ public class DefaultAnonUtils implements AnonUtils {
         if (script != null && (current == null || !StringUtils.equals(script, current.getContents()))) {
             _configService.replaceConfig(login, "", DicomEdit.ToolName, SITE_WIDE_PATH, script);
         }
-        if (enabled) {
-            _configService.enable(login, "", DicomEdit.ToolName, SITE_WIDE_PATH);
+        // Only touch the status when a configuration exists or was just written above: the config service
+        // throws for a status change on a missing configuration, and before the initialization task seeds
+        // the default script there's nothing to toggle. The preference mirror below still records the
+        // intent.
+        if (script != null || current != null) {
+            if (enabled) {
+                _configService.enable(login, "", DicomEdit.ToolName, SITE_WIDE_PATH);
+            } else {
+                _configService.disable(login, "", DicomEdit.ToolName, SITE_WIDE_PATH);
+            }
         } else {
-            _configService.disable(login, "", DicomEdit.ToolName, SITE_WIDE_PATH);
+            log.debug("No site-wide {} configuration exists and no script was provided: skipping the status update and mirroring the preferences only", DicomEdit.ToolName);
         }
         invalidateSitewideAnonCache();
 

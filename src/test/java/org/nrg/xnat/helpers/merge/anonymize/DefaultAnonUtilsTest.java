@@ -20,7 +20,6 @@ import org.nrg.framework.jcache.JCacheHelper;
 import org.nrg.xdat.preferences.SiteConfigPreferences;
 
 import javax.cache.Cache;
-import java.lang.reflect.Field;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -34,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.nrg.config.entities.Configuration.DISABLED_STRING;
 import static org.nrg.config.entities.Configuration.ENABLED_STRING;
+import static org.nrg.xnat.test.AnonUtilsTestSupport.resetAnonUtilsSingleton;
 
 /**
  * Tests for the canonical site-wide anonymization write path, {@link DefaultAnonUtils#setSiteWideSettings}.
@@ -140,6 +140,20 @@ public class DefaultAnonUtilsTest {
     }
 
     @Test
+    public void enableToggleWithoutExistingConfigSkipsStatusWrite() throws Exception {
+        when(_configService.getConfig(TOOL, PATH)).thenReturn(null);
+
+        _anonUtils.setSiteWideSettings(USER, null, true);
+
+        // Nothing exists in the config service to toggle (a status change on a missing configuration
+        // throws), but the preference still records the intent.
+        verify(_configService, never()).replaceConfig(anyString(), anyString(), anyString(), anyString(), anyString());
+        verify(_configService, never()).enable(anyString(), anyString(), anyString(), anyString());
+        verify(_configService, never()).disable(anyString(), anyString(), anyString(), anyString());
+        verify(_preferences).setEnableSitewideAnonymizationScript(true);
+    }
+
+    @Test
     public void writesInvalidateTheLocalScriptCache() throws Exception {
         givenCurrentConfig("old script", ENABLED_STRING);
 
@@ -159,13 +173,4 @@ public class DefaultAnonUtilsTest {
         return configuration;
     }
 
-    /**
-     * DefaultAnonUtils enforces a one-instance-per-JVM singleton through a static field; reset it so each
-     * test (and any other test class in the same JVM) can construct its own instance.
-     */
-    static void resetAnonUtilsSingleton() throws Exception {
-        final Field instance = DefaultAnonUtils.class.getDeclaredField("_instance");
-        instance.setAccessible(true);
-        instance.set(null, null);
-    }
 }

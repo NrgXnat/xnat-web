@@ -62,12 +62,15 @@ public class AnonymizationHandlerMethod extends AbstractXnatPreferenceHandlerMet
             final Configuration configuration = _anonUtils.getSiteWideScriptConfiguration();
             final String        configScript  = StringUtils.trimToNull(configuration != null ? configuration.getContents() : null);
             final String        prefScript    = StringUtils.trimToNull(_preferences.getSitewideAnonymizationScript());
-            if (!StringUtils.equals(configScript, prefScript)) {
-                log.warn("The site-wide anonymization script in the config service ({} characters) differs from the sitewideAnonymizationScript preference ({} characters). The config service copy is what gets applied to incoming DICOM. These are kept in step by AnonUtils.setSiteWideSettings(), so something has updated one store without the other.",
-                         configScript != null ? configScript.length() : 0, prefScript != null ? prefScript.length() : 0);
+            final boolean       configEnabled = configuration != null && StringUtils.equals(configuration.getStatus(), Configuration.ENABLED_STRING);
+            final boolean       prefEnabled   = Boolean.TRUE.equals(_preferences.getEnableSitewideAnonymizationScript());
+            if (!StringUtils.equals(configScript, prefScript) || configEnabled != prefEnabled) {
+                log.warn("The site-wide anonymization settings differ between the config service (script {} characters, {}) and the site-config preferences (script {} characters, {}). The config service copy is what gets applied to incoming DICOM. These are kept in step by AnonUtils.setSiteWideSettings(), so something has updated one store without the other.",
+                         configScript != null ? configScript.length() : 0, configEnabled ? "enabled" : "disabled",
+                         prefScript != null ? prefScript.length() : 0, prefEnabled ? "enabled" : "disabled");
             }
         } catch (Exception e) {
-            log.debug("Unable to compare the site-wide anonymization script stores", e);
+            log.debug("Unable to compare the site-wide anonymization settings stores", e);
         }
     }
 

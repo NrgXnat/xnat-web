@@ -21,7 +21,6 @@ import org.nrg.xnat.helpers.merge.AnonUtils;
 import org.nrg.xnat.helpers.merge.anonymize.DefaultAnonUtils;
 
 import javax.cache.Cache;
-import java.lang.reflect.Field;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +31,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.nrg.xnat.test.AnonUtilsTestSupport.resetAnonUtilsSingleton;
 
 /**
  * The handler must be cache-coherence only: the canonical write path (AnonUtils.setSiteWideSettings) writes
@@ -102,9 +102,4 @@ public class AnonymizationHandlerMethodTest {
         verify(_anonUtils, never()).disableSiteWide(anyString());
     }
 
-    private static void resetAnonUtilsSingleton() throws Exception {
-        final Field instance = DefaultAnonUtils.class.getDeclaredField("_instance");
-        instance.setAccessible(true);
-        instance.set(null, null);
-    }
 }
