@@ -41,7 +41,6 @@ import org.nrg.framework.constants.PrearchiveCode;
 import org.nrg.xdat.XDAT;
 import org.nrg.xdat.om.ArcProject;
 import org.nrg.xdat.om.XnatProjectdata;
-import org.nrg.xdat.security.helpers.Permissions;
 import org.nrg.xdat.turbine.utils.TurbineUtils;
 import org.nrg.xft.db.PoolDBUtils;
 import org.nrg.xft.security.UserI;
@@ -423,12 +422,6 @@ public class GradualDicomImporter extends ImporterHandlerA {
                 // parameter). This runs after, and in addition to, the site-wide script.
                 final String inlineAnonScript = (String) TurbineUtils.unescapeParam(_parameters.get(ANON_SCRIPT_PARAM));
                 if (StringUtils.isNotBlank(inlineAnonScript)) {
-                    if (!Permissions.canEditProject(_user, session.getProject())) {
-                        FileUtils.deleteQuietly(outputFile);
-                        throw new ClientException(Status.CLIENT_ERROR_FORBIDDEN,
-                                "You must have edit access to project " + session.getProject() +
-                                        " to apply an inline anonymization script.");
-                    }
                     try {
                         final AnonymizationResult inlineResult = _mizer.anonymize(outputFile, session.getProject(),
                                 session.getSubject(), session.getFolderName(), false, false,
@@ -437,8 +430,10 @@ public class GradualDicomImporter extends ImporterHandlerA {
                             FileUtils.deleteQuietly(outputFile);
                             return returnEmptyList();
                         } else if (inlineResult instanceof AnonymizationResultError) {
-                            // A bad caller-supplied script is a client error (400), but clean up the session the
-                            // same way the site-wide error path does.
+                            // A parsed script that fails while running against this particular data (e.g. a
+                            // reference to a tag that isn't present) is treated as a client error (400), but the
+                            // session is cleaned up the same way the site-wide error path does. Note a script that
+                            // fails to parse throws a MizerException instead and is handled by the catch below.
                             final ClientException error = new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
                                     "The supplied inline anonymization script could not be applied: " +
                                             String.join("\n", inlineResult.getMessages()));
