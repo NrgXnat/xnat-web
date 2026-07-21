@@ -430,10 +430,9 @@ public class GradualDicomImporter extends ImporterHandlerA {
                             FileUtils.deleteQuietly(outputFile);
                             return returnEmptyList();
                         } else if (inlineResult instanceof AnonymizationResultError) {
-                            // A parsed script that fails while running against this particular data (e.g. a
-                            // reference to a tag that isn't present) is treated as a client error (400), but the
-                            // session is cleaned up the same way the site-wide error path does. Note a script that
-                            // fails to parse throws a MizerException instead and is handled by the catch below.
+                            // A valid script that errors on this data (e.g. an absent tag) returns an error
+                            // result: a 400, cleaned up like the site-wide path. A parse failure instead throws
+                            // MizerException, which the catch below maps to a 500 (mizer can't tell it from a real fault).
                             final ClientException error = new ClientException(Status.CLIENT_ERROR_BAD_REQUEST,
                                     "The supplied inline anonymization script could not be applied: " +
                                             String.join("\n", inlineResult.getMessages()));
