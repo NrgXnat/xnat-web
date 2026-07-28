@@ -122,7 +122,7 @@ dependencyManagement {
         mavenBom "org.nrg:parent:${vXnat}"
         // AWS SDK BOM aligns the awssdk:* module versions for the optional
         // RDS IAM datasource (aws-advanced-jdbc-wrapper deps, added below).
-        mavenBom "software.amazon.awssdk:bom:2.39.6"
+        mavenBom "software.amazon.awssdk:bom:2.48.1"
     }
     generatedPomCustomization {
         enabled = false
@@ -298,7 +298,7 @@ dependencies {
     // software.amazon.jdbc.Driver (e.g. via the helm chart's datasource.iam
     // mode); the default postgresql datasource is unaffected. The awssdk
     // module versions come from the BOM imported above.
-    runtimeOnly "software.amazon.jdbc:aws-advanced-jdbc-wrapper:2.6.8"
+    runtimeOnly "software.amazon.jdbc:aws-advanced-jdbc-wrapper:4.3.0"
     runtimeOnly "software.amazon.awssdk:rds"
     runtimeOnly "software.amazon.awssdk:sts"
     runtimeOnly "software.amazon.awssdk:url-connection-client"
