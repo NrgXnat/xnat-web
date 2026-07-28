@@ -120,6 +120,9 @@ configurations {
 dependencyManagement {
     imports {
         mavenBom "org.nrg:parent:${vXnat}"
+        // AWS SDK BOM aligns the awssdk:* module versions for the optional
+        // RDS IAM datasource (aws-advanced-jdbc-wrapper deps, added below).
+        mavenBom "software.amazon.awssdk:bom:2.48.1"
     }
     generatedPomCustomization {
         enabled = false
@@ -289,6 +292,16 @@ dependencies {
     runtimeOnly "org.javassist:javassist"
     runtimeOnly "org.python:jython-standalone"
     runtimeOnly "org.bouncycastle:bcpkix-jdk18on"
+
+    // AWS Advanced JDBC Wrapper + SDK for optional passwordless RDS IAM
+    // database authentication. Inert unless datasource.driver is set to
+    // software.amazon.jdbc.Driver (e.g. via the helm chart's datasource.iam
+    // mode); the default postgresql datasource is unaffected. The awssdk
+    // module versions come from the BOM imported above.
+    runtimeOnly "software.amazon.jdbc:aws-advanced-jdbc-wrapper:4.3.0"
+    runtimeOnly "software.amazon.awssdk:rds"
+    runtimeOnly "software.amazon.awssdk:sts"
+    runtimeOnly "software.amazon.awssdk:url-connection-client"
 
     tomcat "org.apache.tomcat.embed:tomcat-embed-core",
             "org.apache.tomcat.embed:tomcat-embed-logging-juli:9.0.0.M6",
