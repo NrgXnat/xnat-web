@@ -33,12 +33,49 @@ ENV XNAT_HOME=${XNAT_HOME} TZ=Etc/UTC \
     CATALINA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=66.0 -Dxnat.home=${XNAT_HOME}"
 
 COPY entrypoint.sh make-xnat-config.sh /usr/local/bin/
+# ca-certificates must be the 20260816 bundle or later (USN-8944-1), which drops the same roots as
+# the cacerts layer below for curl and other OS tools. The check is part of the layer, so a cached
+# copy of it can't carry an older bundle either.
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/make-xnat-config.sh \
  && apt-get update && apt-get install -y --no-install-recommends unzip curl ca-certificates dcmtk \
+ && v="$(dpkg-query -W -f='${Version}' ca-certificates)" \
+ && { dpkg --compare-versions "$v" ge 20260816 \
+      || { echo "ca-certificates $v is older than the 20260816 bundle" >&2; exit 1; }; } \
  && rm -rf /var/lib/apt/lists/* ${CATALINA_HOME}/webapps/* \
  && mkdir -p ${CATALINA_HOME}/webapps/ROOT \
       ${XNAT_HOME}/config ${XNAT_HOME}/logs ${XNAT_HOME}/plugins ${XNAT_HOME}/work \
       ${XNAT_ROOT}/archive ${XNAT_ROOT}/build ${XNAT_ROOT}/cache ${XNAT_ROOT}/ftp ${XNAT_ROOT}/pipeline ${XNAT_ROOT}/prearchive
+
+# Remove the trust anchors the compromised eMudhra intermediates chain to (CVE-2026-91403):
+# emSign ECC Root CA - G3, and AAA Certificate Services, which cross-signs them. The current
+# Temurin stores (tomcat:9.0-jdk8-temurin-noble, tomcat:9.0-jdk21-temurin-noble) no longer include
+# AAA, so on those bases only G3 goes. Older bases still have AAA, and removing it also drops other
+# chains that end there. The build fails if keytool's output isn't in the expected format or if
+# either root survives. The removal holds only while nothing copies the OS bundle back into
+# cacerts: Temurin's /__cacert_entrypoint.sh does that when USE_SYSTEM_CA_CERTS=1, and this
+# image's entrypoint doesn't run it. Remove this layer once Temurin ships the fixed cacerts.
+RUN set -eu; \
+    ks="$(java -XshowSettings:properties -version 2>&1 | sed -n 's/^ *java.home = //p')/lib/security/cacerts"; \
+    list() { \
+        o="$(keytool -list -v -keystore "$ks" -storepass changeit 2>&1)" \
+            || { printf 'keytool cannot list %s:\n%s\n' "$ks" "$o" >&2; return 1; }; \
+        printf '%s\n' "$o"; \
+    }; \
+    targets() { \
+        printf '%s\n' "$1" | awk '/^Alias name: /{a=substr($0,13)} /^Owner: /&&/emSign ECC Root CA - G3|AAA Certificate Services/{print a}'; \
+    }; \
+    before="$(list)"; \
+    case "$before" in \
+        *"Alias name: "*"Owner: CN="*) ;; \
+        *) printf 'unexpected keytool output for %s:\n%s\n' "$ks" "$before" >&2; exit 1 ;; \
+    esac; \
+    targets "$before" | while IFS= read -r a; do \
+        echo "removing $a"; \
+        keytool -delete -alias "$a" -keystore "$ks" -storepass changeit; \
+    done; \
+    after="$(list)"; \
+    left="$(targets "$after")"; \
+    if [ -n "$left" ]; then printf 'still in %s: %s\n' "$ks" "$left" >&2; exit 1; fi
 
 # Wrap the PUBLISHED war -- same application bytes, file logging swapped to
 # console; no source build. Own + group-write (g=u) the exploded webapp in THIS
